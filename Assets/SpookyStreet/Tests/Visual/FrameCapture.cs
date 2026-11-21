@@ -24,6 +24,12 @@ namespace SpookyStreet.Tests.Visual
             canvas.renderMode = RenderMode.ScreenSpaceCamera;
             canvas.worldCamera = camera;
             canvas.planeDistance = 0.5f;
+
+            // Size the camera (and so the Screen Space - Camera canvas and its scaler) to the capture rather than
+            // the batchmode virtual screen, so UI layout matches the device aspect being simulated.
+            RenderTexture previousTarget = camera.targetTexture;
+            camera.targetTexture = target;
+
             // Let UI layout settle in its new render mode. WaitForEndOfFrame never resumes in batchmode,
             // so frames are advanced with plain yields and rendered explicitly below.
             yield return null;
@@ -45,6 +51,7 @@ namespace SpookyStreet.Tests.Visual
             frame.Apply();
             RenderTexture.active = previousActive;
 
+            camera.targetTexture = previousTarget;
             canvas.renderMode = previousMode;
             canvas.worldCamera = previousCamera;
             canvas.planeDistance = previousPlane;
