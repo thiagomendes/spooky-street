@@ -65,7 +65,7 @@ jobs:
             echo "marketing_version=$(sed -n 's/^  bundleVersion: //p' ProjectSettings/ProjectSettings.asset)"
           } >> "$GITHUB_OUTPUT"
           if [[ "$MODE" == "testflight" ]]; then
-            git fetch --no-tags origin main
+            # fetch-depth 0 above already fetched origin/main (no anonymous fetch on a private repo).
             if ! git merge-base --is-ancestor "$sha" origin/main; then
               echo "::error title=Untrusted revision::$sha is not on main. Merge it into main first, then build from main."
               exit 1
