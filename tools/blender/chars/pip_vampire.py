@@ -1,4 +1,4 @@
-"""Pip as a little vampire-bat (spec §2 v1.3, D18): the anatomy and detail benchmark for the whole cast.
+"""Pip as a little vampire (spec §2 v1.3, D18): the anatomy and detail benchmark for the whole cast.
 
     blender -b --python tools/blender/chars/pip_vampire.py -- <out.png>
 
@@ -26,35 +26,42 @@ H = craft_lib.hex_rgb
 V = {  # vivid Halloween palette (D17/D18)
     "night": H(0x241B4A), "orange": H(0xFF7B1C), "purple": H(0x7A2FBF), "violet": H(0x3B1E6B), "lime": H(0x8EE04A),
     "black": H(0x17141F), "candy": H(0xFFD23F), "bone": H(0xF6EBD2), "berry": H(0xC2185B),
-    "skin": H(0xF2C6A0), "skin_shade": H(0xE5A88A), "cheek": H(0xF28C8C), "hair": H(0x1F1830), "iris": H(0x8A4B1F),
-    "white": (1.0, 1.0, 1.0), "nail": H(0xF7D9C4),
+    "skin": H(0xF7CDA8), "cheek": H(0xF58A8E), "nail": H(0xF9CDBD), "hair": H(0x241642), "hair_dark": H(0x170F2E),
+    "iris": H(0xC9701F), "iris_dark": H(0x5A2A0E), "line": H(0x4A2A2A), "mouth": H(0x6E1F33), "tongue": H(0xF0727F),
+    "white": (1.0, 1.0, 1.0),
 }
 
 
 def ell_lathe(name, base, profile, open_deg=0.0, segments=72, hem=None, inner=None, yscale=0.8, thickness=0.01,
               folds=0, fold_depth=0.0):
-    """Elliptical lathe: rings of (rx, z) with ry = rx * yscale; optional open front, hem function, lining."""
+    """Elliptical lathe of rings (rx, z[, yscale[, open_deg]]) around Z, optionally open at the front (-Y).
+
+    `hem(t)` offsets the last ring's height along the span t = 0..1; `folds` ripples the cloth that many times
+    across the span, deepening toward the last ring; `inner` lines the inside with a second material."""
     bm = bmesh.new()
-    span = 2 * math.pi - 2 * math.radians(open_deg)
-    start = -math.pi / 2 + math.radians(open_deg)
-    count = segments if open_deg > 0 else segments - 1
+    is_open = open_deg > 0 or any(len(e) > 3 for e in profile)
+    count = segments if is_open else segments - 1
     rings = []
     for ri, entry in enumerate(profile):
         rx, z = entry[0], entry[1]
         ys = entry[2] if len(entry) > 2 else yscale
+        gap = math.radians(entry[3] if len(entry) > 3 else open_deg)
         t_ring = ri / max(1, len(profile) - 1)
         ring = []
         for i in range(count + 1):
-            a = start + span * i / segments
-            zz = z + (hem(a, i / segments) if hem and ri == len(profile) - 1 else 0.0)
-            fold = 1.0 + fold_depth * t_ring ** 1.5 * math.sin(folds * (a - start)) if folds else 1.0
+            t = i / segments
+            a = -math.pi / 2 + gap + (2 * math.pi - 2 * gap) * t
+            zz = z + (hem(t) if hem and ri == len(profile) - 1 else 0.0)
+            fold = 1.0 + fold_depth * t_ring ** 1.5 * math.cos(2 * math.pi * folds * t) if folds else 1.0
             ring.append(bm.verts.new((rx * fold * math.cos(a), rx * fold * ys * math.sin(a), zz)))
         rings.append(ring)
+    rising = profile[-1][1] > profile[0][1]
     for k in range(len(rings) - 1):
         n = len(rings[k])
-        for i in range(n - 1 if open_deg > 0 else n):
+        for i in range(n - 1 if is_open else n):
             j = (i + 1) % n
-            bm.faces.new((rings[k][i], rings[k][j], rings[k + 1][j], rings[k + 1][i]))
+            quad = (rings[k][i], rings[k][j], rings[k + 1][j], rings[k + 1][i])
+            bm.faces.new(quad if rising else quad[::-1])  # normals always point outward
     obj = pm.new_mesh_object(name, bm, base)
     sol = obj.modifiers.new("Thick", "SOLIDIFY")
     sol.thickness = thickness
@@ -66,7 +73,7 @@ def ell_lathe(name, base, profile, open_deg=0.0, segments=72, hem=None, inner=No
     return obj
 
 
-def flat(name, mat, outline, thickness, location, rotation=(0, 0, 0)):
+def flat(name, mat, outline, thickness, location=(0, 0, 0), rotation=(0, 0, 0)):
     obj = pm.wing_outline(outline, thickness, mat, name)
     obj.location = location
     obj.rotation_euler = rotation
@@ -79,184 +86,317 @@ def bat_outline(scale):
     return [(x * scale, z * scale) for x, z in half] + [(-x * scale, z * scale) for x, z in reversed(half[1:-1])]
 
 
-def build_pip(craft):
-    P = an.Proportions(h=1.2, child=True)
-    z = P.z
-    hc, r = P.head_c, P.head_r
-    shirt = craft.knit(V["bone"])
-    shorts = craft.felt(V["black"])
-    tights_a, tights_b = craft.knit(V["purple"]), craft.knit(V["black"])
+def star_outline(radius, points=5):
+    return [(radius * (1.0 if i % 2 == 0 else 0.48) * math.sin(math.pi * i / points),
+             radius * (1.0 if i % 2 == 0 else 0.48) * math.cos(math.pi * i / points)) for i in range(2 * points)]
+
+
+def striped(mat, rgb, period):
+    """Copy of a craft material with horizontal bands of `rgb` every `period` metres of height."""
+    mat = mat.copy()
+    nodes, links = mat.node_tree.nodes, mat.node_tree.links
+    base = nodes["Principled BSDF"].inputs["Base Color"]
+    coord = nodes.new("ShaderNodeTexCoord")
+    split = nodes.new("ShaderNodeSeparateXYZ")
+    links.new(coord.outputs["Object"], split.inputs[0])
+    wave = nodes.new("ShaderNodeMath")
+    wave.operation = "PINGPONG"
+    wave.inputs[1].default_value = period / 2
+    links.new(split.outputs["Z"], wave.inputs[0])
+    band = nodes.new("ShaderNodeMath")
+    band.operation = "GREATER_THAN"
+    band.inputs[1].default_value = period / 4
+    links.new(wave.outputs[0], band.inputs[0])
+    mix = nodes.new("ShaderNodeMix")
+    mix.data_type = "RGBA"
+    links.new(band.outputs[0], mix.inputs[0])
+    links.new(base.links[0].from_socket, mix.inputs[6])
+    mix.inputs[7].default_value = craft_lib.lin(rgb)
+    links.new(mix.outputs[2], base)
+    return mat
+
+
+def blushed(mat, rgb, centres, radius, strength=0.6):
+    """Copy of a smooth skin material with soft round blush painted around `centres` (object space)."""
+    mat = mat.copy()
+    nodes, links = mat.node_tree.nodes, mat.node_tree.links
+    bsdf = nodes["Principled BSDF"]
+    coord = nodes.new("ShaderNodeTexCoord")
+    total = None
+    for c in centres:
+        dist = nodes.new("ShaderNodeVectorMath")
+        dist.operation = "DISTANCE"
+        links.new(coord.outputs["Object"], dist.inputs[0])
+        dist.inputs[1].default_value = c
+        fade = nodes.new("ShaderNodeMapRange")
+        fade.interpolation_type = "SMOOTHSTEP"
+        fade.inputs["From Min"].default_value = radius * 0.25
+        fade.inputs["From Max"].default_value = radius
+        fade.inputs["To Min"].default_value = strength
+        fade.inputs["To Max"].default_value = 0.0
+        links.new(dist.outputs["Value"], fade.inputs["Value"])
+        if total is None:
+            total = fade.outputs["Result"]
+        else:
+            add = nodes.new("ShaderNodeMath")
+            add.operation = "MAXIMUM"
+            links.new(total, add.inputs[0])
+            links.new(fade.outputs["Result"], add.inputs[1])
+            total = add.outputs[0]
+    mix = nodes.new("ShaderNodeMix")
+    mix.data_type = "RGBA"
+    links.new(total, mix.inputs[0])
+    mix.inputs[6].default_value = bsdf.inputs["Base Color"].default_value
+    mix.inputs[7].default_value = craft_lib.lin(rgb)
+    links.new(mix.outputs[2], bsdf.inputs["Base Color"])
+    return mat
+
+
+def graded(mat, rgb, z0, z1):
+    """Copy of a smooth material whose colour blends to `rgb` from height z0 to z1 (object space)."""
+    mat = mat.copy()
+    nodes, links = mat.node_tree.nodes, mat.node_tree.links
+    bsdf = nodes["Principled BSDF"]
+    coord = nodes.new("ShaderNodeTexCoord")
+    split = nodes.new("ShaderNodeSeparateXYZ")
+    links.new(coord.outputs["Object"], split.inputs[0])
+    fade = nodes.new("ShaderNodeMapRange")
+    fade.inputs["From Min"].default_value = z0
+    fade.inputs["From Max"].default_value = z1
+    links.new(split.outputs["Z"], fade.inputs["Value"])
+    mix = nodes.new("ShaderNodeMix")
+    mix.data_type = "RGBA"
+    links.new(fade.outputs["Result"], mix.inputs[0])
+    mix.inputs[6].default_value = bsdf.inputs["Base Color"].default_value
+    mix.inputs[7].default_value = craft_lib.lin(rgb)
+    links.new(mix.outputs[2], bsdf.inputs["Base Color"])
+    return mat
+
+
+def build_head(craft, P):
+    r, hc = P.head_r, P.head_c
     skin = craft.smooth(V["skin"], 0.5, subsurface=0.25)
+    face_skin = blushed(skin, V["cheek"], [hc + Vector((s * r * 0.56, -r * 0.8, -r * 0.4)) for s in (1, -1)], r * 0.3)
+    iris = graded(craft.smooth(V["iris_dark"], 0.2), V["iris"], r * 0.1, -r * 0.13)
+    line = craft.smooth(V["line"], 0.6)
+    an.head("Pip_", P, face_skin, craft.smooth(V["white"], 0.15), iris, craft.smooth(V["black"], 0.3), line,
+            craft.smooth(V["mouth"], 0.6), craft.smooth(V["tongue"], 0.5), fang=craft.smooth(V["white"], 0.3),
+            brow=craft.felt(V["hair"]), ears=False)
 
-    def regions(c):
-        if abs(c.x) < 0.135 and c.z < z["hip"] - 0.015:
-            return 2 + int(c.z / 0.034) % 2  # striped tights
-        if abs(c.x) < 0.135 and c.z < z["pelvis"] + 0.045:
-            return 1
-        return 0
-    an.body("Pip_Body", P, [shirt, shorts, tights_a, tights_b], regions)
-    for side in (1, -1):
-        an.hand(f"Pip_Hand{'L' if side > 0 else 'R'}", P, side, skin, craft.smooth(V["nail"], 0.3), curl=0.45)
-        an.sneaker(f"Pip_Shoe{'L' if side > 0 else 'R'}", P, side, craft.felt(V["orange"]), craft.smooth(V["bone"], 0.6),
-                   craft.felt(V["black"]), craft.smooth(V["bone"], 0.7))
-        # Shirt cuffs at the wrist.
-        pm.torus("Pip_Cuff", shirt, P.wrist(side) + Vector((0, 0, 0.012)), P.limb * 0.52, 0.009,
-                 rotation=(0, -side * P.arm_out, 0), segments=24, sides=8)
-    an.head("Pip_", P, skin, craft.smooth(V["white"], 0.15), craft.smooth(V["iris"], 0.2),
-            craft.smooth(V["black"], 0.3), lid=craft.smooth(V["skin_shade"], 0.5), mouth="smile",
-            fangs=craft.smooth(V["white"], 0.25), lips=craft.smooth(H(0x8E3A3A), 0.5),
-            brow=craft.felt(V["hair"]), cheek=craft.smooth(V["cheek"], 0.8))
-
-    # Hair: one clean bob volume with a straight fringe, the ends curling in at the jaw, and strand grooves.
+    # Hair: one clean bob with a straight fringe, the ends curling in under the jaw, and combed strand grooves.
     hair = craft.felt(V["hair"])
-    groove = craft.felt(H(0x120E1E))
-    centre = hc + Vector((0, r * 0.04, r * 0.08))
-    radii = Vector((r * 1.1, r * 1.12, r * 1.12))
+    groove = craft.felt(V["hair_dark"])
+    centre = hc + Vector((0, r * 0.04, r * 0.1))
+    radii = Vector((r * 1.13, r * 1.15, r * 1.12))
+    fringe_z, length_z, face_half = r * 0.3, -r * 0.7, math.radians(50)
+
+    def bob(unit, lift=1.0):
+        """Unit-sphere point -> bob surface: a dome on top, hair falling straight below it, ends tucked in."""
+        flat = math.hypot(unit.x, unit.y)
+        if unit.z < 0 and flat > 1e-6:
+            fall = max(flat, 0.97 - 0.25 * unit.z * unit.z) / flat
+            unit = Vector((unit.x * fall, unit.y * fall, unit.z))
+        return Vector((unit.x * radii.x, unit.y * radii.y, unit.z * radii.z)) * lift + centre
+
+    def on_hair(lon, el, lift=1.075):
+        """Point on the bob's outer surface at longitude `lon` (0 = front, counter-clockwise) and elevation `el`."""
+        a = lon - math.pi / 2
+        return bob(Vector((math.cos(el) * math.cos(a), math.cos(el) * math.sin(a), math.sin(el))), lift)
+
     bm = bmesh.new()
     bmesh.ops.create_uvsphere(bm, u_segments=48, v_segments=32, radius=1.0)
     for v in bm.verts:
-        v.co = Vector((v.co.x * radii.x, v.co.y * radii.y, v.co.z * radii.z)) + centre
+        v.co = bob(v.co)
     doomed = []
     for f in bm.faces:
         c = f.calc_center_median() - hc
-        if c.y < -r * 0.15 and c.z < r * 0.4 and abs(c.x) < r * 0.8:
-            doomed.append(f)  # the face opening, with a straight fringe line at brow height
-        elif c.z < -r * 0.62:
-            doomed.append(f)  # bob length: jaw line
+        in_face = abs(math.atan2(c.x, -c.y)) < face_half
+        if c.z < length_z or (in_face and c.z < fringe_z):
+            doomed.append(f)
     bmesh.ops.delete(bm, geom=doomed, context="FACES")
-    for v in bm.verts:
-        rel = v.co - hc
-        if rel.z < -r * 0.3:
-            k = 1 - 0.1 * min(1.0, (-r * 0.3 - rel.z) / (r * 0.32))  # ends curl inward
-            v.co.x = hc.x + rel.x * k
-            v.co.y = hc.y + rel.y * k
-    bob = pm.new_mesh_object("Pip_Hair", bm, hair)
-    sol = bob.modifiers.new("Thick", "SOLIDIFY")
+    hair_obj = pm.new_mesh_object("Pip_Hair", bm, hair)
+    sol = hair_obj.modifiers.new("Thick", "SOLIDIFY")
     sol.thickness = r * 0.09
     sol.offset = 1.0
-    bob.modifiers.new("Smooth", "SUBSURF").levels = 2
-    for k in range(18):
-        a = -math.pi / 2 + math.radians(48) + (2 * math.pi - math.radians(96)) * k / 17
-        pts = []
-        for j in range(8):
-            t = j / 7
-            el = math.radians(80) - t * math.radians(118)
-            p = Vector((math.cos(el) * math.cos(a) * radii.x * 1.09, math.cos(el) * math.sin(a) * radii.y * 1.09,
-                        math.sin(el) * radii.z * 1.06)) + centre
-            if (p - hc).z < -r * 0.3:
-                p = hc + Vector(((p - hc).x * 0.92, (p - hc).y * 0.92, (p - hc).z))
-            pts.append(p)
-        an.hair_clump("Pip_HairGroove", groove, pts, r * 0.014, taper=(0.3, 1.0))
-    for k in range(9):
-        x = (k - 4) / 4 * r * 0.72
-        an.hair_clump("Pip_FringeGroove", groove, [hc + Vector((x * 0.7, -r * 0.7, r * 0.95)),
-                                                   hc + Vector((x, -r * 1.02, r * 0.62)),
-                                                   hc + Vector((x * 1.02, -r * 1.04, r * 0.44))],
-                      r * 0.013, taper=(0.3, 1.0))
+    hair_obj.modifiers.new("Smooth", "SUBSURF").levels = 2
+    el_low = math.asin((length_z + r * 0.06 - r * 0.1) / radii.z)
+    el_fringe = math.asin((fringe_z + r * 0.05 - r * 0.1) / radii.z)
+    for k in range(27):
+        lon = math.radians(-180 + 360 * k / 27)
+        bottom = el_fringe if abs(lon) < face_half - 0.05 else el_low
+        if abs(abs(lon) - face_half) < 0.1:
+            continue  # keep the edge of the side locks clean
+        pts = [on_hair(lon, math.radians(78) + (bottom - math.radians(78)) * j / 7) for j in range(8)]
+        an.hair_clump("Pip_HairGroove", groove, pts, r * 0.012, taper=(0.3, 1.0))
+    # A tiny felt bat hair clip on the side of the bob (the only bat motif on the head).
+    clip_at = on_hair(math.radians(38), math.radians(27), 1.115)
+    normal = on_hair(math.radians(38), math.radians(27), 1.5) - clip_at
+    an.mount("Pip_BatClip", clip_at, normal,
+             [flat("Pip_BatClipFelt", craft.felt(V["orange"]), bat_outline(0.066), 0.005)], roll=math.radians(-14))
+    return skin
 
-    # Bat-ear headband.
-    band = [hc + Vector((r * 1.12 * math.cos(a), r * 0.05, r * 1.2 * math.sin(a))) for a in
-            [math.radians(15 + 150 * i / 12) for i in range(13)]]
-    pm.curve_tube("Pip_Headband", craft.smooth(V["black"], 0.4), band, r * 0.04, taper=(1, 1))
-    ear = [(0.0, 0.0), (0.14, 0.04), (0.2, 0.2), (0.17, 0.4), (0.06, 0.66), (0.0, 0.42), (-0.08, 0.36),
-           (-0.15, 0.18), (-0.1, 0.03)]
+
+def build_outfit(craft, P, skin):
+    z, T = P.z, P.torso
+    shirt = craft.felt(V["bone"])
+    tights = striped(craft.knit(V["purple"]), V["black"], 0.09)
+    black, purple, orange = craft.felt(V["black"]), craft.felt(V["purple"]), craft.felt(V["orange"])
+    def region(c):
+        if abs(c.x) < 0.14 and c.z < z["hip"] + 0.02:
+            return 1
+        return 2 if c.z > z["neck"] + 0.012 else 0  # bare neck above the shirt
+    body = an.body("Pip_Body", P, [shirt, tights, skin], region)
+    on_body = an.probe(body)
+
+    # Black felt shorts: a waist shell and two puffed leg cuffs with orange hems.
+    ell_lathe("Pip_Shorts", black, [(T * 1.04, z["pelvis"] + 0.07, 0.8), (T * 1.15, z["pelvis"] + 0.03, 0.8),
+                                    (T * 1.17, z["hip"] - 0.03, 0.8), (T * 1.08, z["hip"] - 0.06, 0.78)],
+              thickness=0.006)
     for s in (1, -1):
-        out = [(s * x * r * 2.2, zz * r * 2.0) for x, zz in ear]
-        inner = [(s * x * r * 1.4 + s * r * 0.03, zz * r * 1.3 + r * 0.08) for x, zz in ear]
-        base = hc + Vector((s * r * 0.55, r * 0.0, r * 1.08))
-        flat("Pip_BatEar", craft.felt(V["black"]), pm.smooth_outline(out, 5), r * 0.06, base,
-             (math.radians(-8), s * math.radians(-22), 0))
-        flat("Pip_BatEarInner", craft.felt(V["berry"]), pm.smooth_outline(inner, 5), r * 0.03,
-             base + Vector((0, -r * 0.05, 0)), (math.radians(-8), s * math.radians(-22), 0))
+        cuff = ell_lathe("Pip_ShortsLeg", black, [(0.058, z["hip"] - 0.01, 1.0), (0.07, z["hip"] - 0.05, 1.0),
+                                                  (0.066, z["hip"] - 0.085, 1.0)], thickness=0.006, segments=32)
+        cuff.location.x = s * P.hip_x * 1.08
+        pm.torus("Pip_ShortsHem", orange, (s * P.hip_x * 1.08, 0, z["hip"] - 0.085), 0.064, 0.006, segments=32,
+                 sides=8)
 
-    # Violet vest: fitted, open at the front, two points at the hem, orange piping and buttons.
-    T = P.torso
-    def vest_hem(a, t):
-        # Drop into two points either side of the opening.
-        return -0.035 * max(0.0, 1 - min(t, 1 - t) / 0.12)
-    vest_profile = [(T * 1.1, z["chest"] + 0.055, 0.78), (T * 1.14, z["chest"], 0.8), (T * 1.04, z["waist"], 0.82),
-                    (T * 1.1, z["pelvis"] + 0.035, 0.84)]
-    ell_lathe("Pip_Vest", craft.felt(V["purple"]), vest_profile, open_deg=28, hem=vest_hem, thickness=0.008)
+    # Purple felt vest: V-neck opening to the shoulders, buttoned at the waist, two points at the hem,
+    # orange piping along the front edges.
+    def vest_hem(t):
+        return -0.03 * max(0.0, 1 - min(t, 1 - t) / 0.1)
+    vest_profile = [(T * 0.6, z["shoulder"] + 0.05, 0.8, 58), (T * 1.03, z["shoulder"] - 0.01, 0.74, 32),
+                    (T * 1.14, z["chest"] - 0.012, 0.77, 15), (T * 1.07, z["waist"], 0.79, 3),
+                    (T * 1.12, z["pelvis"] + 0.035, 0.8, 3)]
+    vest = ell_lathe("Pip_Vest", purple, vest_profile, hem=vest_hem, thickness=0.007)
+    on_vest = an.probe(vest)
     for s in (1, -1):
         edge = []
-        for rx, zz, ys in vest_profile:
-            a = -math.pi / 2 + s * math.radians(28)
-            edge.append((rx * 1.03 * math.cos(a), rx * 1.03 * ys * math.sin(a), zz))
-        edge[-1] = (edge[-1][0], edge[-1][1], edge[-1][2] - 0.035)
-        pm.curve_tube("Pip_VestPiping", craft.felt(V["orange"]), edge, 0.0045, taper=(1, 1))
-        for k in range(3):
-            pm.ellipsoid("Pip_VestButton", craft.smooth(V["orange"], 0.35),
-                         (s * T * 0.62, -T * 0.86, z["waist"] + 0.05 - k * 0.032), (0.0065, 0.004, 0.0065), subsurf=1)
-    # Shirt jabot: three tiers of ruffles down the chest, the vampire signature.
+        for rx, zz, ys, gap in vest_profile:
+            a = -math.pi / 2 + s * math.radians(gap)
+            edge.append(Vector((rx * math.cos(a), rx * ys * math.sin(a) - 0.002, zz)))
+        edge[-1].z -= 0.026
+        pm.curve_tube("Pip_VestPiping", orange, edge, 0.0045, taper=(1, 1))
     for k in range(3):
-        cz = z["neck"] - 0.035 - k * 0.032
+        point, normal = on_vest((0.02, -1, z["waist"] + 0.045 - k * 0.04), (0, 1, 0))
+        an.mount("Pip_VestButton", point, normal,
+                 [pm.ellipsoid("Pip_VestButtonDisc", craft.smooth(V["orange"], 0.35), (0, 0, 0),
+                               (0.008, 0.004, 0.008), subsurf=1)])
+
+    # Shirt jabot: three tiers of gathered ruffles tumbling down the V-neck, pinned with a berry brooch.
+    white = craft.felt(V["white"])
+    for k in (2, 1, 0):
+        top_z = z["neck"] - 0.03 - k * 0.034
+        anchor = on_body((0, -1, top_z), (0, 1, 0))[0] + Vector((0, -0.008 - 0.004 * (2 - k), 0))
+        drop, half = 0.05 + 0.004 * k, math.radians(62)
         bm = bmesh.new()
-        ring = []
-        for i in range(25):
-            a = math.pi * i / 24
-            rr = 0.032 - 0.004 * k + 0.006 * math.sin(a * 9) ** 2
-            ring.append(bm.verts.new((rr * math.cos(a) - 0.0, -T * 0.92 - 0.006 - rr * 0.35 * math.sin(a),
-                                      cz - rr * 0.6 * math.sin(a))))
-        centre = bm.verts.new((0.0, -T * 0.88, cz + 0.006))
-        for i in range(24):
-            bm.faces.new((centre, ring[i], ring[i + 1]))
-        ruff = pm.new_mesh_object("Pip_Jabot", bm, shirt)
-        ruff.modifiers.new("Thick", "SOLIDIFY").thickness = 0.003
-        ruff.modifiers.new("Smooth", "SUBSURF").levels = 2
-        ruff.rotation_euler = (0, 0, 0)
+        rows = []
+        for j in range(4):
+            f = j / 3
+            row = []
+            for i in range(33):
+                u = i / 32 * 2 - 1
+                rad = drop * (0.12 + 0.88 * f)
+                ripple = 0.007 * f * math.cos(u * math.pi * 5)
+                row.append(bm.verts.new(anchor + Vector((rad * math.sin(u * half) * 1.25,
+                                                         -0.012 * f * (1 - 0.5 * u * u) - ripple,
+                                                         -rad * math.cos(u * half)))))
+            rows.append(row)
+        for a, b in zip(rows, rows[1:]):
+            for i in range(32):
+                bm.faces.new((a[i], a[i + 1], b[i + 1], b[i]))
+        ruffle = pm.new_mesh_object("Pip_Jabot", bm, white)
+        ruffle.modifiers.new("Thick", "SOLIDIFY").thickness = 0.003
+        ruffle.modifiers.new("Smooth", "SUBSURF").levels = 1
+        if k == 0:
+            pm.ellipsoid("Pip_Brooch", craft.smooth(V["berry"], 0.15), anchor + Vector((0, -0.006, -0.004)),
+                         (0.011, 0.007, 0.012), subsurf=1)
+
+    for s in (1, -1):  # gathered shirt cuffs
+        pm.torus("Pip_Cuff", white, P.wrist(s) + Vector((0, 0, 0.002)), P.limb * 0.56, 0.011,
+                 rotation=(0, -s * P.arm_out, 0), segments=24, sides=10)
+
+
+def build_cape(craft, P):
+    """Vampire cape: matte black velvet, berry lining, bat-wing hem; it hangs behind the arms, open at the front."""
+    z = P.z
+    velvet, lining = craft.felt(V["black"]), craft.felt(V["berry"])
+    scallops = 5
+
+    def bat_hem(t):
+        return 0.055 * abs(math.sin(math.pi * scallops * t)) ** 0.7
+    profile = [(0.068, z["neck"] + 0.012, 0.9, 50), (0.13, z["shoulder"] + 0.066, 0.74, 74),
+               (0.188, z["shoulder"] + 0.016, 0.66, 84), (0.2, z["chest"] - 0.03, 0.64, 90),
+               (0.216, z["pelvis"], 0.62, 92), (0.232, z["knee"] - 0.02, 0.62, 92)]
+    cape = ell_lathe("Pip_Cape", velvet, profile, hem=bat_hem, inner=lining, thickness=0.007, folds=scallops,
+                     fold_depth=0.1)
+    on_cape = an.probe(cape)
+
+    def hem_tip(t):
+        return 0.01 * max(0.0, 1 - min(t, 1 - t) / 0.12)
+    ell_lathe("Pip_CapeCollar", velvet, [(0.105, z["neck"] - 0.012), (0.134, z["neck"] + 0.016),
+                                         (0.158, z["neck"] + 0.046)], open_deg=64, yscale=0.95, hem=hem_tip,
+              inner=lining, thickness=0.007)
+    # Clasp: an orange button on each front edge joined by a candy-yellow cord.
+    ends = []
     for s in (1, -1):
-        flat("Pip_Collar", shirt, [(0, 0), (s * 0.045, -0.005), (s * 0.06, -0.05), (s * 0.012, -0.03)], 0.004,
-             (s * 0.01, -P.limb * 0.66, z["neck"] - 0.005), (math.radians(-25), 0, 0))
-    pm.torus("Pip_Waistband", shorts, (0, 0, z["pelvis"] + 0.04), T * 1.08, 0.01, squash=1.0, segments=40, sides=8)
+        a = -math.pi / 2 + s * math.radians(52)
+        p = Vector((0.07 * math.cos(a), 0.07 * 0.9 * math.sin(a) - 0.004, z["neck"] + 0.002))
+        ends.append(p)
+        pm.ellipsoid("Pip_ClaspButton", craft.smooth(V["orange"], 0.35), p, (0.011, 0.007, 0.011), subsurf=1)
+    mid = (ends[0] + ends[1]) * 0.5 + Vector((0, -0.012, -0.012))
+    pm.curve_tube("Pip_ClaspCord", craft.smooth(V["candy"], 0.4), [ends[0], mid, ends[1]], 0.003, taper=(1, 1))
 
-    # The vampire-bat cape: matte black velvet outside, berry lining inside (two shells), scalloped bat-wing hem,
-    # open wide at the front so the costume and arms read; a tall stand-up collar behind the head.
-    def bat_hem(a, t):
-        return 0.06 * abs(math.sin(math.pi * 5 * t)) ** 0.7
-    cape_profile = [(0.075, z["neck"] + 0.02, 0.85), (0.165, z["shoulder"] + 0.0, 0.62), (0.205, z["chest"] - 0.04, 0.7),
-                    (0.24, z["pelvis"] + 0.0, 0.8), (0.28, z["knee"] + 0.06, 0.9)]
-    velvet = craft.felt(V["black"])
-    ell_lathe("Pip_Cape", velvet, [(rx * 1.04, zz, ys) for rx, zz, ys in cape_profile], open_deg=96, hem=bat_hem,
-              thickness=0.006, folds=9, fold_depth=0.07)
-    ell_lathe("Pip_CapeLining", craft.felt(V["berry"]), [(rx * 0.985, zz + 0.004, ys) for rx, zz, ys in cape_profile],
-              open_deg=96, hem=bat_hem, thickness=0.004, folds=9, fold_depth=0.07)
-    collar_profile = [(0.075, z["neck"] + 0.005), (0.1, z["neck"] + 0.06), (0.135, z["neck"] + 0.12)]
-    ell_lathe("Pip_CapeCollar", velvet, [(rx * 1.05, zz) for rx, zz in collar_profile], open_deg=70, yscale=0.92,
-              thickness=0.006)
-    ell_lathe("Pip_CapeCollarLining", craft.felt(V["berry"]), collar_profile, open_deg=70, yscale=0.92,
-              thickness=0.004)
-    flat("Pip_Clasp", craft.smooth(V["orange"], 0.35), bat_outline(0.075), 0.006,
-         (0, -P.limb * 0.74 - 0.02, z["neck"] + 0.005))
-    pm.curve_tube("Pip_ClaspChain", craft.smooth(V["candy"], 0.3), [(-0.055, -0.05, z["neck"] + 0.01),
-                                                                   (0.0, -P.limb * 0.74 - 0.02, z["neck"] - 0.01),
-                                                                   (0.055, -0.05, z["neck"] + 0.01)], 0.003)
+    # Homemade touches: felt stars and a moon sewn on the back, an orange running stitch above the hem.
+    candy = craft.felt(V["candy"])
+    for x, zz, size, roll in ((-0.07, 0.74, 0.03, 0.2), (0.085, 0.68, 0.022, -0.3), (0.01, 0.58, 0.018, 0.5),
+                              (-0.11, 0.5, 0.024, -0.1), (0.1, 0.44, 0.03, 0.35), (-0.03, 0.4, 0.02, 0.1)):
+        point, normal = on_cape((x, 1, zz), (0, -1, 0))
+        an.mount("Pip_CapeStar", point + normal * 0.004, normal,
+                 [flat("Pip_CapeStarFelt", candy, star_outline(size), 0.004)], roll=roll)
+    stitch = []
+    for i in range(161):
+        t = i / 160
+        a = math.radians(-90 + 92 + (360 - 184) * (0.012 + 0.976 * t))
+        zz = z["knee"] - 0.02 + bat_hem(0.012 + 0.976 * t) * 0.8 + 0.024
+        hit = on_cape((math.cos(a), math.sin(a), zz), (-math.cos(a), -math.sin(a), 0))
+        if hit:
+            stitch.append(hit[0] + hit[1] * 0.0015)
+    craft.stitches("Pip_CapeStitch", stitch, V["orange"], spacing=0.02, dash=0.011, radius=0.0022)
 
-    # Little torch in the vest pocket.
-    pm.ellipsoid("Pip_Torch", craft.smooth(V["violet"], 0.35), (-T * 0.65, -T * 0.95, z["chest"] - 0.01),
-                 (0.012, 0.012, 0.03), subsurf=1)
-    pm.ellipsoid("Pip_TorchLens", craft.smooth(V["candy"], 0.3, emission=3.0), (-T * 0.65, -T * 0.97, z["chest"] + 0.02),
-                 (0.011, 0.006, 0.005), subsurf=0)
 
-    # Jack-o'-lantern treat pail hanging from the right hand.
-    wr = P.wrist(-1)
-    pail = wr + Vector((-0.02, -0.02, -0.17))
+def build_pail(craft, grip):
+    """Jack-o'-lantern treat pail hanging from the gripping hand."""
+    pail = grip + Vector((0, 0, -0.15))
     bm = bmesh.new()
     bmesh.ops.create_uvsphere(bm, u_segments=40, v_segments=20, radius=1.0)
     for v in bm.verts:
         a = math.atan2(v.co.y, v.co.x)
         lobe = 1 - 0.08 * (1 - abs(math.cos(4 * a))) ** 0.8
-        v.co = Vector((v.co.x * 0.075 * lobe, v.co.y * 0.075 * lobe, max(v.co.z, -0.9) * 0.062)) + pail
+        v.co = Vector((v.co.x * 0.075 * lobe, v.co.y * 0.075 * lobe, max(-0.9, min(0.75, v.co.z)) * 0.064)) + pail
     pm.new_mesh_object("Pip_Pail", bm, craft.felt(V["orange"])).modifiers.new("S", "SUBSURF").levels = 1
+    pm.torus("Pip_PailRim", craft.felt(V["lime"]), pail + Vector((0, 0, 0.047)), 0.05, 0.006, segments=32, sides=8)
     face = craft.felt(V["black"])
     for s in (1, -1):
         flat("Pip_PailEye", face, [(-0.012, -0.008), (0.012, -0.008), (0.0, 0.012)], 0.003,
              pail + Vector((s * 0.022, -0.075, 0.012)))
     flat("Pip_PailGrin", face, [(-0.03, 0.0), (-0.015, -0.008), (0.0, 0.0), (0.015, -0.008), (0.03, 0.0),
                                 (0.015, -0.02), (-0.015, -0.02)], 0.003, pail + Vector((0, -0.074, -0.016)))
-    pm.curve_tube("Pip_PailHandle", craft.smooth(V["black"], 0.4), [pail + Vector((-0.06, 0, 0.035)),
-                                                                    wr + Vector((0.0, -0.01, -0.07)),
-                                                                    pail + Vector((0.06, 0, 0.035))], 0.004,
-                  taper=(1, 1))
+    pm.curve_tube("Pip_PailHandle", craft.smooth(V["black"], 0.4),
+                  [pail + Vector((0, -0.05, 0.047)), pail + Vector((0, -0.042, 0.1)), grip,
+                   pail + Vector((0, 0.042, 0.1)), pail + Vector((0, 0.05, 0.047))], 0.0035, taper=(1, 1))
+
+
+def build_pip(craft):
+    P = an.Proportions(h=1.2, child=True)
+    skin = build_head(craft, P)
+    build_outfit(craft, P, skin)
+    nail = craft.smooth(V["nail"], 0.3)
+    an.hand("Pip_HandL", P, 1, skin, nail, curl=0.4, size=1.15)
+    _, grip = an.hand("Pip_HandR", P, -1, skin, nail, curl=1.5, size=1.15)
+    for side in (1, -1):
+        an.sneaker(f"Pip_Shoe{'L' if side > 0 else 'R'}", P, side, craft.felt(V["orange"]),
+                   craft.smooth(V["bone"], 0.6), craft.felt(V["purple"]), craft.smooth(V["white"], 0.7))
+    build_cape(craft, P)
+    build_pail(craft, grip)
     return P
 
 
@@ -270,8 +410,8 @@ def stage():
     scene.eevee.use_bloom = True
     scene.eevee.bloom_intensity = 0.04
     scene.eevee.bloom_threshold = 1.2
-    scene.view_settings.view_transform = "AgX"
-    scene.view_settings.look = "AgX - Medium High Contrast"
+    scene.view_settings.view_transform = "Standard"  # keeps the palette as saturated as it will be in-engine
+    scene.view_settings.exposure = -0.3
     world = bpy.data.worlds.new("Night")
     world.use_nodes = True
     world.node_tree.nodes["Background"].inputs[0].default_value = craft_lib.lin(V["night"])
@@ -293,7 +433,7 @@ def stage():
         obj.rotation_euler = (Vector(target) - Vector(loc)).to_track_quat("-Z", "Y").to_euler()
         pm.link(obj)
 
-    area("Key", (-1.8, -2.6, 2.4), 300, (1.0, 0.86, 0.72), 1.8)
+    area("Key", (-1.8, -2.6, 2.4), 230, (1.0, 0.86, 0.72), 1.8)
     area("Rim", (1.9, 2.4, 2.1), 380, (0.72, 0.66, 1.0), 1.4)
     area("Fill", (2.4, -1.6, 1.0), 90, (0.8, 0.82, 1.0), 2.2)
     cam = bpy.data.objects.new("Cam", bpy.data.cameras.new("Cam"))
@@ -331,8 +471,8 @@ def main():
         loc = target + Vector((4.0 * math.sin(a), -4.0 * math.cos(a), 0.3))
         tiles.append(render_view(cam, loc, target, 85, 420, 620, f"{tmp}_t{i}.png"))
     top = np.concatenate(tiles, axis=1)
-    portrait = render_view(cam, (-0.35, -1.15, 1.12), (0.0, 0.0, 1.0), 85, 1260, 620, f"{tmp}_face.png")
-    detail = render_view(cam, (-0.55, -1.0, 0.45), (0.05, -0.05, 0.3), 50, 840, 620, f"{tmp}_detail.png")
+    portrait = render_view(cam, (-0.42, -1.4, 1.14), (0.0, 0.0, 1.045), 85, 1260, 620, f"{tmp}_face.png")
+    detail = render_view(cam, (-0.62, -1.2, 0.42), (0.03, -0.05, 0.25), 50, 840, 620, f"{tmp}_detail.png")
     bottom = np.concatenate([portrait, detail], axis=1)
     sheet = np.concatenate([bottom, top], axis=0)  # image rows run bottom-up
     img = bpy.data.images.new("Sheet", sheet.shape[1], sheet.shape[0], alpha=True)

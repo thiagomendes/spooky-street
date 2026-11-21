@@ -1,8 +1,8 @@
 """Stylized-human anatomy kit for Spooky Street's cast (spec §2, §6 premium bar; decision D18).
 
 Humans in Halloween costumes, not creatures: shaped limbs with elbows, knees and calves, five-fingered hands
-with nails, real shoes (sole, toe cap, laces, tongue), a head with jaw, ears, eyes with iris and lid line,
-nose and mouth, and hair built from clumps. Children ≈ 4.5 heads tall, adults ≈ 6.
+with nails, real sneakers (sole, toe cap, tongue, laces, padded collar), and a child's head: big round cranium,
+full cheeks, short chin, large low-set eyes, button nose, small open smile. Children ≈ 4.5 heads tall, adults ≈ 6.
 
 Conventions: metres, Z up, characters face -Y, feet on Z = 0. Everything is procedural and original.
 """
@@ -10,7 +10,8 @@ import math
 
 import bmesh
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Euler, Matrix, Vector
+from mathutils.bvhtree import BVHTree
 
 import pip_model as pm  # shared mesh helpers (ellipsoid, torus, curve_tube, link, new_mesh_object)
 
@@ -39,7 +40,7 @@ class Proportions:
         self.limb = (0.056 if child else 0.072) * h / (1.2 if child else 1.65)
         self.torso = (0.108 if child else 0.16) * h / (1.2 if child else 1.65) * w
         self.belly = belly
-        self.arm_out = 0.32  # radians away from vertical (relaxed A-pose for rigging)
+        self.arm_out = 0.24  # radians away from vertical (relaxed A-pose for rigging)
 
     def wrist(self, side):
         z = self.z
@@ -50,6 +51,73 @@ class Proportions:
         z = self.z
         drop = z["shoulder"] - z["elbow"]
         return Vector((side * (self.shoulder_x + math.sin(self.arm_out) * drop * 0.9), 0.0, z["elbow"]))
+
+
+def probe(obj):
+    """Ray-cast onto `obj` with its modifiers applied: cast(origin, direction) -> (point, outward normal) or None.
+
+    The object must sit at the world origin with no transform (true for everything this kit builds in place)."""
+    bpy.context.view_layer.update()
+    tree = BVHTree.FromObject(obj, bpy.context.evaluated_depsgraph_get())
+
+    def cast(origin, direction):
+        d = Vector(direction).normalized()
+        loc, normal, _index, _dist = tree.ray_cast(Vector(origin), d)
+        if loc is None:
+            return None
+        return loc, (-normal if normal.dot(d) > 0 else normal)
+    return cast
+
+
+def mount(name, point, normal, children, roll=0.0):
+    """Parent `children` (built around the origin, facing -Y) to a pivot at `point` whose -Y follows `normal`."""
+    pivot = bpy.data.objects.new(name, None)
+    pm.link(pivot)
+    pivot.location = point
+    quat = Vector(normal).to_track_quat("-Y", "Z")
+    pivot.rotation_euler = (quat.to_matrix() @ Euler((0, roll, 0)).to_matrix()).to_euler()
+    for child in children:
+        child.parent = pivot
+    return pivot
+
+
+def _fan(name, mat, points, thickness):
+    """Thin patch through `points` (a closed loop facing -Y), filled from its centroid."""
+    area = sum(a.x * b.z - b.x * a.z for a, b in zip(points, points[1:] + points[:1]))
+    if area < 0:
+        points = points[::-1]
+    bm = bmesh.new()
+    centre = bm.verts.new(sum(points, Vector()) / len(points))
+    ring = [bm.verts.new(p) for p in points]
+    for i in range(len(ring)):
+        bm.faces.new((centre, ring[i], ring[(i + 1) % len(ring)]))
+    obj = pm.new_mesh_object(name, bm, mat)
+    obj.modifiers.new("Thick", "SOLIDIFY").thickness = thickness
+    return obj
+
+
+def _dome_patch(name, mat, radii, y0, centre, size, lift, rings=5, segments=28):
+    """Elliptical patch hugging the front (-Y) of an ellipsoid of `radii` centred at (0, y0, 0)."""
+    rx, ry, rz = radii
+    bm = bmesh.new()
+
+    def vert(u, w):
+        q = max(0.0, 1 - (u / rx) ** 2 - (w / rz) ** 2)
+        return bm.verts.new((u, y0 - ry * lift * math.sqrt(q), w))
+    mid = vert(*centre)
+    prev = None
+    for k in range(1, rings + 1):
+        f = k / rings
+        ring = [vert(centre[0] + size[0] * f * math.cos(2 * math.pi * i / segments),
+                     centre[1] + size[1] * f * math.sin(2 * math.pi * i / segments)) for i in range(segments)]
+        for i in range(segments):
+            j = (i + 1) % segments
+            if prev is None:
+                bm.faces.new((mid, ring[i], ring[j]))
+            else:
+                bm.faces.new((prev[i], ring[i], ring[j], prev[j]))
+        prev = ring
+    return pm.new_mesh_object(name, bm, mat)
 
 
 def _skin_mesh(name, nodes, edges, root, subsurf=2):
@@ -86,8 +154,8 @@ def body(name, P, materials, classify):
         "pelvis": ((0, 0, z["pelvis"]), (T * 1.05, T * 0.8)),
         "waist": ((0, -0.004, z["waist"]), (T * 0.95 * P.belly, T * 0.75 * P.belly)),
         "chest": ((0, 0, z["chest"]), (T * 1.05, T * 0.78)),
-        "neck": ((0, 0, z["neck"]), L * 0.62),
-        "neck_top": ((0, 0.004, z["neck"] + P.head_r * 0.55), L * 0.58),
+        "neck": ((0, 0, z["neck"]), L * 0.68),
+        "neck_top": ((0, 0.004, z["neck"] + P.head_r * 0.55), L * 0.62),
     }
     edges = [("pelvis", "waist"), ("waist", "chest"), ("chest", "neck"), ("neck", "neck_top")]
     for side, s in (("L", 1), ("R", -1)):
@@ -99,16 +167,16 @@ def body(name, P, materials, classify):
         ankle = Vector((s * P.hip_x * 1.0, 0.004, z["ankle"]))
         n.update({
             "shoulder" + side: (sh, L * 0.82),
-            "bicep" + side: (sh.lerp(el, 0.45), L * 0.74),
-            "elbow" + side: (el, L * 0.6),
-            "forearm" + side: (el.lerp(wr, 0.35), L * 0.62),
-            "wrist" + side: (wr, L * 0.46),
+            "bicep" + side: (sh.lerp(el, 0.4), L * 0.76),
+            "elbow" + side: (el + Vector((0, 0.012, 0)), L * 0.56),
+            "forearm" + side: (el.lerp(wr, 0.35) + Vector((0, 0.004, 0)), L * 0.7),
+            "wrist" + side: (wr, L * 0.5),
             "hip" + side: (hip, L * 1.05),
-            "thigh" + side: (hip.lerp(knee, 0.45), L * 0.92),
-            "knee" + side: (knee, L * 0.72),
-            "calf" + side: (knee.lerp(ankle, 0.35) + Vector((0, 0.008, 0)), L * 0.76),
-            "shin" + side: (knee.lerp(ankle, 0.75), L * 0.56),
-            "ankle" + side: (ankle, L * 0.5),
+            "thigh" + side: (hip.lerp(knee, 0.45), L * 0.98),
+            "knee" + side: (knee, L * 0.78),
+            "calf" + side: (knee.lerp(ankle, 0.33) + Vector((0, 0.012, 0)), L * 0.84),
+            "shin" + side: (knee.lerp(ankle, 0.75), L * 0.6),
+            "ankle" + side: (ankle, L * 0.52),
         })
         edges += [("chest", "shoulder" + side), ("shoulder" + side, "bicep" + side), ("bicep" + side, "elbow" + side),
                   ("elbow" + side, "forearm" + side), ("forearm" + side, "wrist" + side),
@@ -122,213 +190,225 @@ def body(name, P, materials, classify):
     return obj
 
 
-def hand(name, P, side, skin, nail, curl=0.35):
-    """Five-fingered stylized hand hanging from the wrist, palm facing the thigh, relaxed curl."""
-    k = P.head_r / 0.13  # scale relative to a child's head
-    length = 0.11 * k if P.child else 0.15 * k * 0.95
-    s = length / 0.11
-    nodes = {"wrist": ((0, 0, 0), 0.02 * s), "palm": ((0, 0, -0.032 * s), (0.024 * s, 0.024 * s))}
+def hand(name, P, side, skin, nail, curl=0.35, size=1.0):
+    """Five-fingered child's hand hanging from the wrist, palm facing the thigh.
+
+    `curl` is the total finger bend in radians (0.3 relaxed, 1.5 gripping). Returns (pivot, grip): the world
+    point inside the curled fingers where a held handle passes."""
+    s = P.head_r / 0.13 * (1.0 if P.child else 1.3) * size
+    nodes = {"wrist": ((0, 0, 0), (0.015 * s, 0.019 * s)), "palm": ((0, 0, -0.03 * s), (0.017 * s, 0.034 * s))}
     edges = [("wrist", "palm")]
-    fingers = [(-0.019, 0.042), (-0.0065, 0.047), (0.0065, 0.044), (0.018, 0.035)]  # (y offset, length)
-    tips = []
-    for i, (fy, fl) in enumerate(fingers):
-        base = Vector((0, fy * s, -0.052 * s))
-        nodes[f"f{i}0"] = (base, 0.0085 * s)
+    fingers = [(-0.0235, -0.057, 0.04), (-0.008, -0.06, 0.046), (0.008, -0.059, 0.042), (0.0235, -0.055, 0.033)]
+    tips, holds = [], []
+    fan = 0.13 * (1 - min(1.0, curl / 1.5)) + 0.04  # relaxed fingers spread, gripping fingers close up
+    for i, (fy, fz, fl) in enumerate(fingers):  # index finger first: -Y is the character's front
+        pos = Vector((0, fy * s, fz * s))
+        nodes[f"f{i}0"] = (pos.copy(), 0.0078 * s)
         edges.append(("palm", f"f{i}0"))
-        prev = f"f{i}0"
-        pos = base
+        bend = 0.0
         for j in range(1, 4):
+            bend = curl * (j - 0.4) / 2.6
             seg = fl * s / 3
-            bend = curl * j / 3
-            pos = pos + Vector((-math.sin(bend) * seg * 0.9, fy * s * 0.12, -math.cos(bend) * seg))
-            key = f"f{i}{j}"
-            nodes[key] = (pos.copy(), (0.0078 - 0.0008 * j) * s)
-            edges.append((prev, key))
-            prev = key
-        tips.append(pos)
-    thumb = [Vector((-0.006 * s, -0.022 * s, -0.016 * s)), Vector((-0.014 * s, -0.034 * s, -0.03 * s)),
-             Vector((-0.02 * s, -0.04 * s, -0.045 * s))]
-    nodes["t0"] = (thumb[0], 0.0105 * s)
-    nodes["t1"] = (thumb[1], 0.0092 * s)
-    nodes["t2"] = (thumb[2], 0.008 * s)
-    edges += [("palm", "t0"), ("t0", "t1"), ("t1", "t2")]
+            pos = pos + Vector((-math.sin(bend) * seg, fy * s * fan, -math.cos(bend) * seg))
+            nodes[f"f{i}{j}"] = (pos.copy(), (0.0078 - 0.0003 * j) * s)
+            edges.append((f"f{i}{j - 1}", f"f{i}{j}"))
+        tips.append((pos.copy(), bend))
+        holds.append((Vector(nodes[f"f{i}0"][0]) + pos) * 0.5)
+    wrap = min(1.0, curl / 1.5)
+    thumb = [Vector((-0.004, -0.026, -0.018)) * s, Vector((-0.01 - 0.008 * wrap, -0.043, -0.034)) * s,
+             Vector((-0.014 - 0.022 * wrap, -0.05 + 0.014 * wrap, -0.052)) * s]
+    for j, (p, rad) in enumerate(zip(thumb, (0.0095, 0.0088, 0.008))):
+        nodes[f"t{j}"] = (p, rad * s)
+        edges.append(("palm" if j == 0 else f"t{j - 1}", f"t{j}"))
     obj = _skin_mesh(name, nodes, edges, "wrist")
     obj.data.materials.append(skin)
-    # Flatten the palm (hands are thinner than wide), then hang it from the wrist following the arm angle.
-    for v in obj.data.vertices:
-        v.co.x *= 0.72
-    nails = []
-    for i, tip in enumerate(tips + [thumb[2]]):
-        nail_obj = pm.ellipsoid(name + "Nail", nail, (tip.x * 0.72 + 0.0055 * s, tip.y, tip.z + 0.004 * s),
-                                (0.0035 * s, 0.0055 * s, 0.006 * s), subsurf=0)
-        nails.append(nail_obj)
+    # The skin modifier can leave torn fins where five fingers branch off the palm: cut them away, close the
+    # holes, then relax the creases.
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-5)
+    for _ in range(3):
+        torn = [f for f in bm.faces if any(not e.is_manifold for e in f.edges)]
+        if not torn:
+            break
+        bmesh.ops.delete(bm, geom=torn, context="FACES")
+        bmesh.ops.holes_fill(bm, edges=[e for e in bm.edges if e.is_boundary], sides=0)
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
+    bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 4])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    for f in bm.faces:
+        f.smooth = True
+    for _ in range(4):
+        bmesh.ops.smooth_vert(bm, verts=bm.verts[:], factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    bm.to_mesh(obj.data)
+    bm.free()
+    parts = [obj]
+    for tip, bend in tips + [(thumb[2], 0.35 * wrap)]:
+        along = Vector((-math.sin(bend), 0, -math.cos(bend)))
+        back = Vector((math.cos(bend), 0, -math.sin(bend)))
+        c = tip - along * 0.0055 * s + back * 0.0052 * s
+        parts.append(pm.ellipsoid(name + "Nail", nail, c, (0.0012 * s, 0.004 * s, 0.0044 * s),
+                                  rotation=(0, bend, 0), segments=12, rings=8, subsurf=1))
     pivot = bpy.data.objects.new(name + "Pivot", None)
     pm.link(pivot)
-    obj.parent = pivot
-    for nobj in nails:
-        nobj.parent = pivot
-    pivot.location = P.wrist(side)
+    for part in parts:
+        part.parent = pivot
     # Local hand: hangs along -Z, palm faces -X. The left hand (x > 0) already faces the body; the right hand is
     # mirrored. Then tilt to continue the arm's outward angle.
-    angle = P.arm_out * 0.85
-    if side > 0:
-        pivot.rotation_euler = (0, -angle, 0)
-    else:
-        pivot.scale = (-1, 1, 1)
-        pivot.rotation_euler = (0, angle, 0)
-    return pivot
+    pivot.location = P.wrist(side)
+    pivot.rotation_euler = (0, -side * P.arm_out * 0.85, 0)
+    pivot.scale = (side, 1, 1)
+    hold = (holds[1] + holds[2]) * 0.5
+    hold.x -= 0.004 * s
+    return pivot, pivot.matrix_basis @ hold
 
 
-def sneaker(name, P, side, upper, sole, accent, lace):
-    """Chunky stylized sneaker: rubber sole, rounded upper, toe cap, tongue, laces and heel tab."""
-    k = P.head_r / 0.13
-    L = (0.17 if P.child else 0.25) * k * (1.0 if P.child else 0.95)
-    W = L * 0.44
-    x = side * P.hip_x
-    y0 = -L * 0.28  # foot extends forward of the ankle
-    outline = pm.smooth_outline([(0.0, -L * 0.5), (W * 0.42, -L * 0.38), (W * 0.5, -L * 0.05), (W * 0.4, L * 0.38),
-                                 (0.0, L * 0.5), (-W * 0.4, L * 0.38), (-W * 0.48, -L * 0.05), (-W * 0.42, -L * 0.38)],
+def sneaker(name, P, side, upper, rubber, accent, lace):
+    """Chunky child's sneaker: rubber sole and toe cap, mid-top upper, tongue panel, crossed laces, padded collar."""
+    L = (0.19 if P.child else 0.25) * P.head_r / 0.13
+    W = L * 0.46
+    x0 = side * P.hip_x
+    y0 = -L * 0.27  # the foot extends forward of the ankle
+    sole_h = L * 0.13
+    ankle_y = 0.004
+
+    def top(xn, yn, lift=0.0):
+        """Point on the upper for unit-disc coordinates (yn = -1 toe … +1 heel), pushed out by `lift`."""
+        t = (yn + 1) / 2
+        rise = min(1.0, max(0.0, (t - 0.3) / 0.45))
+        height = L * (0.2 + 0.24 * rise * rise * (3 - 2 * rise))  # low toe box, high heel counter
+        width = W * 0.5 * (1 - 0.1 * max(0.0, -yn) ** 2)
+        dome = math.sqrt(max(0.0, 1 - xn * xn - yn * yn))
+        blunt = math.copysign(abs(yn) ** 0.75, yn)
+        return Vector((x0 + xn * (width + lift), y0 + blunt * (L * 0.49 + lift), sole_h * 0.8 + dome * (height + lift)))
+
+    outline = pm.smooth_outline([(0.0, -L * 0.52), (W * 0.44, -L * 0.4), (W * 0.53, -L * 0.05), (W * 0.44, L * 0.4),
+                                 (0.0, L * 0.52), (-W * 0.44, L * 0.4), (-W * 0.5, -L * 0.05), (-W * 0.44, -L * 0.4)],
                                 6)
     bm = bmesh.new()
-    verts = [bm.verts.new((px + x, py + y0, 0.0)) for px, py in outline]
-    bm.faces.new(verts)
+    bm.faces.new([bm.verts.new((side * px + x0, py + y0, 0.0)) for px, py in outline])
     res = bmesh.ops.extrude_face_region(bm, geom=bm.faces[:])
-    bmesh.ops.translate(bm, verts=[e for e in res["geom"] if isinstance(e, bmesh.types.BMVert)],
-                        vec=(0, 0, L * 0.12))
+    bmesh.ops.translate(bm, verts=[e for e in res["geom"] if isinstance(e, bmesh.types.BMVert)], vec=(0, 0, sole_h))
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
-    sole_obj = pm.new_mesh_object(name + "Sole", bm, sole, smooth=False)
-    bev = sole_obj.modifiers.new("Bevel", "BEVEL")
-    bev.width = L * 0.03
+    bev = pm.new_mesh_object(name + "Sole", bm, rubber, smooth=False).modifiers.new("Bevel", "BEVEL")
+    bev.width = L * 0.035
     bev.segments = 3
-    # Upper: a sphere flattened at the bottom and pulled forward into a rounded toe.
+
+    def shell(part, mat, keep, lift):
+        bm = bmesh.new()
+        # Poles on the toe-heel axis, so the toe cap and heel counter end on clean rings.
+        bmesh.ops.create_uvsphere(bm, u_segments=40, v_segments=24, radius=1.0,
+                                  matrix=Matrix.Rotation(math.pi / 2, 4, "X"))
+        bmesh.ops.delete(bm, geom=[f for f in bm.faces if not keep(f.calc_center_median())], context="FACES")
+        for v in bm.verts:
+            v.co = top(v.co.x, v.co.y, lift) if v.co.z >= 0 else Vector((top(v.co.x, v.co.y, lift).x,
+                                                                         top(v.co.x, v.co.y, lift).y, sole_h * 0.8))
+        obj = pm.new_mesh_object(name + part, bm, mat)
+        obj.modifiers.new("Smooth", "SUBSURF").levels = 1
+        return obj
+    shell("Upper", upper, lambda c: c.z > -0.2, 0.0)
+    shell("ToeCap", rubber, lambda c: c.z > -0.2 and c.y < -0.58, L * 0.012)
+    shell("HeelCounter", accent, lambda c: c.z > -0.2 and c.y > 0.72, L * 0.01)
+    # Tongue panel under the laces, running up the instep to the ankle.
     bm = bmesh.new()
-    bmesh.ops.create_uvsphere(bm, u_segments=32, v_segments=18, radius=1.0)
-    for v in bm.verts:
-        cz = max(v.co.z, -0.15)
-        front = max(0.0, -v.co.y)
-        v.co = Vector((v.co.x * W * 0.47 * (1 - 0.15 * front), v.co.y * L * 0.47, cz * L * 0.2 * (1 - 0.35 * front)))
-    up = pm.new_mesh_object(name + "Upper", bm, upper)
-    up.location = (x, y0 + L * 0.02, L * 0.14)
-    up.modifiers.new("Smooth", "SUBSURF").levels = 1
-    pm.ellipsoid(name + "ToeCap", accent, (x, y0 - L * 0.33, L * 0.13), (W * 0.4, L * 0.16, L * 0.1), subsurf=1)
-    pm.ellipsoid(name + "Collar", accent, (x, y0 + L * 0.28, L * 0.3), (W * 0.42, L * 0.16, L * 0.06), subsurf=1)
-    pm.ellipsoid(name + "Tongue", upper, (x, y0 + L * 0.02, L * 0.31), (W * 0.22, L * 0.13, L * 0.035),
-                 rotation=(math.radians(-25), 0, 0), subsurf=1)
-    for i in range(3):
-        yy = y0 - L * 0.12 + i * L * 0.075
-        zz = L * 0.27 + i * L * 0.025
-        pm.curve_tube(name + "Lace", lace, [(x - W * 0.2, yy, zz), (x, yy - L * 0.008, zz + L * 0.012),
-                                            (x + W * 0.2, yy, zz)], L * 0.012, taper=(1, 1), resolution=4)
-    pm.ellipsoid(name + "HeelTab", accent, (x, y0 + L * 0.47, L * 0.3), (W * 0.12, L * 0.03, L * 0.08), subsurf=1)
+    rows = [[bm.verts.new(top(xn, yn, L * 0.012)) for xn in (-0.24, -0.12, 0.0, 0.12, 0.24)]
+            for yn in (-0.5, -0.36, -0.22, -0.08, 0.06, 0.2)]
+    for a, b in zip(rows, rows[1:]):
+        for i in range(4):
+            bm.faces.new((a[i], b[i], b[i + 1], a[i + 1]))
+    tongue = pm.new_mesh_object(name + "Tongue", bm, accent)
+    tongue.modifiers.new("Thick", "SOLIDIFY").thickness = L * 0.02
+    tongue.modifiers.new("Smooth", "SUBSURF").levels = 1
+    for i in range(4):
+        yn = -0.44 + i * 0.15
+        for d in (1, -1):
+            pm.curve_tube(name + "Lace", lace, [top(-d * 0.23, yn, L * 0.016), top(0.0, yn + 0.065, L * 0.024),
+                                                top(d * 0.23, yn + 0.13, L * 0.016)], L * 0.013, taper=(1, 1),
+                          resolution=4)
+    ankle = Vector((x0, ankle_y, P.z["ankle"] + L * 0.14))
+    pm.torus(name + "Collar", accent, ankle - Vector((0, 0, L * 0.03)), P.limb * 0.7, L * 0.05, squash=0.8,
+             segments=28, sides=10)
+    pm.ellipsoid(name + "HeelTab", upper, (x0, y0 + L * 0.5, L * 0.5), (W * 0.1, L * 0.02, L * 0.07), subsurf=1)
 
 
-def head(name, P, skin, sclera, iris, ink, lid=None, mouth="smile", fangs=None, lips=None, brow=None,
-         cheek=None, freckle=None):
-    """Stylized-human head: skull with tapered jaw and chin, ears, eyes with iris and lash line, nose, mouth."""
+def head(name, P, skin, sclera, iris, pupil, line, mouth_inside, tongue, fang=None, brow=None, freckle=None,
+         ears=True):
+    """A child's head: round cranium, full cheeks, short soft chin, big low-set eyes, button nose, open smile.
+
+    Returns surface(x, z, out): the point on the face at offsets (x, z) from the head centre, lifted by `out`."""
     r = P.head_r
     hc = P.head_c
     bm = bmesh.new()
-    bmesh.ops.create_uvsphere(bm, u_segments=40, v_segments=28, radius=1.0)
+    bmesh.ops.create_uvsphere(bm, u_segments=48, v_segments=32, radius=1.0)
     for v in bm.verts:
         x, y, zz = v.co
         if zz < 0:
-            taper = 1 - 0.28 * (-zz) ** 1.4  # jaw narrows toward the chin
-            x *= taper
-            y = y * (1 - 0.12 * (-zz)) - 0.1 * (-zz) ** 2 * (1 if y < 0 else 0)  # chin forward
-        v.co = Vector((x * r * 0.93, y * r * 0.98, zz * r * 1.08)) + hc
+            d = -zz
+            cheek = math.exp(-((d - 0.42) / 0.3) ** 2)
+            x *= 1 + 0.08 * cheek - 0.12 * d ** 3  # full cheeks, barely tapering to a soft chin
+            if y < 0:
+                y *= 1 + 0.05 * cheek
+            zz *= 0.9  # short lower face
+        v.co = Vector((x * r, y * r * 0.97, zz * r)) + hc
     skull = pm.new_mesh_object(name + "Head", bm, skin)
     skull.modifiers.new("Smooth", "SUBSURF").levels = 1
+    cast = probe(skull)
+
+    def frame(x, zz):
+        return cast(hc + Vector((x, -3 * r, zz)), (0, 1, 0))
 
     def surface(x, zz, out=0.0):
-        """Point on the front of the skull at offsets (x, z) from the head centre, pushed out by `out`."""
-        ex, ez = x / (r * 0.93), zz / (r * 1.08)
-        q = max(0.0, 1 - ex * ex - ez * ez)
-        return Vector((x, -math.sqrt(q) * r * 0.98 - out, zz)) + hc
+        point, normal = frame(x, zz)
+        return point + normal * out
 
-    eye_x, eye_z = r * 0.35, r * 0.02
-    iris_ring = bpy.data.materials.get("IrisRing")
-    if iris_ring is None:
-        iris_ring = bpy.data.materials.new("IrisRing")
-        iris_ring.use_nodes = True
-        bsdf = iris_ring.node_tree.nodes["Principled BSDF"]
-        base = iris.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value
-        bsdf.inputs["Base Color"].default_value = tuple(c * 0.35 for c in base[:3]) + (1.0,)
-        bsdf.inputs["Roughness"].default_value = 0.2
-    lid_mat = lid or skin
+    def loop(points, out):
+        return [surface(r * px, r * pz, r * out) for px, pz in points]
+
+    eye_x, eye_z = r * 0.37, -r * 0.1
+    er = (r * 0.19, r * 0.075, r * 0.225)
+    y0 = r * 0.045  # the eye sits in the head, only a shallow dome shows
     for s in (1, -1):
-        c = surface(s * eye_x, eye_z, -r * 0.03)
-        er = (r * 0.17, r * 0.09, r * 0.19)
-        pm.ellipsoid(name + "Sclera", sclera, c, er, rotation=(0, 0, -s * 0.08))
-        # Iris: dark limbal ring, coloured iris, pupil, two catch-lights.
-        pm.ellipsoid(name + "IrisRing", iris_ring, c + Vector((0, -r * 0.066, -r * 0.012)), (r * 0.118, r * 0.036, r * 0.13))
-        pm.ellipsoid(name + "Iris", iris, c + Vector((0, -r * 0.074, -r * 0.012)), (r * 0.1, r * 0.032, r * 0.112))
-        pm.ellipsoid(name + "Pupil", ink, c + Vector((0, -r * 0.092, -r * 0.012)), (r * 0.052, r * 0.016, r * 0.06),
-                     subsurf=0)
-        for dx, dz, rr in ((s * r * 0.042, r * 0.05, r * 0.03), (-s * r * 0.035, -r * 0.055, r * 0.014)):
-            pm.ellipsoid(name + "Glint", sclera, c + Vector((dx, -r * 0.104, dz)), (rr, rr * 0.4, rr), subsurf=0)
-        # Upper eyelid: a skin shell over the top third of the eye, with the lash line on its edge.
-        bm = bmesh.new()
-        bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=14, radius=1.0)
-        doomed = [f for f in bm.faces if f.calc_center_median().z < 0.42]
-        bmesh.ops.delete(bm, geom=doomed, context="FACES")
-        for v in bm.verts:
-            v.co = Vector((v.co.x * er[0] * 1.08, v.co.y * er[1] * 1.25, v.co.z * er[2] * 1.06)) + c
-        lid_obj = pm.new_mesh_object(name + "UpperLid", bm, lid_mat)
-        lid_obj.modifiers.new("Thick", "SOLIDIFY").thickness = r * 0.012
-        lid_obj.modifiers.new("Smooth", "SUBSURF").levels = 1
-        lash = [c + Vector((s * er[0] * dx * 1.08, -er[1] * 0.95, er[2] * dz)) for dx, dz in
-                ((-1.0, 0.25), (-0.6, 0.6), (0.0, 0.72), (0.6, 0.6), (1.05, 0.3), (1.3, 0.38))]
-        pm.curve_tube(name + "Lash", ink, lash, r * 0.016, taper=(0.4, 1.3))
-        # Soft lower lid crease.
-        crease = [c + Vector((s * er[0] * dx, -er[1] * 0.8, -er[2] * dz)) for dx, dz in
-                  ((-0.7, 0.82), (0.0, 1.02), (0.7, 0.85))]
-        pm.curve_tube(name + "LowerLid", lid_mat, crease, r * 0.012, taper=(0.3, 0.3))
+        point, normal = frame(s * eye_x, eye_z)
+        parts = [pm.ellipsoid(name + "Sclera", sclera, (0, y0, 0), er, segments=32, rings=20)]
+        gaze = (-s * r * 0.02, -r * 0.012)
+        parts.append(_dome_patch(name + "Iris", iris, er, y0, gaze, (r * 0.118, r * 0.142), 1.03))
+        parts.append(_dome_patch(name + "Pupil", pupil, er, y0, gaze, (r * 0.062, r * 0.078), 1.06))
+        for du, dw, size in ((-r * 0.05, r * 0.062, r * 0.04), (r * 0.045, -r * 0.07, r * 0.018)):
+            parts.append(_dome_patch(name + "Glint", sclera, er, y0, (gaze[0] + du, gaze[1] + dw), (size, size),
+                                     1.09, rings=2, segments=16))
+        # A thin, soft upper lash line: no liner, no lower lid.
+        lash = []
+        for k in range(9):
+            a = math.radians(158 - 136 * k / 8)
+            u, w = 0.8 * math.cos(a), 0.8 * math.sin(a)  # the rim of the dome where it meets the skin
+            lash.append((s * er[0] * u, y0 - er[1] * 0.6, er[2] * w))
+        parts.append(pm.curve_tube(name + "Lash", line, lash, r * 0.013, taper=(0.5, 1.0)))
+        mount(name + "Eye", point, normal.lerp(Vector((0, -1, 0)), 0.4), parts)
         if brow is not None:
-            b = [surface(s * r * dx, r * dz, r * 0.012) for dx, dz in ((0.16, 0.33), (0.33, 0.39), (0.52, 0.34))]
-            pm.curve_tube(name + "Brow", brow, b, r * 0.024, taper=(1.0, 0.35))
-        if cheek is not None:
-            pm.ellipsoid(name + "Cheek", cheek, surface(s * r * 0.48, -r * 0.27, -r * 0.012),
-                         (r * 0.09, r * 0.015, r * 0.05), subsurf=1)
-        # Ears with an inner fold.
-        ear_c = hc + Vector((s * r * 0.92, r * 0.05, -r * 0.05))
-        pm.ellipsoid(name + "Ear", skin, ear_c, (r * 0.09, r * 0.13, r * 0.2), rotation=(0, 0, s * 0.35))
-        pm.ellipsoid(name + "EarInner", lid or skin, ear_c + Vector((s * r * 0.05, -r * 0.02, 0)),
-                     (r * 0.04, r * 0.07, r * 0.12), rotation=(0, 0, s * 0.35))
-    # Nose: soft bridge, rounded tip and two nostril wings.
-    pm.curve_tube(name + "NoseBridge", skin, [surface(0, r * 0.08, -r * 0.005), surface(0, -r * 0.1, r * 0.04)],
-                  r * 0.045, taper=(0.6, 1.0))
-    tip = surface(0, -r * 0.16, r * 0.065)
-    pm.ellipsoid(name + "Nose", skin, tip, (r * 0.085, r * 0.07, r * 0.07))
-    for s in (1, -1):
-        pm.ellipsoid(name + "Nostril", skin, tip + Vector((s * r * 0.065, r * 0.02, -r * 0.02)),
-                     (r * 0.045, r * 0.045, r * 0.04))
-    # Mouth: an upturned line with soft corner tucks and a fuller lower lip.
-    if mouth == "grin":
-        m = [surface(r * dx, -r * dz, -r * 0.004) for dx, dz in ((-0.3, 0.36), (-0.16, 0.46), (0.0, 0.49),
-                                                                  (0.16, 0.46), (0.3, 0.36))]
-    else:
-        m = [surface(r * dx, -r * dz, -r * 0.004) for dx, dz in ((-0.22, 0.4), (-0.11, 0.46), (0.0, 0.475),
-                                                                  (0.11, 0.46), (0.22, 0.4))]
-    pm.curve_tube(name + "Mouth", ink, m, r * 0.018, taper=(0.6, 0.6))
-    for s in (1, -1):
-        pm.curve_tube(name + "MouthCorner", lid_mat, [m[-1 if s > 0 else 0], surface(s * r * 0.27, -r * 0.33, -r * 0.01)],
-                      r * 0.012, taper=(1.0, 0.2))
-    pm.curve_tube(name + "LowerLip", lips or skin, [surface(r * dx, -r * dz, -r * 0.01) for dx, dz in
-                                                    ((-0.1, 0.53), (0.0, 0.55), (0.1, 0.53))], r * 0.03,
-                  taper=(0.5, 0.5))
-    if fangs is not None:
+            arc = [surface(s * r * dx, eye_z + r * dz, r * 0.004) for dx, dz in ((0.22, 0.36), (0.36, 0.385),
+                                                                                 (0.5, 0.35))]
+            pm.curve_tube(name + "Brow", brow, arc, r * 0.016, taper=(1.0, 0.6))
+        if ears:
+            ear_c = hc + Vector((s * r * 0.97, r * 0.08, -r * 0.14))
+            pm.ellipsoid(name + "Ear", skin, ear_c, (r * 0.07, r * 0.11, r * 0.16), rotation=(0, 0, s * 0.35))
+    pm.ellipsoid(name + "Nose", skin, surface(0, -r * 0.33, -r * 0.012), (r * 0.062, r * 0.055, r * 0.05))
+    # Small open smile: dark mouth, tongue, two tiny fangs hanging from the upper lip line.
+    lip = [(-0.15, -0.465), (-0.08, -0.49), (0.0, -0.497), (0.08, -0.49), (0.15, -0.465)]
+    opening = lip + [(0.125, -0.535), (0.065, -0.6), (0.0, -0.618), (-0.065, -0.6), (-0.125, -0.535)]
+    _fan(name + "Mouth", mouth_inside, loop(opening, 0.003), r * 0.006)
+    _fan(name + "Tongue", tongue, loop([(0.06 * math.cos(a), -0.578 + 0.028 * math.sin(a)) for a in
+                                        [2 * math.pi * i / 14 for i in range(14)]], 0.006), r * 0.004)
+    if fang is not None:
         for s in (1, -1):
-            f = surface(s * r * 0.08, -r * 0.48, r * 0.012)
-            bm = bmesh.new()
-            bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=r * 0.032, radius2=0.0, depth=r * 0.075,
-                                  matrix=Matrix.Translation(f + Vector((0, 0, -r * 0.05))) @
-                                  Matrix.Rotation(math.pi, 4, "X"))
-            fang = pm.new_mesh_object(name + "Fang", bm, fangs)
-            fang.modifiers.new("Smooth", "SUBSURF").levels = 1
+            pm.ellipsoid(name + "Fang", fang, surface(s * r * 0.078, -r * 0.518, r * 0.004),
+                         (r * 0.024, r * 0.014, r * 0.04), subsurf=1)
+    pm.curve_tube(name + "Smile", line, loop([(-0.205, -0.432), (-0.185, -0.452)] + lip + [(0.185, -0.452),
+                                                                                            (0.205, -0.432)], 0.008),
+                  r * 0.012, taper=(0.6, 0.6))
     if freckle is not None:
         for s in (1, -1):
-            for dx, dz in ((0.32, -0.2), (0.42, -0.14), (0.5, -0.24), (0.38, -0.3)):
-                pm.ellipsoid(name + "Freckle", freckle, surface(s * r * dx, r * dz, -r * 0.01),
+            for dx, dz in ((0.36, -0.3), (0.46, -0.26), (0.54, -0.34), (0.42, -0.38)):
+                pm.ellipsoid(name + "Freckle", freckle, surface(s * r * dx, r * dz, -r * 0.004),
                              (r * 0.02, r * 0.008, r * 0.02), subsurf=0)
     return surface
 
