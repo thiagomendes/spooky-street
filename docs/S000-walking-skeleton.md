@@ -4,7 +4,7 @@
 URP scene, and the same commit can be exported to Xcode on a GitHub-hosted Linux runner, then signed and
 uploaded to TestFlight from a GitHub-hosted macOS runner, with no local machine involved.
 
-**Status: implemented, not yet verified in Unity, Xcode, TestFlight or on a phone.** See *Evidence*.
+**Status: verified in Unity CI and delivered to TestFlight (0.0.1 build 3.1, `VALID`); physical iPhone launch pending owner feedback.** See *Evidence*.
 
 ## Assumptions (state before work)
 
@@ -59,13 +59,14 @@ settings UI, language-pack downloads, audio, Android CI.
 | Unity 6000.3.28f1 compile + EditMode + PlayMode (`ci.yml`, image `ubuntu-6000.3.28f1-base-3`) | CI run 1, commit `a5aea60`, 2026-11-21 | Personal seat activated with email + password and released; **EditMode 50/50, PlayMode 7/7 passed**, 0 compile errors. Unity generated `packages-lock.json`, URP global settings and re-serialized settings (committed on `fix/s000-unity-ci`). |
 | Same, with the generated files committed | CI run 4, commit `6247aff` | **EditMode 50/50, PlayMode 7/7** (5 `WalkingSkeletonTests` + 2 Input System `IntegrationTests`); only `ShaderGraphSettings.asset` still generated, now committed. |
 
+| iOS export → signed archive → App Store Connect upload → processing | *Build for TestFlight* run 3 (`44934519952`), commit `07ea2ce`, 2026-11-21 | Unity 6000.3.28f1 iOS export 2m46s (Linux, cached Library); provenance verified on macOS-15; Xcode 26 selected; fastlane 2.242.0 signed with the Apple Distribution certificate + App Store profile and uploaded; **version 0.0.1 build 3.1 processed `VALID`** in ~2 min. |
+
+Earlier attempts and their fixes: run 1 failed in preflight (credential-less `git fetch` on the private repo); run 2 built and signed the IPA but App Store Connect rejected it with *Missing app icon (1024×1024)*, fixed by the generated icon (`Core/Art/AppIconPainter.cs`).
+
 ### Not yet run — needs the named dependency
 
 | Check | Blocked on | How to verify |
 |---|---|---|
-| iOS Xcode export | Same Unity secrets | Actions → *Build for TestFlight* → `export-only` from `main`. Artifact `ios-xcode-<sha>-<run>` must contain `provenance.json`. |
-| Xcode compile on macOS | Unity secrets | Mode `unsigned-xcode-check`. |
-| Signed archive + TestFlight upload + processing | Apple Developer membership; environment `testflight` secrets `APPLE_TEAM_ID`, `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, `IOS_PROVISIONING_PROFILE_BASE64`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8_BASE64`; variable `IOS_BUNDLE_ID`; App Store Connect app record | Mode `testflight`. Summary reports commit, version `0.0.1`, build `<run>.<attempt>`, processing state `VALID`. |
 | **S000 pass: launch on the physical iPhone** | Owner's iPhone + TestFlight | Install the build from TestFlight. Report: build number, iPhone model, iOS version, and whether: title shows "Spooky Street / Three Knocks on Lantern Lane"; *New game* starts on the porch facing the house with the round attic window visible; the first prompt reads "Drag on the left side of the screen to walk."; left-thumb drag walks and the prompt disappears; Jump works; dragging the right side orbits; Pause opens the pause menu; leaving the app and returning shows the pause menu; no control sits under the notch/home indicator. Time-to-control from a cold start (target ≤ 8 s). |
 
 No device or TestFlight pass is claimed from editor or unit results.
