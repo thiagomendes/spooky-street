@@ -61,14 +61,13 @@ namespace SpookyStreet.Player
                 spot.localScale = new Vector3(0.42f, 0.3f, 0.4f);
             }
 
-            // Short rain cape over the shoulders, tilted back.
-            Part(PrimitiveType.Cylinder, "RainCape", new Vector3(0f, 0.74f, -0.02f) * s, new Vector3(0.6f, 0.08f, 0.52f) * s,
-                Quaternion.Euler(-8f, 0f, 0f), materials.Get(Palette.PipCape));
-
-            // Hood, face and eyes (gives Pip a front).
-            Part(PrimitiveType.Sphere, "Hood", new Vector3(0f, 0.97f, -0.01f) * s, Vector3.one * 0.38f * s,
-                Quaternion.identity, materials.Get(Palette.PipFuzz));
-            Part(PrimitiveType.Sphere, "Face", new Vector3(0f, 0.95f, 0.14f) * s, new Vector3(0.26f, 0.24f, 0.12f) * s,
+            // Short amber rain cape draped over the shoulders and back, with its hood up: from the gameplay camera
+            // (behind) Pip reads as a small hooded figure, the warm focal point against the indigo street.
+            Part(PrimitiveType.Sphere, "RainCape", new Vector3(0f, 0.69f, -0.04f) * s, new Vector3(0.6f, 0.44f, 0.54f) * s,
+                Quaternion.Euler(-6f, 0f, 0f), materials.Get(Palette.PipCape));
+            Part(PrimitiveType.Sphere, "Hood", new Vector3(0f, 0.97f, -0.02f) * s, new Vector3(0.4f, 0.4f, 0.4f) * s,
+                Quaternion.identity, materials.Get(Palette.PipCape));
+            Part(PrimitiveType.Sphere, "Face", new Vector3(0f, 0.95f, 0.13f) * s, new Vector3(0.27f, 0.25f, 0.14f) * s,
                 Quaternion.identity, materials.Get(Palette.PipFace));
             for (int side = -1; side <= 1; side += 2)
             {

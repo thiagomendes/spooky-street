@@ -15,8 +15,10 @@ namespace SpookyStreet.World
 
         /// <summary>Centre of the round attic window on the owl house's gable (the opening's focal point).</summary>
         public static readonly Vector3 AtticWindow = new Vector3(0f, 7.55f, 10.9f);
+        public static readonly Vector3 PorchLamp = new Vector3(1.95f, 3.05f, -13.25f);
 
         private const float HouseFront = 11f;
+        public const float HouseFrontZ = HouseFront;
 
         private readonly MaterialLibrary _materials;
         private readonly int _safeLayer;
@@ -80,13 +82,15 @@ namespace SpookyStreet.World
                     Vector3.one * 0.11f, candy[i], safe: false));
             }
 
-            // Porch lamp: post plus a warm lamp box.
-            Primitive(PrimitiveType.Cylinder, "PorchLampPost", new Vector3(1.75f, 1.7f, -14.95f),
-                new Vector3(0.08f, 1.1f, 0.08f), Palette.Timber, safe: false);
-            var lamp = Box("PorchLampBox", new Vector3(1.75f, 2.95f, -14.95f), new Vector3(0.24f, 0.3f, 0.24f),
-                Palette.PumpkinAmber, safe: false);
-            lamp.GetComponent<Renderer>().sharedMaterial = _materials.Glow(Palette.PumpkinAmber, 2.5f);
+            // Porch lamp at the porch's front-right corner, ahead of the camera so it frames the shot as a warm
+            // point instead of filling the corner. Moderate HDR keeps it amber after tonemapping.
+            Primitive(PrimitiveType.Cylinder, "PorchLampPost", new Vector3(PorchLamp.x, 1.45f, PorchLamp.z),
+                new Vector3(0.08f, 1.45f, 0.08f), Palette.Timber, safe: false);
+            var lamp = Box("PorchLampBox", PorchLamp, new Vector3(0.26f, 0.32f, 0.26f), Palette.PumpkinAmber, safe: false);
+            lamp.GetComponent<Renderer>().sharedMaterial = _materials.Glow(Palette.PumpkinAmber, 1.4f);
             Decor(lamp);
+            Decor(Box("PorchLampCap", PorchLamp + new Vector3(0f, 0.2f, 0f), new Vector3(0.36f, 0.08f, 0.36f), Palette.Ink,
+                safe: false));
         }
 
         private void BuildOwlHouse()
@@ -114,17 +118,29 @@ namespace SpookyStreet.World
             // Round attic window in the gable: ink frame, glowing pane, ink mullions (reads as a window, not a moon).
             Decor(Disc("AtticWindow_Frame", AtticWindow + new Vector3(0f, 0f, 0.05f), 1.6f, _materials.Get(Palette.Ink)));
             Decor(Disc("AtticWindow_Pane", AtticWindow + new Vector3(0f, 0f, 0.02f), 1.25f,
-                _materials.Glow(Palette.PumpkinAmber, 4f)));
+                _materials.Glow(Palette.PumpkinAmber, 1.8f)));
             Decor(Box("AtticWindow_MullionH", AtticWindow, new Vector3(1.25f, 0.08f, 0.04f), Palette.Ink, safe: false));
             Decor(Box("AtticWindow_MullionV", AtticWindow, new Vector3(0.08f, 1.25f, 0.04f), Palette.Ink, safe: false));
 
             // Closed front door, two shuttered ground-floor windows, and the house porch.
             Box("OwlHouse_Door", new Vector3(0f, 1.1f, HouseFront - 0.02f), new Vector3(1.1f, 1.9f, 0.08f), Palette.Ink,
                 safe: false);
+            // Two dimly lit ground-floor windows with open timber shutters give the house a face at dusk.
             for (int side = -1; side <= 1; side += 2)
             {
-                Decor(Box("OwlHouse_Shutter" + side, new Vector3(side * 2.6f, 2.5f, HouseFront - 0.02f),
-                    new Vector3(1.1f, 1.3f, 0.06f), Palette.RoofShadow, safe: false));
+                var centre = new Vector3(side * 2.6f, 2.5f, HouseFront - 0.03f);
+                Decor(Box("OwlHouse_WindowFrame" + side, centre, new Vector3(1.2f, 1.4f, 0.05f), Palette.Ink, safe: false));
+                var pane = Box("OwlHouse_WindowPane" + side, centre + new Vector3(0f, 0f, -0.02f),
+                    new Vector3(0.95f, 1.15f, 0.04f), Palette.PumpkinAmber, safe: false);
+                pane.GetComponent<Renderer>().sharedMaterial = _materials.Glow(Palette.PumpkinAmber, 0.75f);
+                Decor(pane);
+                Decor(Box("OwlHouse_WindowMullion" + side, centre + new Vector3(0f, 0f, -0.05f),
+                    new Vector3(0.06f, 1.15f, 0.03f), Palette.Ink, safe: false));
+                for (int leaf = -1; leaf <= 1; leaf += 2)
+                {
+                    Decor(Box("OwlHouse_Shutter" + side + leaf, centre + new Vector3(leaf * 0.88f, 0f, -0.02f),
+                        new Vector3(0.5f, 1.4f, 0.05f), Palette.Timber, safe: false));
+                }
             }
 
             Box("OwlHouse_Porch", new Vector3(0f, 0.15f, HouseFront - 0.8f), new Vector3(5f, 0.3f, 1.6f), Palette.Timber,

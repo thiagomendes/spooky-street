@@ -38,7 +38,12 @@ namespace SpookyStreet.World
 
             var porch = Light("ArrivalPorchLamp", root, LightType.Point, Palette.PumpkinAmber, 2.2f);
             porch.range = 6f;
-            porch.transform.position = new Vector3(1.75f, 2.9f, -14.6f);
+            porch.transform.position = GreyboxBuilder.PorchLamp + new Vector3(-0.3f, -0.35f, 0.3f);
+
+            // Warm light over the owl house's door so the façade reads at dusk, not as a black cut-out.
+            var door = Light("OwlHouseDoorLamp", root, LightType.Point, Palette.PumpkinAmber, 1.6f);
+            door.range = 5f;
+            door.transform.position = new Vector3(0f, 2.6f, GreyboxBuilder.HouseFrontZ - 0.9f);
 
             BuildVolume(root);
             return root;
