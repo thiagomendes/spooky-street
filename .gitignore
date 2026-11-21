@@ -49,3 +49,5 @@ fastlane/README.md
 /ios/.bundle/
 __pycache__/
 /Assets/SpookyStreet/Content/Resources/BuildInfo.json*
+/Assets/SpookyStreet/Content/Generated/
+/Assets/SpookyStreet/Content/Generated.meta
