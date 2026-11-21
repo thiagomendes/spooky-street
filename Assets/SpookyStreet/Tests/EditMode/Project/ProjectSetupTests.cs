@@ -37,6 +37,24 @@ namespace SpookyStreet.Tests.Project
         }
 
         [Test]
+        public void GeneratedAppIconIsOpaqueAppStoreSize()
+        {
+            var icon = AppIconBuilder.CreateTexture();
+            try
+            {
+                Assert.AreEqual(AppIconBuilder.Size, icon.width);
+                Assert.AreEqual(AppIconBuilder.Size, icon.height);
+                Assert.AreEqual(TextureFormat.RGB24, icon.format, "App Store icons must not carry alpha");
+                Color window = icon.GetPixelBilinear(0.5f, 0.64f);
+                Assert.Greater(window.r, 0.9f, "attic window is lit amber");
+            }
+            finally
+            {
+                Object.DestroyImmediate(icon);
+            }
+        }
+
+        [Test]
         public void GameplaySceneReferencesTuningAsset()
         {
             var scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(ProjectChecks.GameplayScene,

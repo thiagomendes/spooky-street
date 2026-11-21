@@ -77,6 +77,7 @@ namespace SpookyStreet.EditorTools
                 PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
             }
 
+            AppIconBuilder.EnsureIcon();
             WriteBuildInfo(args);
 
             string output = string.IsNullOrEmpty(args.OutputPath) ? Path.Combine("build", target.ToString()) : args.OutputPath;
