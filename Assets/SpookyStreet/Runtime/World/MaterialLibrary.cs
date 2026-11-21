@@ -5,42 +5,73 @@ using UnityEngine.Rendering;
 namespace SpookyStreet.World
 {
     /// <summary>
-    /// One palette-tinted material per colour, all derived from a URP Lit base material that the scene
-    /// references (so the shader is always in the player build). Never falls back to Unity's built-in
-    /// Default-Material: under URP that renders as the magenta error shader on device.
+    /// Palette materials derived from committed URP base materials that the scene references (so their shaders
+    /// always ship): a matte Lit base for surfaces and an Unlit base for glows and the sky card. Never falls back
+    /// to Unity's built-in Default-Material, which URP draws as the magenta error shader on device.
     /// </summary>
     public sealed class MaterialLibrary
     {
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
 
-        private readonly Dictionary<Color, Material> _byColor = new Dictionary<Color, Material>();
-        private readonly Material _base;
+        private readonly Dictionary<Color, Material> _lit = new Dictionary<Color, Material>();
+        private readonly Dictionary<Color, Material> _glow = new Dictionary<Color, Material>();
+        private readonly Material _litBase;
+        private readonly Material _unlitBase;
 
-        public MaterialLibrary(Material baseMaterial)
+        public MaterialLibrary(Material litBase, Material unlitBase)
         {
-            _base = baseMaterial;
-            if (_base == null && GraphicsSettings.currentRenderPipeline != null)
+            _litBase = litBase;
+            if (_litBase == null && GraphicsSettings.currentRenderPipeline != null)
             {
-                _base = GraphicsSettings.currentRenderPipeline.defaultMaterial;
-                Debug.LogWarning("[MaterialLibrary] No base material assigned; using the render pipeline default.");
+                _litBase = GraphicsSettings.currentRenderPipeline.defaultMaterial;
+                Debug.LogWarning("[MaterialLibrary] No Lit base material assigned; using the render pipeline default.");
             }
 
-            if (_base == null)
+            _unlitBase = unlitBase != null ? unlitBase : _litBase;
+            if (_litBase == null)
             {
                 Debug.LogError("[MaterialLibrary] No URP base material available; geometry will not render correctly.");
             }
         }
 
-        public Material BaseMaterial => _base;
+        /// <summary>Matte lit surface in a palette colour.</summary>
+        public Material Get(Color color) => Cached(_lit, _litBase, color, "Palette_");
 
-        public Material Get(Color color)
+        /// <summary>Self-lit surface. Intensity above 1 drives HDR bloom on the active point of interest.</summary>
+        public Material Glow(Color color, float intensity = 1f)
         {
-            if (_byColor.TryGetValue(color, out var material))
+            Color hdr = new Color(color.r * intensity, color.g * intensity, color.b * intensity, 1f);
+            return Cached(_glow, _unlitBase, hdr, "Glow_");
+        }
+
+        /// <summary>Unlit textured surface (sky cards and other painted backdrops).</summary>
+        public Material Unlit(Texture2D texture)
+        {
+            var material = new Material(_unlitBase) { name = "Unlit_" + texture.name };
+            if (material.HasProperty(BaseMapId))
+            {
+                material.SetTexture(BaseMapId, texture);
+            }
+
+            if (material.HasProperty(BaseColorId))
+            {
+                material.SetColor(BaseColorId, Color.white);
+            }
+
+            return material;
+        }
+
+        public void Apply(Renderer renderer, Color color) => renderer.sharedMaterial = Get(color);
+
+        private static Material Cached(Dictionary<Color, Material> cache, Material baseMaterial, Color color, string prefix)
+        {
+            if (cache.TryGetValue(color, out var material))
             {
                 return material;
             }
 
-            material = new Material(_base) { name = "Palette_" + ColorUtility.ToHtmlStringRGB(color) };
+            material = new Material(baseMaterial) { name = prefix + ColorUtility.ToHtmlStringRGB(color) };
             if (material.HasProperty(BaseColorId))
             {
                 material.SetColor(BaseColorId, color);
@@ -50,11 +81,8 @@ namespace SpookyStreet.World
                 material.color = color;
             }
 
-            _byColor.Add(color, material);
+            cache.Add(color, material);
             return material;
         }
-
-        /// <summary>Paints a primitive or other renderer with a palette colour.</summary>
-        public void Apply(Renderer renderer, Color color) => renderer.sharedMaterial = Get(color);
     }
 }

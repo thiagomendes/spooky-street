@@ -34,6 +34,10 @@ TEMPLATES = {
     ".asset": "NativeFormatImporter:\n  externalObjects: {}\n  mainObjectFileID: 11400000\n" + COMMON_TAIL,
     ".mat": "NativeFormatImporter:\n  externalObjects: {}\n  mainObjectFileID: 2100000\n" + COMMON_TAIL,
     ".unity": "DefaultImporter:\n  externalObjects: {}\n" + COMMON_TAIL,
+    ".ttf": "TrueTypeFontImporter:\n  externalObjects: {}\n  serializedVersion: 4\n  fontSize: 16\n"
+            "  forceTextureCase: -2\n  characterSpacing: 0\n  characterPadding: 1\n  includeFontData: 1\n"
+            "  fontNames: []\n  fallbackFontReferences: []\n  customCharacters: \n  fontRenderingMode: 0\n"
+            "  ascentCalculationMode: 1\n  useLegacyBoundsCalculation: 0\n  shouldRoundAdvanceValue: 1\n" + COMMON_TAIL,
 }
 
 IGNORED_NAMES = {".DS_Store", "Thumbs.db"}

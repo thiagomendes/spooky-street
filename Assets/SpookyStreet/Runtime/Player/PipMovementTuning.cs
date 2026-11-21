@@ -35,10 +35,12 @@ namespace SpookyStreet.Player
         [Header("Camera")]
         public float cameraDistance = 3.8f;
         [Tooltip("Pivot height on Pip: roughly upper torso.")]
-        public float pivotHeight = 0.85f;
+        public float pivotHeight = 0.95f;
+        [Tooltip("Camera offset to Pip's right, so Pip sits left of centre and the path-door-window axis stays clear.")]
+        public float shoulderSide = 0.35f;
         [Tooltip("Extra rise above the pivot so the camera sits slightly above shoulder line.")]
-        public float shoulderRise = 0.25f;
-        public float fieldOfView = 55f;
+        public float shoulderRise = 0.35f;
+        public float fieldOfView = 50f;
         public float touchDegreesPerPixel = 0.22f;
         public float mouseDegreesPerPixel = 0.12f;
         public float stickDegreesPerSecond = 160f;

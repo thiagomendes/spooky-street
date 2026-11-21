@@ -105,6 +105,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   movementTuning: {fileID: 11400000, guid: 27938cf4d5e64db8bba199e1d30ff894, type: 2}
   greyboxMaterial: {fileID: 2100000, guid: 0611b02601de42d2b0a13dfb6958475f, type: 2}
+  glowMaterial: {fileID: 2100000, guid: c3edaecffe60436e9b7ab29c1cfa27fb, type: 2}
   leftHandedLayout: 0
   targetFrameRate: 60
 --- !u!1660057539 &9223372036854775807

@@ -29,9 +29,10 @@ MonoBehaviour:
   fallResetDepth: 5
   maxFallTime: 1.4
   cameraDistance: 3.8
-  pivotHeight: 0.85
-  shoulderRise: 0.25
-  fieldOfView: 55
+  pivotHeight: 0.95
+  shoulderSide: 0.35
+  shoulderRise: 0.35
+  fieldOfView: 50
   touchDegreesPerPixel: 0.22
   mouseDegreesPerPixel: 0.12
   stickDegreesPerSecond: 160

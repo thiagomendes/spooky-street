@@ -104,6 +104,7 @@ PACKAGE_GUIDS = {
     "de640fe3d0db1804a85f9fc8f5cadab6": "URP UniversalRendererData script",
     "41439944d30ece34e96484bdb6645b55": "URP PostProcessData asset",
     "933532a4fcc9baf4fa0491de14d08ed7": "URP Lit shader",
+    "650dd9526735d5b46b79224bc6e94025": "URP Unlit shader",
     "d0353a89b1f911e48b9e16bdc9f2e058": "URP material AssetVersion script",
 }
 

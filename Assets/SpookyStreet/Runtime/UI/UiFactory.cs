@@ -6,66 +6,44 @@ using UnityEngine.UI;
 namespace SpookyStreet.UI
 {
     /// <summary>
-    /// Builds placeholder uGUI from code. Layout units are reference pixels on a 1334 × 750 landscape canvas
-    /// scaled by height, so 96 units ≈ 48 pt on a 375-pt-tall iPhone (spec §5 minimum hit area; validate on device).
+    /// Builds the paper-cutout UI from code (docs/art-bible.md). Layout units are reference pixels on a 1334 × 750
+    /// landscape canvas matched by height, so 2 units ≈ 1 pt on a 375-pt-tall iPhone; 96 units ≈ 48 pt is the
+    /// minimum touch target (spec §5). Fonts are OFL-licensed (docs/asset-provenance.md): Andika for reading,
+    /// Sniglet for display.
     /// </summary>
     public static class UiFactory
     {
         public static readonly Vector2 ReferenceResolution = new Vector2(1334f, 750f);
         public const float MinTouchTarget = 96f;
+        public const int BodySize = 34;
+        public const int ButtonSize = 40;
 
-        private static Font s_font;
-        private static Sprite s_circle;
+        private static Font s_body;
+        private static Font s_bold;
+        private static Font s_display;
 
-        public static Font DefaultFont
+        public static Font BodyFont => s_body != null ? s_body : s_body = LoadFont("Fonts/Andika-Regular");
+
+        public static Font BoldFont => s_bold != null ? s_bold : s_bold = LoadFont("Fonts/Andika-Bold");
+
+        public static Font DisplayFont => s_display != null ? s_display : s_display = LoadFont("Fonts/Sniglet-ExtraBold");
+
+        /// <summary>Kept for callers that only need a circle sprite.</summary>
+        public static Sprite Circle => IconFactory.Disc;
+
+        private static Font LoadFont(string path)
         {
-            get
+            var font = Resources.Load<Font>(path);
+            if (font == null)
             {
-                if (s_font == null)
-                {
-                    s_font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-                }
-
-                return s_font;
+                Debug.LogWarning($"[UiFactory] Font Resources/{path} missing; falling back to the built-in font.");
+                font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             }
+
+            return font;
         }
 
-        /// <summary>Anti-aliased circle generated at runtime so the HUD needs no imported texture.</summary>
-        public static Sprite Circle
-        {
-            get
-            {
-                if (s_circle != null)
-                {
-                    return s_circle;
-                }
-
-                const int size = 128;
-                var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
-                {
-                    name = "UiCircle",
-                    wrapMode = TextureWrapMode.Clamp,
-                    filterMode = FilterMode.Bilinear,
-                };
-                var pixels = new Color32[size * size];
-                float r = size * 0.5f;
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
-                    {
-                        float dx = x + 0.5f - r;
-                        float dy = y + 0.5f - r;
-                        float alpha = Mathf.Clamp01(r - Mathf.Sqrt(dx * dx + dy * dy));
-                        pixels[y * size + x] = new Color32(255, 255, 255, (byte)(alpha * 255f));
-                    }
-                }
-
-                texture.SetPixels32(pixels);
-                texture.Apply(false, true);
-                s_circle = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
-                return s_circle;
-            }
-        }
+        public static Color WithAlpha(Color c, float alpha) => new Color(c.r, c.g, c.b, alpha);
 
         public static Canvas CreateCanvas(string name, int sortingOrder)
         {
@@ -99,11 +77,12 @@ namespace SpookyStreet.UI
             return rect;
         }
 
-        public static RectTransform Place(RectTransform rect, Vector2 anchor, Vector2 position, Vector2 size)
+        public static RectTransform Place(RectTransform rect, Vector2 anchor, Vector2 position, Vector2 size,
+            Vector2? pivot = null)
         {
             rect.anchorMin = anchor;
             rect.anchorMax = anchor;
-            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.pivot = pivot ?? new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = position;
             rect.sizeDelta = size;
             return rect;
@@ -118,12 +97,32 @@ namespace SpookyStreet.UI
             return image;
         }
 
+        public static Image Sprite(Transform parent, string name, Sprite sprite, Color color, Vector2 anchor,
+            Vector2 position, Vector2 size, bool raycast = false)
+        {
+            var rect = Place(Rect(parent, name), anchor, position, size);
+            var image = rect.gameObject.AddComponent<Image>();
+            image.sprite = sprite;
+            image.type = sprite != null && sprite.border != Vector4.zero ? Image.Type.Sliced : Image.Type.Simple;
+            image.color = color;
+            image.raycastTarget = raycast;
+            return image;
+        }
+
+        /// <summary>Hard ink drop shadow: the "cut paper on a desk" look.</summary>
+        public static void InkShadow(Graphic graphic, float distance = 6f, float alpha = 0.9f)
+        {
+            var shadow = graphic.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = WithAlpha(Palette.Ink, alpha);
+            shadow.effectDistance = new Vector2(distance, -distance);
+        }
+
         public static Text Label(Transform parent, string name, string key, int fontSize, TextAnchor alignment,
-            Color color)
+            Color color, Font font = null)
         {
             var rect = Rect(parent, name);
             var text = rect.gameObject.AddComponent<Text>();
-            text.font = DefaultFont;
+            text.font = font != null ? font : BodyFont;
             text.fontSize = fontSize;
             text.alignment = alignment;
             text.color = color;
@@ -131,7 +130,7 @@ namespace SpookyStreet.UI
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
             text.verticalOverflow = VerticalWrapMode.Truncate;
             text.resizeTextForBestFit = true;
-            text.resizeTextMinSize = Mathf.Max(12, fontSize / 2);
+            text.resizeTextMinSize = Mathf.Max(12, fontSize * 2 / 3);
             text.resizeTextMaxSize = fontSize;
             if (!string.IsNullOrEmpty(key))
             {
@@ -141,42 +140,125 @@ namespace SpookyStreet.UI
             return text;
         }
 
+        /// <summary>Paper card: rounded warm-paper rectangle with an ink shadow, slightly rotated like cut paper.</summary>
+        public static Image PaperCard(Transform parent, string name, Color fill, Vector2 anchor, Vector2 position,
+            Vector2 size, float rotation)
+        {
+            var card = Sprite(parent, name, IconFactory.RoundedRect, fill, anchor, position, size);
+            card.rectTransform.localRotation = Quaternion.Euler(0f, 0f, rotation);
+            InkShadow(card);
+            return card;
+        }
+
+        /// <summary>Primary action: pumpkin-amber card with an ink label.</summary>
+        public static Button PrimaryButton(Transform parent, string name, string key, Vector2 anchor, Vector2 position,
+            Vector2 size, UnityAction onClick) =>
+            CardButton(parent, name, key, anchor, position, size, onClick, Palette.PumpkinAmber, false);
+
+        /// <summary>Secondary action: warm-paper card with an ink outline.</summary>
+        public static Button SecondaryButton(Transform parent, string name, string key, Vector2 anchor, Vector2 position,
+            Vector2 size, UnityAction onClick) =>
+            CardButton(parent, name, key, anchor, position, size, onClick, Palette.WarmPaper, true);
+
+        /// <summary>Back-compat helper used by older call sites: a primary button.</summary>
         public static Button TextButton(Transform parent, string name, string key, Vector2 anchor, Vector2 position,
-            Vector2 size, UnityAction onClick)
+            Vector2 size, UnityAction onClick) => PrimaryButton(parent, name, key, anchor, position, size, onClick);
+
+        private static Button CardButton(Transform parent, string name, string key, Vector2 anchor, Vector2 position,
+            Vector2 size, UnityAction onClick, Color fill, bool outline)
         {
             size = Vector2.Max(size, new Vector2(MinTouchTarget, MinTouchTarget));
-            var rect = Place(Rect(parent, name), anchor, position, size);
-            var image = rect.gameObject.AddComponent<Image>();
-            image.color = Palette.WarmPaper;
-            var button = rect.gameObject.AddComponent<Button>();
+            // uGUI draws children over their parent, so an outlined button is an ink card with the fill inset.
+            var image = Sprite(parent, name, IconFactory.RoundedRect, outline ? Palette.Ink : fill, anchor, position, size,
+                raycast: true);
+            InkShadow(image);
+            Image face = image;
+            if (outline)
+            {
+                face = Sprite(image.transform, "Fill", IconFactory.RoundedRect, fill, new Vector2(0.5f, 0.5f), Vector2.zero,
+                    size);
+                Stretch(face.rectTransform);
+                face.rectTransform.offsetMin = new Vector2(5f, 5f);
+                face.rectTransform.offsetMax = new Vector2(-5f, -5f);
+            }
+
+            var button = image.gameObject.AddComponent<Button>();
+            button.targetGraphic = face;
             var colors = button.colors;
-            colors.highlightedColor = Color.Lerp(Palette.WarmPaper, Palette.PumpkinAmber, 0.35f);
-            colors.selectedColor = Palette.PumpkinAmber;
-            colors.pressedColor = Palette.PumpkinAmber;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1f, 0.96f, 0.9f);
+            colors.selectedColor = new Color(1f, 0.96f, 0.9f);
+            colors.pressedColor = new Color(0.8f, 0.74f, 0.66f);
+            colors.fadeDuration = 0.06f;
             button.colors = colors;
+            image.gameObject.AddComponent<PressScale>();
             if (onClick != null)
             {
                 button.onClick.AddListener(onClick);
             }
 
-            var label = Label(rect, "Label", key, 40, TextAnchor.MiddleCenter, Palette.Ink);
+            var label = Label(image.transform, "Label", key, ButtonSize, TextAnchor.MiddleCenter, Palette.Ink, BoldFont);
             Stretch(label.rectTransform);
-            label.rectTransform.offsetMin = new Vector2(16f, 8f);
-            label.rectTransform.offsetMax = new Vector2(-16f, -8f);
+            label.rectTransform.offsetMin = new Vector2(20f, 8f);
+            label.rectTransform.offsetMax = new Vector2(-20f, -8f);
             return button;
         }
 
-        public static Image RoundButtonVisual(Transform parent, string name, string key, Vector2 anchor, Vector2 position,
-            float diameter)
+        /// <summary>
+        /// Thumb control: ink disc with a warm-paper ring, a line icon and an optional short caption (spec §5:
+        /// icon + localized verb). Returns the disc image, which is the raycast target.
+        /// </summary>
+        public static Image InkDisc(Transform parent, string name, Sprite icon, string captionKey, float diameter,
+            Vector2 anchor, Vector2 position)
         {
             diameter = Mathf.Max(diameter, MinTouchTarget);
-            var rect = Place(Rect(parent, name), anchor, position, new Vector2(diameter, diameter));
-            var image = rect.gameObject.AddComponent<Image>();
-            image.sprite = Circle;
-            image.color = new Color(Palette.WarmPaper.r, Palette.WarmPaper.g, Palette.WarmPaper.b, 0.55f);
-            var label = Label(rect, "Label", key, 30, TextAnchor.MiddleCenter, Palette.Ink);
-            Stretch(label.rectTransform);
-            return image;
+            var disc = Sprite(parent, name, IconFactory.Disc, WithAlpha(Palette.Ink, 0.6f), anchor, position,
+                new Vector2(diameter, diameter), raycast: true);
+            var ring = Sprite(disc.transform, "Ring", IconFactory.Ring(0.07f), WithAlpha(Palette.WarmPaper, 0.9f),
+                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(diameter, diameter));
+            ring.raycastTarget = false;
+
+            bool hasCaption = !string.IsNullOrEmpty(captionKey);
+            float iconSize = diameter * (hasCaption ? 0.42f : 0.5f);
+            Sprite(disc.transform, "Icon", icon, Palette.WarmPaper, new Vector2(0.5f, 0.5f),
+                new Vector2(0f, hasCaption ? diameter * 0.09f : 0f), new Vector2(iconSize, iconSize));
+            if (hasCaption)
+            {
+                var caption = Label(disc.transform, "Caption", captionKey, 26, TextAnchor.MiddleCenter, Palette.WarmPaper,
+                    BoldFont);
+                Place(caption.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, -diameter * 0.26f),
+                    new Vector2(diameter * 0.8f, 34f));
+            }
+
+            disc.gameObject.AddComponent<PressScale>();
+            return disc;
+        }
+    }
+
+    /// <summary>Visible press feedback for every tappable control: a quick squash while the finger is down.</summary>
+    public sealed class PressScale : MonoBehaviour, UnityEngine.EventSystems.IPointerDownHandler,
+        UnityEngine.EventSystems.IPointerUpHandler, UnityEngine.EventSystems.IPointerExitHandler
+    {
+        public float PressedScale = 0.9f;
+        private bool _pressed;
+
+        public void OnPointerDown(UnityEngine.EventSystems.PointerEventData eventData) => _pressed = true;
+
+        public void OnPointerUp(UnityEngine.EventSystems.PointerEventData eventData) => _pressed = false;
+
+        public void OnPointerExit(UnityEngine.EventSystems.PointerEventData eventData) => _pressed = false;
+
+        private void OnDisable()
+        {
+            _pressed = false;
+            transform.localScale = Vector3.one;
+        }
+
+        private void Update()
+        {
+            float target = _pressed ? PressedScale : 1f;
+            float current = Mathf.MoveTowards(transform.localScale.x, target, Time.unscaledDeltaTime * 4f);
+            transform.localScale = new Vector3(current, current, 1f);
         }
     }
 }

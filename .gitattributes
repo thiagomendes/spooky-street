@@ -8,7 +8,7 @@
 *.meta text eol=lf
 *.sh text eol=lf
 
-# Large source binaries go through Git LFS (none in S000; patterns reserved).
+# Large source binaries go through Git LFS (patterns reserved). Fonts (<1 MB each) are plain binaries.
 *.png filter=lfs diff=lfs merge=lfs -text
 *.jpg filter=lfs diff=lfs merge=lfs -text
 *.psd filter=lfs diff=lfs merge=lfs -text
@@ -20,6 +20,6 @@
 *.wav filter=lfs diff=lfs merge=lfs -text
 *.ogg filter=lfs diff=lfs merge=lfs -text
 *.mp3 filter=lfs diff=lfs merge=lfs -text
-*.ttf filter=lfs diff=lfs merge=lfs -text
-*.otf filter=lfs diff=lfs merge=lfs -text
+*.ttf binary
+*.otf binary
 *.aif filter=lfs diff=lfs merge=lfs -text
