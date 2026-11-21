@@ -22,162 +22,8 @@ import anatomy as an  # noqa: E402
 import craft as craft_lib  # noqa: E402
 import pip_model as pm  # noqa: E402
 
-H = craft_lib.hex_rgb
-V = {  # vivid Halloween palette (D17/D18)
-    "night": H(0x241B4A), "orange": H(0xFF7B1C), "purple": H(0x7A2FBF), "violet": H(0x3B1E6B), "lime": H(0x8EE04A),
-    "black": H(0x17141F), "candy": H(0xFFD23F), "bone": H(0xF6EBD2), "berry": H(0xC2185B),
-    "skin": H(0xF7CDA8), "cheek": H(0xF58A8E), "nail": H(0xF9CDBD), "hair": H(0x241642), "hair_dark": H(0x170F2E),
-    "iris": H(0xC9701F), "iris_dark": H(0x5A2A0E), "line": H(0x4A2A2A), "mouth": H(0x6E1F33), "tongue": H(0xF0727F),
-    "white": (1.0, 1.0, 1.0),
-}
-
-
-def ell_lathe(name, base, profile, open_deg=0.0, segments=72, hem=None, inner=None, yscale=0.8, thickness=0.01,
-              folds=0, fold_depth=0.0):
-    """Elliptical lathe of rings (rx, z[, yscale[, open_deg]]) around Z, optionally open at the front (-Y).
-
-    `hem(t)` offsets the last ring's height along the span t = 0..1; `folds` ripples the cloth that many times
-    across the span, deepening toward the last ring; `inner` lines the inside with a second material."""
-    bm = bmesh.new()
-    is_open = open_deg > 0 or any(len(e) > 3 for e in profile)
-    count = segments if is_open else segments - 1
-    rings = []
-    for ri, entry in enumerate(profile):
-        rx, z = entry[0], entry[1]
-        ys = entry[2] if len(entry) > 2 else yscale
-        gap = math.radians(entry[3] if len(entry) > 3 else open_deg)
-        t_ring = ri / max(1, len(profile) - 1)
-        ring = []
-        for i in range(count + 1):
-            t = i / segments
-            a = -math.pi / 2 + gap + (2 * math.pi - 2 * gap) * t
-            zz = z + (hem(t) if hem and ri == len(profile) - 1 else 0.0)
-            fold = 1.0 + fold_depth * t_ring ** 1.5 * math.cos(2 * math.pi * folds * t) if folds else 1.0
-            ring.append(bm.verts.new((rx * fold * math.cos(a), rx * fold * ys * math.sin(a), zz)))
-        rings.append(ring)
-    rising = profile[-1][1] > profile[0][1]
-    for k in range(len(rings) - 1):
-        n = len(rings[k])
-        for i in range(n - 1 if is_open else n):
-            j = (i + 1) % n
-            quad = (rings[k][i], rings[k][j], rings[k + 1][j], rings[k + 1][i])
-            bm.faces.new(quad if rising else quad[::-1])  # normals always point outward
-    obj = pm.new_mesh_object(name, bm, base)
-    sol = obj.modifiers.new("Thick", "SOLIDIFY")
-    sol.thickness = thickness
-    if inner is not None:
-        obj.data.materials.append(inner)
-        sol.material_offset = 1
-        sol.material_offset_rim = 1
-    obj.modifiers.new("Smooth", "SUBSURF").levels = 2
-    return obj
-
-
-def flat(name, mat, outline, thickness, location=(0, 0, 0), rotation=(0, 0, 0)):
-    obj = pm.wing_outline(outline, thickness, mat, name)
-    obj.location = location
-    obj.rotation_euler = rotation
-    return obj
-
-
-def bat_outline(scale):
-    half = [(0.0, 0.18), (0.06, 0.2), (0.12, 0.12), (0.28, 0.22), (0.5, 0.14), (0.62, 0.02), (0.52, -0.02),
-            (0.44, -0.1), (0.33, -0.04), (0.24, -0.14), (0.14, -0.06), (0.05, -0.16), (0.0, -0.12)]
-    return [(x * scale, z * scale) for x, z in half] + [(-x * scale, z * scale) for x, z in reversed(half[1:-1])]
-
-
-def star_outline(radius, points=5):
-    return [(radius * (1.0 if i % 2 == 0 else 0.48) * math.sin(math.pi * i / points),
-             radius * (1.0 if i % 2 == 0 else 0.48) * math.cos(math.pi * i / points)) for i in range(2 * points)]
-
-
-def striped(mat, rgb, period):
-    """Copy of a craft material with horizontal bands of `rgb` every `period` metres of height."""
-    mat = mat.copy()
-    nodes, links = mat.node_tree.nodes, mat.node_tree.links
-    base = nodes["Principled BSDF"].inputs["Base Color"]
-    coord = nodes.new("ShaderNodeTexCoord")
-    split = nodes.new("ShaderNodeSeparateXYZ")
-    links.new(coord.outputs["Object"], split.inputs[0])
-    wave = nodes.new("ShaderNodeMath")
-    wave.operation = "PINGPONG"
-    wave.inputs[1].default_value = period / 2
-    links.new(split.outputs["Z"], wave.inputs[0])
-    band = nodes.new("ShaderNodeMath")
-    band.operation = "GREATER_THAN"
-    band.inputs[1].default_value = period / 4
-    links.new(wave.outputs[0], band.inputs[0])
-    mix = nodes.new("ShaderNodeMix")
-    mix.data_type = "RGBA"
-    links.new(band.outputs[0], mix.inputs[0])
-    links.new(base.links[0].from_socket, mix.inputs[6])
-    mix.inputs[7].default_value = craft_lib.lin(rgb)
-    links.new(mix.outputs[2], base)
-    sheen = nodes["Principled BSDF"].inputs["Sheen Weight"]  # dark bands: little sheen, or the ribs streak white
-    calm = nodes.new("ShaderNodeMath")
-    calm.operation = "MULTIPLY_ADD"
-    links.new(band.outputs[0], calm.inputs[0])
-    calm.inputs[1].default_value = -0.85 * sheen.default_value
-    calm.inputs[2].default_value = sheen.default_value
-    links.new(calm.outputs[0], sheen)
-    return mat
-
-
-def blushed(mat, rgb, centres, radius, strength=0.6):
-    """Copy of a smooth skin material with soft round blush painted around `centres` (object space)."""
-    mat = mat.copy()
-    nodes, links = mat.node_tree.nodes, mat.node_tree.links
-    bsdf = nodes["Principled BSDF"]
-    coord = nodes.new("ShaderNodeTexCoord")
-    total = None
-    for c in centres:
-        dist = nodes.new("ShaderNodeVectorMath")
-        dist.operation = "DISTANCE"
-        links.new(coord.outputs["Object"], dist.inputs[0])
-        dist.inputs[1].default_value = c
-        fade = nodes.new("ShaderNodeMapRange")
-        fade.interpolation_type = "SMOOTHSTEP"
-        fade.inputs["From Min"].default_value = radius * 0.25
-        fade.inputs["From Max"].default_value = radius
-        fade.inputs["To Min"].default_value = strength
-        fade.inputs["To Max"].default_value = 0.0
-        links.new(dist.outputs["Value"], fade.inputs["Value"])
-        if total is None:
-            total = fade.outputs["Result"]
-        else:
-            add = nodes.new("ShaderNodeMath")
-            add.operation = "MAXIMUM"
-            links.new(total, add.inputs[0])
-            links.new(fade.outputs["Result"], add.inputs[1])
-            total = add.outputs[0]
-    mix = nodes.new("ShaderNodeMix")
-    mix.data_type = "RGBA"
-    links.new(total, mix.inputs[0])
-    mix.inputs[6].default_value = bsdf.inputs["Base Color"].default_value
-    mix.inputs[7].default_value = craft_lib.lin(rgb)
-    links.new(mix.outputs[2], bsdf.inputs["Base Color"])
-    return mat
-
-
-def graded(mat, rgb, z0, z1):
-    """Copy of a smooth material whose colour blends to `rgb` from height z0 to z1 (object space)."""
-    mat = mat.copy()
-    nodes, links = mat.node_tree.nodes, mat.node_tree.links
-    bsdf = nodes["Principled BSDF"]
-    coord = nodes.new("ShaderNodeTexCoord")
-    split = nodes.new("ShaderNodeSeparateXYZ")
-    links.new(coord.outputs["Object"], split.inputs[0])
-    fade = nodes.new("ShaderNodeMapRange")
-    fade.inputs["From Min"].default_value = z0
-    fade.inputs["From Max"].default_value = z1
-    links.new(split.outputs["Z"], fade.inputs["Value"])
-    mix = nodes.new("ShaderNodeMix")
-    mix.data_type = "RGBA"
-    links.new(fade.outputs["Result"], mix.inputs[0])
-    mix.inputs[6].default_value = bsdf.inputs["Base Color"].default_value
-    mix.inputs[7].default_value = craft_lib.lin(rgb)
-    links.new(mix.outputs[2], bsdf.inputs["Base Color"])
-    return mat
+import costume as co  # noqa: E402
+from costume import V, bat_outline, blushed, ell_lathe, flat, graded, star_outline, striped  # noqa: E402
 
 
 def build_head(craft, P):
@@ -435,86 +281,25 @@ def build_pip(craft):
     return P
 
 
-def stage():
-    scene = bpy.context.scene
-    scene.render.engine = "BLENDER_EEVEE"
-    scene.eevee.taa_render_samples = 64
-    scene.eevee.use_gtao = True
-    scene.eevee.gtao_distance = 0.2
-    scene.eevee.use_soft_shadows = True
-    scene.eevee.use_bloom = True
-    scene.eevee.bloom_intensity = 0.04
-    scene.eevee.bloom_threshold = 1.2
-    scene.view_settings.view_transform = "Standard"  # keeps the palette as saturated as it will be in-engine
-    scene.view_settings.exposure = -0.3
-    world = bpy.data.worlds.new("Night")
-    world.use_nodes = True
-    world.node_tree.nodes["Background"].inputs[0].default_value = craft_lib.lin(V["night"])
-    world.node_tree.nodes["Background"].inputs[1].default_value = 0.6
-    scene.world = world
-    bm = bmesh.new()
-    bmesh.ops.create_circle(bm, cap_ends=True, segments=64, radius=2.0)
-    ground = bpy.data.materials.new("Ground")
-    ground.use_nodes = True
-    ground.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = craft_lib.lin(H(0x1E1830))
-    ground.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.95
-    pm.new_mesh_object("Ground", bm, ground)
-
-    def area(name, loc, energy, colour, size, target=(0, 0, 0.7)):
-        data = bpy.data.lights.new(name, "AREA")
-        data.energy, data.color, data.size = energy, colour, size
-        obj = bpy.data.objects.new(name, data)
-        obj.location = loc
-        obj.rotation_euler = (Vector(target) - Vector(loc)).to_track_quat("-Z", "Y").to_euler()
-        pm.link(obj)
-
-    area("Key", (-1.8, -2.6, 2.4), 230, (1.0, 0.86, 0.72), 1.8)
-    area("Rim", (1.9, 2.4, 2.1), 380, (0.72, 0.66, 1.0), 1.4)
-    area("Fill", (2.4, -1.6, 1.0), 90, (0.8, 0.82, 1.0), 2.2)
-    cam = bpy.data.objects.new("Cam", bpy.data.cameras.new("Cam"))
-    pm.link(cam)
-    scene.camera = cam
-    return cam
-
-
-def render_view(cam, location, target, lens, width, height, path):
-    scene = bpy.context.scene
-    scene.render.resolution_x, scene.render.resolution_y = width, height
-    cam.data.lens = lens
-    cam.location = Vector(location)
-    cam.rotation_euler = (Vector(target) - cam.location).to_track_quat("-Z", "Y").to_euler()
-    scene.render.filepath = path
-    bpy.ops.render.render(write_still=True)
-    img = bpy.data.images.load(path)
-    px = np.array(img.pixels[:], dtype=np.float32).reshape(height, width, 4)
-    bpy.data.images.remove(img)
-    os.remove(path)
-    return px
-
-
 def main():
     out = sys.argv[sys.argv.index("--") + 1:][0]
     bpy.ops.wm.read_factory_settings(use_empty=True)
     craft = craft_lib.Craft(1.2)
     build_pip(craft)
-    cam = stage()
+    cam = co.stage()
     tmp = os.path.splitext(out)[0]
     tiles = []
     target = Vector((0, 0, 0.64))
     for i, yaw in enumerate((0, 35, 90, 145, 180)):
         a = math.radians(yaw)
         loc = target + Vector((4.0 * math.sin(a), -4.0 * math.cos(a), 0.3))
-        tiles.append(render_view(cam, loc, target, 85, 420, 620, f"{tmp}_t{i}.png"))
+        tiles.append(co.render_view(cam, loc, target, 85, 420, 620, f"{tmp}_t{i}.png"))
     top = np.concatenate(tiles, axis=1)
-    portrait = render_view(cam, (-0.42, -1.4, 1.14), (0.0, 0.0, 1.045), 85, 1260, 620, f"{tmp}_face.png")
-    detail = render_view(cam, (-0.62, -1.2, 0.42), (0.03, -0.05, 0.25), 50, 840, 620, f"{tmp}_detail.png")
+    portrait = co.render_view(cam, (-0.42, -1.4, 1.14), (0.0, 0.0, 1.045), 85, 1260, 620, f"{tmp}_face.png")
+    detail = co.render_view(cam, (-0.62, -1.2, 0.42), (0.03, -0.05, 0.25), 50, 840, 620, f"{tmp}_detail.png")
     bottom = np.concatenate([portrait, detail], axis=1)
     sheet = np.concatenate([bottom, top], axis=0)  # image rows run bottom-up
-    img = bpy.data.images.new("Sheet", sheet.shape[1], sheet.shape[0], alpha=True)
-    img.pixels.foreach_set(sheet.ravel())
-    img.filepath_raw = out
-    img.file_format = "PNG"
-    img.save()
+    co.save_sheet(sheet, out)
     print("pip sheet ->", out)
 
 

@@ -19,10 +19,10 @@ import pip_model as pm  # shared mesh helpers (ellipsoid, torus, curve_tube, lin
 class Proportions:
     """Joint landmarks for one body. `h` is standing height to the top of the skull (not hair)."""
 
-    def __init__(self, h=1.2, child=True, build=1.0, belly=1.0):
+    def __init__(self, h=1.2, child=True, build=1.0, belly=1.0, heads=None):
         self.h = h
         self.child = child
-        heads = 4.5 if child else 6.0
+        heads = heads or (4.5 if child else 6.0)
         self.head_h = h / heads
         self.head_r = self.head_h * 0.5
         u = h  # landmarks as fractions of height
@@ -81,16 +81,20 @@ def mount(name, point, normal, children, roll=0.0):
     return pivot
 
 
-def _fan(name, mat, points, thickness):
-    """Thin patch through `points` (a closed loop facing -Y), filled from its centroid."""
+def patch(name, mat, points, thickness, fan=True):
+    """Thin patch through `points` (a closed loop facing -Y): filled from its centroid, or, for concave
+    outlines, as one polygon (`fan=False`)."""
     area = sum(a.x * b.z - b.x * a.z for a, b in zip(points, points[1:] + points[:1]))
     if area < 0:
         points = points[::-1]
     bm = bmesh.new()
-    centre = bm.verts.new(sum(points, Vector()) / len(points))
     ring = [bm.verts.new(p) for p in points]
-    for i in range(len(ring)):
-        bm.faces.new((centre, ring[i], ring[(i + 1) % len(ring)]))
+    if fan:
+        centre = bm.verts.new(sum(points, Vector()) / len(points))
+        for i in range(len(ring)):
+            bm.faces.new((centre, ring[i], ring[(i + 1) % len(ring)]))
+    else:
+        bmesh.ops.triangulate(bm, faces=[bm.faces.new(ring)])
     obj = pm.new_mesh_object(name, bm, mat)
     obj.modifiers.new("Thick", "SOLIDIFY").thickness = thickness
     return obj
@@ -319,9 +323,11 @@ def sneaker(name, P, side, upper, rubber, accent, lace):
 
 
 def head(name, P, skin, sclera, iris, pupil, line, mouth_inside, tongue, fang=None, brow=None, freckle=None,
-         ears=True):
+         ears=True, adult=False, mouth="open", teeth=None):
     """A child's head: round cranium, full cheeks, short soft chin, big low-set eyes, button nose, open smile.
 
+    `adult` keeps the friendly eyes but lengthens the face, tapers the jaw, raises and shrinks the eyes a little
+    and grows the nose. `mouth` is "open" (small open smile), "grin" (wide, with `teeth`) or "smile" (closed).
     Returns surface(x, z, out): the point on the face at offsets (x, z) from the head centre, lifted by `out`."""
     r = P.head_r
     hc = P.head_c
@@ -332,11 +338,15 @@ def head(name, P, skin, sclera, iris, pupil, line, mouth_inside, tongue, fang=No
         if zz < 0:
             d = -zz
             cheek = math.exp(-((d - 0.42) / 0.3) ** 2)
-            x *= 1 + 0.08 * cheek - 0.12 * d ** 3  # full cheeks, barely tapering to a soft chin
+            if adult:
+                x *= 1 + 0.03 * cheek - 0.24 * d ** 2.2  # a longer face with a defined jaw
+                zz *= 1.02
+            else:
+                x *= 1 + 0.08 * cheek - 0.12 * d ** 3  # full cheeks, barely tapering to a soft chin
+                zz *= 0.9  # short lower face
             if y < 0:
                 y *= 1 + 0.05 * cheek
-            zz *= 0.9  # short lower face
-        v.co = Vector((x * r, y * r * 0.97, zz * r)) + hc
+        v.co = Vector((x * r * (0.95 if adult else 1.0), y * r * 0.97, zz * r)) + hc
     skull = pm.new_mesh_object(name + "Head", bm, skin)
     skull.modifiers.new("Smooth", "SUBSURF").levels = 1
     cast = probe(skull)
@@ -351,16 +361,17 @@ def head(name, P, skin, sclera, iris, pupil, line, mouth_inside, tongue, fang=No
     def loop(points, out):
         return [surface(r * px, r * pz, r * out) for px, pz in points]
 
-    eye_x, eye_z = r * 0.37, -r * 0.1
-    er = (r * 0.19, r * 0.075, r * 0.225)
+    eye_x, eye_z = (r * 0.35, r * 0.02) if adult else (r * 0.37, -r * 0.1)
+    e = r * (0.8 if adult else 1.0)  # eye size
+    er = (e * 0.19, r * 0.075, e * 0.225)
     y0 = r * 0.045  # the eye sits in the head, only a shallow dome shows
     for s in (1, -1):
         point, normal = frame(s * eye_x, eye_z)
         parts = [pm.ellipsoid(name + "Sclera", sclera, (0, y0, 0), er, segments=32, rings=20)]
-        gaze = (-s * r * 0.02, -r * 0.012)
-        parts.append(_dome_patch(name + "Iris", iris, er, y0, gaze, (r * 0.118, r * 0.142), 1.03))
-        parts.append(_dome_patch(name + "Pupil", pupil, er, y0, gaze, (r * 0.062, r * 0.078), 1.06))
-        for du, dw, size in ((-r * 0.05, r * 0.062, r * 0.04), (r * 0.045, -r * 0.07, r * 0.018)):
+        gaze = (-s * e * 0.02, -e * 0.012)
+        parts.append(_dome_patch(name + "Iris", iris, er, y0, gaze, (e * 0.118, e * 0.142), 1.03))
+        parts.append(_dome_patch(name + "Pupil", pupil, er, y0, gaze, (e * 0.062, e * 0.078), 1.06))
+        for du, dw, size in ((-e * 0.05, e * 0.062, e * 0.04), (e * 0.045, -e * 0.07, e * 0.018)):
             parts.append(_dome_patch(name + "Glint", sclera, er, y0, (gaze[0] + du, gaze[1] + dw), (size, size),
                                      1.09, rings=2, segments=16))
         # A thin, soft upper lash line: no liner, no lower lid.
@@ -372,24 +383,36 @@ def head(name, P, skin, sclera, iris, pupil, line, mouth_inside, tongue, fang=No
         parts.append(pm.curve_tube(name + "Lash", line, lash, r * 0.013, taper=(0.5, 1.0)))
         mount(name + "Eye", point, normal.lerp(Vector((0, -1, 0)), 0.4), parts)
         if brow is not None:
-            arc = [surface(s * r * dx, eye_z + r * dz, r * 0.004) for dx, dz in ((0.22, 0.36), (0.36, 0.385),
+            arc = [surface(s * r * dx, eye_z + e * dz, r * 0.004) for dx, dz in ((0.22, 0.36), (0.36, 0.385),
                                                                                  (0.5, 0.35))]
-            pm.curve_tube(name + "Brow", brow, arc, r * 0.016, taper=(1.0, 0.6))
+            pm.curve_tube(name + "Brow", brow, arc, r * (0.024 if adult else 0.016), taper=(1.0, 0.6))
         if ears:
             ear_c = hc + Vector((s * r * 0.97, r * 0.08, -r * 0.14))
             pm.ellipsoid(name + "Ear", skin, ear_c, (r * 0.07, r * 0.11, r * 0.16), rotation=(0, 0, s * 0.35))
-    pm.ellipsoid(name + "Nose", skin, surface(0, -r * 0.33, -r * 0.012), (r * 0.062, r * 0.055, r * 0.05))
-    # Small open smile: dark mouth, tongue, two tiny fangs hanging from the upper lip line.
+    if adult:
+        pm.ellipsoid(name + "Nose", skin, surface(0, -r * 0.27, -r * 0.01), (r * 0.085, r * 0.08, r * 0.1))
+    else:
+        pm.ellipsoid(name + "Nose", skin, surface(0, -r * 0.33, -r * 0.012), (r * 0.062, r * 0.055, r * 0.05))
+    wide = {"open": 1.0, "grin": 1.45, "smile": 1.2}[mouth]
+    drop = -0.07 if adult else 0.0
+
+    def lips(points, out):
+        return loop([(px * wide, pz + drop) for px, pz in points], out)
     lip = [(-0.15, -0.465), (-0.08, -0.49), (0.0, -0.497), (0.08, -0.49), (0.15, -0.465)]
-    opening = lip + [(0.125, -0.535), (0.065, -0.6), (0.0, -0.618), (-0.065, -0.6), (-0.125, -0.535)]
-    _fan(name + "Mouth", mouth_inside, loop(opening, 0.003), r * 0.006)
-    _fan(name + "Tongue", tongue, loop([(0.06 * math.cos(a), -0.578 + 0.028 * math.sin(a)) for a in
-                                        [2 * math.pi * i / 14 for i in range(14)]], 0.006), r * 0.004)
-    if fang is not None:
-        for s in (1, -1):
-            pm.ellipsoid(name + "Fang", fang, surface(s * r * 0.078, -r * 0.518, r * 0.004),
-                         (r * 0.024, r * 0.014, r * 0.04), subsurf=1)
-    pm.curve_tube(name + "Smile", line, loop([(-0.205, -0.432), (-0.185, -0.452)] + lip + [(0.185, -0.452),
+    if mouth != "smile":
+        # Open smile: dark mouth, tongue, and either two tiny fangs or a row of teeth along the upper lip.
+        opening = lip + [(0.125, -0.535), (0.065, -0.6), (0.0, -0.618), (-0.065, -0.6), (-0.125, -0.535)]
+        patch(name + "Mouth", mouth_inside, lips(opening, 0.003), r * 0.006)
+        patch(name + "Tongue", tongue, lips([(0.06 * math.cos(t), -0.578 + 0.028 * math.sin(t)) for t in
+                                            [2 * math.pi * i / 14 for i in range(14)]], 0.006), r * 0.004)
+        if teeth is not None:
+            patch(name + "Teeth", teeth, lips(lip[1:-1] + [(0.105, -0.478), (0.09, -0.525), (0.0, -0.537),
+                                                          (-0.09, -0.525), (-0.105, -0.478)], 0.007), r * 0.004)
+        if fang is not None:
+            for s in (1, -1):
+                pm.ellipsoid(name + "Fang", fang, surface(s * r * 0.078, -r * 0.518, r * 0.004),
+                             (r * 0.024, r * 0.014, r * 0.04), subsurf=1)
+    pm.curve_tube(name + "Smile", line, lips([(-0.205, -0.432), (-0.185, -0.452)] + lip + [(0.185, -0.452),
                                                                                             (0.205, -0.432)], 0.008),
                   r * 0.012, taper=(0.6, 0.6))
     if freckle is not None:
