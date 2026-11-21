@@ -93,9 +93,14 @@ for step in "$@"; do
   fi
   echo "::group::Unity step: ${name}"
   # shellcheck disable=SC2086 # step arguments are space-separated by contract and contain no spaces themselves
-  unity-editor -batchmode "${graphics[@]}" -projectPath /project -logFile - $args 2>&1 | tee "$log"
+  # A hung editor must not hold the runner until the job timeout.
+  timeout --kill-after=30 "${UNITY_STEP_TIMEOUT:-1200}" \
+    unity-editor -batchmode "${graphics[@]}" -projectPath /project -logFile - $args 2>&1 | tee "$log"
   code=${PIPESTATUS[0]}
   echo "::endgroup::"
+  if [[ $code -eq 124 || $code -eq 137 ]]; then
+    echo "::error title=Unity step timed out (${name})::No exit after ${UNITY_STEP_TIMEOUT:-1200}s; see the last log lines."
+  fi
   echo "Unity step '${name}' exited with ${code}"
   if grep -q "Scripts have compiler errors" "$log"; then
     echo "::error title=Unity compile errors (${name})::$(grep -m5 -E 'error CS[0-9]+' "$log" | tr '\n' ' ')"

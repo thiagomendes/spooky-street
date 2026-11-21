@@ -47,6 +47,7 @@ namespace SpookyStreet.Tests.Visual
         }
 
         [UnityTest]
+        [Timeout(240000)]
         public IEnumerator CaptureKeyFrames()
         {
             yield return SceneManager.LoadSceneAsync("LanternLane", LoadSceneMode.Single);

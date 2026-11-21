@@ -1,6 +1,7 @@
 using System.Collections;
 using System.IO;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace SpookyStreet.Tests.Visual
 {
@@ -23,13 +24,19 @@ namespace SpookyStreet.Tests.Visual
             canvas.renderMode = RenderMode.ScreenSpaceCamera;
             canvas.worldCamera = camera;
             canvas.planeDistance = 0.5f;
-            camera.targetTexture = target;
+            // Let UI layout settle in its new render mode. WaitForEndOfFrame never resumes in batchmode,
+            // so frames are advanced with plain yields and rendered explicitly below.
+            yield return null;
+            Canvas.ForceUpdateCanvases();
 
-            // Warm-up frames: the first render after a change can be blank while shaders compile.
-            for (int i = 0; i < 4; i++)
+            // Warm-up render: the first one after a change can be blank while shaders compile.
+            for (int i = 0; i < 3; i++)
             {
-                yield return new WaitForEndOfFrame();
+                RenderInto(camera, target);
+                yield return null;
             }
+
+            RenderInto(camera, target);
 
             var previousActive = RenderTexture.active;
             RenderTexture.active = target;
@@ -38,7 +45,6 @@ namespace SpookyStreet.Tests.Visual
             frame.Apply();
             RenderTexture.active = previousActive;
 
-            camera.targetTexture = null;
             canvas.renderMode = previousMode;
             canvas.worldCamera = previousCamera;
             canvas.planeDistance = previousPlane;
@@ -56,6 +62,22 @@ namespace SpookyStreet.Tests.Visual
             LastFrame = frame;
             Debug.Log($"[FrameCapture] {name}: {width}x{height}, magenta {MagentaFraction(frame):P2}, " +
                       $"mean luminance {MeanLuminance(frame):0.000}");
+        }
+
+        /// <summary>Renders one frame of the camera into the target through the active render pipeline.</summary>
+        private static void RenderInto(Camera camera, RenderTexture target)
+        {
+            var request = new RenderPipeline.StandardRequest { destination = target };
+            if (RenderPipeline.SupportsRenderRequest(camera, request))
+            {
+                RenderPipeline.SubmitRenderRequest(camera, request);
+                return;
+            }
+
+            RenderTexture previous = camera.targetTexture;
+            camera.targetTexture = target;
+            camera.Render();
+            camera.targetTexture = previous;
         }
 
         /// <summary>Fraction of pixels that look like Unity's error shader (saturated magenta).</summary>
