@@ -1,0 +1,5 @@
+# Pinned toolchain for the macOS archive/upload job. Regenerate the lock with
+#   cd ios && bundle lock --update fastlane --add-platform arm64-darwin x86_64-darwin
+source "https://rubygems.org"
+
+gem "fastlane", "2.242.0"

@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db9eff69ac554f3798042c897c7515a2, type: 3}
+  m_Name: PipMovementTuning
+  m_EditorClassIdentifier: 
+  maxSpeed: 4
+  accelerationTime: 0.15
+  decelerationTime: 0.12
+  jumpApexHeight: 1
+  gravity: 25
+  coyoteTime: 0.1
+  jumpBufferTime: 0.12
+  airControl: 0.6
+  maxFallSpeed: 20
+  height: 1.1
+  radius: 0.28
+  stepOffset: 0.2
+  slopeLimit: 45
+  turnSpeedDegrees: 720
+  fallResetDepth: 5
+  maxFallTime: 1.4
+  cameraDistance: 3.8
+  pivotHeight: 0.85
+  shoulderRise: 0.25
+  fieldOfView: 55
+  touchDegreesPerPixel: 0.22
+  mouseDegreesPerPixel: 0.12
+  stickDegreesPerSecond: 160
+  invertY: 0

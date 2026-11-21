@@ -1,0 +1,138 @@
+name: CI
+
+# Runs on every pull request and on main. Holds no Apple signing credentials (spec §7 step 2).
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned Unity 6.3 LTS editor (must match ProjectSettings/ProjectVersion.txt; validated by tools/ci/validate_project.py).
+  UNITY_IMAGE: unityci/editor:ubuntu-6000.3.28f1-base-3@sha256:9b4a75cc70482fa674abae2c800aec8648aa8aefd0c05ffe7e935b7997342146
+
+jobs:
+  static:
+    name: Static checks (no Unity licence)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Install pinned linters
+        run: python -m pip install --disable-pip-version-check -r tools/requirements-ci.txt
+      - name: Validate Unity project structure
+        run: python tools/ci/validate_project.py
+      - name: Check .meta files
+        run: python tools/unity_meta.py --check
+      - name: Lint workflows
+        run: actionlint
+      - name: Lint shell scripts
+        run: shellcheck ci/unity/*.sh ci/ios/*.sh tools/check-local.sh
+      - name: Lint YAML
+        run: yamllint -c .yamllint.yml .github
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: "8.0.x"
+      - name: Engine-free core tests
+        run: dotnet test tools/core-tests --logger "trx;LogFileName=core-tests.trx" --results-directory ci-out/core-tests
+      - name: Upload core test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: core-tests-${{ github.sha }}
+          path: ci-out/core-tests
+          retention-days: 14
+
+  unity-licence:
+    name: Unity licence configured?
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      available: ${{ steps.check.outputs.available }}
+    steps:
+      - id: check
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          missing=()
+          [[ -n "$UNITY_LICENSE" || -n "$UNITY_SERIAL" ]] || missing+=("UNITY_LICENSE (or UNITY_SERIAL)")
+          [[ -n "$UNITY_EMAIL" ]] || missing+=("UNITY_EMAIL")
+          [[ -n "$UNITY_PASSWORD" ]] || missing+=("UNITY_PASSWORD")
+          if [[ ${#missing[@]} -eq 0 ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Unity tests not run::Missing repository secrets: ${missing[*]}. See docs/ci-setup.md."
+            echo "### Unity tests NOT run: missing secrets ${missing[*]}" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  unity-tests:
+    name: Unity compile + EditMode/PlayMode tests
+    needs: [static, unity-licence]
+    if: needs.unity-licence.outputs.available == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          lfs: true
+          persist-credentials: false
+      - name: Free runner disk for the editor image
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h /
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: Library
+          key: Library-tests-${{ hashFiles('ProjectSettings/ProjectVersion.txt', 'Packages/*.json') }}-${{ hashFiles('Assets/**/*.cs') }}
+          restore-keys: |
+            Library-tests-${{ hashFiles('ProjectSettings/ProjectVersion.txt', 'Packages/*.json') }}-
+      - name: Pull pinned editor image
+        run: docker pull "$UNITY_IMAGE"
+      - name: Run Unity tests
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: >-
+          ci/unity/run-unity.sh "$UNITY_IMAGE"
+          "editmode::-runTests -testPlatform EditMode -testResults /project/ci-out/editmode-results.xml"
+          "playmode::-runTests -testPlatform PlayMode -testResults /project/ci-out/playmode-results.xml"
+      - name: Summarise results
+        if: always()
+        run: |
+          {
+            echo "### Unity $(sed -n 's/^m_EditorVersion: //p' ProjectSettings/ProjectVersion.txt) tests"
+            python3 tools/ci/nunit_summary.py ci-out/editmode-results.xml ci-out/playmode-results.xml
+          } >> "$GITHUB_STEP_SUMMARY"
+          python3 tools/ci/nunit_summary.py ci-out/editmode-results.xml ci-out/playmode-results.xml
+      - name: Capture files Unity normalised (packages-lock, settings)
+        if: always()
+        run: |
+          git add -N .
+          git diff > ci-out/unity-normalized.patch || true
+          git status --porcelain | tee ci-out/unity-normalized-files.txt
+      - name: Upload Unity results and logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unity-tests-${{ github.sha }}
+          path: ci-out
+          retention-days: 14

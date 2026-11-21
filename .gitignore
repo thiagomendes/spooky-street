@@ -1,0 +1,51 @@
+# Unity generated
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+/Assets/Plugins/Editor/JetBrains*
+/Assets/StreamingAssets/aa*
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+sysinfo.txt
+crashlytics-build.properties
+
+# IDE / OS
+.vs/
+.vscode/
+.idea/
+*.csproj
+*.sln
+!/tools/core-tests/*.csproj
+*.suo
+*.user
+*.userprefs
+.DS_Store
+Thumbs.db
+
+# Engine-free test project output
+/tools/core-tests/bin/
+/tools/core-tests/obj/
+/tools/core-tests/TestResults/
+
+# CI scratch and secrets that must never be committed
+/ci-out/
+*.p12
+*.mobileprovision
+*.p8
+*.ulf
+*.alf
+fastlane/report.xml
+fastlane/README.md
+/ios/fastlane/report.xml
+/ios/fastlane/README.md
+/ios/vendor/
+/ios/.bundle/
+__pycache__/
+/Assets/SpookyStreet/Content/Resources/BuildInfo.json*
