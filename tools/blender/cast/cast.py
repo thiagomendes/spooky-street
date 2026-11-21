@@ -31,6 +31,9 @@ INTENSITY = 1.2  # owner choice: pronounced handcrafted
 C = {
     "paper": H(0xF4E6C8), "amber": H(0xF6AD58), "silver": H(0xDAE2EE), "indigo": H(0x394461), "ink": H(0x1E2233),
     "twilight": H(0x344767), "hedge": H(0x2E4A43), "white": (1.0, 1.0, 1.0),
+    # Halloween night family (owner direction, D17)
+    "night": H(0x2A2550), "purple": H(0x5B3A7A), "plum": H(0x7A3E6E), "orange": H(0xEE7F2D), "witch": H(0x8DBF3F),
+    "moss": H(0x3E5F3A), "bone": H(0xF4E6C8), "corn": H(0xF6D365), "black": H(0x1E1A26),
     # Bea
     "bea_skin": H(0xC68B5E), "bea_hair": H(0x7A3B26), "bea_jacket": H(0x3E6B5E), "bea_scarf": H(0xD9A53B),
     "denim": H(0x3B4A6B), "pumpkin": H(0xE0873A), "stem": H(0x6B4A36), "bike": H(0x2F6F73), "wicker": H(0xB98A5A),
@@ -200,7 +203,7 @@ def shoes(craft, prefix, nodes, mat, sole, scale=1.0, length=1.0):
                      (0.057 * scale, 0.088 * scale * length, 0.016 * scale))
 
 
-def lathe(name, mat, profile, open_deg=0.0, segments=64, hem_wave=0.0, cut=None):
+def lathe(name, mat, profile, open_deg=0.0, segments=64, hem_wave=0.0, cut=None, inner=None):
     """Revolve (radius, z) rings around Z; optional front opening, scalloped hem, and face cut-outs."""
     bm = bmesh.new()
     rings = []
@@ -222,9 +225,36 @@ def lathe(name, mat, profile, open_deg=0.0, segments=64, hem_wave=0.0, cut=None)
             if cut and cut(f.calc_center_median()):
                 bm.faces.remove(f)
     obj = pm.new_mesh_object(name, bm, mat)
-    obj.modifiers.new("Thick", "SOLIDIFY").thickness = 0.012
+    sol = obj.modifiers.new("Thick", "SOLIDIFY")
+    sol.thickness = 0.012
+    if inner is not None:
+        obj.data.materials.append(inner)  # lining: the solidified inner shell and rim
+        sol.material_offset = 1
+        sol.material_offset_rim = 1
     obj.modifiers.new("Smooth", "SUBSURF").levels = 2
     return obj
+
+
+def witch_hat(name, mat, base, brim, height, crown, bend=0.12, tilt=(0.0, 0.0)):
+    """Pointed hat: a soft brim and a cone that bends over at the tip."""
+    pm.ellipsoid(name + "Brim", mat, base, (brim, brim, brim * 0.06), rotation=(tilt[0], tilt[1], 0), subsurf=2)
+    bm = bmesh.new()
+    rings = []
+    steps, segs = 14, 32
+    for i in range(steps + 1):
+        t = i / steps
+        rad = crown * (1 - t) ** 0.9 + 0.004
+        off = Vector((bend * t ** 2.4, 0, height * t - 0.25 * bend * t ** 3))
+        centre = Vector(base) + off
+        rings.append([bm.verts.new(centre + Vector((rad * math.cos(2 * math.pi * k / segs),
+                                                    rad * math.sin(2 * math.pi * k / segs), 0)))
+                      for k in range(segs)])
+    for i in range(steps):
+        for k in range(segs):
+            bm.faces.new((rings[i][k], rings[i][(k + 1) % segs], rings[i + 1][(k + 1) % segs], rings[i + 1][k]))
+    cone = pm.new_mesh_object(name + "Cone", bm, mat)
+    cone.modifiers.new("Smooth", "SUBSURF").levels = 1
+    return cone
 
 
 def lobed(name, mat, centre, radii, lobes=8, depth=0.1):
@@ -255,6 +285,28 @@ def star_outline(r_out, r_in, points=5):
     return pts
 
 
+def jack_face(prefix, mat, centre, size, yaw=0.0):
+    """Carved/painted jack-o'-lantern face (two triangle eyes, a triangle nose, a zigzag grin) facing -Y."""
+    eye = [(-0.5, -0.35), (0.5, -0.35), (0.0, 0.45)]
+    mouth = [(-1.0, 0.1), (-0.6, -0.15), (-0.3, 0.05), (0.0, -0.2), (0.3, 0.05), (0.6, -0.15), (1.0, 0.1),
+             (0.55, -0.45), (0.0, -0.55), (-0.55, -0.45)]
+    c = Vector(centre)
+    rot = (0, 0, yaw)
+    for sx in (-1, 1):
+        flat_shape(prefix + "JackEye", mat, [(x * size * 0.55, z * size * 0.55) for x, z in eye], 0.004,
+                   c + Vector((sx * size * 0.42, 0, size * 0.35)), rot)
+    flat_shape(prefix + "JackNose", mat, [(x * size * 0.3, z * size * 0.3) for x, z in eye], 0.004,
+               c + Vector((0, 0, size * 0.02)), rot)
+    flat_shape(prefix + "JackMouth", mat, [(x * size * 0.7, z * size * 0.7) for x, z in mouth], 0.004,
+               c + Vector((0, 0, -size * 0.28)), rot)
+
+
+def bat_outline(scale):
+    half = [(0.0, 0.18), (0.06, 0.2), (0.12, 0.12), (0.28, 0.22), (0.5, 0.14), (0.62, 0.02), (0.52, -0.02),
+            (0.44, -0.1), (0.33, -0.04), (0.24, -0.14), (0.14, -0.06), (0.05, -0.16), (0.0, -0.12)]
+    return [(x * scale, z * scale) for x, z in half] + [(-x * scale, z * scale) for x, z in reversed(half[1:-1])]
+
+
 def crescent(r):
     outer = [(r * math.cos(a), r * math.sin(a)) for a in [math.radians(60 + 240 * i / 16) for i in range(17)]]
     inner = [(0.45 * r + 0.75 * r * math.cos(a), 0.75 * r * math.sin(a))
@@ -267,19 +319,22 @@ def crescent(r):
 def build_bea(craft):
     s = 1.11
     nodes = child_nodes(s)
-    mats = [craft.felt(C["bea_jacket"]), craft.knit(C["denim"])]
-    skin_body("Bea_Body", nodes, limb_edges(),
-              lambda c: 1 if c.z < 0.345 * s and not (abs(c.x) > 0.125 * s and c.z > 0.4 * s) else 0, mats)
+    mats = [craft.knit(C["orange"]), craft.knit(C["black"]), craft.knit(C["purple"])]
+
+    def bea_regions(c):
+        if c.z < 0.345 * s and not (abs(c.x) > 0.125 * s and c.z > 0.4 * s):
+            return 2
+        return int(c.z / (0.045 * s)) % 2  # classic Halloween stripes
+    skin_body("Bea_Body", nodes, limb_edges(), bea_regions, mats)
     r = 0.185 * 1.03
     hc = Vector((0, 0, 0.875 * s))
     face(craft, "Bea_", hc, r, C["bea_skin"], C["bea_hair"], mouth="grin", freckles=True)
     hands(craft, "Bea_", nodes, C["bea_skin"], 1.05)
     shoes(craft, "Bea_", nodes, craft.felt(C["paper"]), craft.smooth(C["amber"], 0.6), 1.05)
     # Jacket zip as a running stitch, cuffs.
-    craft.stitches("Bea_Zip", [(0, -0.118 * s, 0.66 * s), (0, -0.128 * s, 0.5 * s), (0, -0.118 * s, 0.39 * s)],
-                   C["ink"], spacing=0.014, dash=0.008, radius=0.0025)
     # Pumpkin bike helmet with stem, leaf and chin strap.
-    lobed("Bea_Helmet", craft.felt(C["pumpkin"]), hc + Vector((0, 0.02, r * 0.6)), (r * 1.12, r * 1.08, r * 0.62))
+    lobed("Bea_Helmet", craft.felt(C["orange"]), hc + Vector((0, 0.02, r * 0.6)), (r * 1.12, r * 1.08, r * 0.62))
+    jack_face("Bea_Helmet", craft.felt(C["black"]), hc + Vector((0, -r * 0.98, r * 0.86)), 0.05)
     pm.curve_tube("Bea_HelmetStem", craft.felt(C["stem"]), [hc + Vector((0, 0.02, r * 1.15)),
                                                          hc + Vector((0.01, 0.01, r * 1.35)),
                                                          hc + Vector((0.045, 0.0, r * 1.45))], 0.018, taper=(1, 0.6))
@@ -303,13 +358,13 @@ def build_bea(craft):
     pm.torus("Bea_HairTie", craft.felt(C["amber"]), hc + Vector((0, r * 1.0, r * 0.12)), 0.035, 0.012,
              rotation=(math.radians(70), 0, 0), segments=20, sides=8)
     # Mustard scarf with a hanging tail.
-    pm.torus("Bea_Scarf", craft.knit(C["bea_scarf"]), (0, 0, 0.7 * s), 0.09 * s, 0.04 * s, squash=0.8)
-    pm.ellipsoid("Bea_ScarfTail", craft.knit(C["bea_scarf"]), (0.06, -0.1 * s, 0.6 * s), (0.035, 0.02, 0.1),
+    pm.torus("Bea_Scarf", craft.knit(C["witch"]), (0, 0, 0.7 * s), 0.09 * s, 0.04 * s, squash=0.8)
+    pm.ellipsoid("Bea_ScarfTail", craft.knit(C["witch"]), (0.06, -0.1 * s, 0.6 * s), (0.035, 0.02, 0.1),
                  rotation=(0.15, 0, -0.2))
 
 
 def build_bicycle(craft):
-    paint = craft.smooth(C["bike"], 0.35)
+    paint = craft.smooth(C["purple"], 0.35)
     tyre = craft.smooth(C["ink"], 0.75)
     rim = craft.smooth(C["amber"], 0.4)
     spoke = craft.smooth(C["paper"], 0.5)
@@ -341,6 +396,9 @@ def build_bicycle(craft):
     pm.ellipsoid("Bike_BasketBase", wicker, (0.5, 0, 0.64), (0.14, 0.14, 0.02), subsurf=1)
     pm.curve_tube("Bike_BasketStrut", paint, [(0.36, 0, 0.62), (0.44, 0, 0.64)], 0.01, taper=(1, 1), resolution=1)
     foil = craft.smooth(C["silver"], 0.22)
+    for sy in (0.26, -0.26):
+        flat_shape("Bike_BatStreamer", craft.paper(C["black"]), bat_outline(0.11), 0.003, (0.36, sy, 1.0),
+                   (0, 0.2 if sy > 0 else -0.2, 0))
     for i, (x, y, z, rot) in enumerate(((0.5, -0.16, 0.66, 0.2), (0.4, -0.2, 0.58, -0.3), (0.1, -0.03, 0.6, 0.4),
                                         (-0.2, -0.03, 0.62, -0.2))):
         moon = flat_shape("Bike_FoilMoon", foil, crescent(0.05), 0.004, (x, y, z), (0, rot, 0))
@@ -351,19 +409,23 @@ def build_bicycle(craft):
 def build_june(craft):
     s = 1.27
     nodes = child_nodes(s, stock=0.9)
-    mats = [craft.knit(C["june_dress"]), craft.knit(C["leggings"])]
-    skin_body("June_Body", nodes, limb_edges(),
-              lambda c: 1 if c.z < 0.345 * s and not (abs(c.x) > 0.12 * s and c.z > 0.4 * s) else 0, mats)
+    mats = [craft.knit(C["purple"]), craft.knit(C["black"]), craft.knit(C["plum"])]
+
+    def june_regions(c):
+        if c.z < 0.345 * s and not (abs(c.x) > 0.12 * s and c.z > 0.4 * s):
+            return 1 + int(c.z / (0.035 * s)) % 2  # striped witch stockings
+        return 0
+    skin_body("June_Body", nodes, limb_edges(), june_regions, mats)
     r = 0.185 * 1.06
     hc = Vector((0, 0, 0.875 * s))
     face(craft, "June_", hc, r, C["bea_skin"], C["june_hair"], mouth="smile", lashes=True, eye=0.92)
     hands(craft, "June_", nodes, C["bea_skin"], 1.1)
     shoes(craft, "June_", nodes, craft.smooth(C["ink"], 0.4), craft.smooth(H(0x14161F), 0.7), 1.1)
     # Felt skirt flare with appliquéd amber stars.
-    lathe("June_Skirt", craft.felt(C["june_dress"]), [(0.13 * s, 0.44 * s), (0.17 * s, 0.38 * s), (0.22 * s, 0.29 * s)],
+    lathe("June_Skirt", craft.felt(C["purple"]), [(0.13 * s, 0.44 * s), (0.17 * s, 0.38 * s), (0.22 * s, 0.29 * s)],
           hem_wave=0.006)
     for x, z, sc in ((-0.07, 0.52, 1.0), (0.05, 0.47, 0.8), (0.09, 0.36, 0.9), (-0.1, 0.34, 0.7)):
-        flat_shape("June_Star", craft.felt(C["amber"]), star_outline(0.022 * sc, 0.01 * sc), 0.004,
+        flat_shape("June_Star", craft.felt(C["corn"]), star_outline(0.022 * sc, 0.01 * sc), 0.004,
                    (x * s, -0.128 * s if z > 0.4 else -0.2 * s, z * s))
     # Silver comet cape, long, open at the front, with the triangular tear (the clue: readable without zoom).
     def tear(c):
@@ -398,16 +460,18 @@ def build_june(craft):
                      (0.045 * (1 - 0.3 * t), 0.04, 0.05), rotation=(0, 0.35 * (1 if i % 2 else -1), 0))
     pm.torus("June_BraidTie", craft.felt(C["amber"]), hc + Vector((0, r * 1.06, -r * 2.75)), 0.028, 0.01,
              segments=20, sides=8)
-    pm.torus("June_Headband", craft.smooth(C["amber"], 0.4), hc + Vector((0, 0.0, r * 0.35)), r * 1.06, 0.008,
-             rotation=(math.radians(-18), 0, 0), segments=40, sides=8)
-    flat_shape("June_HeadStar", craft.smooth(C["amber"], 0.35), star_outline(0.035, 0.016), 0.008,
-               hc + Vector((0.07, -r * 0.62, r * 0.98)), (math.radians(-20), 0.3, 0))
+    witch_hat("June_Hat", craft.felt(C["purple"]), hc + Vector((0, 0.02, r * 0.78)), 0.27, 0.42, 0.15, bend=0.14,
+              tilt=(math.radians(-6), 0))
+    pm.torus("June_HatBand", craft.felt(C["corn"]), hc + Vector((0, 0.02, r * 0.86)), 0.142, 0.018, squash=1.2,
+             segments=40, sides=8)
+    flat_shape("June_HatStar", craft.smooth(C["corn"], 0.35), star_outline(0.035, 0.016), 0.008,
+               hc + Vector((0.0, 0.02 - 0.16, r * 0.88)))
 
 
 def build_vale(craft):
     s = 1.0
     nodes = adult_nodes(s, belly=1.25, wrists=((0.26, -0.12, 0.94), (0.19, -0.27, 0.87)))
-    mats = [craft.felt(C["tunic"]), craft.knit(C["trousers"])]
+    mats = [craft.felt(C["purple"]), craft.knit(C["black"])]
     skin_body("Vale_Body", nodes, limb_edges(), lambda c: 1 if c.z < 0.66 else 0, mats)
     r = 0.2
     hc = Vector((0, 0, 1.42))
@@ -444,9 +508,8 @@ def build_vale(craft):
             pm.ellipsoid("Vale_Rivet", craft.smooth(C["ink"], 0.6), (x, -0.213, z), (0.012, 0.006, 0.012), subsurf=0)
     shield = [(0.0, 0.09), (0.07, 0.08), (0.075, 0.0), (0.05, -0.06), (0.0, -0.1), (-0.05, -0.06), (-0.075, 0.0),
               (-0.07, 0.08)]
-    flat_shape("Vale_Crest", craft.felt(C["amber"]), pm.smooth_outline(shield, 4), 0.008, (0, -0.218, 0.98))
-    pm.curve_tube("Vale_CrestMark", craft.smooth(C["ink"], 0.5), [(-0.03, -0.228, 1.0), (0.0, -0.228, 0.95),
-                                                                 (0.03, -0.228, 1.0)], 0.006, taper=(1, 1))
+    flat_shape("Vale_Crest", craft.felt(C["orange"]), pm.smooth_outline(shield, 4), 0.008, (0, -0.218, 0.98))
+    jack_face("Vale_Crest", craft.felt(C["black"]), (0, -0.224, 0.985), 0.04)
     tape = craft.paper(H(0xC9B28A))
     card_box("Vale_Tape", (0.15, -0.212, 1.12), (0.12, 0.004, 0.035), (0, 0.6, 0)).data.materials[0] = tape
     helm = []
@@ -474,17 +537,22 @@ def build_vale(craft):
         pm.curve_tube("Vale_VisorSlit", craft.smooth(C["ink"], 0.6), [
             (-r * 0.8, -r * 1.35 - 0.01, hc.z + r * 1.1 + i * 0.035), (r * 0.8, -r * 1.35 - 0.01, hc.z + r * 1.1 + i * 0.035)],
             0.004, taper=(1, 1), resolution=1)
-    plume = pm.ellipsoid("Vale_Plume", craft.felt(C["plume"]), (0, 0.06, hc.z + r * 1.45), (0.06, 0.24, 0.16),
+    plume = pm.ellipsoid("Vale_Plume", craft.felt(C["orange"]), (0, 0.06, hc.z + r * 1.45), (0.06, 0.24, 0.16),
                          rotation=(0.35, 0, 0))
     pm.add_fluff(plume, 0.015, 0.025)
     # The candy bowl from the opening shot, held at the belly.
     bowl_c = Vector((0, -0.31, 0.85))
-    lathe("Vale_Bowl", craft.felt(C["pumpkin"]), [(0.02, bowl_c.z - 0.06), (0.12, bowl_c.z - 0.05),
-                                                  (0.17, bowl_c.z), (0.18, bowl_c.z + 0.035)])
-    bowl = bpy.data.objects["Vale_Bowl"]
+    pot = craft.smooth(C["black"], 0.35)
+    lathe("Vale_Cauldron", pot, [(0.02, bowl_c.z - 0.11), (0.13, bowl_c.z - 0.095), (0.185, bowl_c.z - 0.03),
+                                 (0.18, bowl_c.z + 0.03), (0.155, bowl_c.z + 0.05), (0.172, bowl_c.z + 0.065)])
+    bowl = bpy.data.objects["Vale_Cauldron"]
     bowl.location = (bowl_c.x, bowl_c.y, 0)
+    for sx in (1, -1):
+        pm.torus("Vale_CauldronHandle", pot, bowl_c + Vector((sx * 0.19, 0, 0.02)), 0.03, 0.008,
+                 rotation=(0, math.radians(90), 0), segments=20, sides=6)
+    pm.ellipsoid("Vale_CandyHeap", craft.smooth(C["witch"], 0.4), bowl_c + Vector((0, 0, 0.045)), (0.15, 0.15, 0.02))
     rnd = random.Random(11)
-    colours = [C["amber"], C["paper"], C["plume"], C["bike"], C["silver"]]
+    colours = [C["orange"], C["corn"], C["purple"], C["witch"], C["bone"]]
     for i in range(14):
         a = rnd.uniform(0, math.tau)
         d = rnd.uniform(0, 0.12)
@@ -504,9 +572,10 @@ def build_kit(craft):
     hands(craft, "Kit_", nodes, C["kit_skin"], 1.2)
     shoes(craft, "Kit_", nodes, craft.smooth(C["boot"], 0.45), craft.smooth(H(0x2A1E18), 0.7), 1.25, 1.1)
     # Long felt coat with collar, amber buttons, sleeves.
-    coat = craft.felt(C["coat"])
-    lathe("Kit_Coat", coat, [(0.075, 1.23 * s), (0.19 * s, 1.16 * s), (0.215 * s, 1.02 * s), (0.215 * s, 0.84 * s),
-                             (0.245 * s, 0.6 * s), (0.265 * s, 0.38 * s)], open_deg=16, hem_wave=0.004)
+    coat = craft.felt(C["purple"])
+    lathe("Kit_Coat", craft.felt(C["orange"]), [(0.075, 1.23 * s), (0.19 * s, 1.16 * s), (0.215 * s, 1.02 * s), (0.215 * s, 0.84 * s),
+                             (0.245 * s, 0.6 * s), (0.265 * s, 0.38 * s)], open_deg=16, hem_wave=0.004,
+          inner=coat)  # solidify's offset shell faces outward here, so the lining material goes first
     for side in "LR":
         sh, el, wr = (Vector(nodes[k + side][0]) for k in ("shoulder", "elbow", "wrist"))
         pm.curve_tube("Kit_Sleeve", coat, [sh, el, wr], 0.062 * s, taper=(1.0, 0.85))
@@ -518,9 +587,11 @@ def build_kit(craft):
                                     [(-math.pi / 2 + math.radians(16)) + (2 * math.pi - math.radians(32)) * i / 80
                                      for i in range(81)]], C["paper"], spacing=0.02, dash=0.011, radius=0.0024)
     # Amber knit scarf.
-    pm.torus("Kit_Scarf", craft.knit(C["amber"]), (0, 0, 1.19 * s), 0.1 * s, 0.045 * s, squash=0.8)
-    pm.ellipsoid("Kit_ScarfTail", craft.knit(C["amber"]), (-0.07, -0.13, 1.02 * s), (0.04, 0.02, 0.12),
-                 rotation=(0.1, 0, 0.15))
+    for i, key in enumerate(("orange", "corn", "bone")):  # candy-corn scarf
+        pm.torus("Kit_Scarf", craft.knit(C[key]), (0, 0, (1.16 + 0.035 * i) * s), 0.102 * s, 0.022 * s,
+                 squash=0.9, segments=36, sides=8)
+        pm.ellipsoid("Kit_ScarfTail", craft.knit(C[key]), (-0.07, -0.135, (1.08 - 0.07 * i) * s), (0.04, 0.02, 0.04),
+                     rotation=(0.1, 0, 0.15))
     # The painted owl pin on the coat (spec §2).
     pin = Vector((0.11, -0.212 * s, 1.1 * s))
     pm.ellipsoid("Kit_OwlPin", craft.smooth(C["amber"], 0.4), pin, (0.03, 0.008, 0.034), subsurf=1)
@@ -539,14 +610,24 @@ def build_kit(craft):
     pm.add_fluff(bun, 0.008, 0.02)
     pm.curve_tube("Kit_Pencil", craft.smooth(C["amber"], 0.4), [hc + Vector((-0.1, r * 0.75, r * 0.7)),
                                                               hc + Vector((0.1, r * 0.8, r * 1.05))], 0.008, taper=(1, 1))
+    # Wide-brimmed inventor-witch hat with an orange band, goggles strapped on and an owl feather.
+    hat = craft.felt(C["black"])
+    pm.ellipsoid("Kit_HatBrim", hat, hc + Vector((0, 0.02, r * 0.78)), (0.33, 0.33, 0.018), rotation=(-0.08, 0, 0),
+                 subsurf=2)
+    lathe("Kit_HatCrown", hat, [(0.15, hc.z + r * 0.76), (0.15, hc.z + r * 1.25), (0.13, hc.z + r * 1.55),
+                                (0.02, hc.z + r * 1.62)])
+    pm.torus("Kit_HatBand", craft.felt(C["orange"]), hc + Vector((0, 0, r * 0.9)), 0.152, 0.02, squash=1.3,
+             segments=40, sides=8)
     brass = craft.smooth(C["brass"], 0.3)
     for sx in (1, -1):
-        g = hc + Vector((sx * 0.065, -r * 0.82, r * 0.55))
-        pm.torus("Kit_GoggleRim", brass, g, 0.042, 0.012, rotation=(math.radians(70), 0, 0), segments=28, sides=8)
-        pm.ellipsoid("Kit_GoggleLens", craft.smooth(H(0x9FC3C9), 0.05), g + Vector((0, -0.004, 0.002)),
-                     (0.036, 0.008, 0.036), rotation=(math.radians(-20), 0, 0), subsurf=0)
-    pm.torus("Kit_GoggleStrap", craft.smooth(C["stem"], 0.6), hc + Vector((0, 0.0, r * 0.45)), r * 1.07, 0.01,
-             rotation=(math.radians(-20), 0, 0), segments=40, sides=6)
+        g = hc + Vector((sx * 0.055, -0.155, r * 0.95))
+        pm.torus("Kit_GoggleRim", brass, g, 0.04, 0.012, rotation=(math.radians(90), 0, 0), segments=28, sides=8)
+        pm.ellipsoid("Kit_GoggleLens", craft.smooth(H(0x8FC7A0), 0.05), g + Vector((0, -0.004, 0)),
+                     (0.034, 0.008, 0.034), subsurf=0)
+    feather = pm.ellipsoid("Kit_Feather", craft.felt(C["bone"]), hc + Vector((0.16, 0.02, r * 1.35)),
+                           (0.03, 0.012, 0.13), rotation=(0, -0.5, 0))
+    pm.curve_tube("Kit_FeatherVein", craft.smooth(C["stem"], 0.6), [hc + Vector((0.12, 0.008, r * 0.95)),
+                                                                    hc + Vector((0.2, 0.008, r * 1.75))], 0.004)
     # Basket of treats in her hand.
     wr = Vector(nodes["wristR"][0])
     basket_c = wr + Vector((0, -0.05, -0.12))
@@ -579,12 +660,33 @@ def build_stage(craft, width=2600, height=1050):
     scene.view_settings.look = "AgX - Medium High Contrast"
     world = bpy.data.worlds.new("Twilight")
     world.use_nodes = True
-    world.node_tree.nodes["Background"].inputs[0].default_value = craft_lib.lin(C["twilight"])
+    world.node_tree.nodes["Background"].inputs[0].default_value = craft_lib.lin(C["night"])
     world.node_tree.nodes["Background"].inputs[1].default_value = 0.5
     scene.world = world
     bm = bmesh.new()
     bmesh.ops.create_circle(bm, cap_ends=True, segments=96, radius=6.0)
-    pm.new_mesh_object("Ground", bm, craft.smooth(H(0x1C2A2A), 0.95))
+    pm.new_mesh_object("Ground", bm, craft.smooth(H(0x1E1B2A), 0.95))
+    # Halloween night set dressing: a big full moon, paper bats in flight, glowing jack-o'-lanterns.
+    moon = pm.ellipsoid("Moon", craft.smooth(H(0xF6E7B8), 0.5, emission=1.4), (2.3, 9.0, 2.55), (1.15, 0.05, 1.15),
+                        segments=48, rings=24)
+    for i, (x, z, sc, rot) in enumerate(((0.9, 3.9, 0.55, 0.2), (2.4, 3.0, 0.4, -0.3), (-2.8, 3.3, 0.45, 0.1),
+                                         (-1.6, 3.8, 0.3, -0.2))):
+        flat_shape("FlyingBat", craft.paper(C["black"]), bat_outline(sc), 0.004, (x, 6.0, z), (0, rot, 0))
+    rnd = random.Random(9)
+    for i, x in enumerate((-3.6, -0.8, 0.15, 2.3)):
+        size = rnd.uniform(0.11, 0.16)
+        centre = Vector((x, -0.5 - rnd.uniform(0, 0.3), size * 0.7))
+        lobed("JackLantern", craft.felt(C["orange"]), centre, (size, size, size * 0.72))
+        jack_face("JackLantern", craft.smooth(C["corn"], 0.4, emission=1.2), centre + Vector((0, -size * 1.07, 0.0)),
+                  size * 0.55)
+        pm.curve_tube("JackStem", craft.felt(C["stem"]), [centre + Vector((0, 0, size * 0.6)),
+                                                          centre + Vector((0.02, 0, size * 0.9))], size * 0.1)
+        glow = bpy.data.lights.new("JackGlow", "POINT")
+        glow.energy = 10
+        glow.color = (1.0, 0.6, 0.25)
+        glow_obj = bpy.data.objects.new("JackGlow", glow)
+        glow_obj.location = centre + Vector((0, -size * 1.5, 0))
+        pm.link(glow_obj)
 
     def light(name, loc, energy, colour, size, target=(-0.4, 0, 0.9)):
         data = bpy.data.lights.new(name, "AREA")
@@ -597,7 +699,7 @@ def build_stage(craft, width=2600, height=1050):
         pm.link(obj)
 
     light("Key", (-3.0, -4.5, 4.0), 900, (1.0, 0.85, 0.68), 4.0)
-    light("Rim", (2.5, 4.0, 3.5), 1300, (0.6, 0.7, 1.0), 4.0)
+    light("Rim", (2.5, 4.0, 3.5), 1300, (0.7, 0.66, 1.0), 4.0)
     light("Fill", (4.5, -3.5, 1.5), 260, (0.7, 0.78, 1.0), 5.0)
     cam_data = bpy.data.cameras.new("Cam")
     cam_data.lens = 44
@@ -618,6 +720,18 @@ def main():
     craft = craft_lib.Craft(INTENSITY)
     pm.MATERIAL_FACTORY = pip_factory(craft)
     pip_root = pm.build_pip(reset=False)
+    # Pip's jack-o'-lantern treat pail, hanging from the right hand.
+    before = snapshot()
+    pail_c = Vector((-0.3, -0.07, 0.25))
+    lobed("Pip_Pail", craft.felt(C["orange"]), pail_c, (0.075, 0.075, 0.062))
+    jack_face("Pip_Pail", craft.felt(C["black"]), pail_c + Vector((0, -0.074, 0.0)), 0.026)
+    pm.curve_tube("Pip_PailHandle", craft.smooth(C["black"], 0.5), [pail_c + Vector((-0.06, 0, 0.04)),
+                                                                     Vector((-0.29, -0.06, 0.4)),
+                                                                     pail_c + Vector((0.06, 0, 0.04))], 0.004,
+                  taper=(1, 1))
+    for obj in list(bpy.context.scene.objects):
+        if obj.parent is None and obj.name not in before:
+            obj.parent = pip_root
     pip_root.location = (-1.3, 0, 0)
     before = snapshot()
     build_bicycle(craft)
