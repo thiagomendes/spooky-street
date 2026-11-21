@@ -1,0 +1,58 @@
+name: Unity licence probe
+
+# Diagnostic: finds which Unity activation method works for this account (spec §7 "surface
+# activation failures early"). Runs on Linux only; no Apple secrets; artifacts keep no logs.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths:
+      - .github/workflows/unity-licence-probe.yml
+      - ci/unity/probe-licence.sh
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unity-licence-probe
+  cancel-in-progress: true
+
+env:
+  UNITY_IMAGE: unityci/editor:ubuntu-6000.3.28f1-base-3@sha256:9b4a75cc70482fa674abae2c800aec8648aa8aefd0c05ffe7e935b7997342146
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            ci
+            ProjectSettings/ProjectVersion.txt
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Free runner disk for the editor image
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+      - name: Pull pinned editor image
+        run: docker pull "$UNITY_IMAGE"
+      - name: Probe activation methods
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          mkdir -p probe-out
+          docker run --rm --shm-size=1025m \
+            --env UNITY_LICENSE --env UNITY_EMAIL --env UNITY_PASSWORD --env HOME=/root \
+            --volume "$PWD:/project:ro" --volume "$PWD/probe-out:/out" \
+            "$UNITY_IMAGE" bash /project/ci/unity/probe-licence.sh
+          sudo chown -R "$(id -u):$(id -g)" probe-out
+          cat probe-out/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload summary and activation request
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unity-licence-probe-${{ github.run_id }}
+          path: probe-out
+          retention-days: 3
