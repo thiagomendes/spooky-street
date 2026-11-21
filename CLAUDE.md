@@ -3,8 +3,13 @@
 - Contract: `Spooky-Street-Spec.md`. Record evidence per increment in `docs/S00x-*.md`.
 - Git flow (owner's choice): branch from `main` as `feature/<topic>` or `fix/<topic>`, push the branch (CI runs
   on `feature/**` and `fix/**`), then `git merge --no-ff` into `main` and push once CI is green. No PRs needed.
-  Delete the local branch after merging. The session's git proxy refuses remote branch deletion (403), so tell
-  the owner which merged remote branches to delete at github.com/thiagomendes/spooky-street/branches.
+  Delete the local branch after merging; `repo-hygiene.yml` deletes merged `feature/*`/`fix/*` remote branches
+  on the next push to `main` (sessions cannot delete remote refs). Never push a branch before it has its own
+  commit, or hygiene will treat it as merged.
+- TestFlight upload (costs macOS minutes, use only for changes worth testing on the phone, and tell the owner):
+  `git tag testflight-$(date -u +%Y%m%d-%H%M) origin/main && git push origin <that tag>`. The workflow checks the
+  commit is on main, builds, uploads, polls processing and deletes the tag. Sessions cannot dispatch or cancel
+  workflows (403); read runs and logs with the GitHub MCP tools.
 - Actions budget matters: add `[skip ci]` to intermediate commits and push without it only when the branch is
   ready for validation. Never re-trigger CI just to check something a previous run already proved.
 - Never claim a Unity, Xcode, TestFlight or device pass without that run's evidence. Unity checks run only

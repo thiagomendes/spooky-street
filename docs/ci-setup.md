@@ -42,7 +42,9 @@ hardware and does **not** work in CI (probe run 1). Do not store it as a secret.
 
 ## 3. GitHub environment `testflight` (Settings → Environments → New environment)
 
-- **Deployment branches and tags**: *Selected branches* → `main` only. Dispatch the workflow from `main`.
+- **Deployment branches and tags**: *Selected branches and tags* → add a **branch** rule `main` and a
+  **tag** rule `testflight-*`. Builds start either from the *Run workflow* button on `main` or from a
+  `testflight-*` tag that points at a commit already in `main` (checked again by the preflight job).
 - **Required reviewers**: yourself (optional, adds an approval click before signing).
 - **Environment secrets** (base64 without line breaks: `base64 -w0 file` on Linux, `[Convert]::ToBase64String([IO.File]::ReadAllBytes("file"))` in PowerShell):
 
@@ -83,7 +85,17 @@ Every job has a `timeout-minutes` cap; the processing poll runs on Linux so macO
 - A newer push to the same branch cancels the older run; every job has a timeout; the Unity
   `Library` folder is cached.
 
-## 7. Running it
+## 7. Automation without extra permissions
+
+Cloud sessions can push commits and tags but cannot dispatch or cancel workflows or delete remote refs.
+The repository therefore does those itself:
+
+- **Repo hygiene** (`repo-hygiene.yml`, on every push to `main`): deletes `feature/*` and `fix/*`
+  branches already contained in `main`.
+- **TestFlight by tag**: pushing `testflight-<label>` on a `main` commit runs *Build for TestFlight* in
+  `testflight` mode; its last job deletes the tag.
+
+## 8. Running it
 
 - **CI** runs on every PR and on `main`. Without Unity secrets it still runs static checks and the
   engine-free tests, and reports "Unity tests NOT run" instead of passing silently.
