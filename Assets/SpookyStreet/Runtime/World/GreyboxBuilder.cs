@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using SpookyStreet.Player;
 using UnityEngine;
 
@@ -14,17 +13,13 @@ namespace SpookyStreet.World
     {
         public static readonly Vector3 ArrivalSpawn = new Vector3(0f, 0.62f, -13.4f);
 
-        private readonly Dictionary<Color, Material> _materials = new Dictionary<Color, Material>();
-        private readonly Material _baseMaterial;
+        private readonly MaterialLibrary _materials;
         private readonly int _safeLayer;
         private Transform _root;
 
-        public GreyboxBuilder()
+        public GreyboxBuilder(MaterialLibrary materials)
         {
-            // The pipeline's default material for primitives is always included in player builds.
-            var probe = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            _baseMaterial = probe.GetComponent<Renderer>().sharedMaterial;
-            Object.Destroy(probe);
+            _materials = materials;
             int layer = LayerMask.NameToLayer(SafeGroundTracker.SafeGroundLayerName);
             _safeLayer = layer >= 0 ? layer : 0;
         }
@@ -120,19 +115,8 @@ namespace SpookyStreet.World
             go.transform.localPosition = center;
             go.transform.localScale = scale;
             go.layer = safe ? _safeLayer : 0;
-            go.GetComponent<Renderer>().sharedMaterial = MaterialFor(color);
+            _materials.Apply(go.GetComponent<Renderer>(), color);
             return go;
-        }
-
-        private Material MaterialFor(Color color)
-        {
-            if (!_materials.TryGetValue(color, out var material))
-            {
-                material = new Material(_baseMaterial) { name = "Greybox_" + ColorUtility.ToHtmlStringRGB(color), color = color };
-                _materials.Add(color, material);
-            }
-
-            return material;
         }
     }
 }

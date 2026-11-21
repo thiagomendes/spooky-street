@@ -21,6 +21,8 @@ namespace SpookyStreet.App
     public sealed class GameBootstrap : MonoBehaviour
     {
         [SerializeField] private PipMovementTuning movementTuning;
+        [Tooltip("URP Lit base for every palette material. Must be a URP material referenced by the scene.")]
+        [SerializeField] private Material greyboxMaterial;
         [SerializeField] private bool leftHandedLayout;
         [SerializeField] private int targetFrameRate = 60;
 
@@ -39,6 +41,8 @@ namespace SpookyStreet.App
         public GameUi Ui { get; private set; }
 
         public BuildInfo BuildInfo { get; private set; }
+
+        public MaterialLibrary Materials { get; private set; }
 
         private void Awake()
         {
@@ -60,8 +64,9 @@ namespace SpookyStreet.App
             Flow = new GameFlow();
             _input = new GameInput();
 
-            Transform world = new GreyboxBuilder().Build();
-            Pip = CreatePip(movementTuning);
+            Materials = new MaterialLibrary(greyboxMaterial);
+            Transform world = new GreyboxBuilder(Materials).Build();
+            Pip = CreatePip(movementTuning, Materials);
 
             int obstacleLayers = Physics.DefaultRaycastLayers & ~(1 << Pip.gameObject.layer);
             CameraRig = CameraRig.Create(Pip, movementTuning, _input, Flow, obstacleLayers);
@@ -91,7 +96,7 @@ namespace SpookyStreet.App
             }
         }
 
-        private static PipMotor CreatePip(PipMovementTuning tuning)
+        private static PipMotor CreatePip(PipMovementTuning tuning, MaterialLibrary materials)
         {
             var pip = new GameObject("Pip") { tag = "Player" };
             int playerLayer = LayerMask.NameToLayer("Player");
@@ -109,7 +114,7 @@ namespace SpookyStreet.App
             body.transform.SetParent(pip.transform, false);
             body.transform.localScale = new Vector3(tuning.radius * 2f, tuning.height * 0.5f, tuning.radius * 2f);
             body.transform.localPosition = new Vector3(0f, tuning.height * 0.5f, 0f);
-            body.GetComponent<Renderer>().material.color = Palette.ClothSilver;
+            materials.Apply(body.GetComponent<Renderer>(), Palette.ClothSilver);
 
             var satchel = GameObject.CreatePrimitive(PrimitiveType.Cube);
             satchel.name = "Satchel_Greybox";
@@ -118,7 +123,7 @@ namespace SpookyStreet.App
             satchel.transform.SetParent(pip.transform, false);
             satchel.transform.localScale = new Vector3(0.3f, 0.25f, 0.12f);
             satchel.transform.localPosition = new Vector3(0f, tuning.height * 0.55f, -tuning.radius - 0.04f);
-            satchel.GetComponent<Renderer>().material.color = Palette.PumpkinAmber;
+            materials.Apply(satchel.GetComponent<Renderer>(), Palette.PumpkinAmber);
             return motor;
         }
 
