@@ -72,7 +72,18 @@ GitHub Free. One TestFlight run is roughly 20–35 macOS minutes (≈200–350 i
 Budgets and alerts → set an **Actions** budget of **$0** with *Stop usage when budget limit is reached*.
 Every job has a `timeout-minutes` cap; the processing poll runs on Linux so macOS is never idle-waiting.
 
-## 6. Running it
+## 6. Keeping Actions usage low
+
+- Only `CI` runs automatically; *Build for TestFlight* and *Unity licence probe* are manual.
+- Pushes that touch only `docs/**` or Markdown files run nothing.
+- The `plan` job (`tools/ci/plan_ci.py`) skips the Unity job when no Unity-relevant path changed
+  (`Assets/`, `Packages/`, `ProjectSettings/`, `ci/unity/`, `ci.yml`) or when an identical tree already
+  passed it — e.g. the `main` push after a `--no-ff` merge of a green branch.
+- Work-in-progress commits carry `[skip ci]`; only a branch's final push triggers CI.
+- A newer push to the same branch cancels the older run; every job has a timeout; the Unity
+  `Library` folder is cached.
+
+## 7. Running it
 
 - **CI** runs on every PR and on `main`. Without Unity secrets it still runs static checks and the
   engine-free tests, and reports "Unity tests NOT run" instead of passing silently.

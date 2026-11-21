@@ -109,7 +109,9 @@ PACKAGE_GUIDS = {
 def check_references(guids):
     reference = re.compile(r"guid: ([0-9a-f]{32})")
     targets = []
-    for dirpath, _, filenames in os.walk(os.path.join(ROOT, "Assets")):
+    # Only assets we author; Unity-generated files at the Assets root (URP global settings, default volume
+    # profile) legitimately reference many package-internal GUIDs.
+    for dirpath, _, filenames in os.walk(os.path.join(ROOT, "Assets", "SpookyStreet")):
         for name in filenames:
             if name.endswith((".unity", ".asset", ".prefab", ".mat")):
                 targets.append(os.path.join(dirpath, name))
