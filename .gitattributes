@@ -23,3 +23,6 @@
 *.ttf binary
 *.otf binary
 *.aif filter=lfs diff=lfs merge=lfs -text
+
+# Small review captures stay in plain git (no LFS bandwidth for CI checkouts).
+docs/evidence/** -filter -diff -merge binary
