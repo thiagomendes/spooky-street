@@ -19,7 +19,7 @@ import pip_model as pm  # shared mesh helpers (ellipsoid, torus, curve_tube, lin
 class Proportions:
     """Joint landmarks for one body. `h` is standing height to the top of the skull (not hair)."""
 
-    def __init__(self, h=1.2, child=True, build=1.0, belly=1.0, heads=None):
+    def __init__(self, h=1.2, child=True, build=1.0, belly=1.0, heads=None, neck=1.0):
         self.h = h
         self.child = child
         heads = heads or (4.5 if child else 6.0)
@@ -30,7 +30,7 @@ class Proportions:
             f = dict(ankle=0.06, knee=0.27, hip=0.49, pelvis=0.5, waist=0.58, chest=0.67, shoulder=0.72,
                      neck=0.765, elbow=0.56, wrist=0.43)
         else:
-            f = dict(ankle=0.055, knee=0.29, hip=0.52, pelvis=0.53, waist=0.62, chest=0.72, shoulder=0.79,
+            f = dict(ankle=0.055, knee=0.29, hip=0.52, pelvis=0.53, waist=0.62, chest=0.73, shoulder=0.8,
                      neck=0.83, elbow=0.61, wrist=0.47)
         self.z = {k: v * u for k, v in f.items()}
         self.head_c = Vector((0.0, 0.0, h - self.head_r * 1.02))
@@ -40,6 +40,7 @@ class Proportions:
         self.limb = (0.056 if child else 0.072) * h / (1.2 if child else 1.65)
         self.torso = (0.108 if child else 0.16) * h / (1.2 if child else 1.65) * w
         self.belly = belly
+        self.neck = neck  # neck thickness factor
         self.arm_out = 0.24  # radians away from vertical (relaxed A-pose for rigging)
 
     def wrist(self, side):
@@ -158,8 +159,8 @@ def body(name, P, materials, classify):
         "pelvis": ((0, 0, z["pelvis"]), (T * 1.05, T * 0.8)),
         "waist": ((0, -0.004, z["waist"]), (T * 0.95 * P.belly, T * 0.75 * P.belly)),
         "chest": ((0, 0, z["chest"]), (T * 1.05, T * 0.78)),
-        "neck": ((0, 0, z["neck"]), L * 0.68),
-        "neck_top": ((0, 0.004, z["neck"] + P.head_r * 0.55), L * 0.62),
+        "neck": ((0, 0, z["neck"]), L * 0.68 * P.neck),
+        "neck_top": ((0, 0.004, z["neck"] + P.head_r * 0.55), L * 0.62 * P.neck),
     }
     edges = [("pelvis", "waist"), ("waist", "chest"), ("chest", "neck"), ("neck", "neck_top")]
     for side, s in (("L", 1), ("R", -1)):

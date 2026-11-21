@@ -162,20 +162,34 @@ def build_bea(craft):
     hair = craft.felt(C["auburn"])
     cap("Bea_Hair", hair, P, fringe_z=0.34, length_z=-0.5, face_half=52, thickness=0.07, fall=0.96, lobes=10,
         lobe_depth=0.05)
-    tail = [hc + Vector(p) * r for p in ((0.55, 0.95, 0.05), (1.25, 0.9, -0.1), (1.6, 0.7, -0.75), (1.5, 0.6, -1.35))]
-    pm.curve_tube("Bea_Ponytail", hair, tail, r * 0.24, taper=(0.9, 0.25))
-    pm.torus("Bea_HairTie", craft.felt(V["lime"]), tail[1] - Vector((0.03, 0, -0.012)), r * 0.2, r * 0.07,
-             rotation=(0, math.radians(70), 0), segments=24, sides=8)
-    helmet, on_helmet = cap("Bea_Helmet", craft.smooth(V["orange"], 0.35), P, radii=(1.24, 1.27, 1.2),
-                            offset=(0, 0.04, 0.14), fringe_z=0.58, length_z=0.14, face_half=62, thickness=0.06,
-                            lobes=10, lobe_depth=0.05)
-    on_shell_helmet = an.probe(helmet)
+    tail = [hc + Vector(p) * r for p in ((0.75, 0.95, 0.0), (1.3, 0.85, -0.12), (1.58, 0.72, -0.5), (1.62, 0.64, -0.95),
+                                         (1.5, 0.6, -1.35))]
+    for k, (p, size) in enumerate(zip(tail, (0.3, 0.34, 0.32, 0.26, 0.17))):  # a full, bouncy ponytail
+        pm.ellipsoid("Bea_Ponytail", hair, p, (r * size, r * size * 0.95, r * size * 1.25),
+                     rotation=(0, 0.5 if k < 2 else -0.1, 0), subsurf=1)
+    pm.torus("Bea_HairTie", craft.felt(V["lime"]), (tail[0] + tail[1]) * 0.5, r * 0.22, r * 0.07,
+             rotation=(0, math.radians(75), 0), segments=24, sides=8)
+    # The helmet is dressed as a pumpkin: round felt cover, deep ribs with darker seams, a curly stem.
+    ribs = 10
+    hat, on_hat = cap("Bea_Helmet", orange, P, radii=(1.3, 1.32, 1.3), offset=(0, 0.04, 0.16), fringe_z=0.56,
+                      length_z=0.1, face_half=64, thickness=0.06, lobes=ribs, lobe_depth=0.16, segments=60)
+    for k in range(ribs):
+        lon = math.pi * (2 * k + 1) / ribs
+        lon = (lon + math.pi) % (2 * math.pi) - math.pi
+        low = math.radians(24 if abs(lon) < math.radians(64) else 4)
+        pts = [on_hat(lon, math.radians(84) + (low - math.radians(84)) * i / 7, 0.975) for i in range(8)]
+        pm.curve_tube("Bea_HelmetSeam", seam, pts, r * 0.035, taper=(0.4, 1.0))
+    on_hat_front = an.probe(hat)
     for s in (1, -1):
-        applique("Bea_HelmetEye", black, on_shell_helmet, [(-0.02, -0.014), (0.02, -0.014), (0.0, 0.02)],
-                 (s * r * 0.4, hc.z + r * 0.86), thickness=0.003)
-    top = on_helmet(0, math.radians(89), 0.98)
-    pm.curve_tube("Bea_HelmetStem", craft.felt(C["leaf"]), [top, top + Vector((0.004, 0, 0.035)),
-                                                            top + Vector((0.03, 0, 0.065))], 0.016, taper=(1.3, 0.8))
+        applique("Bea_HelmetEye", black, on_hat_front, [(-0.022, -0.015), (0.022, -0.015), (0.0, 0.024)],
+                 (s * r * 0.42, hc.z + r * 0.98), thickness=0.003)
+    top = on_hat(0, math.radians(89), 0.97)
+    pm.curve_tube("Bea_HelmetStem", craft.felt(C["leaf"]), [top, top + Vector((0.0, 0, 0.04)),
+                                                            top + Vector((0.03, 0, 0.075)),
+                                                            top + Vector((0.065, 0, 0.07))], 0.02, taper=(1.4, 0.6))
+    leaf = flat("Bea_HelmetLeafFelt", craft.felt(V["lime"]), co.leaf_outline(0.09), 0.004)
+    at = on_hat(math.radians(150), math.radians(74), 1.0)
+    an.mount("Bea_HelmetLeaf", at + Vector((0, 0, 0.006)), at - (hc + Vector((0, 0, r * 0.16))), [leaf])
     return P
 
 
@@ -263,6 +277,9 @@ def build_june(craft):
                        (T * 1.25, z["pelvis"], 0.82), (T * 1.8, z["knee"] + 0.12, 0.85),
                        (T * 2.0, z["knee"] + 0.04, 0.85)], thickness=0.007, folds=9, fold_depth=0.06)
     on_dress = an.probe(dress)
+    band("June_Collar", violet, (0, 0.003, z["neck"] + 0.03), P.limb * 0.68 + 0.008, 0.075)
+    pm.torus("June_CollarTrim", craft.felt(V["candy"]), (0, 0.003, z["neck"] + 0.066), P.limb * 0.68 + 0.004, 0.005,
+             segments=28, sides=8)
     band("June_Sash", craft.felt(V["orange"]), (0, 0, z["waist"]), T * 1.03, 0.04, ys=0.8)
     candy = craft.felt(V["candy"])
     flat("June_SashStar", candy, star_outline(0.032), 0.006, (0, -T * 1.03 * 0.8 - 0.005, z["waist"]))
@@ -277,13 +294,18 @@ def build_june(craft):
     # It wraps forward over her arms like a cloak, so the torn front panel faces the viewer. The tear is cut
     # out of the cloth itself: a ragged triangle rising from the hem.
     tear_at, tear_half, tear_height = math.radians(-38), math.radians(16), 0.3
-    satin = craft.waxed(C["silver"])
+    satin = craft.waxed(C["silver"]).copy()  # the only cloth silver in the cast: brighter and shinier
+    shine = satin.node_tree.nodes["Principled BSDF"]
+    shine.inputs["Metallic"].default_value = 0.45
+    shine.inputs["Roughness"].default_value = 0.3
+    shine.inputs["Sheen Weight"].default_value = 0.6
     k, hem_z = P.shoulder_x / 0.115, z["ankle"] + 0.05
     lower = [(0.345 - 0.0006 * i, hem_z + 0.035 * i, 0.62, 26 + 0.45 * i) for i in range(10, -1, -1)]
     cape = ell_lathe("June_Cape", satin,
                      [(0.068 * k, z["neck"] + 0.012 * k, 0.9, 50), (0.13 * k, z["shoulder"] + 0.066 * k, 0.74, 70),
                       (0.188 * k, z["shoulder"] + 0.016 * k, 0.66, 66), (0.21 * k, z["chest"] - 0.03 * k, 0.64, 56),
-                      (0.3, z["pelvis"], 0.62, 40)] + lower, thickness=0.006, folds=7, fold_depth=0.04, segments=150)
+                      (0.3, z["pelvis"], 0.62, 40)] + lower, thickness=0.006, folds=7, fold_depth=0.04, segments=150,
+                     inner=craft.felt(H(0x5B6788)))
     bm = bmesh.new()
     bm.from_mesh(cape.data)
     torn = []
@@ -356,7 +378,8 @@ def build_june(craft):
 # --- Mr. Vale: friendly mummy ------------------------------------------------------------------------------
 
 def build_vale(craft):
-    P = an.Proportions(h=1.72, child=False, belly=1.12)
+    P = an.Proportions(h=1.72, child=False, belly=1.12, neck=1.4)
+    P.arm_out = 0.42  # relaxed, a little away from the body
     z, T, L, r, hc = P.z, P.torso, P.limb, P.head_r, P.head_c
     grey = craft.felt(C["grey"])
     skin, surface = face(craft, "Vale_", P, "vale", H(0x4F7FA8), C["grey"], adult=True, mouth="smile")
@@ -375,31 +398,42 @@ def build_vale(craft):
         hit = on_body(centre + Vector((side * 0.5, 0.001, 0.001)), (-side, 0, 0))
         return (hit[0] - centre).length
 
-    turns = [(z["neck"] - 0.07, 0.12, -0.05), (z["chest"] + 0.03, -0.1, 0.07), (z["chest"] - 0.05, 0.06, -0.1),
-             (z["waist"] + 0.07, -0.05, 0.12), (z["waist"], 0.1, -0.04), (z["waist"] - 0.075, -0.08, -0.1),
-             (z["pelvis"] + 0.02, 0.05, 0.09), (z["pelvis"] - 0.055, -0.06, -0.05)]
-    for zz, tilt_x, tilt_y in turns:
+    # (height, width, slant front-back, slant left-right): uneven, overlapping, criss-crossing turns
+    turns = [(z["chest"] + 0.06, 0.08, 0.1, 0.3), (z["chest"], 0.06, -0.08, -0.3), (z["chest"] - 0.07, 0.09, 0.05, 0.2),
+             (z["waist"] + 0.05, 0.065, -0.06, -0.32), (z["waist"] - 0.02, 0.1, 0.1, 0.24),
+             (z["waist"] - 0.09, 0.06, -0.05, -0.26), (z["pelvis"] + 0.01, 0.09, 0.06, 0.18),
+             (z["pelvis"] - 0.06, 0.07, -0.06, -0.16)]
+    for zz, width, tilt_x, tilt_y in turns:
         depth = -on_body((P.hip_x * 0.6, -1, zz), (0, 1, 0))[0].y  # off-centre: below the hips there are two legs
-        band("Vale_Wrap", cream, (0, 0, zz), (depth + 0.026) / 0.76, 0.07, ys=0.76, tilt=(tilt_x, tilt_y, 0))
-    band("Vale_WrapSash", cream, (0, 0, z["chest"] + 0.0), T * 1.02, 0.06, ys=0.84, tilt=(0.0, 0.45, 0))
+        band("Vale_Wrap", cream, (0, 0, zz), (depth + 0.026) / 0.76 * (1 + 0.5 * tilt_y * tilt_y), width, ys=0.76,
+             tilt=(tilt_x, tilt_y, 0))
+    band("Vale_WrapSash", cream, (0, 0, z["chest"] + 0.01), T * 1.06, 0.07, ys=0.84, tilt=(0.0, 0.5, 0))
+    band("Vale_Collar", craft.knit(V["purple"]), (0, 0.002, z["neck"] + 0.012), L * 0.68 * P.neck + 0.01, 0.08)
     for s in (1, -1):
         sh, el, wr = Vector((s * P.shoulder_x, 0, z["shoulder"])), P.elbow(s), P.wrist(s)
         hip = Vector((s * P.hip_x, 0, z["hip"]))
         knee, ankle = Vector((s * P.hip_x * 1.02, -0.006, z["knee"])), Vector((s * P.hip_x, 0.004, z["ankle"]))
-        arm = [(sh, el, 0.3, 0.3), (sh, el, 0.62, -0.25), (sh, el, 0.92, 0.2), (el, wr, 0.3, -0.2), (el, wr, 0.6, 0.25),
-               (el, wr, 0.86, -0.15)]
-        leg = [(hip, knee, 0.3, 0.2), (hip, knee, 0.58, -0.22), (hip, knee, 0.86, 0.15), (knee, ankle, 0.2, -0.2),
-               (knee, ankle, 0.5, 0.22), (knee, ankle, 0.8, -0.12)]
-        for a, b, f, tilt in arm:
+        arm = [(sh, el, 0.28, 0.3, 0.3, 0.07), (sh, el, 0.55, -0.25, -0.35, 0.05), (sh, el, 0.82, 0.2, 0.3, 0.075),
+               (el, wr, 0.12, -0.2, -0.3, 0.05), (el, wr, 0.4, 0.25, 0.35, 0.07), (el, wr, 0.66, -0.15, -0.3, 0.05),
+               (el, wr, 0.88, 0.1, 0.25, 0.06)]
+        leg = [(hip, knee, 0.28, 0.2, 0.3, 0.08), (hip, knee, 0.52, -0.22, -0.35, 0.06), (hip, knee, 0.78, 0.15, 0.3, 0.085),
+               (knee, ankle, 0.05, -0.2, -0.3, 0.06), (knee, ankle, 0.32, 0.22, 0.32, 0.08),
+               (knee, ankle, 0.58, -0.12, -0.3, 0.055), (knee, ankle, 0.82, 0.1, 0.25, 0.07)]
+        for a, b, f, tilt_x, tilt_y, width in arm:
             c = a.lerp(b, f)
-            band("Vale_ArmWrap", cream, c, girth(c, s) + 0.007, 0.06, tilt=(tilt, -s * P.arm_out, 0))
-        for a, b, f, tilt in leg:
+            band("Vale_ArmWrap", cream, c, girth(c, s) * (1 + 0.4 * tilt_y * tilt_y) + 0.007, width,
+                 tilt=(tilt_x, -s * P.arm_out + s * tilt_y, 0))
+        for a, b, f, tilt_x, tilt_y, width in leg:
             c = a.lerp(b, f)
-            band("Vale_LegWrap", cream, c, girth(c, s) + 0.007, 0.065, tilt=(tilt, s * 0.08, 0))
+            band("Vale_LegWrap", cream, c, girth(c, s) * (1 + 0.4 * tilt_y * tilt_y) + 0.007, width,
+                 tilt=(tilt_x, s * tilt_y, 0))
     frayed = [(-0.02, 0.0), (0.02, 0.0), (0.022, -0.09), (0.01, -0.11), (0.0, -0.088), (-0.012, -0.112),
               (-0.022, -0.09)]
-    wl = P.wrist(1)
-    for loc, rot in ((wl + Vector((0.035, -0.02, 0.05)), (0, 0.12, 0.5)),
+    belly = -on_body((T * 0.5, -1, z["waist"] - 0.1), (0, 1, 0))[0].y
+    for loc, rot in ((P.wrist(1) + Vector((0.04, -0.02, 0.05)), (0, 0.12, 0.5)),
+                     (P.elbow(-1) + Vector((-0.055, -0.02, 0.0)), (0, -0.12, -0.5)),
+                     (Vector((T * 0.5, -belly - 0.04, z["waist"] - 0.1)), (0.06, 0.15, 0.0)),
+                     (Vector((P.hip_x + 0.06, -0.03, z["knee"] - 0.02)), (0, 0.1, 0.4)),
                      (hc + Vector((-r * 0.98, -r * 0.25, -r * 0.02)), (0, -0.1, -1.2))):
         flat("Vale_LooseEnd", cream, frayed, 0.004, loc, rot)
 
@@ -435,7 +469,7 @@ def build_vale(craft):
 # --- Aunt Kit: fortune teller ------------------------------------------------------------------------------
 
 def build_kit(craft):
-    P = an.Proportions(h=1.64, child=False, build=0.93)
+    P = an.Proportions(h=1.64, child=False, build=0.93, neck=1.35)
     z, T, r, hc = P.z, P.torso, P.head_r, P.head_c
     skin, surface = face(craft, "Kit_", P, "kit", H(0xD98A1E), C["kit_hair"], line_rgb=H(0x4A1420), adult=True,
                          mouth="smile", ears=False)
@@ -466,7 +500,7 @@ def build_kit(craft):
     sx, sz = P.shoulder_x, z["shoulder"]
     hem_z = P.elbow(1).z - 0.02
     shawl = ell_lathe("Kit_Shawl", craft.felt(V["berry"]),
-                      [(sx * 0.5, z["neck"] + 0.016, 0.9, 24), (sx + 0.016, sz + 0.09, 0.7, 12),
+                      [(sx * 0.52, z["neck"] + 0.035, 0.9, 24), (sx + 0.016, sz + 0.09, 0.7, 12),
                        (sx + 0.092, sz + 0.02, 0.6, 6), (sx + 0.118, z["chest"] - 0.05, 0.56, 4),
                        (sx + 0.14, hem_z, 0.56, 4)], hem=shawl_hem, thickness=0.008, folds=7, fold_depth=0.04,
                       inner=craft.felt(V["purple"]))
@@ -527,7 +561,11 @@ def build_kit(craft):
     # A crystal-ball lantern hanging from her right hand: a glowing glass sphere on a little stand.
     grip = grips[1]
     ball = grip + Vector((0, 0, -0.18))
-    pm.ellipsoid("Kit_CrystalBall", craft.smooth(C["glow"], 0.1, emission=2.2), ball, (0.07, 0.07, 0.07), subsurf=2)
+    pm.ellipsoid("Kit_CrystalBall", craft.smooth(C["glow"], 0.08, emission=0.75), ball, (0.07, 0.07, 0.07), subsurf=2)
+    pm.ellipsoid("Kit_BallGlint", craft.smooth(V["white"], 0.1, emission=2.0), ball + Vector((-0.028, -0.052, 0.03)),
+                 (0.014, 0.006, 0.02), rotation=(0, 0.5, 0), subsurf=1)
+    flat("Kit_BallStar", craft.smooth(V["candy"], 0.3, emission=1.5), star_outline(0.022), 0.003,
+         ball + Vector((0.012, -0.0705, -0.012)))
     brass = craft.smooth(V["candy"], 0.25)
     pm.torus("Kit_BallCollar", brass, ball + Vector((0, 0, -0.05)), 0.05, 0.008, segments=32, sides=8)
     stand = ell_lathe("Kit_BallStand", craft.smooth(V["violet"], 0.35), [(0.046, 0.0), (0.03, -0.03), (0.06, -0.055)],
@@ -536,7 +574,7 @@ def build_kit(craft):
     pm.torus("Kit_BallCap", brass, ball + Vector((0, 0, 0.058)), 0.038, 0.007, segments=32, sides=8)
     co.hang("Kit_BallHandle", brass, grip, (ball + Vector((0, -0.04, 0.062)), ball + Vector((0, 0.04, 0.062))))
     glow = bpy.data.lights.new("Kit_BallGlow", "POINT")
-    glow.energy, glow.color, glow.shadow_soft_size = 2.5, C["glow"], 0.07
+    glow.energy, glow.color, glow.shadow_soft_size = 1.2, C["glow"], 0.07
     lamp = bpy.data.objects.new("Kit_BallGlow", glow)
     lamp.location = ball + Vector((0, -0.1, 0.02))
     pm.link(lamp)
