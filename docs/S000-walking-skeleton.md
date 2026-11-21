@@ -57,6 +57,7 @@ settings UI, language-pack downloads, audio, Android CI.
 | Check | Run | Result |
 |---|---|---|
 | Unity 6000.3.28f1 compile + EditMode + PlayMode (`ci.yml`, image `ubuntu-6000.3.28f1-base-3`) | CI run 1, commit `a5aea60`, 2026-11-21 | Personal seat activated with email + password and released; **EditMode 50/50, PlayMode 7/7 passed**, 0 compile errors. Unity generated `packages-lock.json`, URP global settings and re-serialized settings (committed on `fix/s000-unity-ci`). |
+| Same, with the generated files committed | CI run 4, commit `6247aff` | **EditMode 50/50, PlayMode 7/7** (5 `WalkingSkeletonTests` + 2 Input System `IntegrationTests`); only `ShaderGraphSettings.asset` still generated, now committed. |
 
 ### Not yet run — needs the named dependency
 
