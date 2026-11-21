@@ -4,6 +4,11 @@ name: Build for TestFlight
 # worker, then archive, sign and upload on a temporary macOS worker. Never submits for review
 # or public release. Choose a reviewed commit on main for uploads.
 on:
+  # Pushing a tag "testflight-<anything>" on a commit already in main builds and uploads it (mode
+  # testflight); the run deletes the tag afterwards. The tag rule must be allowed by the "testflight"
+  # environment's deployment rules (docs/ci-setup.md §3).
+  push:
+    tags: ['testflight-*']
   workflow_dispatch:
     inputs:
       ref:
@@ -40,19 +45,21 @@ jobs:
       sha: ${{ steps.resolve.outputs.sha }}
       short_sha: ${{ steps.resolve.outputs.short_sha }}
       marketing_version: ${{ steps.resolve.outputs.marketing_version }}
+      mode: ${{ steps.resolve.outputs.mode }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || github.ref }}
           fetch-depth: 0
           persist-credentials: false
       - id: resolve
         name: Resolve commit and enforce trusted revisions
         env:
-          MODE: ${{ inputs.mode }}
+          MODE: ${{ inputs.mode || 'testflight' }}
         run: |
           sha=$(git rev-parse HEAD)
           {
+            echo "mode=$MODE"
             echo "sha=$sha"
             echo "short_sha=${sha:0:12}"
             echo "marketing_version=$(sed -n 's/^  bundleVersion: //p' ProjectSettings/ProjectSettings.asset)"
@@ -60,7 +67,7 @@ jobs:
           if [[ "$MODE" == "testflight" ]]; then
             git fetch --no-tags origin main
             if ! git merge-base --is-ancestor "$sha" origin/main; then
-              echo "::error title=Untrusted revision::$sha is not on main. Merge the reviewed PR first, then build from main."
+              echo "::error title=Untrusted revision::$sha is not on main. Merge it into main first, then build from main."
               exit 1
             fi
           fi
@@ -71,7 +78,7 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           IOS_BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID }}
-          MODE: ${{ inputs.mode }}
+          MODE: ${{ inputs.mode || 'testflight' }}
         run: |
           missing=()
           [[ -n "$UNITY_EMAIL" ]] || missing+=("secret UNITY_EMAIL")
@@ -84,7 +91,7 @@ jobs:
 
   apple-preflight:
     name: Check Apple credentials (testflight environment)
-    if: inputs.mode == 'testflight'
+    if: needs.preflight.outputs.mode == 'testflight'
     needs: preflight
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -183,7 +190,7 @@ jobs:
 
   xcode-unsigned:
     name: Xcode compile check (no signing)
-    if: inputs.mode == 'unsigned-xcode-check'
+    if: needs.preflight.outputs.mode == 'unsigned-xcode-check'
     needs: [preflight, export]
     runs-on: ${{ vars.MACOS_RUNNER || 'macos-15' }}
     timeout-minutes: 45
@@ -211,7 +218,7 @@ jobs:
 
   testflight:
     name: Archive, sign and upload (macOS)
-    if: inputs.mode == 'testflight'
+    if: needs.preflight.outputs.mode == 'testflight'
     needs: [preflight, export]
     runs-on: ${{ vars.MACOS_RUNNER || 'macos-15' }}
     timeout-minutes: 50
@@ -315,3 +322,17 @@ jobs:
           python tools/ci/asc_build_status.py --bundle-id "${{ vars.IOS_BUNDLE_ID }}"
           --version "${{ needs.preflight.outputs.marketing_version }}"
           --build-number "${{ needs.testflight.outputs.build_number }}" --timeout 1800
+
+  remove-trigger-tag:
+    name: Delete the testflight-* trigger tag
+    if: always() && github.ref_type == 'tag'
+    needs: [preflight, export, testflight, processing-status]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/tags/${TAG}" && echo "Deleted tag ${TAG}"
