@@ -42,9 +42,9 @@ hardware and does **not** work in CI (probe run 1). Do not store it as a secret.
 
 ## 3. GitHub environment `testflight` (Settings → Environments → New environment)
 
-- **Deployment branches and tags**: *Selected branches and tags* → add a **branch** rule `main` and a
-  **tag** rule `testflight-*`. Builds start either from the *Run workflow* button on `main` or from a
-  `testflight-*` tag that points at a commit already in `main` (checked again by the preflight job).
+- **Deployment branches and tags**: *Selected branches and tags* → **branch** rule `main` only. Builds start
+  from the *Run workflow* button on `main` or from a push to `main` whose commit message contains
+  `[testflight]`.
 - **Required reviewers**: yourself (optional, adds an approval click before signing).
 - **Environment secrets** (base64 without line breaks: `base64 -w0 file` on Linux, `[Convert]::ToBase64String([IO.File]::ReadAllBytes("file"))` in PowerShell):
 
@@ -92,8 +92,9 @@ The repository therefore does those itself:
 
 - **Repo hygiene** (`repo-hygiene.yml`, on every push to `main`): deletes `feature/*` and `fix/*`
   branches already contained in `main`.
-- **TestFlight by tag**: pushing `testflight-<label>` on a `main` commit runs *Build for TestFlight* in
-  `testflight` mode; its last job deletes the tag.
+- **TestFlight by commit message**: a push to `main` whose head commit message contains `[testflight]`
+  (normally the `--no-ff` merge of the change to test) runs *Build for TestFlight* in `testflight` mode.
+  The session's git proxy rejects tag pushes, so tags are not used.
 
 ## 8. Running it
 

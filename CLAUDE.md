@@ -7,9 +7,9 @@
   on the next push to `main` (sessions cannot delete remote refs). Never push a branch before it has its own
   commit, or hygiene will treat it as merged.
 - TestFlight upload (costs macOS minutes, use only for changes worth testing on the phone, and tell the owner):
-  `git tag testflight-$(date -u +%Y%m%d-%H%M) origin/main && git push origin <that tag>`. The workflow checks the
-  commit is on main, builds, uploads, polls processing and deletes the tag. Sessions cannot dispatch or cancel
-  workflows (403); read runs and logs with the GitHub MCP tools.
+  put `[testflight]` in the message of the `--no-ff` merge commit pushed to `main`. The workflow checks the commit
+  is on main, builds, uploads and polls processing. Sessions cannot dispatch or cancel workflows, push tags or
+  delete refs (403); read runs and logs with the GitHub MCP tools.
 - Actions budget matters: add `[skip ci]` to intermediate commits and push without it only when the branch is
   ready for validation. Never re-trigger CI just to check something a previous run already proved.
 - Never claim a Unity, Xcode, TestFlight or device pass without that run's evidence. Unity checks run only
