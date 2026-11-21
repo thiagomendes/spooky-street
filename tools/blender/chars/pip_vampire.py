@@ -113,6 +113,13 @@ def striped(mat, rgb, period):
     links.new(base.links[0].from_socket, mix.inputs[6])
     mix.inputs[7].default_value = craft_lib.lin(rgb)
     links.new(mix.outputs[2], base)
+    sheen = nodes["Principled BSDF"].inputs["Sheen Weight"]  # dark bands: little sheen, or the ribs streak white
+    calm = nodes.new("ShaderNodeMath")
+    calm.operation = "MULTIPLY_ADD"
+    links.new(band.outputs[0], calm.inputs[0])
+    calm.inputs[1].default_value = -0.85 * sheen.default_value
+    calm.inputs[2].default_value = sheen.default_value
+    links.new(calm.outputs[0], sheen)
     return mat
 
 
@@ -188,15 +195,30 @@ def build_head(craft, P):
     groove = craft.felt(V["hair_dark"])
     centre = hc + Vector((0, r * 0.04, r * 0.1))
     radii = Vector((r * 1.13, r * 1.15, r * 1.12))
-    fringe_z, length_z, face_half = r * 0.3, -r * 0.7, math.radians(50)
+    fringe_z, length_z, face_half = r * 0.3, -r * 0.62, math.radians(50)
+
+    locks = 13
+    low = length_z / radii.z - 0.1  # unit height of the hem
+
+    def lock_phase(lon):
+        """0 in the valley between two locks, 1 on the crest of a lock."""
+        return abs(math.sin(locks * (lon + 0.21) / 2))
 
     def bob(unit, lift=1.0):
-        """Unit-sphere point -> bob surface: a dome on top, hair falling straight below it, ends tucked in."""
+        """Unit-sphere point -> bob surface: a dome at the crown, then chunky locks falling straight to a
+        softly uneven hem that flips out a little."""
         flat = math.hypot(unit.x, unit.y)
-        if unit.z < 0 and flat > 1e-6:
-            fall = max(flat, 0.97 - 0.25 * unit.z * unit.z) / flat
-            unit = Vector((unit.x * fall, unit.y * fall, unit.z))
-        return Vector((unit.x * radii.x, unit.y * radii.y, unit.z * radii.z)) * lift + centre
+        if flat < 1e-6:
+            return Vector((0, 0, unit.z * radii.z)) * lift + centre
+        lon = math.atan2(unit.x, -unit.y)
+        depth = min(1.0, max(0.0, (0.9 - unit.z) / (0.9 - low)))  # 0 at the crown … 1 at the hem
+        fall = max(flat, 0.97 - 0.25 * unit.z * unit.z) / flat if unit.z < 0 else 1.0
+        clump = 1 + 0.2 * depth * (lock_phase(lon) ** 0.6 - 0.62)
+        flip = 1 + 0.07 * max(0.0, (depth - 0.8) / 0.2) ** 2
+        ragged = 0.07 * lock_phase(lon) + 0.04 * math.sin(3 * lon + 0.8)  # each lock ends in its own soft point
+        zz = unit.z - (0.04 + ragged) * max(0.0, (depth - 0.6) / 0.4) ** 2
+        k = fall * clump * flip
+        return Vector((unit.x * k * radii.x, unit.y * k * radii.y, zz * radii.z)) * lift + centre
 
     def on_hair(lon, el, lift=1.075):
         """Point on the bob's outer surface at longitude `lon` (0 = front, counter-clockwise) and elevation `el`."""
@@ -204,16 +226,17 @@ def build_head(craft, P):
         return bob(Vector((math.cos(el) * math.cos(a), math.cos(el) * math.sin(a), math.sin(el))), lift)
 
     bm = bmesh.new()
-    bmesh.ops.create_uvsphere(bm, u_segments=48, v_segments=32, radius=1.0)
-    for v in bm.verts:
-        v.co = bob(v.co)
+    bmesh.ops.create_uvsphere(bm, u_segments=78, v_segments=32, radius=1.0)
     doomed = []
     for f in bm.faces:
-        c = f.calc_center_median() - hc
+        c = f.calc_center_median()
+        rel = Vector((c.x * radii.x, c.y * radii.y, c.z * radii.z)) + centre - hc
         in_face = abs(math.atan2(c.x, -c.y)) < face_half
-        if c.z < length_z or (in_face and c.z < fringe_z):
+        if rel.z < length_z or (in_face and rel.z < fringe_z):
             doomed.append(f)
     bmesh.ops.delete(bm, geom=doomed, context="FACES")
+    for v in bm.verts:
+        v.co = bob(v.co)
     hair_obj = pm.new_mesh_object("Pip_Hair", bm, hair)
     sol = hair_obj.modifiers.new("Thick", "SOLIDIFY")
     sol.thickness = r * 0.09
@@ -221,13 +244,19 @@ def build_head(craft, P):
     hair_obj.modifiers.new("Smooth", "SUBSURF").levels = 2
     el_low = math.asin((length_z + r * 0.06 - r * 0.1) / radii.z)
     el_fringe = math.asin((fringe_z + r * 0.05 - r * 0.1) / radii.z)
-    for k in range(27):
-        lon = math.radians(-180 + 360 * k / 27)
-        bottom = el_fringe if abs(lon) < face_half - 0.05 else el_low
-        if abs(abs(lon) - face_half) < 0.1:
+    for k in range(locks):  # a deep groove in every valley between locks, fanning from the crown …
+        lon = 2 * math.pi * k / locks - 0.21
+        lon = (lon + math.pi) % (2 * math.pi) - math.pi
+        bottom = el_fringe if abs(lon) < face_half else el_low
+        pts = [on_hair(lon, math.radians(80) + (bottom - math.radians(80)) * j / 9, 1.04) for j in range(10)]
+        an.hair_clump("Pip_HairGroove", groove, pts, r * 0.03, taper=(0.2, 1.0))
+        crest = lon + math.pi / locks  # … and a fine strand line down the crest of each lock
+        crest = (crest + math.pi) % (2 * math.pi) - math.pi
+        if abs(abs(crest) - face_half) < 0.12:
             continue  # keep the edge of the side locks clean
-        pts = [on_hair(lon, math.radians(78) + (bottom - math.radians(78)) * j / 7) for j in range(8)]
-        an.hair_clump("Pip_HairGroove", groove, pts, r * 0.012, taper=(0.3, 1.0))
+        bottom = el_fringe if abs(crest) < face_half else el_low
+        pts = [on_hair(crest, math.radians(62) + (bottom - math.radians(62)) * j / 7) for j in range(8)]
+        an.hair_clump("Pip_HairStrand", groove, pts, r * 0.009, taper=(0.3, 1.0))
     # A tiny felt bat hair clip on the side of the bob (the only bat motif on the head).
     clip_at = on_hair(math.radians(38), math.radians(27), 1.115)
     normal = on_hair(math.radians(38), math.radians(27), 1.5) - clip_at
@@ -310,6 +339,12 @@ def build_outfit(craft, P, skin):
             pm.ellipsoid("Pip_Brooch", craft.smooth(V["berry"], 0.15), anchor + Vector((0, -0.006, -0.004)),
                          (0.011, 0.007, 0.012), subsurf=1)
 
+    for s in (1, -1):  # soft folds where the sleeve bunches at the elbow
+        el, wr = P.elbow(s) + Vector((0, 0.014, 0)), P.wrist(s)
+        sh = Vector((s * P.shoulder_x, 0, z["shoulder"]))
+        for towards, t, tilt in ((sh, 0.1, 0.22), (wr, 0.07, -0.16), (wr, 0.2, 0.12)):
+            pm.torus("Pip_SleeveFold", shirt, el.lerp(towards, t), P.limb * 0.56, 0.0065,
+                     rotation=(tilt, -s * P.arm_out, 0), segments=24, sides=8)
     for s in (1, -1):  # gathered shirt cuffs
         pm.torus("Pip_Cuff", white, P.wrist(s) + Vector((0, 0, 0.002)), P.limb * 0.56, 0.011,
                  rotation=(0, -s * P.arm_out, 0), segments=24, sides=10)
@@ -333,7 +368,7 @@ def build_cape(craft, P):
     def hem_tip(t):
         return 0.01 * max(0.0, 1 - min(t, 1 - t) / 0.12)
     ell_lathe("Pip_CapeCollar", velvet, [(0.105, z["neck"] - 0.012), (0.134, z["neck"] + 0.016),
-                                         (0.158, z["neck"] + 0.046)], open_deg=64, yscale=0.95, hem=hem_tip,
+                                         (0.158, z["neck"] + 0.04)], open_deg=64, yscale=0.95, hem=hem_tip,
               inner=lining, thickness=0.007)
     # Clasp: an orange button on each front edge joined by a candy-yellow cord.
     ends = []

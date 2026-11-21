@@ -166,10 +166,12 @@ def body(name, P, materials, classify):
         knee = Vector((s * P.hip_x * 1.02, -0.006, z["knee"]))
         ankle = Vector((s * P.hip_x * 1.0, 0.004, z["ankle"]))
         n.update({
-            "shoulder" + side: (sh, L * 0.82),
-            "bicep" + side: (sh.lerp(el, 0.4), L * 0.76),
-            "elbow" + side: (el + Vector((0, 0.012, 0)), L * 0.56),
-            "forearm" + side: (el.lerp(wr, 0.35) + Vector((0, 0.004, 0)), L * 0.7),
+            "shoulder" + side: (sh, L * 0.86),
+            "puff" + side: (sh.lerp(el, 0.28), L * 0.9),  # softly puffed sleeve head
+            "bicep" + side: (sh.lerp(el, 0.66), L * 0.68),
+            "elbow" + side: (el + Vector((0, 0.014, 0)), L * 0.54),
+            "forearm" + side: (el.lerp(wr, 0.4) + Vector((0, 0.004, 0)), L * 0.7),
+            "sleeve" + side: (el.lerp(wr, 0.78), L * 0.78),  # sleeve fullness gathered into the cuff
             "wrist" + side: (wr, L * 0.5),
             "hip" + side: (hip, L * 1.05),
             "thigh" + side: (hip.lerp(knee, 0.45), L * 0.98),
@@ -178,8 +180,9 @@ def body(name, P, materials, classify):
             "shin" + side: (knee.lerp(ankle, 0.75), L * 0.6),
             "ankle" + side: (ankle, L * 0.52),
         })
-        edges += [("chest", "shoulder" + side), ("shoulder" + side, "bicep" + side), ("bicep" + side, "elbow" + side),
-                  ("elbow" + side, "forearm" + side), ("forearm" + side, "wrist" + side),
+        edges += [("chest", "shoulder" + side), ("shoulder" + side, "puff" + side), ("puff" + side, "bicep" + side),
+                  ("bicep" + side, "elbow" + side), ("elbow" + side, "forearm" + side),
+                  ("forearm" + side, "sleeve" + side), ("sleeve" + side, "wrist" + side),
                   ("pelvis", "hip" + side), ("hip" + side, "thigh" + side), ("thigh" + side, "knee" + side),
                   ("knee" + side, "calf" + side), ("calf" + side, "shin" + side), ("shin" + side, "ankle" + side)]
     obj = _skin_mesh(name, n, edges, "pelvis")
@@ -193,61 +196,45 @@ def body(name, P, materials, classify):
 def hand(name, P, side, skin, nail, curl=0.35, size=1.0):
     """Five-fingered child's hand hanging from the wrist, palm facing the thigh.
 
-    `curl` is the total finger bend in radians (0.3 relaxed, 1.5 gripping). Returns (pivot, grip): the world
-    point inside the curled fingers where a held handle passes."""
+    The thumb and each finger are separate meshes rooted inside the palm, so the fingers stay apart down to
+    the knuckles. `curl` is the total finger bend in radians (0.3 relaxed, 1.5 gripping).
+    Returns (pivot, grip): the world point inside the curled fingers where a held handle passes."""
     s = P.head_r / 0.13 * (1.0 if P.child else 1.3) * size
-    nodes = {"wrist": ((0, 0, 0), (0.015 * s, 0.019 * s)), "palm": ((0, 0, -0.03 * s), (0.017 * s, 0.034 * s))}
-    edges = [("wrist", "palm")]
-    fingers = [(-0.0235, -0.057, 0.04), (-0.008, -0.06, 0.046), (0.008, -0.059, 0.042), (0.0235, -0.055, 0.033)]
+    wrap = min(1.0, curl / 1.5)
+    parts = [pm.ellipsoid(name + "Palm", skin, (0, 0, -0.034 * s), (0.0145 * s, 0.031 * s, 0.028 * s), subsurf=1),
+             _skin_mesh(name + "Wrist", {"a": ((0, 0, 0.004 * s), (0.014 * s, 0.018 * s)),
+                                         "b": ((0, 0, -0.022 * s), (0.013 * s, 0.022 * s))}, [("a", "b")], "a")]
+    thumb = [Vector((-0.003, -0.016, -0.026)) * s, Vector((-0.005, -0.029, -0.03)) * s,
+             Vector((-0.01 - 0.008 * wrap, -0.043, -0.04)) * s,
+             Vector((-0.014 - 0.022 * wrap, -0.05 + 0.014 * wrap, -0.057)) * s]
+    parts.append(_skin_mesh(name + "Thumb", {f"t{k}": (p, rad * s) for k, (p, rad) in
+                                             enumerate(zip(thumb, (0.008, 0.0098, 0.0088, 0.008)))},
+                            [(f"t{k}", f"t{k + 1}") for k in range(3)], "t0"))
+    fingers = [(-0.0235, -0.052, 0.042), (-0.0078, -0.055, 0.048), (0.0078, -0.054, 0.044), (0.0235, -0.05, 0.035)]
+    fan = 0.1 * (1 - wrap) + 0.02  # relaxed fingers spread a little, gripping fingers close up
     tips, holds = [], []
-    fan = 0.13 * (1 - min(1.0, curl / 1.5)) + 0.04  # relaxed fingers spread, gripping fingers close up
     for i, (fy, fz, fl) in enumerate(fingers):  # index finger first: -Y is the character's front
-        pos = Vector((0, fy * s, fz * s))
-        nodes[f"f{i}0"] = (pos.copy(), 0.0078 * s)
-        edges.append(("palm", f"f{i}0"))
+        root = Vector((0, fy * s * 0.96, (fz + 0.012) * s))  # buried in the palm
+        pos = Vector((0.002 * s, fy * s, fz * s))  # the knuckle stands a little proud of the back of the hand
+        chain = {"root": (root, 0.0062 * s), "k0": (pos.copy(), 0.0074 * s)}
+        links = [("root", "k0")]
         bend = 0.0
         for j in range(1, 4):
             bend = curl * (j - 0.4) / 2.6
             seg = fl * s / 3
             pos = pos + Vector((-math.sin(bend) * seg, fy * s * fan, -math.cos(bend) * seg))
-            nodes[f"f{i}{j}"] = (pos.copy(), (0.0078 - 0.0003 * j) * s)
-            edges.append((f"f{i}{j - 1}", f"f{i}{j}"))
+            chain[f"k{j}"] = (pos.copy(), (0.0068 - 0.0003 * j) * s)
+            links.append((f"k{j - 1}", f"k{j}"))
+        parts.append(_skin_mesh(f"{name}Finger{i}", chain, links, "root"))
         tips.append((pos.copy(), bend))
-        holds.append((Vector(nodes[f"f{i}0"][0]) + pos) * 0.5)
-    wrap = min(1.0, curl / 1.5)
-    thumb = [Vector((-0.004, -0.026, -0.018)) * s, Vector((-0.01 - 0.008 * wrap, -0.043, -0.034)) * s,
-             Vector((-0.014 - 0.022 * wrap, -0.05 + 0.014 * wrap, -0.052)) * s]
-    for j, (p, rad) in enumerate(zip(thumb, (0.0095, 0.0088, 0.008))):
-        nodes[f"t{j}"] = (p, rad * s)
-        edges.append(("palm" if j == 0 else f"t{j - 1}", f"t{j}"))
-    obj = _skin_mesh(name, nodes, edges, "wrist")
-    obj.data.materials.append(skin)
-    # The skin modifier can leave torn fins where five fingers branch off the palm: cut them away, close the
-    # holes, then relax the creases.
-    bm = bmesh.new()
-    bm.from_mesh(obj.data)
-    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-5)
-    for _ in range(3):
-        torn = [f for f in bm.faces if any(not e.is_manifold for e in f.edges)]
-        if not torn:
-            break
-        bmesh.ops.delete(bm, geom=torn, context="FACES")
-        bmesh.ops.holes_fill(bm, edges=[e for e in bm.edges if e.is_boundary], sides=0)
-    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
-    bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 4])
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
-    for f in bm.faces:
-        f.smooth = True
-    for _ in range(4):
-        bmesh.ops.smooth_vert(bm, verts=bm.verts[:], factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
-    bm.to_mesh(obj.data)
-    bm.free()
-    parts = [obj]
-    for tip, bend in tips + [(thumb[2], 0.35 * wrap)]:
+        holds.append((Vector(chain["k0"][0]) + pos) * 0.5)
+    for part in parts[1:]:
+        part.data.materials.append(skin)
+    for tip, bend in tips + [(thumb[3], 0.35 * wrap)]:
         along = Vector((-math.sin(bend), 0, -math.cos(bend)))
         back = Vector((math.cos(bend), 0, -math.sin(bend)))
-        c = tip - along * 0.0055 * s + back * 0.0052 * s
-        parts.append(pm.ellipsoid(name + "Nail", nail, c, (0.0012 * s, 0.004 * s, 0.0044 * s),
+        c = tip - along * 0.0045 * s + back * 0.0048 * s
+        parts.append(pm.ellipsoid(name + "Nail", nail, c, (0.0012 * s, 0.0038 * s, 0.0044 * s),
                                   rotation=(0, bend, 0), segments=12, rings=8, subsurf=1))
     pivot = bpy.data.objects.new(name + "Pivot", None)
     pm.link(pivot)
