@@ -26,3 +26,6 @@
 
 # Small review captures stay in plain git (no LFS bandwidth for CI checkouts).
 docs/evidence/** -filter -diff -merge binary
+
+# Game models and their textures: small, stay in plain git (LFS is unreachable from cloud sessions).
+Assets/SpookyStreet/Content/Resources/Models/** -filter -diff -merge binary

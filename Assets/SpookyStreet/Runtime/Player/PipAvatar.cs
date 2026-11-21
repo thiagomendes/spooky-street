@@ -11,6 +11,13 @@ namespace SpookyStreet.Player
     /// </summary>
     public sealed class PipAvatar : MonoBehaviour
     {
+        /// <summary>Pip's game model (built by tools/blender/build_pip.py from a CC0 KayKit base).</summary>
+        public const string ModelFolder = "Models/Characters/Pip/";
+        public const string ModelPath = ModelFolder + "Pip";
+
+        [SerializeField] private float modelYawOffset;
+        [SerializeField] private float modelHeightFactor = 1.1f;
+
         [SerializeField] private float idleBobHz = 0.6f;
         [SerializeField] private float idleBobFraction = 0.02f;
         [SerializeField] private float stepHz = 2.5f;
@@ -28,6 +35,13 @@ namespace SpookyStreet.Player
 
         public Transform Body => _body;
 
+        /// <summary>True when Pip is the imported, animated model rather than the primitive fallback.</summary>
+        public bool UsesModel { get; private set; }
+
+        public PipAnimator Animator { get; private set; }
+
+        public Transform[] Wings { get; private set; } = new Transform[0];
+
         public void Build(MaterialLibrary materials, PipMovementTuning tuning)
         {
             _motor = GetComponent<PipMotor>();
@@ -36,6 +50,10 @@ namespace SpookyStreet.Player
 
             _body = new GameObject("PipBody").transform;
             _body.SetParent(transform, false);
+            if (TryBuildModel(materials, tuning))
+            {
+                return;
+            }
 
             // Legs and feet (dark tights).
             for (int side = -1; side <= 1; side += 2)
@@ -102,6 +120,123 @@ namespace SpookyStreet.Player
                 Quaternion.identity, materials.Glow(Palette.PumpkinAmber, 1.5f));
         }
 
+        private bool TryBuildModel(MaterialLibrary materials, PipMovementTuning tuning)
+        {
+            var prefab = Resources.Load<GameObject>(ModelPath);
+            if (prefab == null)
+            {
+                return false;
+            }
+
+            var clips = Resources.LoadAll<AnimationClip>(ModelPath);
+            var model = Instantiate(prefab, _body, false);
+            model.name = "PipModel";
+            model.transform.localRotation = Quaternion.Euler(0f, modelYawOffset, 0f);
+            SetLayer(model.transform, gameObject.layer);
+
+            var cape = materials.Textured(Resources.Load<Texture2D>(ModelFolder + "pip_cape"));
+            var fuzz = materials.Textured(Resources.Load<Texture2D>(ModelFolder + "pip_fuzz"));
+            foreach (var renderer in model.GetComponentsInChildren<Renderer>(true))
+            {
+                string part = renderer.gameObject.name;
+                Material material = part.StartsWith("Pip_AntennaTip") ? materials.Get(Palette.WarmPaper)
+                    : part.StartsWith("Pip_Antenna") || part.StartsWith("Pip_WingSpot") ? materials.Get(Palette.Ink)
+                    : part.StartsWith("Pip_Wing") ? materials.Get(Palette.PipWing)
+                    : part == "Rogue_Body" || part.StartsWith("Rogue_Arm") ? fuzz
+                    : cape;
+                MaterialLibrary.ApplyAll(renderer, material);
+                if (renderer is SkinnedMeshRenderer skinned)
+                {
+                    skinned.updateWhenOffscreen = true;
+                }
+            }
+
+            // Scale the chibi model so its hood top sits at about the capsule height, feet on Pip's origin.
+            Bounds bounds = BodyBounds(model);
+            float height = Mathf.Max(0.01f, bounds.size.y);
+            float scale = tuning.height * modelHeightFactor / height;
+            model.transform.localScale = Vector3.one * scale;
+            bounds = BodyBounds(model);
+            model.transform.position += Vector3.up * (transform.position.y - bounds.min.y);
+
+            var antennae = new System.Collections.Generic.List<Transform>();
+            var wings = new System.Collections.Generic.List<Transform>();
+            foreach (var t in model.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name == "Pip_Antenna_L" || t.name == "Pip_Antenna_R")
+                {
+                    antennae.Add(t);
+                }
+                else if (t.name == "Pip_Wing_L" || t.name == "Pip_Wing_R")
+                {
+                    wings.Add(t);
+                }
+            }
+
+            _antennae = antennae.ToArray();
+            _antennaRest = new Quaternion[_antennae.Length];
+            for (int i = 0; i < _antennae.Length; i++)
+            {
+                _antennaRest[i] = _antennae[i].localRotation;
+            }
+
+            Wings = wings.ToArray();
+            var animator = model.GetComponentInChildren<UnityEngine.Animator>();
+            if (animator == null)
+            {
+                animator = model.AddComponent<UnityEngine.Animator>();
+            }
+
+            if (PipAnimator.HasRequiredClips(clips))
+            {
+                Animator = model.AddComponent<PipAnimator>();
+                Animator.Build(animator, clips, _motor, _maxSpeed);
+            }
+            else
+            {
+                Debug.LogWarning($"[PipAvatar] Pip model has {clips.Length} clips but not the locomotion set.");
+            }
+
+            UsesModel = true;
+            Debug.Log($"[PipAvatar] model: {clips.Length} clips, scale {scale:F3}, antennae {_antennae.Length}, " +
+                      $"wings {Wings.Length}, animated {Animator != null}");
+            return true;
+        }
+
+        private static Bounds BodyBounds(GameObject model)
+        {
+            bool any = false;
+            var bounds = new Bounds(model.transform.position, Vector3.zero);
+            foreach (var renderer in model.GetComponentsInChildren<Renderer>(true))
+            {
+                if (renderer.gameObject.name.StartsWith("Pip_Antenna"))
+                {
+                    continue;
+                }
+
+                if (!any)
+                {
+                    bounds = renderer.bounds;
+                    any = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+            }
+
+            return bounds;
+        }
+
+        private static void SetLayer(Transform root, int layer)
+        {
+            root.gameObject.layer = layer;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                SetLayer(root.GetChild(i), layer);
+            }
+        }
+
         private Transform Part(PrimitiveType type, string name, Vector3 position, Vector3 scale, Quaternion rotation,
             Material material)
         {
@@ -133,10 +268,15 @@ namespace SpookyStreet.Player
             _phase += dt * stepHz * Mathf.PI * 2f * Mathf.Max(_gait, 0.0001f);
 
             float t = Time.time;
-            float idle = Mathf.Sin(t * idleBobHz * Mathf.PI * 2f) * idleBobFraction * 1.15f * (1f - _gait);
-            float step = Mathf.Abs(Mathf.Sin(_phase)) * stepBob * _gait;
-            _body.localPosition = new Vector3(0f, idle + step, 0f);
-            _body.localRotation = Quaternion.Euler(4f * _gait, 0f, Mathf.Sin(_phase * 0.5f) * stepRollDegrees * _gait);
+            if (!UsesModel)
+            {
+                // The primitive fallback has no clips: fake breathing and gait procedurally.
+                float idle = Mathf.Sin(t * idleBobHz * Mathf.PI * 2f) * idleBobFraction * 1.15f * (1f - _gait);
+                float step = Mathf.Abs(Mathf.Sin(_phase)) * stepBob * _gait;
+                _body.localPosition = new Vector3(0f, idle + step, 0f);
+                _body.localRotation = Quaternion.Euler(4f * _gait, 0f,
+                    Mathf.Sin(_phase * 0.5f) * stepRollDegrees * _gait);
+            }
 
             for (int i = 0; i < _antennae.Length; i++)
             {

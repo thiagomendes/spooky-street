@@ -29,6 +29,9 @@ namespace SpookyStreet.Player
 
         public bool Grounded => _state.Grounded;
 
+        /// <summary>Vertical velocity in m/s (positive while rising).</summary>
+        public float VerticalSpeed => _state.VelocityY;
+
         /// <summary>World yaw (degrees) Pip is facing.</summary>
         public float HeadingYaw => transform.eulerAngles.y;
 

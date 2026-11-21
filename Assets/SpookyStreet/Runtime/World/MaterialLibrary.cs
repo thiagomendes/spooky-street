@@ -16,6 +16,7 @@ namespace SpookyStreet.World
 
         private readonly Dictionary<Color, Material> _lit = new Dictionary<Color, Material>();
         private readonly Dictionary<Color, Material> _glow = new Dictionary<Color, Material>();
+        private readonly Dictionary<Texture2D, Material> _textured = new Dictionary<Texture2D, Material>();
         private readonly Material _litBase;
         private readonly Material _unlitBase;
 
@@ -62,7 +63,49 @@ namespace SpookyStreet.World
             return material;
         }
 
+        /// <summary>Matte lit surface sampling a kit's colour atlas (imported models).</summary>
+        public Material Textured(Texture2D atlas)
+        {
+            if (atlas == null)
+            {
+                return Get(Palette.WarmPaper);
+            }
+
+            if (_textured.TryGetValue(atlas, out var material))
+            {
+                return material;
+            }
+
+            material = new Material(_litBase) { name = "Atlas_" + atlas.name };
+            if (material.HasProperty(BaseMapId))
+            {
+                material.SetTexture(BaseMapId, atlas);
+            }
+
+            if (material.HasProperty(BaseColorId))
+            {
+                material.SetColor(BaseColorId, Color.white);
+            }
+
+            _textured[atlas] = material;
+            return material;
+        }
+
         public void Apply(Renderer renderer, Color color) => renderer.sharedMaterial = Get(color);
+
+        /// <summary>Gives every sub-mesh of <paramref name="renderer"/> the same material.</summary>
+        public static void ApplyAll(Renderer renderer, Material material)
+        {
+            var slots = renderer.sharedMaterials;
+            int count = Mathf.Max(1, slots.Length);
+            var materials = new Material[count];
+            for (int i = 0; i < count; i++)
+            {
+                materials[i] = material;
+            }
+
+            renderer.sharedMaterials = materials;
+        }
 
         private static Material Cached(Dictionary<Color, Material> cache, Material baseMaterial, Color color, string prefix)
         {

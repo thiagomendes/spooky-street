@@ -4,6 +4,7 @@ using SpookyStreet.App;
 using SpookyStreet.Core.Flow;
 using SpookyStreet.Core.Localization;
 using SpookyStreet.Localization;
+using SpookyStreet.Player;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -210,6 +211,27 @@ namespace SpookyStreet.Tests.PlayMode
             StringAssert.StartsWith("[", title.text);
             Localizer.TogglePseudo();
             Assert.AreEqual("Spooky Street", title.text);
+        }
+
+        [UnityTest]
+        public IEnumerator PipIsTheAnimatedModelAndTheStreetIsDressed()
+        {
+            yield return LoadGame();
+            var game = GameBootstrap.Instance;
+            var avatar = game.Pip.GetComponent<PipAvatar>();
+            Assert.IsTrue(avatar.UsesModel, "Pip should be the imported model, not the primitive fallback");
+            Assert.IsNotNull(avatar.Animator, "Pip model needs its locomotion clips");
+            Assert.IsTrue(avatar.Animator.IsReady, "Pip's animation graph did not start");
+            CollectionAssert.IsSubsetOf(new[] { PipAnimator.Idle, PipAnimator.Walk, PipAnimator.Run },
+                new System.Collections.Generic.List<string>(avatar.Animator.ClipNames));
+            Assert.AreEqual(2, avatar.Wings.Length, "moth wings must be separate so the glide can open them");
+
+            var dressing = GameObject.Find("StreetDressing");
+            Assert.IsNotNull(dressing, "street dressing root missing");
+            Assert.GreaterOrEqual(dressing.GetComponentsInChildren<Renderer>().Length, 20,
+                "Halloween kit models did not load");
+            float height = SpookyStreet.World.ModelKit.RendererBounds(avatar.Body.gameObject).size.y;
+            Assert.That(height, Is.InRange(0.9f, 1.8f), "Pip model scale is off (antennae included)");
         }
     }
 }

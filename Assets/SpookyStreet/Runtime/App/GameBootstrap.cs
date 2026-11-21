@@ -69,6 +69,7 @@ namespace SpookyStreet.App
             Materials = new MaterialLibrary(greyboxMaterial, glowMaterial);
             Transform world = new GreyboxBuilder(Materials).Build();
             Atmosphere.Build(world);
+            StreetDressing.Build(world, Materials);
             Pip = CreatePip(movementTuning, Materials);
 
             int obstacleLayers = Physics.DefaultRaycastLayers & ~(1 << Pip.gameObject.layer);
