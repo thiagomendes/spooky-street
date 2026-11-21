@@ -12,7 +12,7 @@ uploaded to TestFlight from a GitHub-hosted macOS runner, with no local machine 
 2. No Unity editor, Mac, signing credentials or iPhone are reachable from the cloud session; Unity hosts
    (`packages.unity.com`, Unity download CDN) are blocked and Docker Hub pulls were rate-limited, so no Unity
    compile could run here. Unity-dependent checks run in GitHub Actions once the licence secrets exist.
-3. The owner uses a Unity **Personal** licence (GameCI `.ulf` flow); Plus/Pro works via `UNITY_SERIAL`.
+3. The owner uses a Unity **Personal** licence. CI activates it with email + password through Unity's licensing client (verified by the licence probe); Plus/Pro works via `UNITY_SERIAL`.
 4. The owner has, or will obtain, an Apple Developer Program membership. This work spends nothing and
    enrolls in nothing.
 5. GitHub Free private repository: macOS minutes are 10× and capped by an Actions budget the owner sets.
@@ -50,13 +50,13 @@ settings UI, language-pack downloads, audio, Android CI.
 | YAML lint | `yamllint` 1.38.0 | pass |
 | Fastlane lane | `ruby -c`; every action/option checked against fastlane 2.242.0 `available_options` | pass |
 | Artifact provenance | synthetic export archive → `write_provenance.py` → `verify-artifact.sh` | exec bits + symlinks kept; wrong commit and tampered archive rejected |
-| ULF serial extraction | synthetic `.ulf` → `serial_from_ulf.py` | correct serial; malformed input rejected |
+| Unity Personal activation in CI | *Unity licence probe* runs 1–2 (GitHub Actions, image 6000.3.28f1) | Hub entitlement file rejected (hardware-bound); `--activate-all --include-personal` and `--activate-ulf` both licensed the editor with iOS entitlement; seat released |
 
 ### Not yet run — needs the named dependency
 
 | Check | Blocked on | How to verify |
 |---|---|---|
-| Unity compile, EditMode (`ProjectSetupTests`, core tests) and PlayMode (`WalkingSkeletonTests`: boot to localized title, walk > 2 m in 1 s, Esc pauses with no movement, fall return < 2 s, background opens paused, pseudo swap) | Repository secrets `UNITY_LICENSE`, `UNITY_EMAIL`, `UNITY_PASSWORD` | Add secrets (docs/ci-setup.md §1), re-run **CI**; read the job summary and `unity-tests-<sha>` artifact. Commit `ci-out/unity-normalized.patch` (adds `packages-lock.json`). |
+| Unity compile, EditMode (`ProjectSetupTests`, core tests) and PlayMode (`WalkingSkeletonTests`: boot to localized title, walk > 2 m in 1 s, Esc pauses with no movement, fall return < 2 s, background opens paused, pseudo swap) | Repository secrets `UNITY_EMAIL`, `UNITY_PASSWORD` (now set by the owner) | Add secrets (docs/ci-setup.md §1), re-run **CI**; read the job summary and `unity-tests-<sha>` artifact. Commit `ci-out/unity-normalized.patch` (adds `packages-lock.json`). |
 | iOS Xcode export | Same Unity secrets | Actions → *Build for TestFlight* → `export-only` from `main`. Artifact `ios-xcode-<sha>-<run>` must contain `provenance.json`. |
 | Xcode compile on macOS | Unity secrets | Mode `unsigned-xcode-check`. |
 | Signed archive + TestFlight upload + processing | Apple Developer membership; environment `testflight` secrets `APPLE_TEAM_ID`, `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, `IOS_PROVISIONING_PROFILE_BASE64`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8_BASE64`; variable `IOS_BUNDLE_ID`; App Store Connect app record | Mode `testflight`. Summary reports commit, version `0.0.1`, build `<run>.<attempt>`, processing state `VALID`. |

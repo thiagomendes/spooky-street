@@ -107,6 +107,6 @@ else
   echo "::endgroup::"
 fi
 
-# Logs may mention the account; keep only the summary and the .alf in the artifact.
+# Logs may mention the account; keep only the summary in the artifact.
 rm -f "$out"/*.log
 cat "$summary"

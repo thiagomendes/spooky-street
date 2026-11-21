@@ -1,20 +1,24 @@
 # CI and TestFlight setup (one-time, owner actions)
 
 Everything here is free with an existing Apple Developer Program membership and the GitHub Free
-plan. None of it needs the Alienware once the Unity licence file has been copied.
+plan. None of it needs the Alienware.
 
-## 1. Unity licence → repository secrets (Settings → Secrets and variables → Actions)
+## 1. Unity account → repository secrets (Settings → Secrets and variables → Actions)
 
 | Secret | Value |
 |---|---|
-| `UNITY_LICENSE` | Full contents of `Unity_lic.ulf` (Personal). On Windows: `C:\ProgramData\Unity\Unity_lic.ulf` after Unity Hub → Preferences → Licenses → **Add** → *Get a free personal license*. |
-| `UNITY_EMAIL` | Unity account email |
-| `UNITY_PASSWORD` | Unity account password (the account must not require an interactive 2FA prompt for CI activation) |
-| `UNITY_SERIAL` | Only for Plus/Pro, instead of `UNITY_LICENSE` |
+| `UNITY_EMAIL` | Unity account email (account created with email + password, not a social login) |
+| `UNITY_PASSWORD` | Unity account password (no authenticator 2FA on this account, or CI cannot sign in) |
+| `UNITY_SERIAL` | Only for Plus/Pro |
 
-After copying the file, sign out of Unity Hub so the local machine does not hold the Personal seat.
-`ci/unity/run-unity.sh` derives the serial from the `.ulf`, activates inside the pinned
-`unityci/editor` container and returns the licence when the job ends.
+No licence file is needed. `ci/unity/container.sh` signs in with `Unity.Licensing.Client
+--activate-all --include-personal` (fallback `--activate-ulf`) inside the pinned container and
+releases the seat when the job ends. Verified by the *Unity licence probe* workflow (run 2,
+2026-11-21): Unity Personal entitlements including `com.unity.editor.platforms.ios` were granted
+and revoked cleanly.
+
+Unity Hub 4 on Windows only writes `UnityEntitlementLicense.xml`, which is bound to that PC's
+hardware and does **not** work in CI (probe run 1). Do not store it as a secret.
 
 ## 2. Apple (requires an active Apple Developer Program membership — not purchased by this repo)
 

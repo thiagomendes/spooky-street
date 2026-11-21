@@ -65,13 +65,11 @@ jobs:
     steps:
       - id: check
         env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         run: |
           missing=()
-          [[ -n "$UNITY_LICENSE" || -n "$UNITY_SERIAL" ]] || missing+=("UNITY_LICENSE (or UNITY_SERIAL)")
           [[ -n "$UNITY_EMAIL" ]] || missing+=("UNITY_EMAIL")
           [[ -n "$UNITY_PASSWORD" ]] || missing+=("UNITY_PASSWORD")
           if [[ ${#missing[@]} -eq 0 ]]; then
@@ -107,7 +105,6 @@ jobs:
         run: docker pull "$UNITY_IMAGE"
       - name: Run Unity tests
         env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}

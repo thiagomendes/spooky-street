@@ -67,7 +67,6 @@ jobs:
           echo "Building $sha ($MODE) for Unity $(sed -n 's/^m_EditorVersion: //p' ProjectSettings/ProjectVersion.txt)"
       - name: Check Unity secrets
         env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
@@ -75,7 +74,6 @@ jobs:
           MODE: ${{ inputs.mode }}
         run: |
           missing=()
-          [[ -n "$UNITY_LICENSE" || -n "$UNITY_SERIAL" ]] || missing+=("secret UNITY_LICENSE (or UNITY_SERIAL)")
           [[ -n "$UNITY_EMAIL" ]] || missing+=("secret UNITY_EMAIL")
           [[ -n "$UNITY_PASSWORD" ]] || missing+=("secret UNITY_PASSWORD")
           if [[ "$MODE" == "testflight" && -z "$IOS_BUNDLE_ID" ]]; then missing+=("variable IOS_BUNDLE_ID"); fi
@@ -143,7 +141,6 @@ jobs:
         run: docker pull "$UNITY_IMAGE"
       - name: Export Xcode project
         env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}

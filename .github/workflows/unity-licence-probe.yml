@@ -1,14 +1,9 @@
 name: Unity licence probe
 
-# Diagnostic: finds which Unity activation method works for this account (spec §7 "surface
+# Diagnostic (manual): checks which Unity activation method works for this account (spec §7 "surface
 # activation failures early"). Runs on Linux only; no Apple secrets; artifacts keep no logs.
 on:
   workflow_dispatch:
-  push:
-    branches: ['claude/**']
-    paths:
-      - .github/workflows/unity-licence-probe.yml
-      - ci/unity/probe-licence.sh
 
 permissions:
   contents: read
@@ -38,13 +33,12 @@ jobs:
         run: docker pull "$UNITY_IMAGE"
       - name: Probe activation methods
         env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         run: |
           mkdir -p probe-out
           docker run --rm --shm-size=1025m \
-            --env UNITY_LICENSE --env UNITY_EMAIL --env UNITY_PASSWORD --env HOME=/root \
+            --env UNITY_EMAIL --env UNITY_PASSWORD --env HOME=/root \
             --volume "$PWD:/project:ro" --volume "$PWD/probe-out:/out" \
             "$UNITY_IMAGE" bash /project/ci/unity/probe-licence.sh
           sudo chown -R "$(id -u):$(id -g)" probe-out

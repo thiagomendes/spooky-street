@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 # Runs one or more Unity batch steps inside a pinned GameCI editor image on a GitHub-hosted
-# Linux runner. Licence secrets arrive as environment variables and are passed to Docker by
-# name only, never on a command line.
+# Linux runner. Credentials arrive as environment variables and are passed to Docker by name
+# only, never on the host command line.
 #
 # Usage: ci/unity/run-unity.sh <image> <step> [<step> ...]
 #   <step> is "<log-name>::<unity arguments separated by spaces>", for example
-#   "editmode::-runTests -testPlatform EditMode -testResults ci-out/editmode-results.xml"
+#   "editmode::-runTests -testPlatform EditMode -testResults /project/ci-out/editmode-results.xml"
 #
-# Licence (GameCI-compatible secret names):
-#   Personal: UNITY_LICENSE (.ulf contents) + UNITY_EMAIL + UNITY_PASSWORD
-#   Plus/Pro: UNITY_SERIAL + UNITY_EMAIL + UNITY_PASSWORD
+# Licence (repository secrets):
+#   Personal: UNITY_EMAIL + UNITY_PASSWORD (activated through Unity.Licensing.Client; verified by
+#             the "Unity licence probe" workflow on 2026-11-21 with Unity 6000.3.28f1)
+#   Plus/Pro: additionally UNITY_SERIAL
 set -euo pipefail
 
 if [[ $# -lt 2 ]]; then
@@ -21,19 +22,12 @@ image=$1
 shift
 
 if [[ -z "${UNITY_EMAIL:-}" || -z "${UNITY_PASSWORD:-}" ]]; then
-  echo "::error title=Unity activation::UNITY_EMAIL and UNITY_PASSWORD secrets are required."
+  echo "::error title=Unity activation::UNITY_EMAIL and UNITY_PASSWORD secrets are required (docs/ci-setup.md)."
   exit 78
 fi
-
-if [[ -z "${UNITY_SERIAL:-}" ]]; then
-  if [[ -z "${UNITY_LICENSE:-}" ]]; then
-    echo "::error title=Unity activation::Set UNITY_LICENSE (Personal .ulf contents) or UNITY_SERIAL (Plus/Pro)."
-    exit 78
-  fi
-  UNITY_SERIAL=$(python3 "$(dirname "$0")/serial_from_ulf.py")
+if [[ -n "${UNITY_SERIAL:-}" ]]; then
+  echo "::add-mask::${UNITY_SERIAL}"
 fi
-echo "::add-mask::${UNITY_SERIAL}"
-export UNITY_SERIAL UNITY_EMAIL UNITY_PASSWORD
 
 mkdir -p ci-out
 status=0
