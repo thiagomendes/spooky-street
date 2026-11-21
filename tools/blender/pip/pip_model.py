@@ -55,11 +55,20 @@ def srgb_to_linear(c):
 
 _MATERIALS = {}
 
+# Optional surface treatment: callable(key, rgb, roughness, emission, sheen) -> Material or None.
+# Set by tools/blender/style/* to render the same design in an art-direction style.
+MATERIAL_FACTORY = None
+
 
 def material(key, roughness=0.75, emission=0.0, sheen=0.0):
     if key in _MATERIALS:
         return _MATERIALS[key]
     rgb = PALETTE[key]
+    if MATERIAL_FACTORY is not None:
+        styled = MATERIAL_FACTORY(key, rgb, roughness, emission, sheen)
+        if styled is not None:
+            _MATERIALS[key] = styled
+            return styled
     mat = bpy.data.materials.new("Pip_" + key)
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes["Principled BSDF"]
@@ -467,8 +476,10 @@ def build_satchel():
               subsurf=0)
 
 
-def build_pip():
-    bpy.ops.wm.read_factory_settings(use_empty=True)
+def build_pip(reset=True):
+    if reset:
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+    _MATERIALS.clear()
     root = bpy.data.objects.new("Pip", None)
     link(root)
     build_body()
@@ -573,4 +584,5 @@ def main():
         render_turnaround(argv[argv.index("--turnaround") + 1])
 
 
-main()
+if __name__ == "__main__":
+    main()
