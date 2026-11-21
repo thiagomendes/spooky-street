@@ -24,3 +24,8 @@
 - Changing the Unity patch: update `ProjectVersion.txt` and both workflow image tags + digests together.
 - Signing secrets live only in the `testflight` environment; PR jobs must never reference them.
 - Spend no money; never submit for App Review or external TestFlight testing.
+- Agents (owner policy): the main session orchestrates. 3D/graphics modelling agents use model `fable`
+  (Fable 5.2) at medium effort; everything else uses Opus 5.5 at medium effort. If Fable does not improve the
+  graphics, switch graphics agents to Opus 5.5 at high effort. Never other models.
+- Art is 100% original (spec v1.3): Blender Python scripts in `tools/blender/` (headless Blender 4.0.2, Eevee
+  renders work); review every asset by rendering and looking at the image before it enters the game.
