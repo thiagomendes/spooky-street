@@ -96,7 +96,7 @@ class Craft:
             links.new(color, bsdf.inputs["Base Color"])
             links.new(self._bump(nodes, links, fibres, min(1.0, 0.7 * k), 0.006), bsdf.inputs["Normal"])
             bsdf.inputs["Roughness"].default_value = 1.0
-            bsdf.inputs["Sheen Weight"].default_value = 0.35 + 0.5 * k
+            bsdf.inputs["Sheen Weight"].default_value = min(0.7, 0.25 + 0.35 * k)
             bsdf.inputs["Sheen Roughness"].default_value = 0.35
             mat.diffuse_color = lin(rgb)
             return mat
@@ -187,6 +187,33 @@ class Craft:
             mat.diffuse_color = lin(rgb)
             return mat
         return self._cached(("wood", rgb), build)
+
+    def cardboard(self, rgb, name="Cardboard"):
+        """Corrugated cardboard: faint flute ridges, paper fibres, uneven brown tone."""
+        def build():
+            mat, nodes, links, bsdf = self._base(f"{name}_{rgb}")
+            vec = self._coords(nodes, links)
+            flutes = nodes.new("ShaderNodeTexWave")
+            flutes.wave_type = "BANDS"
+            flutes.bands_direction = "Z"
+            flutes.inputs["Scale"].default_value = 70.0
+            flutes.inputs["Distortion"].default_value = 0.3
+            links.new(vec, flutes.inputs["Vector"])
+            blotch = self._noise(nodes, links, vec, 5.0, 4.0)
+            fibres = self._noise(nodes, links, vec, 200.0, 10.0, 0.8)
+            add = nodes.new("ShaderNodeMath")
+            add.operation = "ADD"
+            links.new(flutes.outputs["Fac"], add.inputs[0])
+            links.new(fibres, add.inputs[1])
+            k = self.k
+            color = self._mix_colors(nodes, links, blotch, lin(self._shade(rgb, 1 - 0.2 * k)),
+                                     lin(self._shade(rgb, 1 + 0.06 * k)))
+            links.new(color, bsdf.inputs["Base Color"])
+            links.new(self._bump(nodes, links, add.outputs[0], min(1.0, 0.25 * k), 0.004), bsdf.inputs["Normal"])
+            bsdf.inputs["Roughness"].default_value = 0.9
+            mat.diffuse_color = lin(rgb)
+            return mat
+        return self._cached(("cardboard", rgb), build)
 
     def smooth(self, rgb, roughness=0.5, emission=0.0, subsurface=0.0, name="Smooth"):
         def build():
