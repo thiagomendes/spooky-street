@@ -10,7 +10,7 @@
     { "key": "ui.title.continue", "value": "Continue", "context": "Title screen button that resumes saved progress. Shown only when a save exists." },
     { "key": "ui.title.language_toggle_dev", "value": "Language: {0}", "context": "Development-build-only button. {0} is the native name of the current language, e.g. 'English'." },
     { "key": "ui.title.build_label", "value": "Version {0} · {1}", "context": "Small corner label for testers. {0} is the app version, {1} is a build identifier. Not translated by marketing." },
-    { "key": "prompt.first.move_touch", "value": "Drag on the left side of the screen to walk.", "context": "First prompt after starting, shown on touch screens. Spoken by no one; plain instruction for children 8–12." },
+    { "key": "prompt.first.move_touch", "value": "Drag here to walk.", "context": "First prompt after starting, shown on touch screens on a small paper tag just above the on-screen stick ghost, so 'here' means that spot. Plain instruction for children 8–12; keep it under about 24 characters." },
     { "key": "prompt.first.move_keyboard", "value": "Use W A S D or the arrow keys to walk.", "context": "First prompt after starting, keyboard players. Key names may stay in Latin letters." },
     { "key": "prompt.first.move_gamepad", "value": "Use the left stick to walk.", "context": "First prompt after starting, gamepad players." },
     { "key": "ui.hud.pause", "value": "Pause", "context": "On-screen pause button label and accessibility name. Very short." },

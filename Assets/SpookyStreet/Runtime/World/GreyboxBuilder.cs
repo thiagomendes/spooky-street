@@ -1,30 +1,32 @@
-using System.Collections.Generic;
 using SpookyStreet.Player;
 using UnityEngine;
 
 namespace SpookyStreet.World
 {
     /// <summary>
-    /// S000 safe floor and orientation landmarks, built from primitives so they are cheap to replace.
-    /// Units are meters, north is +Z, origin at the plaza (spec §4). Only the arrival porch, plaza floor,
-    /// boundary hedges and the owl-house silhouette with its round attic window exist yet; the full
-    /// block arrives in S001.
+    /// S000.1 greybox of Lantern Lane's arrival view, built from primitives so it stays cheap to replace.
+    /// Units are meters, north is +Z, origin at the plaza (spec §4). The composition serves the opening image
+    /// (spec §1): a child-height view past a candy bowl, down a path, to the dark blue house whose round attic
+    /// window glows above the hedge. The full block arrives in S001.
     /// </summary>
     public sealed class GreyboxBuilder
     {
         public static readonly Vector3 ArrivalSpawn = new Vector3(0f, 0.62f, -13.4f);
 
-        private readonly Dictionary<Color, Material> _materials = new Dictionary<Color, Material>();
-        private readonly Material _baseMaterial;
+        /// <summary>Centre of the round attic window on the owl house's gable (the opening's focal point).</summary>
+        public static readonly Vector3 AtticWindow = new Vector3(0f, 7.55f, 10.9f);
+        public static readonly Vector3 PorchLamp = new Vector3(1.95f, 3.05f, -13.25f);
+
+        private const float HouseFront = 11f;
+        public const float HouseFrontZ = HouseFront;
+
+        private readonly MaterialLibrary _materials;
         private readonly int _safeLayer;
         private Transform _root;
 
-        public GreyboxBuilder()
+        public GreyboxBuilder(MaterialLibrary materials)
         {
-            // The pipeline's default material for primitives is always included in player builds.
-            var probe = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            _baseMaterial = probe.GetComponent<Renderer>().sharedMaterial;
-            Object.Destroy(probe);
+            _materials = materials;
             int layer = LayerMask.NameToLayer(SafeGroundTracker.SafeGroundLayerName);
             _safeLayer = layer >= 0 ? layer : 0;
         }
@@ -33,9 +35,32 @@ namespace SpookyStreet.World
         {
             _root = new GameObject("Greybox_LanternLane").transform;
 
-            // Plaza floor: 44 × 36 m block, top surface at y = 0.
-            Box("Ground", new Vector3(0f, -0.25f, 0f), new Vector3(44f, 0.5f, 36f), Palette.Ground, safe: true);
+            BuildGround();
+            BuildArrivalPorch();
+            BuildOwlHouse();
+            BuildPlaza();
+            BuildBoundary();
+            BuildSkyline();
+            BuildSkyCard();
 
+            // Greybox never moves: batch it at runtime (editor static flags do not exist for runtime-built objects).
+            StaticBatchingUtility.Combine(_root.gameObject);
+            return _root;
+        }
+
+        private void BuildGround()
+        {
+            // Playable block: 44 × 36 m, top surface at y = 0. The outer ground fills the view beyond the hedges.
+            Box("Ground", new Vector3(0f, -0.25f, 0f), new Vector3(44f, 0.5f, 36f), Palette.Ground, safe: true);
+            Decor(Box("OuterGround", new Vector3(0f, -0.45f, 0f), new Vector3(160f, 0.5f, 160f),
+                Color.Lerp(Palette.Ground, Palette.Ink, 0.35f), safe: false));
+
+            // Leading line from the arrival steps to the owl house door.
+            Box("Path", new Vector3(0f, 0.01f, -1.4f), new Vector3(1.6f, 0.02f, 21.6f), Palette.Path, safe: true);
+        }
+
+        private void BuildArrivalPorch()
+        {
             // Arrival porch (0, −13; 0.6 m) with two 0.2 m steps down toward the plaza.
             Box("ArrivalPorch", new Vector3(0f, 0.3f, -14.2f), new Vector3(4f, 0.6f, 2.4f), Palette.Timber, safe: true);
             for (int i = 0; i < 2; i++)
@@ -45,68 +70,175 @@ namespace SpookyStreet.World
                     Palette.Timber, safe: true);
             }
 
-            // Boundary hedges visually close the block; the gaps are filled at S001.
+            // Candy bowl in the foreground of the opening shot (spec §1).
+            Decor(Primitive(PrimitiveType.Cylinder, "CandyBowl", new Vector3(1.3f, 0.69f, -13.05f),
+                new Vector3(0.55f, 0.09f, 0.55f), Palette.PumpkinAmber, safe: false));
+            Color[] candy = { Palette.WarmPaper, Palette.PipCape, Palette.Moonlight };
+            for (int i = 0; i < candy.Length; i++)
+            {
+                float angle = i * 2.1f;
+                Decor(Primitive(PrimitiveType.Sphere, "Candy" + i,
+                    new Vector3(1.3f + Mathf.Cos(angle) * 0.12f, 0.8f, -13.05f + Mathf.Sin(angle) * 0.12f),
+                    Vector3.one * 0.11f, candy[i], safe: false));
+            }
+
+            // Porch lamp at the porch's front-right corner, ahead of the camera so it frames the shot as a warm
+            // point instead of filling the corner. Moderate HDR keeps it amber after tonemapping.
+            Primitive(PrimitiveType.Cylinder, "PorchLampPost", new Vector3(PorchLamp.x, 1.45f, PorchLamp.z),
+                new Vector3(0.08f, 1.45f, 0.08f), Palette.Timber, safe: false);
+            var lamp = Box("PorchLampBox", PorchLamp, new Vector3(0.26f, 0.32f, 0.26f), Palette.PumpkinAmber, safe: false);
+            lamp.GetComponent<Renderer>().sharedMaterial = _materials.Glow(Palette.PumpkinAmber, 1.4f);
+            Decor(lamp);
+            Decor(Box("PorchLampCap", PorchLamp + new Vector3(0f, 0.2f, 0f), new Vector3(0.36f, 0.08f, 0.36f), Palette.Ink,
+                safe: false));
+        }
+
+        private void BuildOwlHouse()
+        {
+            // Body: dark blue house, front face at z = 11.
+            Box("OwlHouse", new Vector3(0f, 3.2f, HouseFront + 3f), new Vector3(9f, 6.4f, 6f), Palette.HouseIndigo,
+                safe: false);
+
+            // Gable wall (indigo) under a darker two-plank roof with eaves.
+            var gable = new GameObject("OwlHouse_Gable", typeof(MeshFilter), typeof(MeshRenderer));
+            gable.transform.SetParent(_root, false);
+            gable.transform.localPosition = new Vector3(0f, 6.4f, HouseFront + 3f);
+            gable.GetComponent<MeshFilter>().sharedMesh = MeshFactory.Prism(9f, 2.8f, 6f);
+            _materials.Apply(gable.GetComponent<MeshRenderer>(), Palette.HouseIndigo);
+
+            float slope = Mathf.Atan2(2.8f, 4.5f) * Mathf.Rad2Deg;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                var plank = Box(side < 0 ? "Roof_West" : "Roof_East",
+                    new Vector3(side * 2.3f, 6.4f + 1.5f, HouseFront + 3f), new Vector3(5.9f, 0.24f, 6.6f),
+                    Palette.RoofShadow, safe: false);
+                plank.transform.localRotation = Quaternion.Euler(0f, 0f, -side * slope);
+            }
+
+            // Round attic window in the gable: ink frame, glowing pane, ink mullions (reads as a window, not a moon).
+            Decor(Disc("AtticWindow_Frame", AtticWindow + new Vector3(0f, 0f, 0.05f), 1.6f, _materials.Get(Palette.Ink)));
+            Decor(Disc("AtticWindow_Pane", AtticWindow + new Vector3(0f, 0f, 0.02f), 1.25f,
+                _materials.Glow(Palette.PumpkinAmber, 1.8f)));
+            Decor(Box("AtticWindow_MullionH", AtticWindow, new Vector3(1.25f, 0.08f, 0.04f), Palette.Ink, safe: false));
+            Decor(Box("AtticWindow_MullionV", AtticWindow, new Vector3(0.08f, 1.25f, 0.04f), Palette.Ink, safe: false));
+
+            // Closed front door, two shuttered ground-floor windows, and the house porch.
+            Box("OwlHouse_Door", new Vector3(0f, 1.1f, HouseFront - 0.02f), new Vector3(1.1f, 1.9f, 0.08f), Palette.Ink,
+                safe: false);
+            // Two dimly lit ground-floor windows with open timber shutters give the house a face at dusk.
+            for (int side = -1; side <= 1; side += 2)
+            {
+                var centre = new Vector3(side * 2.6f, 2.5f, HouseFront - 0.03f);
+                Decor(Box("OwlHouse_WindowFrame" + side, centre, new Vector3(1.2f, 1.4f, 0.05f), Palette.Ink, safe: false));
+                var pane = Box("OwlHouse_WindowPane" + side, centre + new Vector3(0f, 0f, -0.02f),
+                    new Vector3(0.95f, 1.15f, 0.04f), Palette.PumpkinAmber, safe: false);
+                pane.GetComponent<Renderer>().sharedMaterial = _materials.Glow(Palette.PumpkinAmber, 0.75f);
+                Decor(pane);
+                Decor(Box("OwlHouse_WindowMullion" + side, centre + new Vector3(0f, 0f, -0.05f),
+                    new Vector3(0.06f, 1.15f, 0.03f), Palette.Ink, safe: false));
+                for (int leaf = -1; leaf <= 1; leaf += 2)
+                {
+                    Decor(Box("OwlHouse_Shutter" + side + leaf, centre + new Vector3(leaf * 0.88f, 0f, -0.02f),
+                        new Vector3(0.5f, 1.4f, 0.05f), Palette.Timber, safe: false));
+                }
+            }
+
+            Box("OwlHouse_Porch", new Vector3(0f, 0.15f, HouseFront - 0.8f), new Vector3(5f, 0.3f, 1.6f), Palette.Timber,
+                safe: true);
+        }
+
+        private void BuildPlaza()
+        {
+            // Plaza maple breaks the space asymmetrically (spec §4).
+            Primitive(PrimitiveType.Cylinder, "Maple_Trunk", new Vector3(-4.5f, 1.5f, 2f), new Vector3(0.5f, 1.5f, 0.5f),
+                Palette.Timber, safe: false);
+            Decor(Primitive(PrimitiveType.Sphere, "Maple_Canopy", new Vector3(-4.5f, 4.1f, 2f),
+                new Vector3(3.6f, 3f, 3.6f), Palette.Hedge, safe: false));
+        }
+
+        private void BuildBoundary()
+        {
             Box("Hedge_North", new Vector3(0f, 0.7f, 17.5f), new Vector3(44f, 1.4f, 1f), Palette.Hedge, safe: false);
             Box("Hedge_South", new Vector3(0f, 0.7f, -17.5f), new Vector3(44f, 1.4f, 1f), Palette.Hedge, safe: false);
             Box("Hedge_West", new Vector3(-21.5f, 0.7f, 0f), new Vector3(1f, 1.4f, 36f), Palette.Hedge, safe: false);
             Box("Hedge_East", new Vector3(21.5f, 0.7f, 0f), new Vector3(1f, 1.4f, 36f), Palette.Hedge, safe: false);
             Box("Hedge_SideYard", new Vector3(-6f, 0.8f, 7f), new Vector3(6f, 1.6f, 1f), Palette.Hedge, safe: false);
-
-            // Owl house silhouette (blue porch at 0, +10) with the round attic window readable from the porch.
-            Box("OwlHouse", new Vector3(0f, 3.2f, 14f), new Vector3(9f, 6.4f, 6f), Palette.HouseIndigo, safe: false);
-            Box("OwlHouse_Porch", new Vector3(0f, 0.15f, 10.2f), new Vector3(5f, 0.3f, 1.6f), Palette.Timber, safe: true);
-            Box("OwlHouse_Door", new Vector3(0f, 1.1f, 10.98f), new Vector3(1.1f, 1.9f, 0.08f), Palette.Ink, safe: false);
-            var window = Primitive(PrimitiveType.Cylinder, "AtticWindow_Round", new Vector3(0f, 5.4f, 10.96f),
-                new Vector3(1.3f, 0.04f, 1.3f), Palette.PumpkinAmber, safe: false);
-            window.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-            Object.Destroy(window.GetComponent<Collider>());
-
-            // Plaza maple breaks the space asymmetrically.
-            Primitive(PrimitiveType.Cylinder, "Maple_Trunk", new Vector3(-3f, 1.5f, 2f), new Vector3(0.5f, 1.5f, 0.5f),
-                Palette.Timber, safe: false);
-            var canopy = Primitive(PrimitiveType.Sphere, "Maple_Canopy", new Vector3(-3f, 4f, 2f), new Vector3(3.5f, 3f, 3.5f),
-                Palette.Hedge, safe: false);
-            Object.Destroy(canopy.GetComponent<Collider>());
-
-            BuildLighting();
-            // Greybox never moves: batch it at runtime (editor static flags do not exist for runtime-built objects).
-            StaticBatchingUtility.Combine(_root.gameObject);
-            return _root;
         }
 
-        private void BuildLighting()
+        private void BuildSkyline()
         {
-            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = Color.Lerp(Palette.TwilightSky, Color.white, 0.25f);
-            RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogColor = Palette.TwilightSky;
-            RenderSettings.fogStartDistance = 25f;
-            RenderSettings.fogEndDistance = 90f;
+            // Decorative roofs beyond the hedges supply skyline only (spec §4). Never walkable.
+            var houses = new[]
+            {
+                new Vector4(-16f, 22f, 7f, 5.5f), new Vector4(-8.5f, 24f, 6f, 7f), new Vector4(9f, 23f, 7.5f, 6f),
+                new Vector4(17f, 21.5f, 6f, 5f), new Vector4(-27f, 6f, 6f, 6.5f), new Vector4(27f, 3f, 6.5f, 5.5f),
+            };
+            foreach (var h in houses)
+            {
+                var position = new Vector3(h.x, 0f, h.y);
+                float width = h.z;
+                float wallHeight = h.w;
+                Decor(Box("Skyline_House", position + new Vector3(0f, wallHeight * 0.5f, 0f),
+                    new Vector3(width, wallHeight, 5f), Palette.RoofShadow, safe: false));
+                var roof = new GameObject("Skyline_Roof", typeof(MeshFilter), typeof(MeshRenderer));
+                roof.transform.SetParent(_root, false);
+                roof.transform.localPosition = position + new Vector3(0f, wallHeight, 0f);
+                roof.transform.localRotation = Quaternion.Euler(0f, Mathf.Abs(h.x) > 20f ? 90f : 0f, 0f);
+                roof.GetComponent<MeshFilter>().sharedMesh = MeshFactory.Prism(width + 0.6f, width * 0.35f, 5.4f);
+                _materials.Apply(roof.GetComponent<MeshRenderer>(), Palette.RoofShadow);
+            }
+        }
 
-            var moon = new GameObject("Moonlight").AddComponent<Light>();
-            moon.transform.SetParent(_root, false);
-            moon.type = LightType.Directional;
-            moon.color = Color.Lerp(Palette.ClothSilver, Palette.TwilightSky, 0.3f);
-            moon.intensity = 0.7f;
-            moon.shadows = LightShadows.Soft;
-            moon.transform.rotation = Quaternion.Euler(40f, -35f, 0f);
+        private void BuildSkyCard()
+        {
+            // Painted twilight gradient behind the skyline: horizon glow fading up into the spec's sky blue.
+            const int height = 64;
+            var gradient = new Texture2D(2, height, TextureFormat.RGB24, false)
+            {
+                name = "SkyGradient",
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+            };
+            for (int y = 0; y < height; y++)
+            {
+                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(y / (height * 0.45f)));
+                Color c = Color.Lerp(Palette.SkyHorizon, Palette.TwilightSky, t);
+                gradient.SetPixel(0, y, c);
+                gradient.SetPixel(1, y, c);
+            }
 
-            var porchLamp = new GameObject("ArrivalPorchLamp").AddComponent<Light>();
-            porchLamp.transform.SetParent(_root, false);
-            porchLamp.type = LightType.Point;
-            porchLamp.color = Palette.PumpkinAmber;
-            porchLamp.range = 6f;
-            porchLamp.intensity = 2f;
-            porchLamp.transform.position = new Vector3(1.6f, 2.2f, -14f);
+            gradient.Apply(false, true);
+            var card = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            card.name = "SkyCard";
+            Object.Destroy(card.GetComponent<Collider>());
+            card.transform.SetParent(_root, false);
+            card.transform.localPosition = new Vector3(0f, 24f, 34f);
+            card.transform.localScale = new Vector3(170f, 52f, 1f);
+            card.GetComponent<Renderer>().sharedMaterial = _materials.Unlit(gradient);
+        }
 
-            var atticLamp = new GameObject("AtticLamp").AddComponent<Light>();
-            atticLamp.transform.SetParent(_root, false);
-            atticLamp.type = LightType.Point;
-            atticLamp.color = Palette.PumpkinAmber;
-            atticLamp.range = 5f;
-            atticLamp.intensity = 2.5f;
-            atticLamp.transform.position = new Vector3(0f, 5.4f, 10.3f);
+        private GameObject Disc(string name, Vector3 centre, float diameter, Material material)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            go.name = name;
+            go.transform.SetParent(_root, false);
+            go.transform.localPosition = centre;
+            go.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            go.transform.localScale = new Vector3(diameter, 0.02f, diameter);
+            go.GetComponent<Renderer>().sharedMaterial = material;
+            return go;
+        }
+
+        /// <summary>Strips the collider from purely decorative pieces (scaled-primitive colliders lie).</summary>
+        private static GameObject Decor(GameObject go)
+        {
+            var collider = go.GetComponent<Collider>();
+            if (collider != null)
+            {
+                Object.Destroy(collider);
+            }
+
+            return go;
         }
 
         private GameObject Box(string name, Vector3 center, Vector3 size, Color color, bool safe) =>
@@ -120,19 +252,8 @@ namespace SpookyStreet.World
             go.transform.localPosition = center;
             go.transform.localScale = scale;
             go.layer = safe ? _safeLayer : 0;
-            go.GetComponent<Renderer>().sharedMaterial = MaterialFor(color);
+            _materials.Apply(go.GetComponent<Renderer>(), color);
             return go;
-        }
-
-        private Material MaterialFor(Color color)
-        {
-            if (!_materials.TryGetValue(color, out var material))
-            {
-                material = new Material(_baseMaterial) { name = "Greybox_" + ColorUtility.ToHtmlStringRGB(color), color = color };
-                _materials.Add(color, material);
-            }
-
-            return material;
         }
     }
 }

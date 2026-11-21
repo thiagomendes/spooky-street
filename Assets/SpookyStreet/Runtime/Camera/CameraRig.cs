@@ -51,6 +51,7 @@ namespace SpookyStreet.CameraSystem
             outputCamera.backgroundColor = Palette.TwilightSky;
             outputCamera.nearClipPlane = 0.1f;
             outputCamera.farClipPlane = 200f;
+            World.Atmosphere.ConfigureCamera(outputCamera);
             cameraObject.AddComponent<AudioListener>();
             var brain = cameraObject.AddComponent<CinemachineBrain>();
             brain.UpdateMethod = CinemachineBrain.UpdateMethods.LateUpdate;
@@ -68,10 +69,10 @@ namespace SpookyStreet.CameraSystem
 
             var follow = vcamObject.AddComponent<CinemachineThirdPersonFollow>();
             follow.CameraDistance = tuning.cameraDistance;
-            follow.ShoulderOffset = new Vector3(0f, tuning.shoulderRise, 0f);
+            follow.ShoulderOffset = new Vector3(tuning.shoulderSide, tuning.shoulderRise, 0f);
             follow.VerticalArmLength = 0f;
             follow.CameraSide = 0.5f;
-            follow.Damping = new Vector3(0.1f, 0.3f, 0.2f);
+            follow.Damping = new Vector3(0.3f, 0.4f, 0.3f);
             follow.AvoidObstacles = new CinemachineThirdPersonFollow.ObstacleSettings
             {
                 Enabled = true,

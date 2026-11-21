@@ -8,7 +8,7 @@ namespace SpookyStreet.Core.Movement
     {
         public float MinPitch = -25f;
         public float MaxPitch = 60f;
-        public float DefaultPitch = 12f;
+        public float DefaultPitch = 4f;
 
         /// <summary>Seconds without manual orbit before auto-recenter may start.</summary>
         public float RecenterDelay = 1.5f;

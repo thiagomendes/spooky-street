@@ -139,16 +139,29 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         run: >-
           ci/unity/run-unity.sh "$UNITY_IMAGE"
-          "editmode::-runTests -testPlatform EditMode -testResults /project/ci-out/editmode-results.xml"
-          "playmode::-runTests -testPlatform PlayMode -testResults /project/ci-out/playmode-results.xml"
+          "editmode::-runTests -testPlatform EditMode -assemblyNames SpookyStreet.Tests.EditMode
+          -testResults /project/ci-out/editmode-results.xml"
+          "playmode::-runTests -testPlatform PlayMode -assemblyNames SpookyStreet.Tests.PlayMode
+          -testResults /project/ci-out/playmode-results.xml"
+          "visual::-runTests -testPlatform PlayMode -assemblyNames SpookyStreet.Tests.Visual
+          -testResults /project/ci-out/visual-results.xml"
       - name: Summarise results
         if: always()
         run: |
           {
             echo "### Unity $(sed -n 's/^m_EditorVersion: //p' ProjectSettings/ProjectVersion.txt) tests"
-            python3 tools/ci/nunit_summary.py ci-out/editmode-results.xml ci-out/playmode-results.xml
+            python3 tools/ci/nunit_summary.py ci-out/editmode-results.xml ci-out/playmode-results.xml ci-out/visual-results.xml
           } >> "$GITHUB_STEP_SUMMARY"
-          python3 tools/ci/nunit_summary.py ci-out/editmode-results.xml ci-out/playmode-results.xml
+          python3 tools/ci/nunit_summary.py ci-out/editmode-results.xml ci-out/playmode-results.xml ci-out/visual-results.xml
+      - name: Print captured frames for review (base64 JPEG)
+        if: always()
+        run: |
+          shopt -s nullglob
+          for frame in ci-out/captures/*.jpg; do
+            echo "-----BEGIN FRAME $(basename "$frame")-----"
+            base64 -w 76 "$frame"
+            echo "-----END FRAME $(basename "$frame")-----"
+          done
       - name: Capture files Unity normalised (packages-lock, settings)
         if: always()
         run: |

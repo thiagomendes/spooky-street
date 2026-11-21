@@ -147,6 +147,49 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(GameState.Paused, game.Flow.State, "resuming the app stays paused until the player chooses");
         }
 
+        /// <summary>
+        /// Machine check from the visual floor: no renderer may use Unity's built-in Default-Material or a
+        /// non-URP shader. Under URP those render as the magenta error shader on device (TestFlight 3.1).
+        /// </summary>
+        [UnityTest]
+        public IEnumerator EveryRendererUsesAUrpMaterial()
+        {
+            yield return LoadGame();
+            GameBootstrap.Instance.Ui.NewGameButton.onClick.Invoke();
+            yield return null;
+
+            var offenders = new System.Collections.Generic.List<string>();
+            var renderers = Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            Assert.Greater(renderers.Length, 5, "expected the greybox world and Pip to exist");
+            foreach (var renderer in renderers)
+            {
+                foreach (var material in renderer.sharedMaterials)
+                {
+                    string problem = null;
+                    if (material == null)
+                    {
+                        problem = "missing material";
+                    }
+                    else if (material.name.StartsWith("Default-Material", System.StringComparison.Ordinal))
+                    {
+                        problem = "built-in Default-Material";
+                    }
+                    else if (material.shader == null || !material.shader.name.StartsWith("Universal Render Pipeline/",
+                                 System.StringComparison.Ordinal))
+                    {
+                        problem = "non-URP shader " + (material.shader == null ? "null" : material.shader.name);
+                    }
+
+                    if (problem != null)
+                    {
+                        offenders.Add(renderer.name + ": " + problem);
+                    }
+                }
+            }
+
+            Assert.IsEmpty(offenders, "Renderers that would draw magenta on device:\n" + string.Join("\n", offenders));
+        }
+
         [UnityTest]
         public IEnumerator PseudoLanguageSwapsVisibleTitle()
         {

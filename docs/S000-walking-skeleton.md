@@ -67,6 +67,6 @@ Earlier attempts and their fixes: run 1 failed in preflight (credential-less `gi
 
 | Check | Blocked on | How to verify |
 |---|---|---|
-| **S000 pass: launch on the physical iPhone** | Owner's iPhone + TestFlight | Install the build from TestFlight. Report: build number, iPhone model, iOS version, and whether: title shows "Spooky Street / Three Knocks on Lantern Lane"; *New game* starts on the porch facing the house with the round attic window visible; the first prompt reads "Drag on the left side of the screen to walk."; left-thumb drag walks and the prompt disappears; Jump works; dragging the right side orbits; Pause opens the pause menu; leaving the app and returning shows the pause menu; no control sits under the notch/home indicator. Time-to-control from a cold start (target ≤ 8 s). |
+| **S000 pass: launch on the physical iPhone** | Owner's iPhone + TestFlight | Install the build from TestFlight. Report: build number, iPhone model, iOS version, and whether: title shows "Spooky Street / Three Knocks on Lantern Lane"; *New game* starts on the porch facing the house with the round attic window visible; the first prompt tag above the stick ghost reads "Drag here to walk."; left-thumb drag walks and the prompt disappears; Jump works; dragging the right side orbits; Pause opens the pause menu; leaving the app and returning shows the pause menu; no control sits under the notch/home indicator. Time-to-control from a cold start (target ≤ 8 s). |
 
 No device or TestFlight pass is claimed from editor or unit results.

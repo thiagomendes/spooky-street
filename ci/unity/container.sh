@@ -71,16 +71,36 @@ if [[ "$mode" == none ]]; then
 fi
 trap release_licence EXIT
 
+ensure_software_gl() {
+  # GitHub-hosted runners have no GPU: render through Mesa's llvmpipe under the image's Xvfb.
+  if ! ldconfig -p | grep -q 'libGLX_mesa\|libGL.so.1'; then
+    echo "::group::Install Mesa software OpenGL"
+    apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+      libgl1 libglx-mesa0 libgl1-mesa-dri > /dev/null
+    echo "::endgroup::"
+  fi
+}
+
 overall=0
 for step in "$@"; do
   name=${step%%::*}
   args=${step#*::}
   log="/project/ci-out/unity-${name}.log"
+  graphics=(-nographics)
+  if [[ "$name" == visual* ]]; then
+    ensure_software_gl
+    graphics=(-force-glcore)
+  fi
   echo "::group::Unity step: ${name}"
   # shellcheck disable=SC2086 # step arguments are space-separated by contract and contain no spaces themselves
-  unity-editor -batchmode -nographics -projectPath /project -logFile - $args 2>&1 | tee "$log"
+  # A hung editor must not hold the runner until the job timeout.
+  timeout --kill-after=30 "${UNITY_STEP_TIMEOUT:-1200}" \
+    unity-editor -batchmode "${graphics[@]}" -projectPath /project -logFile - $args 2>&1 | tee "$log"
   code=${PIPESTATUS[0]}
   echo "::endgroup::"
+  if [[ $code -eq 124 || $code -eq 137 ]]; then
+    echo "::error title=Unity step timed out (${name})::No exit after ${UNITY_STEP_TIMEOUT:-1200}s; see the last log lines."
+  fi
   echo "Unity step '${name}' exited with ${code}"
   if grep -q "Scripts have compiler errors" "$log"; then
     echo "::error title=Unity compile errors (${name})::$(grep -m5 -E 'error CS[0-9]+' "$log" | tr '\n' ' ')"
