@@ -245,41 +245,82 @@ def head(name, P, skin, sclera, iris, ink, lid=None, mouth="smile", fangs=None, 
         q = max(0.0, 1 - ex * ex - ez * ez)
         return Vector((x, -math.sqrt(q) * r * 0.98 - out, zz)) + hc
 
-    eye_x, eye_z = r * 0.36, r * 0.02
+    eye_x, eye_z = r * 0.35, r * 0.02
+    iris_ring = bpy.data.materials.get("IrisRing")
+    if iris_ring is None:
+        iris_ring = bpy.data.materials.new("IrisRing")
+        iris_ring.use_nodes = True
+        bsdf = iris_ring.node_tree.nodes["Principled BSDF"]
+        base = iris.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value
+        bsdf.inputs["Base Color"].default_value = tuple(c * 0.35 for c in base[:3]) + (1.0,)
+        bsdf.inputs["Roughness"].default_value = 0.2
+    lid_mat = lid or skin
     for s in (1, -1):
-        c = surface(s * eye_x, eye_z, -r * 0.02)
-        pm.ellipsoid(name + "Sclera", sclera, c, (r * 0.2, r * 0.1, r * 0.22), rotation=(0, 0, -s * 0.1))
-        pm.ellipsoid(name + "Iris", iris, c + Vector((0, -r * 0.075, -r * 0.01)), (r * 0.13, r * 0.04, r * 0.145))
-        pm.ellipsoid(name + "Pupil", ink, c + Vector((0, -r * 0.1, -r * 0.01)), (r * 0.065, r * 0.02, r * 0.075),
+        c = surface(s * eye_x, eye_z, -r * 0.03)
+        er = (r * 0.17, r * 0.09, r * 0.19)
+        pm.ellipsoid(name + "Sclera", sclera, c, er, rotation=(0, 0, -s * 0.08))
+        # Iris: dark limbal ring, coloured iris, pupil, two catch-lights.
+        pm.ellipsoid(name + "IrisRing", iris_ring, c + Vector((0, -r * 0.066, -r * 0.012)), (r * 0.118, r * 0.036, r * 0.13))
+        pm.ellipsoid(name + "Iris", iris, c + Vector((0, -r * 0.074, -r * 0.012)), (r * 0.1, r * 0.032, r * 0.112))
+        pm.ellipsoid(name + "Pupil", ink, c + Vector((0, -r * 0.092, -r * 0.012)), (r * 0.052, r * 0.016, r * 0.06),
                      subsurf=0)
-        for dx, dz, rr in ((s * r * 0.05, r * 0.06, r * 0.038), (-s * r * 0.04, -r * 0.06, r * 0.018)):
-            pm.ellipsoid(name + "Glint", sclera, c + Vector((dx, -r * 0.118, dz)), (rr, rr * 0.4, rr), subsurf=0)
-        # Upper lash line hugging the eye: gives the face definition at phone size.
-        lash = [c + Vector((s * r * dx, -r * 0.07, r * dz)) for dx, dz in
-                ((-0.21, 0.02), (-0.1, 0.17), (0.05, 0.2), (0.18, 0.12), (0.25, 0.02))]
-        pm.curve_tube(name + "Lash", ink, lash, r * 0.022, taper=(0.5, 1.2))
+        for dx, dz, rr in ((s * r * 0.042, r * 0.05, r * 0.03), (-s * r * 0.035, -r * 0.055, r * 0.014)):
+            pm.ellipsoid(name + "Glint", sclera, c + Vector((dx, -r * 0.104, dz)), (rr, rr * 0.4, rr), subsurf=0)
+        # Upper eyelid: a skin shell over the top third of the eye, with the lash line on its edge.
+        bm = bmesh.new()
+        bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=14, radius=1.0)
+        doomed = [f for f in bm.faces if f.calc_center_median().z < 0.42]
+        bmesh.ops.delete(bm, geom=doomed, context="FACES")
+        for v in bm.verts:
+            v.co = Vector((v.co.x * er[0] * 1.08, v.co.y * er[1] * 1.25, v.co.z * er[2] * 1.06)) + c
+        lid_obj = pm.new_mesh_object(name + "UpperLid", bm, lid_mat)
+        lid_obj.modifiers.new("Thick", "SOLIDIFY").thickness = r * 0.012
+        lid_obj.modifiers.new("Smooth", "SUBSURF").levels = 1
+        lash = [c + Vector((s * er[0] * dx * 1.08, -er[1] * 0.95, er[2] * dz)) for dx, dz in
+                ((-1.0, 0.25), (-0.6, 0.6), (0.0, 0.72), (0.6, 0.6), (1.05, 0.3), (1.3, 0.38))]
+        pm.curve_tube(name + "Lash", ink, lash, r * 0.016, taper=(0.4, 1.3))
+        # Soft lower lid crease.
+        crease = [c + Vector((s * er[0] * dx, -er[1] * 0.8, -er[2] * dz)) for dx, dz in
+                  ((-0.7, 0.82), (0.0, 1.02), (0.7, 0.85))]
+        pm.curve_tube(name + "LowerLid", lid_mat, crease, r * 0.012, taper=(0.3, 0.3))
         if brow is not None:
-            b = [surface(s * r * dx, r * dz, r * 0.015) for dx, dz in ((0.17, 0.34), (0.36, 0.4), (0.55, 0.33))]
-            pm.curve_tube(name + "Brow", brow, b, r * 0.035, taper=(0.8, 0.5))
+            b = [surface(s * r * dx, r * dz, r * 0.012) for dx, dz in ((0.16, 0.33), (0.33, 0.39), (0.52, 0.34))]
+            pm.curve_tube(name + "Brow", brow, b, r * 0.024, taper=(1.0, 0.35))
         if cheek is not None:
             pm.ellipsoid(name + "Cheek", cheek, surface(s * r * 0.48, -r * 0.27, -r * 0.012),
-                         (r * 0.1, r * 0.02, r * 0.06), subsurf=1)
+                         (r * 0.09, r * 0.015, r * 0.05), subsurf=1)
         # Ears with an inner fold.
         ear_c = hc + Vector((s * r * 0.92, r * 0.05, -r * 0.05))
         pm.ellipsoid(name + "Ear", skin, ear_c, (r * 0.09, r * 0.13, r * 0.2), rotation=(0, 0, s * 0.35))
         pm.ellipsoid(name + "EarInner", lid or skin, ear_c + Vector((s * r * 0.05, -r * 0.02, 0)),
                      (r * 0.04, r * 0.07, r * 0.12), rotation=(0, 0, s * 0.35))
-    nose = surface(0, -r * 0.17, r * 0.06)
-    pm.ellipsoid(name + "Nose", skin, nose, (r * 0.1, r * 0.08, r * 0.09))
-    m = [surface(r * dx, -r * dz, -r * 0.0) for dx, dz in ((-0.24, 0.4), (-0.1, 0.47), (0.1, 0.47), (0.24, 0.4))]
+    # Nose: soft bridge, rounded tip and two nostril wings.
+    pm.curve_tube(name + "NoseBridge", skin, [surface(0, r * 0.08, -r * 0.005), surface(0, -r * 0.1, r * 0.04)],
+                  r * 0.045, taper=(0.6, 1.0))
+    tip = surface(0, -r * 0.16, r * 0.065)
+    pm.ellipsoid(name + "Nose", skin, tip, (r * 0.085, r * 0.07, r * 0.07))
+    for s in (1, -1):
+        pm.ellipsoid(name + "Nostril", skin, tip + Vector((s * r * 0.065, r * 0.02, -r * 0.02)),
+                     (r * 0.045, r * 0.045, r * 0.04))
+    # Mouth: an upturned line with soft corner tucks and a fuller lower lip.
     if mouth == "grin":
-        m = [surface(r * dx, -r * dz) for dx, dz in ((-0.3, 0.38), (-0.12, 0.5), (0.12, 0.5), (0.3, 0.38))]
-    pm.curve_tube(name + "Mouth", lips or ink, m, r * 0.028, taper=(0.7, 0.7))
+        m = [surface(r * dx, -r * dz, -r * 0.004) for dx, dz in ((-0.3, 0.36), (-0.16, 0.46), (0.0, 0.49),
+                                                                  (0.16, 0.46), (0.3, 0.36))]
+    else:
+        m = [surface(r * dx, -r * dz, -r * 0.004) for dx, dz in ((-0.22, 0.4), (-0.11, 0.46), (0.0, 0.475),
+                                                                  (0.11, 0.46), (0.22, 0.4))]
+    pm.curve_tube(name + "Mouth", ink, m, r * 0.018, taper=(0.6, 0.6))
+    for s in (1, -1):
+        pm.curve_tube(name + "MouthCorner", lid_mat, [m[-1 if s > 0 else 0], surface(s * r * 0.27, -r * 0.33, -r * 0.01)],
+                      r * 0.012, taper=(1.0, 0.2))
+    pm.curve_tube(name + "LowerLip", lips or skin, [surface(r * dx, -r * dz, -r * 0.01) for dx, dz in
+                                                    ((-0.1, 0.53), (0.0, 0.55), (0.1, 0.53))], r * 0.03,
+                  taper=(0.5, 0.5))
     if fangs is not None:
         for s in (1, -1):
-            f = surface(s * r * 0.1, -r * 0.5, r * 0.012)
+            f = surface(s * r * 0.08, -r * 0.48, r * 0.012)
             bm = bmesh.new()
-            bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=r * 0.045, radius2=0.0, depth=r * 0.1,
+            bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=r * 0.032, radius2=0.0, depth=r * 0.075,
                                   matrix=Matrix.Translation(f + Vector((0, 0, -r * 0.05))) @
                                   Matrix.Rotation(math.pi, 4, "X"))
             fang = pm.new_mesh_object(name + "Fang", bm, fangs)

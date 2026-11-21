@@ -31,19 +31,24 @@ V = {  # vivid Halloween palette (D17/D18)
 }
 
 
-def ell_lathe(name, base, profile, open_deg=0.0, segments=72, hem=None, inner=None, yscale=0.8, thickness=0.01):
+def ell_lathe(name, base, profile, open_deg=0.0, segments=72, hem=None, inner=None, yscale=0.8, thickness=0.01,
+              folds=0, fold_depth=0.0):
     """Elliptical lathe: rings of (rx, z) with ry = rx * yscale; optional open front, hem function, lining."""
     bm = bmesh.new()
     span = 2 * math.pi - 2 * math.radians(open_deg)
     start = -math.pi / 2 + math.radians(open_deg)
     count = segments if open_deg > 0 else segments - 1
     rings = []
-    for ri, (rx, z) in enumerate(profile):
+    for ri, entry in enumerate(profile):
+        rx, z = entry[0], entry[1]
+        ys = entry[2] if len(entry) > 2 else yscale
+        t_ring = ri / max(1, len(profile) - 1)
         ring = []
         for i in range(count + 1):
             a = start + span * i / segments
             zz = z + (hem(a, i / segments) if hem and ri == len(profile) - 1 else 0.0)
-            ring.append(bm.verts.new((rx * math.cos(a), rx * yscale * math.sin(a), zz)))
+            fold = 1.0 + fold_depth * t_ring ** 1.5 * math.sin(folds * (a - start)) if folds else 1.0
+            ring.append(bm.verts.new((rx * fold * math.cos(a), rx * fold * ys * math.sin(a), zz)))
         rings.append(ring)
     for k in range(len(rings) - 1):
         n = len(rings[k])
@@ -164,35 +169,57 @@ def build_pip(craft):
         flat("Pip_BatEarInner", craft.felt(V["berry"]), pm.smooth_outline(inner, 5), r * 0.03,
              base + Vector((0, -r * 0.05, 0)), (math.radians(-8), s * math.radians(-22), 0))
 
-    # Violet vest over the shirt, open at the front, with orange buttons; pointed collar and an orange bow tie.
+    # Violet vest: fitted, open at the front, two points at the hem, orange piping and buttons.
     T = P.torso
-    ell_lathe("Pip_Vest", craft.felt(V["purple"]), [(T * 1.12, z["chest"] + 0.05), (T * 1.18, z["chest"]),
-                                                     (T * 1.1, z["waist"]), (T * 1.16, z["pelvis"] + 0.03)],
-              open_deg=24, yscale=0.82, thickness=0.008)
-    for i in range(3):
-        for s in (1, -1):
+    def vest_hem(a, t):
+        # Drop into two points either side of the opening.
+        return -0.035 * max(0.0, 1 - min(t, 1 - t) / 0.12)
+    vest_profile = [(T * 1.1, z["chest"] + 0.055, 0.78), (T * 1.14, z["chest"], 0.8), (T * 1.04, z["waist"], 0.82),
+                    (T * 1.1, z["pelvis"] + 0.035, 0.84)]
+    ell_lathe("Pip_Vest", craft.felt(V["purple"]), vest_profile, open_deg=28, hem=vest_hem, thickness=0.008)
+    for s in (1, -1):
+        edge = []
+        for rx, zz, ys in vest_profile:
+            a = -math.pi / 2 + s * math.radians(28)
+            edge.append((rx * 1.03 * math.cos(a), rx * 1.03 * ys * math.sin(a), zz))
+        edge[-1] = (edge[-1][0], edge[-1][1], edge[-1][2] - 0.035)
+        pm.curve_tube("Pip_VestPiping", craft.felt(V["orange"]), edge, 0.0045, taper=(1, 1))
+        for k in range(3):
             pm.ellipsoid("Pip_VestButton", craft.smooth(V["orange"], 0.35),
-                         (s * T * 0.47, -T * 0.92, z["waist"] + 0.05 - i * 0.035), (0.007, 0.004, 0.007), subsurf=0)
+                         (s * T * 0.62, -T * 0.86, z["waist"] + 0.05 - k * 0.032), (0.0065, 0.004, 0.0065), subsurf=1)
+    # Shirt jabot: three tiers of ruffles down the chest, the vampire signature.
+    for k in range(3):
+        cz = z["neck"] - 0.035 - k * 0.032
+        bm = bmesh.new()
+        ring = []
+        for i in range(25):
+            a = math.pi * i / 24
+            rr = 0.032 - 0.004 * k + 0.006 * math.sin(a * 9) ** 2
+            ring.append(bm.verts.new((rr * math.cos(a) - 0.0, -T * 0.92 - 0.006 - rr * 0.35 * math.sin(a),
+                                      cz - rr * 0.6 * math.sin(a))))
+        centre = bm.verts.new((0.0, -T * 0.88, cz + 0.006))
+        for i in range(24):
+            bm.faces.new((centre, ring[i], ring[i + 1]))
+        ruff = pm.new_mesh_object("Pip_Jabot", bm, shirt)
+        ruff.modifiers.new("Thick", "SOLIDIFY").thickness = 0.003
+        ruff.modifiers.new("Smooth", "SUBSURF").levels = 2
+        ruff.rotation_euler = (0, 0, 0)
     for s in (1, -1):
         flat("Pip_Collar", shirt, [(0, 0), (s * 0.045, -0.005), (s * 0.06, -0.05), (s * 0.012, -0.03)], 0.004,
              (s * 0.01, -P.limb * 0.66, z["neck"] - 0.005), (math.radians(-25), 0, 0))
-        flat("Pip_Bow", craft.felt(V["orange"]), [(0, 0), (s * 0.04, 0.02), (s * 0.045, -0.022)], 0.008,
-             (0, -P.limb * 0.7 - 0.004, z["neck"] - 0.03))
-    pm.ellipsoid("Pip_BowKnot", craft.felt(V["orange"]), (0, -P.limb * 0.72 - 0.006, z["neck"] - 0.03),
-                 (0.011, 0.007, 0.012))
     pm.torus("Pip_Waistband", shorts, (0, 0, z["pelvis"] + 0.04), T * 1.08, 0.01, squash=1.0, segments=40, sides=8)
 
     # The vampire-bat cape: matte black velvet outside, berry lining inside (two shells), scalloped bat-wing hem,
     # open wide at the front so the costume and arms read; a tall stand-up collar behind the head.
     def bat_hem(a, t):
         return 0.06 * abs(math.sin(math.pi * 5 * t)) ** 0.7
-    cape_profile = [(0.075, z["neck"] + 0.02), (0.15, z["shoulder"] + 0.0), (0.215, z["chest"] - 0.04),
-                    (0.255, z["pelvis"] + 0.0), (0.285, z["knee"] + 0.06)]
+    cape_profile = [(0.075, z["neck"] + 0.02, 0.85), (0.165, z["shoulder"] + 0.0, 0.62), (0.205, z["chest"] - 0.04, 0.7),
+                    (0.24, z["pelvis"] + 0.0, 0.8), (0.28, z["knee"] + 0.06, 0.9)]
     velvet = craft.felt(V["black"])
-    ell_lathe("Pip_Cape", velvet, [(rx * 1.04, zz) for rx, zz in cape_profile], open_deg=96, hem=bat_hem,
-              yscale=0.92, thickness=0.006)
-    ell_lathe("Pip_CapeLining", craft.felt(V["berry"]), [(rx * 0.99, zz + 0.004) for rx, zz in cape_profile],
-              open_deg=96, hem=bat_hem, yscale=0.92, thickness=0.004)
+    ell_lathe("Pip_Cape", velvet, [(rx * 1.04, zz, ys) for rx, zz, ys in cape_profile], open_deg=96, hem=bat_hem,
+              thickness=0.006, folds=9, fold_depth=0.07)
+    ell_lathe("Pip_CapeLining", craft.felt(V["berry"]), [(rx * 0.985, zz + 0.004, ys) for rx, zz, ys in cape_profile],
+              open_deg=96, hem=bat_hem, thickness=0.004, folds=9, fold_depth=0.07)
     collar_profile = [(0.075, z["neck"] + 0.005), (0.1, z["neck"] + 0.06), (0.135, z["neck"] + 0.12)]
     ell_lathe("Pip_CapeCollar", velvet, [(rx * 1.05, zz) for rx, zz in collar_profile], open_deg=70, yscale=0.92,
               thickness=0.006)
