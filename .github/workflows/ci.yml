@@ -4,7 +4,8 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    # Feature-branch flow: validate on the branch, merge to main when green.
+    branches: [main, 'feature/**', 'fix/**']
   workflow_dispatch:
 
 permissions:

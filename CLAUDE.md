@@ -1,6 +1,10 @@
 # Working notes for Claude Code sessions
 
-- Contract: `Spooky-Street-Spec.md`. Work one increment per branch; record evidence in `docs/S00x-*.md`.
+- Contract: `Spooky-Street-Spec.md`. Record evidence per increment in `docs/S00x-*.md`.
+- Git flow (owner's choice): branch from `main` as `feature/<topic>` or `fix/<topic>`, push the branch (CI runs
+  on `feature/**` and `fix/**`), then `git merge --no-ff` into `main` and push once CI is green. No PRs needed.
+  Delete the local branch after merging. The session's git proxy refuses remote branch deletion (403), so tell
+  the owner which merged remote branches to delete at github.com/thiagomendes/spooky-street/branches.
 - Never claim a Unity, Xcode, TestFlight or device pass without that run's evidence. Unity checks run only
   in GitHub Actions (`ci.yml`), not in the cloud container (Unity hosts are blocked there).
 - Before pushing run `./tools/check-local.sh` (needs `pip install -r tools/requirements-ci.txt` and .NET 8:
