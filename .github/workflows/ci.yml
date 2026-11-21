@@ -1,11 +1,15 @@
 name: CI
 
 # Runs on every pull request and on main. Holds no Apple signing credentials (spec §7 step 2).
+# Cost rules (docs/ci-setup.md §6): documentation-only pushes run nothing; the Unity job runs only
+# for Unity-relevant changes not already validated on an identical tree; add [skip ci] to WIP commits.
 on:
   pull_request:
+    paths-ignore: ['docs/**', '**/*.md']
   push:
     # Feature-branch flow: validate on the branch, merge to main when green.
     branches: [main, 'feature/**', 'fix/**']
+    paths-ignore: ['docs/**', '**/*.md']
   workflow_dispatch:
 
 permissions:
@@ -57,6 +61,30 @@ jobs:
           path: ci-out/core-tests
           retention-days: 14
 
+  plan:
+    name: Decide whether Unity must run
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      checks: read
+    outputs:
+      unity: ${{ steps.decide.outputs.unity }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE_SHA: ${{ github.event.before }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          python3 tools/ci/plan_ci.py > plan.txt
+          cat plan.txt >> "$GITHUB_OUTPUT"
+          echo "### Unity job plan: $(tr '\n' ' ' < plan.txt)" >> "$GITHUB_STEP_SUMMARY"
+
   unity-licence:
     name: Unity licence configured?
     runs-on: ubuntu-24.04
@@ -83,8 +111,8 @@ jobs:
 
   unity-tests:
     name: Unity compile + EditMode/PlayMode tests
-    needs: [static, unity-licence]
-    if: needs.unity-licence.outputs.available == 'true'
+    needs: [static, plan, unity-licence]
+    if: needs.plan.outputs.unity == 'true' && needs.unity-licence.outputs.available == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:

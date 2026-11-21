@@ -5,6 +5,8 @@
   on `feature/**` and `fix/**`), then `git merge --no-ff` into `main` and push once CI is green. No PRs needed.
   Delete the local branch after merging. The session's git proxy refuses remote branch deletion (403), so tell
   the owner which merged remote branches to delete at github.com/thiagomendes/spooky-street/branches.
+- Actions budget matters: add `[skip ci]` to intermediate commits and push without it only when the branch is
+  ready for validation. Never re-trigger CI just to check something a previous run already proved.
 - Never claim a Unity, Xcode, TestFlight or device pass without that run's evidence. Unity checks run only
   in GitHub Actions (`ci.yml`), not in the cloud container (Unity hosts are blocked there).
 - Before pushing run `./tools/check-local.sh` (needs `pip install -r tools/requirements-ci.txt` and .NET 8:
