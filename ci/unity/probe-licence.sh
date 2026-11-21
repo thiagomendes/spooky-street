@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Diagnostic only: runs inside the pinned GameCI editor container and reports which Unity
 # licence activation method works for this account. Never prints secret values.
-# Writes /out/summary.md and, as a fallback, /out/*.alf (manual activation request).
+# Writes /out/summary.md. Hardware identifiers and credentials are filtered from output.
 set -uo pipefail
 
 out=/out
@@ -18,8 +18,8 @@ mkdir -p "$blank/Assets"
 
 licence_lines() {
   # Licensing-related lines only; drop anything that could echo a credential argument.
-  grep -iE "licen[cs]|entitlement|activat|token|seat|serial" "$1" \
-    | grep -viE "password|-serial |DeveloperData" | tail -n 40
+  grep -iE "licen[cs]|entitlement|activat|token|seat|serial|ulf" "$1" \
+    | grep -viE "password|-serial |DeveloperData|MachineBinding|Current context|License value" | tail -n 40
 }
 
 client_logs() {
@@ -27,7 +27,7 @@ client_logs() {
              "$HOME/.config/unity3d/Unity/Unity.Entitlements.Audit.log"; do
     if [[ -f "$log" ]]; then
       echo "--- $(basename "$log") (filtered tail)"
-      grep -viE "password|token\"?: ?\"[A-Za-z0-9]" "$log" | tail -n 25
+      grep -viE "password|token\"?: ?\"[A-Za-z0-9]|MachineBinding|Current context|License value" "$log" | tail -n 25
     fi
   done
 }
@@ -64,42 +64,47 @@ if [[ -n "$client" ]]; then
   echo "::endgroup::"
 fi
 
-# A) Entitlement licence file copied from the owner's Unity Hub (UNITY_LICENSE secret).
-entitlement_paths=(
-  "$HOME/.local/share/unity3d/Unity/licenses"
-  "$HOME/.local/share/unity3d/licenses"
-  "$HOME/.config/unity3d/Unity/licenses"
-)
-if [[ "${UNITY_LICENSE:-}" == *"<Entitlement"* || "${UNITY_LICENSE:-}" == *"EntitlementGroup"* ]]; then
-  for dir in "${entitlement_paths[@]}"; do
-    mkdir -p "$dir"
-    printf '%s' "$UNITY_LICENSE" > "$dir/UnityEntitlementLicense.xml"
-  done
-  try_editor "A-entitlement-file" || true
-  for dir in "${entitlement_paths[@]}"; do rm -f "$dir/UnityEntitlementLicense.xml"; done
-else
-  echo "| A-entitlement-file | ⏭️ skipped (UNITY_LICENSE is not an entitlement XML) |" >> "$summary"
-fi
+client_cmd() {
+  # Runs Unity.Licensing.Client with the account credentials; prints filtered output only.
+  "$client" "$@" --username "$UNITY_EMAIL" --password "$UNITY_PASSWORD" 2>&1 \
+    | grep -viE "password|MachineBinding|Current context|License value|DeveloperData" | tail -n 30
+  return "${PIPESTATUS[0]}"
+}
 
-# B) Named-user login only (email + password, no serial, no file).
-if [[ -n "${UNITY_EMAIL:-}" && -n "${UNITY_PASSWORD:-}" ]]; then
-  if try_editor "B-username-password" -username "$UNITY_EMAIL" -password "$UNITY_PASSWORD"; then
-    unity-editor -batchmode -nographics -quit -returnlicense -username "$UNITY_EMAIL" -password "$UNITY_PASSWORD" \
-      -projectPath "$blank" -logFile - > "$out/B-return.log" 2>&1 || true
+ulf_report() {
+  local found
+  found=$(find /root /usr/share/unity3d /etc/unity3d -name '*.ulf' 2>/dev/null | head -n 1)
+  if [[ -n "$found" ]]; then
+    echo "ULF created at ${found}; contains DeveloperData: $(grep -q 'DeveloperData' "$found" && echo yes || echo no)"
+  else
+    echo "No .ulf file found after activation."
   fi
-else
-  echo "| B-username-password | ⏭️ skipped (UNITY_EMAIL/UNITY_PASSWORD missing) |" >> "$summary"
-fi
+}
 
-# C) Manual activation request file (.alf), always produced as a fallback.
-echo "::group::Method C-manual-activation-file"
-(cd "$out" && unity-editor -batchmode -nographics -quit -createManualActivationFile -logFile - > "$out/C-alf.log" 2>&1)
-alf=$(find "$out" -maxdepth 1 -name '*.alf' | head -n 1)
-echo "::endgroup::"
-if [[ -n "$alf" ]]; then
-  echo "| C-manual-activation-file | 📄 created $(basename "$alf") (download the artifact) |" >> "$summary"
+if [[ -z "${UNITY_EMAIL:-}" || -z "${UNITY_PASSWORD:-}" || -z "$client" ]]; then
+  echo "| all | ⏭️ skipped (credentials or licensing client missing) |" >> "$summary"
 else
-  echo "| C-manual-activation-file | ❌ no .alf produced |" >> "$summary"
+  # D) Personal ULF via the licensing client (no serial).
+  echo "::group::Method D: Unity.Licensing.Client --activate-ulf"
+  client_cmd --activate-ulf
+  echo "client exit: $?"
+  ulf_report
+  echo "::endgroup::"
+  try_editor "D-activate-ulf" && echo "| D-activate-ulf detail | $(ulf_report) |" >> "$summary"
+  echo "::group::Return ULF"
+  client_cmd --return-ulf
+  echo "::endgroup::"
+
+  # E) Activate all subscriptions with Personal fallback.
+  echo "::group::Method E: Unity.Licensing.Client --activate-all --include-personal"
+  client_cmd --activate-all --include-personal
+  echo "client exit: $?"
+  "$client" --showEntitlements 2>&1 | grep -iE "entitlement|com\.unity|personal|expir" | head -n 20
+  echo "::endgroup::"
+  try_editor "E-activate-all-personal" || true
+  echo "::group::Deactivate (free the seat)"
+  client_cmd --deactivate-all
+  echo "::endgroup::"
 fi
 
 # Logs may mention the account; keep only the summary and the .alf in the artifact.
