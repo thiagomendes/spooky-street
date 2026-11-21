@@ -52,11 +52,16 @@ settings UI, language-pack downloads, audio, Android CI.
 | Artifact provenance | synthetic export archive → `write_provenance.py` → `verify-artifact.sh` | exec bits + symlinks kept; wrong commit and tampered archive rejected |
 | Unity Personal activation in CI | *Unity licence probe* runs 1–2 (GitHub Actions, image 6000.3.28f1) | Hub entitlement file rejected (hardware-bound); `--activate-all --include-personal` and `--activate-ulf` both licensed the editor with iOS entitlement; seat released |
 
+### Ran in GitHub Actions
+
+| Check | Run | Result |
+|---|---|---|
+| Unity 6000.3.28f1 compile + EditMode + PlayMode (`ci.yml`, image `ubuntu-6000.3.28f1-base-3`) | CI run 1, commit `a5aea60`, 2026-11-21 | Personal seat activated with email + password and released; **EditMode 50/50, PlayMode 7/7 passed**, 0 compile errors. Unity generated `packages-lock.json`, URP global settings and re-serialized settings (committed on `fix/s000-unity-ci`). |
+
 ### Not yet run — needs the named dependency
 
 | Check | Blocked on | How to verify |
 |---|---|---|
-| Unity compile, EditMode (`ProjectSetupTests`, core tests) and PlayMode (`WalkingSkeletonTests`: boot to localized title, walk > 2 m in 1 s, Esc pauses with no movement, fall return < 2 s, background opens paused, pseudo swap) | Repository secrets `UNITY_EMAIL`, `UNITY_PASSWORD` (now set by the owner) | Add secrets (docs/ci-setup.md §1), re-run **CI**; read the job summary and `unity-tests-<sha>` artifact. Commit `ci-out/unity-normalized.patch` (adds `packages-lock.json`). |
 | iOS Xcode export | Same Unity secrets | Actions → *Build for TestFlight* → `export-only` from `main`. Artifact `ios-xcode-<sha>-<run>` must contain `provenance.json`. |
 | Xcode compile on macOS | Unity secrets | Mode `unsigned-xcode-check`. |
 | Signed archive + TestFlight upload + processing | Apple Developer membership; environment `testflight` secrets `APPLE_TEAM_ID`, `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, `IOS_PROVISIONING_PROFILE_BASE64`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8_BASE64`; variable `IOS_BUNDLE_ID`; App Store Connect app record | Mode `testflight`. Summary reports commit, version `0.0.1`, build `<run>.<attempt>`, processing state `VALID`. |

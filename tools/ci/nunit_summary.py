@@ -28,6 +28,15 @@ def main(paths):
             ok = False
         if stats:
             failures.extend(stats[2])
+    lines.append("")
+    lines.append("Per fixture:")
+    for path in paths:
+        if os.path.exists(path):
+            root = ET.parse(path).getroot()
+            for suite in root.iter("test-suite"):
+                if suite.get("type") == "TestFixture":
+                    lines.append(f"- {os.path.basename(path)}: `{suite.get('fullname')}` "
+                                 f"{suite.get('passed')}/{suite.get('total')} passed")
     if failures:
         lines.append("")
         lines.append("Failed tests:")
