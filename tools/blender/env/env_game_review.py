@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import bpy
 import numpy as np
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 import env_lib as el
 import env_export as ex
@@ -72,7 +72,7 @@ def atlas_material(folder, atlas, glow=0.0):
 
 class Library:
     def __init__(self, folder):
-        self.folder, self.mats = folder, {}
+        self.folder, self.mats, self.parts = folder, {}, {}
 
     def material(self, atlas, glow=0.0):
         key = (atlas, glow)
@@ -106,6 +106,7 @@ class Library:
                 o.data.materials.append(self.material(atlas))
         names = sorted(o.name for o in new)
         print(f"IMPORTED {model}: {tris} tris, objects {names}", flush=True)
+        self.parts[model] = {o.name.split(".")[0]: o for o in new}
         return root, glows
 
 
@@ -207,6 +208,35 @@ def main():
         loc = target + Vector((-math.sin(a) * math.cos(elev), -math.cos(a) * math.cos(elev), math.sin(elev))) * dist
         grid.append(el.render_view(cam, loc, target, lens, px, px, f"{tmp}_{name}.png"))
         print("rendered", name, flush=True)
+    # pivots: the animated children posed about their own origins
+    posed = []
+    if not todo or "pose" in todo:
+        def turn(model, part, axis, deg):
+            o = lib.parts[model][part]
+            print(f"PIVOT {model}/{part}: local {tuple(round(c, 3) for c in o.matrix_local.translation)}", flush=True)
+            o.matrix_local = o.matrix_local @ Matrix.Rotation(math.radians(deg), 4, axis)
+        turn("OwlHouse", "FrontDoor", "Z", -75)
+        turn("OwlHouse", "OwlPuppet", "X", -28)
+        turn("OwlHouse", "WindWheel", "Y", 22)
+        turn("FenceGate", "Gate", "Z", -60)
+        turn("Kit_Door", "FrontDoor", "Z", -50)
+        set_lights({"Moon", "Rim", "Fill"})
+        world.inputs[1].default_value = 0.7
+        bpy.context.scene.view_settings.exposure = 0.0
+        el.solo(["House"])
+        q = int(500 * k)
+        posed.append(el.render_view(cam, (-1.6, -7.2, 1.75), (-0.05, 0.0, 1.62), 60, q, q, f"{tmp}_p1.png"))
+        posed.append(el.render_view(cam, (-3.4, -7.0, 6.9), (0.0, 0.3, 7.65), 50, q, q, f"{tmp}_p2.png"))
+        set_lights({"PKey", "PRim", "PFill"})
+        world.inputs[1].default_value = 0.9
+        for name in ("FenceGate", "Kit_Door"):
+            i = [t[0] for t in TILES].index(name)
+            _n, frame, look, yaw = TILES[i]
+            el.solo(["G_" + name])
+            dist, elev, a = frame * 70 / 36, math.radians(13), math.radians(yaw + 25)
+            target = Vector((i * SPACING, 100.0, look))
+            loc = target + Vector((-math.sin(a) * math.cos(elev), -math.cos(a) * math.cos(elev), math.sin(elev))) * dist
+            posed.append(el.render_view(cam, loc, target, 70, q, q, f"{tmp}_p_{name}.png"))
     rows = []
     if all(n in tiles for n in views):
         rows.append(np.concatenate([tiles["hero"], tiles["front"]], axis=1))
@@ -220,6 +250,8 @@ def main():
         blank[:, :, :3], blank[:, :, 3] = (0.02, 0.016, 0.05), 1
         grid.append(blank)
     rows.extend(np.concatenate(grid[r:r + cols], axis=1) for r in range(0, len(grid), cols))
+    if posed:
+        rows.append(np.concatenate(posed, axis=1))
     width = max(r.shape[1] for r in rows)
     rows = [el.pad(r, width, r.shape[0]) for r in rows]
     el.co.save_sheet(np.concatenate(rows[::-1], axis=0), out)

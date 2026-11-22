@@ -57,8 +57,9 @@ class Ctx:
     """Settings and collected geometry for the model(s) being built."""
 
     def __init__(self, model, min_size=0.0, min_bevel=0.0, classify=None, glow=None, per_finish=False, skip_finish=(),
-                 ground=True, behind=None):
+                 ground=True, behind=None, sharp=75.0):
         self.model, self.min_size, self.min_bevel, self.classify = model, min_size, min_bevel, classify
+        self.sharp = sharp  # auto-smooth angle (the review builders use 75)
         self.ground, self.behind = ground, behind  # hidden-face culling: stands on the ground / extra occluder model
         self.glow = glow or model
         self.per_finish, self.skip_finish = per_finish, set(skip_finish)
@@ -210,8 +211,8 @@ def _wheel_game(inner):
     return wind_wheel
 
 
-GAME_LEAF = [(0.0, -0.55), (0.05, -0.2), (0.45, -0.28), (0.62, 0.1), (0.42, 0.46), (0.0, 0.8)]  # crown leaf card
-CROWN_CARDS, CROWN_LEAF_SCALE = 30, 1.55
+GAME_LEAF = [(0.0, -0.55), (0.05, -0.2), (0.42, -0.3), (0.6, 0.1), (0.37, 0.19), (0.44, 0.47), (0.0, 0.8)]  # crown leaf
+CROWN_CARDS, CROWN_LEAF_SCALE = 50, 1.3  # the review crown has 96 smaller leaves per clump
 HEAP_SCALE = 1.0
 
 
@@ -238,6 +239,7 @@ def install_hooks():
     def game_heap(b, craft, radius, height, count, s=1.0, lollies=2):
         heap(b, craft, radius, height, count, s * HEAP_SCALE, lollies)
     pr.leaf, pr.foliage, pr.candy_heap = game_leaf, game_foliage, game_heap
+    _tagging(pr, "foliage", solid=True)  # crown leaves lie on the clumps facing out: single-sided
 
 
 # --- models ------------------------------------------------------------------------------------------------
@@ -266,7 +268,7 @@ def _candy_bowl(craft):
     global HEAP_SCALE
     b = GameBuilder(3)
     pr.DETAIL, HEAP_SCALE = 0.75, 1.15
-    pr.candy_bowl(b, craft, 0.3, None, spill=False, heap=38)
+    pr.candy_bowl(b, craft, 0.3, None, spill=False, heap=40)
     pr.DETAIL, HEAP_SCALE = 1, 1.0
     b.finish("CandyBowl")
 
@@ -328,7 +330,7 @@ def model_list(craft):
     door_hinge = T(-0.55, -0.015, pk.FLOOR)
     props = [
         Model("Bench", "Env", pr.build_bench, 1.2, min_size=0.03),
-        Model("CandyBowl", "Env", _candy_bowl, 2.6, glow="Face"),
+        Model("CandyBowl", "Env", _candy_bowl, 2.6, glow="Face", sharp=95.0),
         Model("FenceSection", "Env", lambda c: pr.build_fence(c, length=2.0, gate=False), 0.9, classify=_no_cards),
         Model("FenceGate", "Env", lambda c: pr.build_fence(c, length=GATE_LEN, gate_at=0.08), 1.0,
               classify=_fence_gate_parts(P), pivots={"Gate": GATE_AJAR}),
@@ -346,7 +348,7 @@ def model_list(craft):
         Model("JackOLantern", "Env", _jack, 2.0),
         Model("Mailbox", "Env", pr.build_mailbox, 1.5),
     ]
-    kit = Model("Kit", "Env", lambda c: pk.build_kit_strip(c), 0.6, per_finish=True, classify=_kit_roof(P), ground=False,
+    kit = Model("Kit", "Env", lambda c: pk.build_kit_strip(c), 0.75, per_finish=True, classify=_kit_roof(P), ground=False,
                 pivots={"FrontDoor": T(-0.55, -0.015, 0.0)})
     return [
         Model("OwlHouse", "OwlHouse", _house, 1.0, origin=HOUSE_ORIGIN, min_size=0.03, min_bevel=0.0,
@@ -476,7 +478,7 @@ def mesh_from_builders(name, builders, part, model=None):
     flag = me.attributes.new("card", "INT", "FACE")
     flag.data.foreach_set("value", np.array(cards, dtype=np.int32))
     me.use_auto_smooth = True
-    me.auto_smooth_angle = math.radians(75.0)
+    me.auto_smooth_angle = math.radians(CTX.sharp)
     me.update()
     obj = bpy.data.objects.new(name, me)
     el.pm.link(obj)
@@ -720,6 +722,9 @@ def bake_atlas(models, atlas, size, samples, out_dir):
     _save(f"{atlas}_Emission", glow, out_dir)
     nrm = normal[:, :, :3].copy()
     nrm[~(normal[:, :, 3] > 0.5)] = (0.5, 0.5, 1.0)
+    xy = np.clip(nrm[:, :, :2] * 2 - 1, -0.3, 0.3)  # slivers bake wild tangents: keep it to brush-stroke relief
+    nrm[:, :, :2] = xy * 0.5 + 0.5
+    nrm[:, :, 2] = np.sqrt(1.0 - (xy ** 2).sum(axis=2)) * 0.5 + 0.5
     nrm, grown = _dilate(nrm, normal[:, :, 3] > 0.5, 8)
     _save(f"{atlas}_Normal", nrm, out_dir, colour=False)
     for img in images.values():
