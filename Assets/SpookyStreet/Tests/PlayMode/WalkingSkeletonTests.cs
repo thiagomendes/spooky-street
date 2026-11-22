@@ -1,6 +1,7 @@
 using System.Collections;
 using NUnit.Framework;
 using SpookyStreet.App;
+using SpookyStreet.Case;
 using SpookyStreet.Core.Flow;
 using SpookyStreet.Core.Localization;
 using SpookyStreet.Core.Animation;
@@ -29,6 +30,7 @@ namespace SpookyStreet.Tests.PlayMode
             base.Setup();
             _keyboard = InputSystem.AddDevice<Keyboard>();
             Localizer.ResetForTests();
+            CaseDirector.UseTemporarySaveDirectory(); // no save leaks between tests (S002)
         }
 
         private static IEnumerator LoadGame()

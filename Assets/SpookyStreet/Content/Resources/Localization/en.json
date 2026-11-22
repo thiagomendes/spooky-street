@@ -138,6 +138,8 @@
     { "key": "ui.caption.direction.behind", "value": "behind you", "context": "Direction word inside a sound caption: the sound comes from behind the camera. Lower case, fits inside parentheses." },
     { "key": "ui.notebook.close", "value": "Close", "context": "Accessibility name of the round X button that closes the notebook. Short." },
     { "key": "ui.notebook.found_stamp", "value": "Found it!", "context": "Green rubber-stamp text beside a notebook question once its answer is proven. Very short and cheerful." },
+    { "key": "ui.notebook.unknown_mark", "value": "?", "context": "Large mark drawn inside a pencil circle for a notebook question or note that is not found yet. Usually a question mark; replace with the language's own question mark if it differs." },
+    { "key": "ui.notebook.discovery_item", "value": "• {0}", "context": "One line of the list of discoveries on the final notebook card. {0} is a short clue label such as 'Bea saw the cape'. Keep the bullet or use the language's usual list marker." },
     { "key": "ui.title.new_game_confirm", "value": "Start a new case? Your notebook will be cleared.", "context": "Question shown when the player taps New game while a saved case exists. Settings and language are kept." },
     { "key": "ui.title.new_game_confirm_yes", "value": "Start new", "context": "Confirm button of the new-game question. Short." },
     { "key": "ui.title.new_game_confirm_no", "value": "Keep my case", "context": "Cancel button of the new-game question: keep the saved case. Short." },

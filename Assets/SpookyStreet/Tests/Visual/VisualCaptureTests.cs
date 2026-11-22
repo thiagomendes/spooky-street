@@ -1,6 +1,7 @@
 using System.Collections;
 using NUnit.Framework;
 using SpookyStreet.App;
+using SpookyStreet.Case;
 using SpookyStreet.Core.Flow;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -29,6 +30,7 @@ namespace SpookyStreet.Tests.Visual
         {
             base.Setup();
             _keyboard = InputSystem.AddDevice<Keyboard>();
+            CaseDirector.UseTemporarySaveDirectory(); // no save leaks between tests (S002)
             if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
             {
                 Assert.Ignore("No graphics device (-nographics); visual captures need rendering.");

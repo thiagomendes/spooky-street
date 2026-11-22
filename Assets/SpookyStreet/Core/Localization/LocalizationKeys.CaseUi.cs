@@ -24,6 +24,8 @@ namespace SpookyStreet.Core.Localization
             public const string DirectionBehind = "ui.caption.direction.behind";
             public const string NotebookClose = "ui.notebook.close";
             public const string NotebookFound = "ui.notebook.found_stamp";
+            public const string NotebookUnknownMark = "ui.notebook.unknown_mark";
+            public const string NotebookDiscoveryItem = "ui.notebook.discovery_item";
             public const string NewGameConfirm = "ui.title.new_game_confirm";
             public const string NewGameConfirmYes = "ui.title.new_game_confirm_yes";
             public const string NewGameConfirmNo = "ui.title.new_game_confirm_no";
@@ -54,6 +56,8 @@ namespace SpookyStreet.Core.Localization
                 DirectionBehind,
                 NotebookClose,
                 NotebookFound,
+                NotebookUnknownMark,
+                NotebookDiscoveryItem,
                 NewGameConfirm,
                 NewGameConfirmYes,
                 NewGameConfirmNo,

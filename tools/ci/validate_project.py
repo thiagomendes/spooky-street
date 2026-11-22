@@ -164,8 +164,11 @@ def check_localization():
     for entry in table["entries"]:
         check(re.fullmatch(r"[a-z0-9]+(\.[a-z0-9_]+)+", entry["key"]) is not None, f"key '{entry['key']}' is not semantic")
         check(entry.get("context"), f"key '{entry['key']}' has no translator context")
-    code_keys = re.findall(r'public const string \w+ = "([^"]+)";',
-                           read("Assets/SpookyStreet/Core/Localization/LocalizationKeys.cs"))
+    key_dir = "Assets/SpookyStreet/Core/Localization"
+    code_keys = []
+    for name in sorted(os.listdir(os.path.join(ROOT, key_dir))):
+        if name.startswith("LocalizationKeys") and name.endswith(".cs"):
+            code_keys += re.findall(r'public const string \w+ = "([^"]+)";', read(key_dir + "/" + name))
     for key in code_keys:
         check(key in keys, f"LocalizationKeys constant {key} missing from en.json")
     # User-facing literals belong in the table: flag string literals assigned to Text.text in runtime code.
