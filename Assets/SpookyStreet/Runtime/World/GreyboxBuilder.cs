@@ -1,3 +1,4 @@
+using SpookyStreet.Core.World;
 using SpookyStreet.Player;
 using UnityEngine;
 
@@ -299,10 +300,11 @@ namespace SpookyStreet.World
         public const string SkyDomeName = "SkyDome";
 
         /// <summary>Sky dome centre: under the middle of the lawn ring so every neighbour house sits inside it.</summary>
-        public static readonly Vector3 SkyDomeCentre = new Vector3(0f, -3f, 8f);
+        public static readonly Vector3 SkyDomeCentre =
+            new Vector3(SkyModel.DomeCentreX, SkyModel.DomeCentreY, SkyModel.DomeCentreZ);
 
         /// <summary>Outside the block, the neighbours, the paper clouds and the moon; inside the camera's far plane.</summary>
-        public const float SkyDomeRadius = 52f;
+        public const float SkyDomeRadius = SkyModel.DomeRadius;
 
         /// <summary>
         /// Inward-facing hemisphere (slightly below the horizon so the rim hides under the ground). U wraps around

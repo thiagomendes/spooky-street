@@ -66,6 +66,13 @@ namespace SpookyStreet.Case
         private int _indoorObstacles;
         private Vector3 _lastPip;
         private bool _hasLastPip;
+        private readonly InteriorRescue _rescue = new InteriorRescue();
+
+        /// <summary>Times the interior safety net set Pip down on a safe anchor (tests, diagnostics).</summary>
+        public int Rescues { get; private set; }
+
+        /// <summary>Why the safety net last moved Pip.</summary>
+        public RescueReason LastRescue { get; private set; }
 
         /// <summary>A jump of Pip's position larger than this in one frame is a teleport: the camera cuts.</summary>
         public const float TeleportCutDistance = 6f;
@@ -455,9 +462,10 @@ namespace SpookyStreet.Case
                 _ui.SetHasSave(HasSave && State.Count > 0);
             }
 
-            if (current == GameState.Playing && _modal)
+            if (current == GameState.Playing && (_modal || (Travel != null && Travel.Active)))
             {
-                // GameBootstrap re-enabled gameplay input on resume; a conversation or the notebook still owns it.
+                // GameBootstrap re-enabled gameplay input on resume; a conversation, the notebook or a page-turn still
+                // owns it (a crossing gives it back itself when the page has gone).
                 _game.Controls.SetGameplayEnabled(false);
             }
         }
@@ -506,6 +514,7 @@ namespace SpookyStreet.Case
             bool inside = CaseRouteLayout.Inside(pip.x, pip.z);
             rig.ObstacleLayers = inside ? _indoorObstacles : _baseObstacles;
             House?.Tick(pip, pip);
+            HideSkyIndoors(pip, pip);
             rig.Orbit.Snap(yaw);
             if (Framing != null)
             {
@@ -531,6 +540,7 @@ namespace SpookyStreet.Case
                 _lastPip = pip;
                 _hasLastPip = true;
                 House.Tick(pip, _camera.transform.position);
+                HideSkyIndoors(pip, _camera.transform.position);
                 Cast?.ShowJuneIndoors(House.InteriorShown);
                 bool inside = CaseRouteLayout.Inside(pip.x, pip.z);
                 var rig = _game.CameraRig;
@@ -1034,6 +1044,55 @@ namespace SpookyStreet.Case
             }
         }
 
+        // ------------------------------------------------------------------------------------- interior safety
+
+        /// <summary>
+        /// The sky's dome is an opaque sphere that cuts through the south of the interior (TestFlight 23: a lens there
+        /// saw a flat purple wall where the attic should be). Nothing of the sky can be seen from inside the closed
+        /// shell, so it is not drawn while Pip or the lens is indoors.
+        /// </summary>
+        private void HideSkyIndoors(Vector3 pip, Vector3 lens)
+        {
+            if (_game.Sky != null)
+            {
+                _game.Sky.Hidden = InteriorSafety.SkyHidden(pip.x, pip.z, lens.x, lens.z);
+            }
+        }
+
+        /// <summary>
+        /// The interior safety net: off the walkable area, or pushed for several seconds without getting anywhere,
+        /// Pip is set down on the nearest safe anchor with a small paper puff. Returns true when Pip was moved.
+        /// </summary>
+        private bool TickRescue(Vector3 pip, float dt, bool crossing)
+        {
+            if (House == null || dt <= 0f)
+            {
+                return false;
+            }
+
+            bool controllable = !_modal && !crossing && _game.Controls.GameplayEnabled &&
+                                (Cutaway == null || !Cutaway.Active) && !FinalePlaying;
+            _rescue.DoorOpen = House.DoorOpen;
+            var reason = _rescue.Step(dt, pip.x, pip.y, pip.z, _pip.Grounded, _game.Controls.ReadMove().magnitude,
+                controllable);
+            if (reason == RescueReason.None)
+            {
+                return false;
+            }
+
+            var anchor = InteriorSafety.Nearest(pip.x, pip.y, pip.z, reason == RescueReason.Stuck);
+            _game.Feedback?.Puff(pip);
+            _pip.Teleport(new Vector3(anchor.X, anchor.Y + 0.03f, anchor.Z));
+            _pip.transform.rotation = Quaternion.Euler(0f, anchor.Yaw, 0f);
+            CutCamera();
+            Travel?.ResetTracker();
+            _game.Feedback?.Puff(_pip.transform.position);
+            Rescues++;
+            LastRescue = reason;
+            Debug.Log($"[CaseDirector] Safety net ({reason}): Pip at {pip:F2} set down at {anchor}");
+            return true;
+        }
+
         // ----------------------------------------------------------------------------------------------- frame
 
         private void Update()
@@ -1069,6 +1128,11 @@ namespace SpookyStreet.Case
 
             bool crossing = Travel != null && Travel.Active;
             TickStage(pip, dt);
+            if (TickRescue(pip, dt, crossing))
+            {
+                pip = _pip.transform.position;
+            }
+
             if (!_modal && !crossing)
             {
                 if (CaseStage.ShouldHearKnocks(State, _pip.DistanceWalked - _walkedAtStart, pip.z))

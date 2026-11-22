@@ -101,6 +101,27 @@ namespace SpookyStreet.Core.World
         /// <summary>Nothing in the sky may be brighter than this (bloom starts at 1).</summary>
         public const float BrightestValue = 0.95f;
 
+        /// <summary>
+        /// The sky dome (an inward-facing, depth-writing hemisphere, GreyboxBuilder) is centred under the middle of the
+        /// lawn ring with this radius. It is opaque: from a lens inside its sphere it hides everything beyond it, which
+        /// is why the closed owl house interior (z ≈ 58–65, D24.1, partly beyond the sphere) hides the sky while the
+        /// camera is indoors (<see cref="InteriorSafety.SkyHidden"/>).
+        /// </summary>
+        public const float DomeCentreX = 0f;
+
+        public const float DomeCentreY = -3f;
+        public const float DomeCentreZ = 8f;
+        public const float DomeRadius = 52f;
+
+        /// <summary>True when (x, y, z) is inside the dome's sphere (a lens there sees the dome's inner faces).</summary>
+        public static bool InsideDome(float x, float y, float z)
+        {
+            float dx = x - DomeCentreX;
+            float dy = y - DomeCentreY;
+            float dz = z - DomeCentreZ;
+            return dx * dx + dy * dy + dz * dz < DomeRadius * DomeRadius;
+        }
+
         /// <summary>Peak opacity of the moon's halo card where it meets the disc.</summary>
         public const float HaloOpacity = 0.42f;
 
