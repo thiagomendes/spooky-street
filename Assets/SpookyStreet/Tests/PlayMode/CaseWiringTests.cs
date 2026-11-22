@@ -119,6 +119,7 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Tap(_keyboard.eKey);
             Assert.IsTrue(director.State.Has(CaseFact.BeaSpoke), "talking to Bea records beaSpoke");
             Assert.IsTrue(director.Dialogue.IsOpen, "her line plays on the speech card");
+            Assert.IsTrue(director.Captions.Raised, "captions lift above the speech card");
             Assert.AreEqual(Speaker.Bea, director.Dialogue.CurrentLine.Speaker);
             Assert.AreEqual(Lines.BeaSawCape, director.Dialogue.CurrentLine.Key);
             Assert.AreEqual("I saw June's silver cape go in. Right there!", director.Dialogue.CurrentText);
@@ -321,6 +322,7 @@ namespace SpookyStreet.Tests.PlayMode
         {
             yield return StartGame();
             var director = GameBootstrap.Instance.Director;
+            director.Perform(CaseAction.Of(CaseActionKind.HearKnocks));
             director.Perform(CaseAction.Talk(Speaker.Bea));
             director.Dialogue.Skip();
             director.Perform(CaseAction.Of(CaseActionKind.ExamineStreamer));

@@ -80,7 +80,24 @@ namespace SpookyStreet.Tests.Visual
             director.Perform(CaseAction.Talk(Speaker.Bea));
             yield return Wait(0.4f);
             Assert.IsTrue(director.Dialogue.IsOpen, "14_dialogue: Bea's line should be on the card");
+
+            // Over Pip's right shoulder toward Bea (Pip turned to face her), like the dialogue mock.
+            var camera = game.CameraRig.OutputCamera;
+            var brain = camera.GetComponent("CinemachineBrain") as Behaviour;
+            if (brain != null)
+            {
+                brain.enabled = false;
+            }
+
+            var pip = game.Pip.transform;
+            camera.transform.position = pip.position + pip.right * 0.9f + Vector3.up * 1.3f - pip.forward * 1.4f;
+            camera.transform.LookAt(beaAt + Vector3.up * 1.05f);
             yield return Shot("14_dialogue");
+            if (brain != null)
+            {
+                brain.enabled = true;
+            }
+
             director.Dialogue.Skip();
 
             // A few notes found, then the notebook.

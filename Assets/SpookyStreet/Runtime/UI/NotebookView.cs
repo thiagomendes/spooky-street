@@ -174,11 +174,11 @@ namespace SpookyStreet.UI
             _rightContent = UiFactory.Stretch(UiFactory.Rect(_right, "Page"));
 
             var title = PageText(_leftContent, "Heading", NoteKeys.Title, 52, Palette.InkBlack, UiFactory.DisplayFont,
-                38f, 24f, 480f, 62f);
+                38f, 16f, 480f, 72f);
             title.alignment = TextAnchor.MiddleLeft;
-            PageText(_leftContent, "CaseName", ShellKeys.TitleCaseName, 28, Graphite, UiFactory.BoldFont, 40f, 86f, 480f, 36f);
+            PageText(_leftContent, "CaseName", ShellKeys.TitleCaseName, 28, Graphite, UiFactory.BoldFont, 40f, 76f, 480f, 44f);
 
-            float y = 136f;
+            float y = 120f;
             y = Question(_leftContent, 1, page.Questions[0], y);
             Slips(_leftContent, page.Questions[0].Annotations, y);
 
@@ -200,14 +200,16 @@ namespace SpookyStreet.UI
             PageText(page, "Number" + number, null, 44, OrangeInk, UiFactory.DisplayFont, 34f, y, 44f, 52f).text =
                 number.ToString();
             QuestionLabels.Add(PageText(page, "Question" + number, question.QuestionKey, 32, Palette.InkBlack,
-                UiFactory.BoldFont, 82f, y, 456f, 52f));
+                UiFactory.BoldFont, 82f, y - 2f, 456f, 56f));
             y += 58f;
             if (question.Answered)
             {
-                AnswerLabels.Add(PageText(page, "Answer" + number, question.AnswerKey, 30, Palette.InkBlack, UiFactory.BoldFont,
-                    82f, y, 300f, 84f));
+                var answer = PageText(page, "Answer" + number, question.AnswerKey, 28, Palette.InkBlack, UiFactory.BoldFont,
+                    82f, y, 336f, 128f);
+                answer.alignment = TextAnchor.UpperLeft;
+                AnswerLabels.Add(answer);
                 var stamp = UiFactory.PaperTag(page, "FoundStamp", UiKeys.NotebookFound, 28, new Vector2(0f, 1f),
-                    new Vector2(460f, -(y + 40f)), new Vector2(170f, 56f), -8f, Color.white);
+                    new Vector2(478f, -(y + 40f)), new Vector2(150f, 56f), -8f, Color.white);
                 stamp.GetComponentInChildren<Text>().color = WitchGreen;
                 UiFactory.StitchLayer(stamp.transform, WitchGreen);
                 UiFactory.Sprite(stamp.transform, "Check", UiFactory.Baked(UiSpriteCatalog.IconCheck), WitchGreen,
@@ -225,10 +227,10 @@ namespace SpookyStreet.UI
                     UiFactory.WithAlpha(Graphite, 0.85f), UiFactory.DisplayFont);
                 UiFactory.Stretch(mark.rectTransform);
                 mark.gameObject.AddComponent<LocalizedText>().SetKey(UiKeys.NotebookUnknownMark);
-                PageText(page, "NotFound" + number, NoteKeys.Unknown, 30, Graphite, UiFactory.BodyFont, 172f, y + 18f, 360f, 42f);
+                PageText(page, "NotFound" + number, NoteKeys.Unknown, 30, Graphite, UiFactory.BodyFont, 172f, y + 14f, 360f, 48f);
             }
 
-            return y + 88f;
+            return y + (question.Answered ? 132f : 88f);
         }
 
         /// <summary>Two columns of small pinned slips; returns the y below them.</summary>
@@ -237,12 +239,12 @@ namespace SpookyStreet.UI
             int column = 0;
             foreach (var annotation in annotations)
             {
-                float x = 34f + column * 254f;
+                float x = 30f + column * 258f;
                 float angle = (annotation.Id.GetHashCode() & 3) - 1.5f;
                 if (annotation.Found)
                 {
                     var slip = UiFactory.PaperTag(page, "Slip", CaseNotebookTags.TagKey(annotation.Id), 26,
-                        new Vector2(0f, 1f), new Vector2(x + 120f, -(y + 26f)), new Vector2(240f, 50f), angle, Color.white);
+                        new Vector2(0f, 1f), new Vector2(x + 126f, -(y + 24f)), new Vector2(252f, 48f), angle, Color.white);
                     slip.raycastTarget = true;
                     var button = slip.gameObject.AddComponent<Button>();
                     button.transition = Selectable.Transition.None;
@@ -253,7 +255,7 @@ namespace SpookyStreet.UI
                 else
                 {
                     var slip = UiFactory.PaperTag(page, "UnknownSlip", null, 26, new Vector2(0f, 1f),
-                        new Vector2(x + 120f, -(y + 26f)), new Vector2(240f, 50f), angle,
+                        new Vector2(x + 126f, -(y + 24f)), new Vector2(252f, 48f), angle,
                         new Color(0.8f, 0.78f, 0.82f, 0.45f));
                     var text = slip.GetComponentInChildren<Text>();
                     text.gameObject.AddComponent<LocalizedText>().SetKey(UiKeys.NotebookUnknownMark);
@@ -264,11 +266,11 @@ namespace SpookyStreet.UI
                 if (column == 2)
                 {
                     column = 0;
-                    y += 56f;
+                    y += 52f;
                 }
             }
 
-            return column == 0 ? y : y + 56f;
+            return column == 0 ? y : y + 52f;
         }
 
         private void BuildFinalCard(NotebookFinalCard final)
@@ -277,12 +279,12 @@ namespace SpookyStreet.UI
                 new Vector2(540f, 500f), 1.2f, Palette.HauntedPurple);
             FinalCard = card.gameObject;
             var page = card.rectTransform;
-            PageText(page, "Heading", final.HeadingKey, 44, Palette.InkBlack, UiFactory.DisplayFont, 30f, 22f, 480f, 58f);
+            PageText(page, "Heading", final.HeadingKey, 44, Palette.InkBlack, UiFactory.DisplayFont, 30f, 18f, 480f, 68f);
             var stamp = UiFactory.PaperTag(page, "ClosedStamp", final.StampKey, 32, new Vector2(1f, 1f),
                 new Vector2(-120f, -110f), new Vector2(200f, 62f), -9f, Color.white);
             stamp.GetComponentInChildren<Text>().color = WitchGreen;
             UiFactory.StitchLayer(stamp.transform, WitchGreen);
-            var count = PageText(page, "Count", null, 28, Graphite, UiFactory.BoldFont, 30f, 84f, 300f, 38f);
+            var count = PageText(page, "Count", null, 28, Graphite, UiFactory.BoldFont, 30f, 86f, 300f, 46f);
             count.gameObject.AddComponent<LocalizedText>().SetKey(final.CountKey,
                 () => new object[] { final.Found, final.Total });
 
@@ -290,11 +292,11 @@ namespace SpookyStreet.UI
             foreach (var entry in final.Discoveries)
             {
                 string key = CaseNotebookTags.TagKey(entry.Id) ?? entry.TextKey;
-                names.Add(Localizer.Format(UiKeys.NotebookDiscoveryItem, Localizer.Get(key)));
+                names.Add(Localizer.Get(key));
             }
 
-            var list = PageText(page, "Discoveries", null, 28, Palette.InkBlack, UiFactory.BoldFont, 30f, 150f, 480f, 200f);
-            list.text = string.Join("\n", names);
+            var list = PageText(page, "Discoveries", null, 28, Palette.InkBlack, UiFactory.BoldFont, 30f, 140f, 480f, 236f);
+            list.text = string.Join(Localizer.Get(UiKeys.NotebookDiscoverySeparator), names);
             list.alignment = TextAnchor.UpperLeft;
             list.resizeTextMinSize = 26;
 

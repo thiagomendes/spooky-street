@@ -416,6 +416,7 @@ namespace SpookyStreet.Case
 
             Bench.End();
             SetModal(true);
+            Captions.Raised = true;
             Dialogue.Play(spoken);
         }
 
@@ -462,6 +463,7 @@ namespace SpookyStreet.Case
 
         private void OnDialogueFinished()
         {
+            Captions.Raised = false;
             if (_talking != null)
             {
                 _talking.Conversing = false;
@@ -536,6 +538,7 @@ namespace SpookyStreet.Case
             }
 
             Dialogue.Cancel();
+            Captions.Raised = false;
             Notebook.Cancel();
             Notice.Hide();
             if (_modal)

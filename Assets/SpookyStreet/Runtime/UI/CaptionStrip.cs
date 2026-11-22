@@ -42,6 +42,10 @@ namespace SpookyStreet.UI
         private Entry _current;
         private float _left;
         private bool _largeText;
+        private bool _raised;
+
+        private const float RestY = 30f;
+        private const float RaisedY = 300f;
 
         /// <summary>Camera used for the direction cue (the gameplay camera).</summary>
         public Camera ViewCamera { get; set; }
@@ -58,6 +62,20 @@ namespace SpookyStreet.UI
         }
 
         public bool Showing => _current != null;
+
+        /// <summary>Lifts the strip above the speech card while a conversation is open, so both stay readable.</summary>
+        public bool Raised
+        {
+            get => _raised;
+            set
+            {
+                _raised = value;
+                if (_root != null)
+                {
+                    _root.anchoredPosition = new Vector2(0f, value ? RaisedY : RestY);
+                }
+            }
+        }
 
         /// <summary>Localization key of the caption on screen (null when nothing shows).</summary>
         public string CurrentKey => _current?.Key;

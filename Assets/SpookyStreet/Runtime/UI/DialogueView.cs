@@ -102,7 +102,7 @@ namespace SpookyStreet.UI
             content.gameObject.AddComponent<SafeAreaFitter>();
 
             var card = UiFactory.PaperCard(content, "SpeechCard", new Vector2(0.5f, 0f), new Vector2(70f, 150f),
-                new Vector2(1000f, 196f), -0.6f);
+                new Vector2(1000f, 236f), -0.6f);
             card.raycastTarget = true;
             var cardButton = card.gameObject.AddComponent<Button>();
             cardButton.transition = Selectable.Transition.None;
@@ -111,7 +111,7 @@ namespace SpookyStreet.UI
 
             // Portrait: a felt disc frame with the speaker's initial (portrait art is a later pass).
             _portrait = UiFactory.Sprite(content, "Portrait", null, Color.white, new Vector2(0.5f, 0f),
-                new Vector2(70f - 500f - 6f, 172f), new Vector2(188f, 188f));
+                new Vector2(70f - 500f - 6f, 182f), new Vector2(188f, 188f));
             _portrait.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -3f);
             UiFactory.InkShadow(_portrait, new Vector2(4f, -6f), 0.55f);
             UiFactory.Sprite(_portrait.transform, "Ring", UiFactory.Baked(UiSpriteCatalog.StitchRing),
@@ -128,8 +128,8 @@ namespace SpookyStreet.UI
 
             _line = UiFactory.Label(card.transform, "Line", null, 52, TextAnchor.UpperLeft, UiFactory.Ink, UiFactory.BodyFont);
             UiFactory.Stretch(_line.rectTransform);
-            _line.rectTransform.offsetMin = new Vector2(120f, 58f);
-            _line.rectTransform.offsetMax = new Vector2(-40f, -34f);
+            _line.rectTransform.offsetMin = new Vector2(120f, 56f);
+            _line.rectTransform.offsetMax = new Vector2(-40f, -26f);
             _line.resizeTextMinSize = 36;
 
             _pipRow = UiFactory.Rect(card.transform, "LinePips");
