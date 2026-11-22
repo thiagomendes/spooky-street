@@ -20,12 +20,12 @@ Cards sit at −2°…+2° rotation; never rotate thumb controls or text in the 
 | Night violet | `#2A2550` | felt discs (88–92 % opacity in play), caption backing, scrims (75–85 % behind modals) |
 | Haunted purple | `#5B3A7A` | stitches on paper, pressed felt disc, cue discs |
 | Plum | `#7A3E6E` | notebook cover, tab backs |
-| Jack-o'-lantern | `#EE7F2D` | the one primary action per screen; contextual Use; clue underline |
+| Jack-o'-lantern | `#EE7F2D` | the one primary action per screen; contextual Use (no clue underline: D26) |
 | Candy corn | `#F6D365` | stitches on felt, focus ring, "new" badges, Jump ring |
 | Bone | `#F4E6C8` | cards; icons/text on felt |
 | Ink | `#1E1A26` | outlines, text on paper and orange, shadows |
 | Witch green | `#8DBF3F` | accent only: toggle on, "Found it!" stamp |
-| Cloth silver | `#DAE2EE` | **never chrome**; only as a clue swatch (torn cape) inside the notebook |
+| Cloth silver | `#DAE2EE` | **never chrome**; only as the silver cloth and sill sticker swatches inside the notebook |
 
 **Brightness rule.** In play, no paper surface is larger than a label; chrome is felt at ≤ 92 % opacity with bone
 icons, so the attic window/active point of interest stays the brightest value (checked on `ui_hud.png`: window
@@ -76,7 +76,8 @@ the roll glyph + "Roll" (roll on the ground, dive in the air; S000.6).
 - Captions: bracketed sound text on opaque night felt (backing toggle on by default), bone Andika Bold 17 pt, large 22 pt.
   Direction cue: a purple disc with a candy arrow rotated toward the source, plus direction words in the text.
 - Dialogue: speaker portrait + name tab, two lines max per card, line pips, "Tap to continue"; holding Use never
-  advances. Skip top-right, away from the reading path. Clue words get a hand-drawn orange underline.
+  advances. Skip top-right, away from the reading path. *(D26: clue words are not underlined or otherwise
+  marked; no UI signal sorts clues from non-clues, `docs/mystery-first.md` §2.)*
 - Contrast: ink on bone 13.8:1, bone on night 11.5:1, ink on orange 6.3:1 (WCAG AA for all text sizes).
 
 ## Mapping to the Unity helpers (implementation notes)

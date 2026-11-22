@@ -1,11 +1,11 @@
-# Mystery first: case 01 redesign (design, pending owner approval)
+# Mystery first: case 01 redesign (approved 2026-11-22, D26)
 
 Owner (2026-11-22, translated): "Doesn't it take the fun out of the game's mysteries, which is the whole point, if
 it becomes dull by explaining everything you have to do? … They have to gather the clues and solve the mysteries
 themselves." The owner chose a **mystery-first** redesign. This document applies the rules of
 `docs/narrative-bible.md` to case 01. It changes **what** the vignettes, captions, notebook, hints and replays show,
 not **that** they exist: the hybrid reading mode (D23.1) and the Helper-off default (D23) stay. No game code changes
-here. Proposed decision **D26** is at the end, with the open questions.
+here. Decision **D26** (approved 2026-11-22) is at the end, with the owner's answers; the spec carries it from v1.4.
 
 Mocks (Pillow GIFs at 1266×585, 15 fps, plus a 6-frame `_sheet.jpg` each) in `docs/evidence/s002/mystery_first/`,
 drawn by `tools/ui_mock/mystery_first_mock.py` in the puppet style of the v2 mocks:
@@ -103,7 +103,7 @@ comparison, shown by touch sounds and animation, never by a ⊘.
 | 9 | The machine | loose arm, link it, crank; owl bows outside | 2–3 min | medium: order of arm and crank | crank-early tap shows the dangling arm (no words) |
 | 10 | Connect Q-moved, finale | porch; Kit asks "So, detective?"; case stamp | 2–3 min | low | Q-moved is easy after the bow |
 
-Total about 17–30 min for a young first-timer, 12–18 for the spec's 8–12 audience (spec §3 target). The density
+Total about 17–30 min for a young first-timer, 12–18 for an older reader (9–12; spec v1.4 §3 target). The density
 target (a meaningful event every 15–25 s) holds: each beat above has 2–4 events.
 
 ## 5. Deduction mechanic (notebook)
@@ -208,7 +208,7 @@ Keys are `c01.*`. K = keep, R = rewrite, C = cut. Vignette IDs follow the line u
 
 ## 9. Playtest plan
 
-Recruit as spec §8 (3 children 5–8 and 2 aged 8–12, a guardian each). External observation only: no recording in
+Recruit as spec §8 (3 children 6–9 and 2 aged 9–12, a guardian each; spec v1.4 audience, D27). External observation only: no recording in
 the game, no account. Hand the phone after the title; stay quiet; answer "I don't know, what do you think?".
 
 Observe and note, per child: (1) unprompted theories after Bea and Vale ("What do you think happened?"), (2) first
@@ -234,26 +234,26 @@ control scheme. World: four new examine targets with their idle attractions. Tes
 no placement order deadlocks; the decoy never completes a question; no case line names a conclusion (a keyword lint
 on `en.json` for the review).
 
-## 11. Proposed decision D26 (pending owner approval; not in `decisions.md`)
+## 11. Decision D26 (approved 2026-11-22; the final text is in `decisions.md`)
 
 | ID | Decision | Why | Revisit when |
 |---|---|---|---|
-| D26 | **Owner (pending):** mystery first. (1) Witness lines and vignettes show only what the witness perceived; captions describe what is seen or heard, never what it means; the "this matters" ring leaves case content. (2) Notebook answers exist only after the child places clue stickers on a question (2–3 slots, shared tray, gentle wobble on a wrong set, progressive scaffold, comic built from the child's stickers). (3) Hints target areas: tier 1 nudge, tier 2 trail, tier 3 only demonstrates moves; stuck deductions get a musing and the missing clue's place, never the pairing. Helper stays off (D23). (4) Memory replays become partial, hazy memories, on demand from the notebook. (5) Questions appear as the world raises them. Supersedes D23 items 2 and the tier pictures of `nonverbal-ux.md` §6; D23.1 is unchanged. | Owner (2026-11-22): explaining everything removes the fun; children must gather the clues and solve the mysteries themselves. | Playtests show children 5–8 cannot finish without frustration, or the deduction step is skipped by trial and error. |
+| D26 | **Owner (approved 2026-11-22; proposal text as reviewed):** mystery first. (1) Witness lines and vignettes show only what the witness perceived; captions describe what is seen or heard, never what it means; the "this matters" ring leaves case content. (2) Notebook answers exist only after the child places clue stickers on a question (2–3 slots, shared tray, gentle wobble on a wrong set, progressive scaffold, comic built from the child's stickers). (3) Hints target areas: tier 1 nudge, tier 2 trail, tier 3 only demonstrates moves; stuck deductions get a musing and the missing clue's place, never the pairing. Helper stays off (D23). (4) Memory replays become partial, hazy memories, on demand from the notebook. (5) Questions appear as the world raises them. Supersedes D23 items 2 and the tier pictures of `nonverbal-ux.md` §6; D23.1 is unchanged. | Owner (2026-11-22): explaining everything removes the fun; children must gather the clues and solve the mysteries themselves. | Playtests show children 5–8 cannot finish without frustration, or the deduction step is skipped by trial and error. |
 
-## 12. Open questions for the owner
+## 12. Owner answers (decided 2026-11-22, D26: every recommendation taken; questions kept for the record)
 
 1. **Does the finale need the deductions?** (a) The owl show and Kit's reopening need only the world actions, and
    the "Case closed" stamp needs the three solved questions (Kit asks "So, detective?"). (b) Nothing needs
-   deductions; they are bonus stamps. (c) The show itself waits for the deductions. **Recommend (a):** the joy of
+   deductions; they are bonus stamps. (c) The show itself waits for the deductions. **Decided (a):** the joy of
    the show is never withheld, but the case is only closed by the child's own explanation.
 2. **Wrong-try feedback.** (a) All-or-nothing always. (b) Show which stickers fit from the first try. (c)
-   Progressive: all-or-nothing for two tries, then fitting stickers stay. **Recommend (c):** it keeps the aha for
+   Progressive: all-or-nothing for two tries, then fitting stickers stay. **Decided (c):** it keeps the aha for
    most children and stops brute force from becoming a chore for the youngest.
 3. **Memory replay.** (a) Remove. (b) Hazy partial memory, notebook only. (c) Hazy memory, auto-play the first time.
-   **Recommend (b).** Auto-play pulls the camera toward the side of the house, which is a hint nobody asked for.
+   **Decided (b).** Auto-play pulls the camera toward the side of the house, which is a hint nobody asked for.
 4. **The decoy streamer.** (a) Keep one decoy per case. (b) No decoys for case 01, add them from case 02.
-   **Recommend (a):** one honest red herring that the child can disprove by touching both is the classic aha,
+   **Decided (a):** one honest red herring that the child can disprove by touching both is the classic aha,
    and the scaffold sets it aside after repeated tries.
 5. **Tier 3 for Use actions.** (a) Move demos only (as proposed). (b) Also demonstrate Use when the child stands next
-   to an unexamined clue for a long time. **Recommend (a):** the Use prompt already appears in range, and the
+   to an unexamined clue for a long time. **Decided (a):** the Use prompt already appears in range, and the
    glint draws the eye; a hand pressing "Look" on the clue picks the clue for the child.

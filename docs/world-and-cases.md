@@ -1,14 +1,16 @@
-# World and cases: the expansion framework (proposal, pending owner approval)
+# World and cases: the expansion framework (approved direction 2026-11-22, D27)
 
 A designer, human or agent, should be able to write a new Spooky Street case from this page plus
-`docs/narrative-bible.md`. Everything beyond case 01 is a **proposal**: the spec (§1, scope) makes future cases
-separate decisions after playtesting. Constraints that always hold: the art bible (a real street dressed for
+`docs/narrative-bible.md`. The owner approved this framework on 2026-11-22 (D27; answers in §7). The season is
+**designed for 8 cases, with cases 01–04 committed first**; each case beyond 01 is still approved from its own
+design doc (§3) before any asset exists (spec v1.4, scope). Constraints that always hold: the art bible (a real street dressed for
 Halloween night, never a haunted ruin; humans in costumes; cloth silver only for clues of its case), D24/D24.1 for
 enterable places, D25 portability, spec §6 premium bar and §1 exclusions (no combat, lives, currencies, ads).
 
 ## 1. The neighbourhood as a world
 
-The town is **Lantern Hollow** *(proposal)*, a small valley neighbourhood. Lantern Lane is its oldest street. The
+The town is **Lantern Hollow** *(placeholder until the owner names it, D27; use it only in docs, never in shipped
+strings or stable IDs)*, a small valley neighbourhood. Lantern Lane is its oldest street. The
 map grows outward one place per case, connected on foot (a street-level hub, no world map menu), so every new place
 also opens a new view back on the old ones.
 
@@ -68,6 +70,10 @@ Reveal: the child's world action that shows the truth · the answer comic panels
 Seed: the object, line or sketch that points to a later case
 New mechanic or place: what is taught, where it is taught safely, which clue needs it
 Hint areas: authored areas per question; which blockers are moves (tier-3 demos)
+Cutscenes (each 10–40 s, skippable, rewatchable; bible §5): intro (how the world raises the question) · reveal
+  payoff per question (staged from the child's stickers; plays only after the right placement) · street remembers
+  (what visibly changes) · seed (what points to the next case) · shots, clips and gestures needed · check: no
+  answer before the deduction, nothing the child could discover by playing
 Continuity: facts this case adds to the street state; facts it must not contradict
 Risks: where children may stall, and the soft net for each
 ```
@@ -75,9 +81,16 @@ Risks: where children may stall, and the soft net for each
 **Case 01 filled in, short:** *Three Knocks on Lantern Lane* · Lantern Lane · level 1 · Q-source (2), Q-entry (3),
 Q-moved (2) · true story spec §2 · clues `mystery-first.md` §3 · testimonies Bea (flash up high), Vale (door never
 opened) · decoy the foil streamer · reveal crank → the owl bows; booth reopens · seed: Kit's troupe photo and the
-crest · mechanic: bench viewpoint, ramp, bridge, glide.
+crest · mechanic: bench viewpoint, ramp, bridge, glide · cutscenes: opening (Pip, the new kid, arrives; ends on the
+arrival-porch shot, the knocks then happen in play), reveal payoff (the owl show and Kit's reopening, after the
+child's crank), street remembers (the booth bows on the hour, Bea's owl), seed (a puppet in Kit's photo glows).
 
-## 4. Season arc (proposals)
+## 4. Season arc (designed for 8, cases 01–04 committed first; D27)
+
+Every case wakes one of the Lantern Lane Players' machines, so the season builds to the Night of Lanterns. Cases
+02–04 are committed after case 01's playtest; 05–08 stay designed but uncommitted, and the arc must still close
+well if the season ends at a shorter count (the finale can gather fewer machines). Case lines below are outlines
+until each design doc is approved.
 
 | # | Case | Seed | Place · cast · new mechanic |
 |---|---|---|---|
@@ -90,7 +103,27 @@ crest · mechanic: bench viewpoint, ramp, bridge, glide.
 | 08 | **The Night of Lanterns** (finale) | Kit's photo has one face Pip never met. Where is the last Player? Answers from every case become stickers; the trail leads to the Players' hall and the festival is relit with the whole town. | Town Square · everyone · all moves, open routes |
 
 Case 01's seeds in this arc: the troupe photo (four other puppets: fox → 07, moth → 03, moon/lamp → 02, bell → 04),
-the owl crest (found on every Players' machine), and the paper bat sketch pages (each points to a next place).
+the owl crest (found on every Players' machine), and the paper bat sketch pages (each points to a next place). The
+machines of cases 05 and 06 (the baker bear, the mill organ) are not in the photo; they are seeded by sketch pages
+and crests found in earlier places, so they can change or be cut without touching case 01 art.
+
+**How the finale ends.** The spine resolves completely: the last Player is found and welcomed, every machine runs at
+once, the festival is back, and Pip, no longer the new kid, stands in the new troupe photo. No question of a solved
+case stays open. Then, in the final shots, the threads of §4.1 appear quietly, so the child leaves happy and curious
+for more.
+
+### 4.1 Beyond season 1 (open threads, proposals)
+
+Each thread is planted in the finale (and lightly before it), is kind, and invites a later season without making
+season 1 feel unfinished. None is ever advertised as something to buy.
+
+1. **The Players' touring map.** In the Players' hall, an old map shows lantern marks in towns beyond the valley:
+   the troupe once toured, and some machines may still be out there. A later season can leave Lantern Hollow.
+2. **The unfinished machine.** A plan signed by every Player, one part missing, labelled "for next year". The
+   whole street wonders what it does; building it is a natural next season's spine.
+3. **The shooting-star wink.** As the festival ends, a shooting star crosses the paper sky and the owl on Kit's
+   booth bows four times instead of three. The season's one gentle, unexplained wonder (§7 question 4), left for
+   the child to wonder about.
 
 ## 5. Continuity rules
 
@@ -100,7 +133,7 @@ the owl crest (found on every Players' machine), and the paper bat sketch pages 
 - **Timeline.** All cases happen on the evenings of one Halloween week, ending with the Night of Lanterns; the moon
   waxes case by case (a visible clock in the sky, `MagicSky`). No school-day or daytime cases in season 1.
 - **Facts that cannot contradict.** The Players built every machine; machines are wind, water, heat or clockwork,
-  never magic or electricity; Kit gave the children permission to use the treehouse; Vale did not know the owl
+  never magic or electricity (the finale's one shooting-star wink, §4.1, is the only unexplained wonder); Kit gave the children permission to use the treehouse; Vale did not know the owl
   machine; June's cape is the only silver cloth on the street; nobody is hurt or punished in any case.
 - **Naming.** Places are plain English compounds a child can say (Bramble Row, Hollow Park). People have one short
   name or a title plus surname (Mrs. Ortega). Stable IDs: `c0x.<place>.<thing>` for facts, `c0x.note.*` for
@@ -119,14 +152,15 @@ the owl crest (found on every Players' machine), and the paper bat sketch pages 
 
 Details and guardrails: `docs/engagement.md`.
 
-## 7. Open questions for the owner
+## 7. Owner answers (decided 2026-11-22, D27; questions kept for the record)
 
-1. **Season length.** (a) 8 cases including the finale. (b) 4 cases first, then decide. **Recommend (b) planned
-   as (a):** design the arc for 8 but commit to cases 02–04 after case 01's playtest.
+1. **Season length.** (a) 8 cases including the finale. (b) 4 cases first, then decide. **Decided: designed for 8,
+   4 committed first**, with the story left open for later seasons and an "I want more" ending (§4, §4.1).
 2. **One street or a growing map?** (a) Each case adds a connected place you can walk to. (b) Each case is a separate
-   level picked from a menu. **Recommend (a):** the living neighbourhood is a pillar; the D24.1 threshold
-   technique keeps scene costs down.
-3. **The town's name, Lantern Hollow?** (a) Adopt. (b) Owner names it. **Recommend** the owner choose; Lantern
-   Hollow is a placeholder that fits the lantern motif.
+   level picked from a menu. **Decided (a)**, as recommended: the living neighbourhood is a pillar; the D24.1
+   threshold technique keeps scene costs down.
+3. **The town's name, Lantern Hollow?** (a) Adopt. (b) Owner names it. **Open:** the owner will choose; Lantern
+   Hollow stays a placeholder.
 4. **Machines are never magic?** (a) Always a mechanical, kind explanation. (b) Allow one gentle unexplained wonder
-   in the finale. **Recommend (a)** for the cases, with (b) as a final shooting-star wink only.
+   in the finale. **Decided** as recommended: (a) for the cases, with (b) as the final shooting-star wink only
+   (§4.1 thread 3).
