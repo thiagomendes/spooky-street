@@ -103,9 +103,17 @@ made.
 
 ## Evidence
 
-- `./tools/check-local.sh`: all checks passed. `dotnet test tools/core-tests`: **206 passed**.
-- **Not run here:** the Unity compile, EditMode, PlayMode and visual captures. Those run in CI on this branch. The
-  device has not been tested. No pass is claimed until the CI run's evidence exists.
+- `./tools/check-local.sh`: all checks passed; `dotnet test tools/core-tests`: **206 passed**.
+- **CI run 44** (`6007753`): compiled. EditMode 223/223 passed. PlayMode 32/33: the reload test never heard the
+  knocks, so the restored world had nothing to rebuild (a test bug). Visual 2/2. Frames `14_dialogue` and
+  `15_notebook` showed clipped notebook labels and the caption strip covering the speech card.
+- **CI run 45** (`0685946`): **all green**. EditMode 223/223, PlayMode 33/33, visual 2/2. Frame review:
+  - The captions now sit above the card.
+  - The notebook spread, the questions and the hint radio render.
+  - The slip labels and "Tap to continue" were still blank. Andika's line box is about 1.5 × the font size, and uGUI
+    draws nothing when a line does not fit.
+- **Next run:** fixed by giving those labels their full height. Its frames are the evidence for that fix.
+- **Not run:** device. No device pass is claimed.
 
 ## What the interior pass needs
 

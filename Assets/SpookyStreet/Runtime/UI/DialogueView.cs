@@ -128,7 +128,7 @@ namespace SpookyStreet.UI
 
             _line = UiFactory.Label(card.transform, "Line", null, 52, TextAnchor.UpperLeft, UiFactory.Ink, UiFactory.BodyFont);
             UiFactory.Stretch(_line.rectTransform);
-            _line.rectTransform.offsetMin = new Vector2(120f, 56f);
+            _line.rectTransform.offsetMin = new Vector2(120f, 60f);
             _line.rectTransform.offsetMax = new Vector2(-40f, -26f);
             _line.resizeTextMinSize = 36;
 
@@ -141,7 +141,7 @@ namespace SpookyStreet.UI
             next.raycastTarget = false;
             var hint = UiFactory.Label(card.transform, "TapToContinue", UiKeys.DialogueContinue, 28, TextAnchor.MiddleRight,
                 Graphite, UiFactory.BoldFont);
-            UiFactory.Place(hint.rectTransform, new Vector2(1f, 0f), new Vector2(-124f, 34f), new Vector2(300f, 40f),
+            UiFactory.Place(hint.rectTransform, new Vector2(1f, 0f), new Vector2(-124f, 36f), new Vector2(300f, 48f),
                 new Vector2(1f, 0.5f));
 
             SkipButton = UiFactory.SecondaryButton(content, "SkipButton", UiKeys.DialogueSkip, Vector2.one,

@@ -244,7 +244,8 @@ namespace SpookyStreet.UI
                 if (annotation.Found)
                 {
                     var slip = UiFactory.PaperTag(page, "Slip", CaseNotebookTags.TagKey(annotation.Id), 26,
-                        new Vector2(0f, 1f), new Vector2(x + 126f, -(y + 24f)), new Vector2(252f, 48f), angle, Color.white);
+                        new Vector2(0f, 1f), new Vector2(x + 126f, -(y + 26f)), new Vector2(252f, 52f), angle, Color.white);
+                    FitSlipText(slip);
                     slip.raycastTarget = true;
                     var button = slip.gameObject.AddComponent<Button>();
                     button.transition = Selectable.Transition.None;
@@ -255,8 +256,9 @@ namespace SpookyStreet.UI
                 else
                 {
                     var slip = UiFactory.PaperTag(page, "UnknownSlip", null, 26, new Vector2(0f, 1f),
-                        new Vector2(x + 126f, -(y + 24f)), new Vector2(252f, 48f), angle,
+                        new Vector2(x + 126f, -(y + 26f)), new Vector2(252f, 52f), angle,
                         new Color(0.8f, 0.78f, 0.82f, 0.45f));
+                    FitSlipText(slip);
                     var text = slip.GetComponentInChildren<Text>();
                     text.gameObject.AddComponent<LocalizedText>().SetKey(UiKeys.NotebookUnknownMark);
                     text.color = UiFactory.WithAlpha(Graphite, 0.7f);
@@ -266,11 +268,11 @@ namespace SpookyStreet.UI
                 if (column == 2)
                 {
                     column = 0;
-                    y += 52f;
+                    y += 54f;
                 }
             }
 
-            return column == 0 ? y : y + 52f;
+            return column == 0 ? y : y + 54f;
         }
 
         private void BuildFinalCard(NotebookFinalCard final)
@@ -305,6 +307,17 @@ namespace SpookyStreet.UI
                 new Vector2(-128f, 66f), new Vector2(250f, 96f), Close);
             ReplayButton = UiFactory.SecondaryButton(page, "ReplayCase", final.ReplayKey, bottom, new Vector2(132f, 66f),
                 new Vector2(230f, 96f), () => ReplayRequested?.Invoke());
+        }
+
+        /// <summary>
+        /// Uses the slip's full height for its label: Andika's line box is about 1.5 × the font size, and uGUI draws
+        /// nothing when a line does not fit (CI run 45 frame 15_notebook).
+        /// </summary>
+        private static void FitSlipText(Image slip)
+        {
+            var rect = slip.GetComponentInChildren<Text>().rectTransform;
+            rect.offsetMin = new Vector2(12f, 0f);
+            rect.offsetMax = new Vector2(-12f, 0f);
         }
 
         /// <summary>A label placed from the page's top-left corner (x, y down, width, height).</summary>
