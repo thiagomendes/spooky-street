@@ -19,7 +19,7 @@ namespace SpookyStreet.Case
     public sealed class HintGhostDemo : MonoBehaviour
     {
         public const float HandAlpha = 0.82f;
-        public const float HandSize = 190f;
+        public const float HandSize = 230f;
         public const float GlyphSize = 96f;
 
         private RectTransform _root;
@@ -69,7 +69,7 @@ namespace SpookyStreet.Case
             _targetRing.fillOrigin = (int)Image.Origin360.Top;
             _glyph = ControlGlyphView.Create(_root, "Glyph", Vector2.zero, Vector2.zero, GlyphSize);
             _hand = UiFactory.Sprite(_root, "GhostHand", UiFactory.Baked(UiSpriteCatalog.GhostHand),
-                UiFactory.WithAlpha(Color.white, HandAlpha), Vector2.zero, Vector2.zero, Vector2.one * HandSize);
+                UiFactory.WithAlpha(UiFactory.PlayPaper, HandAlpha), Vector2.zero, Vector2.zero, Vector2.one * HandSize);
             _hand.preserveAspect = true;
             _hand.rectTransform.pivot = new Vector2(UiSpriteCatalog.GhostHandFingertipX, UiSpriteCatalog.GhostHandFingertipY);
             foreach (var graphic in _root.GetComponentsInChildren<Graphic>(true))
@@ -170,7 +170,10 @@ namespace SpookyStreet.Case
         {
             float approach = Smooth(Mathf.Clamp01(t / 0.45f));
             float alpha = Mathf.Clamp01(t / 0.25f) * (1f - Mathf.Clamp01((t - 1.85f) / 0.3f));
-            var rest = new Vector2(size * 0.55f, -size * 0.7f);
+            // The hand comes in from the screen's inside (a control on the right gets a hand from the lower left), so
+            // it never leaves the screen edge; it leans the same way.
+            bool fromLeft = centre.x > _root.rect.width * 0.5f;
+            var rest = new Vector2(fromLeft ? -size * 0.55f : size * 0.55f, -size * 0.7f);
             Vector2 fingertip = centre + Vector2.Lerp(rest, Vector2.zero, approach);
             float press = 0f;
             float ring = 0f;
@@ -197,9 +200,9 @@ namespace SpookyStreet.Case
 
             var hand = _hand.rectTransform;
             hand.anchoredPosition = fingertip;
-            hand.localRotation = Quaternion.Euler(0f, 0f, 22f);
+            hand.localRotation = Quaternion.Euler(0f, 0f, fromLeft ? -22f : 22f);
             hand.localScale = Vector3.one * (1f - 0.08f * press);
-            _hand.color = UiFactory.WithAlpha(Color.white, HandAlpha * alpha);
+            _hand.color = UiFactory.WithAlpha(UiFactory.PlayPaper, HandAlpha * alpha);
             _targetRing.gameObject.SetActive(ring > 0f);
             _targetRing.fillAmount = Demo == HintDemo.Use ? 1f : ring;
             _targetRing.color = UiFactory.WithAlpha(Palette.CandyCornYellow, 0.9f * alpha);

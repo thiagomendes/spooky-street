@@ -58,7 +58,8 @@ namespace SpookyStreet.UI
             _holdRing.fillMethod = Image.FillMethod.Radial360;
             _holdRing.fillOrigin = (int)Image.Origin360.Top;
 
-            _key = UiFactory.Sprite(_root, "KeyCap", UiFactory.Baked(UiSpriteCatalog.GlyphKey), Color.white, centre,
+            // In-play paper is dimmed a little below bone (docs/ui-language.md brightness rule).
+            _key = UiFactory.Sprite(_root, "KeyCap", UiFactory.Baked(UiSpriteCatalog.GlyphKey), UiFactory.PlayPaper, centre,
                 Vector2.zero, Vector2.one * _size);
             UiFactory.InkShadow(_key, new Vector2(3f, -4f), 0.45f);
             _keyText = UiFactory.Label(_key.transform, "Label", null, Mathf.RoundToInt(_size * 0.42f),
@@ -80,7 +81,7 @@ namespace SpookyStreet.UI
 
             // A bone paper bumper (reads on orange and on night felt), the inner end rounder than the outer.
             _shoulder = UiFactory.Sprite(_root, "Shoulder", UiFactory.Baked(UiSpriteCatalog.PaperTag),
-                Color.white, centre, Vector2.zero, new Vector2(_size * 1.2f, _size * 0.52f));
+                UiFactory.PlayPaper, centre, Vector2.zero, new Vector2(_size * 1.2f, _size * 0.52f));
             UiFactory.Sprite(_shoulder.transform, "Lit", IconFactory.Disc, Palette.JackOrange, new Vector2(0.78f, 0.5f),
                 Vector2.zero, Vector2.one * _size * 0.2f);
             UiFactory.InkShadow(_shoulder, new Vector2(3f, -4f), 0.45f);

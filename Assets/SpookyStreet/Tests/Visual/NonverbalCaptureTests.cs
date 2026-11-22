@@ -189,8 +189,11 @@ namespace SpookyStreet.Tests.Visual
             var benchAt = new Vector3(bench.X, 0f, bench.Z);
             var pip = game.Pip.transform.position;
             Vector3 away = new Vector3(pip.x - bench.X, 0f, pip.z - bench.Z).normalized;
-            game.Pip.Teleport(benchAt + away * 4.2f + Vector3.up * 0.1f);
+            // Pip a step to the side of the line to the bench, so the bench and Vale stay clear of Pip in the frame.
+            Vector3 side = Vector3.Cross(Vector3.up, away).normalized;
+            game.Pip.Teleport(benchAt + away * 4.6f + side * 1.3f + Vector3.up * 0.1f);
             game.Pip.transform.rotation = Quaternion.LookRotation(-away, Vector3.up);
+            game.Ui.FirstPrompt.SetActive(false);
             game.CameraRig.Orbit.RequestRecenter();
             yield return Wait(1.6f);
             layer.RadioButton.onClick.Invoke();
@@ -213,7 +216,8 @@ namespace SpookyStreet.Tests.Visual
             director.Captions.Clear();
             Assert.IsTrue(layer.Demo.Active, "34_hint_ghost_hand: tier 3 should demonstrate");
             Debug.Log("[NonverbalCaptureTests] 34 demo: " + layer.Demo.Demo);
-            yield return Wait(0.62f); // the finger is down on the control
+            game.Ui.FirstPrompt.SetActive(false);
+            yield return Wait(0.55f); // the finger is down on the control
             Assert.IsTrue(layer.Demo.HandVisible, "34_hint_ghost_hand: the hand should be up");
             yield return Shot("34_hint_ghost_hand", game.Ui.GetComponentInParent<Canvas>());
 

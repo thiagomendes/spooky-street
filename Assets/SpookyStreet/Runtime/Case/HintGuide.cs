@@ -62,11 +62,11 @@ namespace SpookyStreet.Case
         // ------------------------------------------------------------------------------- tier 1: sparkle and look
 
         /// <summary>A star fleck's world height, and the share of the view height it keeps far away.</summary>
-        public const float FleckSize = 0.32f;
-        public const float FleckMinViewFraction = 0.034f;
+        public const float FleckSize = 0.5f;
+        public const float FleckMinViewFraction = 0.055f;
 
         /// <summary>Radius of the ring the flecks twinkle on round the target (grows with distance like the flecks).</summary>
-        public const float SparkleRadius = 0.42f;
+        public const float SparkleRadius = 0.6f;
 
         private readonly SpriteRenderer[] _flecks = new SpriteRenderer[HintPresentation.SparkleFlecks];
         private float _sparkleStarted = -1f;
@@ -195,7 +195,7 @@ namespace SpookyStreet.Case
                 fleck.transform.SetPositionAndRotation(at, face * Quaternion.Euler(0f, 0f, now * 40f * (big ? 1f : -1.5f)));
                 SetSize(fleck, FleckSize * scale * (big ? 1f : 0.6f) * (0.75f + 0.35f * twinkle), 1f);
                 Color c = Palette.CandyCornYellow * GlowLevels.HintSparkle;
-                c.a = envelope * (0.35f + 0.65f * twinkle);
+                c.a = envelope * (0.55f + 0.45f * twinkle);
                 fleck.color = c;
                 visible++;
             }

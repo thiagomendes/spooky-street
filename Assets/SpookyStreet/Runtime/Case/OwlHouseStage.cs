@@ -284,8 +284,12 @@ namespace SpookyStreet.Case
                 1.6f, false);
         }
 
-        /// <summary>Where the workshop nook's hanging lamp bulb sits (above the mechanism, toward the open side).</summary>
-        public static Vector3 NookLampBulb => InteriorPoint(3.05f, 2.72f, 4.0f);
+        /// <summary>
+        /// Where the workshop nook's hanging lamp bulb sits: over the nook's open side, in front of the mechanism, above
+        /// the 1.6–2.6 m camera band (D24), so it lights the cam, follower and arm from the front and stays out of the
+        /// cutaway's frame.
+        /// </summary>
+        public static Vector3 NookLampBulb => InteriorPoint(1.75f, 3.05f, 4.45f);
 
         /// <summary>
         /// The workshop nook's warm practical (S002 hints close): a small lamp hanging from the loft over the
@@ -308,8 +312,8 @@ namespace SpookyStreet.Case
                 materials.Get(Palette.HauntedPurple));
             LampPart(lamp, PrimitiveType.Sphere, "Bulb", new Vector3(0f, -0.02f, 0f), Vector3.one * 0.15f,
                 materials.Glow(Palette.PumpkinAmber, GlowLevels.NookLamp));
-            // Just under the shade, a little toward the open side of the nook so it lights the parts' front faces.
-            AddLight("NookTopLamp", bulb + new Vector3(-0.35f, -0.15f, 0f), 3.4f, 1.9f);
+            // Just under the shade: it lights the mechanism's top from the front (the cutaway camera's side).
+            AddLight("NookTopLamp", bulb + new Vector3(0f, -0.2f, 0f), 4.2f, 2.8f);
         }
 
         private static void LampPart(Transform parent, PrimitiveType type, string name, Vector3 local, Vector3 scale,
