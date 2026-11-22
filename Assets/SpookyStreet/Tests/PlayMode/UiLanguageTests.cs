@@ -222,6 +222,8 @@ namespace SpookyStreet.Tests.PlayMode
                 case UiSpriteCatalog.FeltDiscBone:
                 case UiSpriteCatalog.PaperCard:
                 case UiSpriteCatalog.PaperTag:
+                case UiSpriteCatalog.GlyphKey:
+                case UiSpriteCatalog.GhostHand:
                     return Luminance(Palette.WarmPaper);
                 default:
                     return 1f;

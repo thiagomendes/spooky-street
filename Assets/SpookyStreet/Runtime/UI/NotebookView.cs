@@ -456,6 +456,8 @@ namespace SpookyStreet.UI
                         eyeButton.targetGraphic = eye;
                         eyeButton.transition = Selectable.Transition.None;
                         eyeButton.onClick.AddListener(() => WatchReplay?.Invoke(replay));
+                        SpookyStreet.Localization.AccessibleName.Set(eye.gameObject,
+                            SpookyStreet.Core.Localization.LocalizationKeys.NonverbalUi.MemoryWatchAgain);
                         ReplayEyes.Add(eyeButton);
                     }
 
