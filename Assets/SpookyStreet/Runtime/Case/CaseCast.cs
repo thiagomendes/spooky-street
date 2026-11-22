@@ -21,10 +21,10 @@ namespace SpookyStreet.Case
             new WitnessClipSet(CharacterClips.KneeTap, CharacterClips.KneeTap, null);
 
         /// <summary>
-        /// June's walk loop (CharacterClips.Walk once feature/june-walk lands; the same clip name as Pip's). Played while
+        /// June's walk loop (`CharacterClips.Walk`; frame 0 is mid-stride, so it cross-fades in and out). Played while
         /// she moves if her model has it; otherwise she glides on Idle. Designed for <see cref="CaseStage.JuneWalkSpeed"/>.
         /// </summary>
-        public const string WalkClip = PipClips.Walk;
+        public const string WalkClip = CharacterClips.Walk;
 
         /// <summary>Below this speed (m/s, the ease in and out) she shows Idle rather than stepping in place.</summary>
         public const float StepSpeed = 0.35f;
