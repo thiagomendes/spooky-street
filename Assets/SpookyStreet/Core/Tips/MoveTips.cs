@@ -9,7 +9,7 @@ namespace SpookyStreet.Core.Tips
     {
         None,
 
-        /// <summary>"Hold Jump to jump higher": the first short (released early) jump.</summary>
+        /// <summary>"Keep holding Jump to jump much higher": the first short (released early) jump.</summary>
         HoldJump,
 
         /// <summary>"Jump again as you land!": the first landing while moving fast enough to chain.</summary>

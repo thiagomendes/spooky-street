@@ -275,6 +275,11 @@ namespace SpookyStreet.Player
             {
                 _squash.Kick(MoveFeedbackRules.DiveSnapStretch);
             }
+            else if (step.BoostStarted)
+            {
+                // The high jump's boost: the cape flares up as Pip shoots up.
+                _squash.Kick(MoveFeedbackRules.BoostFlareStretch);
+            }
             else if (step.GlideStarted)
             {
                 _squash.Kick(glideSquash);
@@ -309,7 +314,7 @@ namespace SpookyStreet.Player
             float holdTarget = _motor != null && _motor.HoldingJumpRise ? MoveFeedbackRules.HeldJumpStretch : 0f;
             _holdStretch = Mathf.MoveTowards(_holdStretch, holdTarget,
                 MoveFeedbackRules.HeldJumpStretchRate * Time.deltaTime);
-            SquashValue = _squash.Step(Time.deltaTime) + _holdStretch;
+            SquashValue = MoveFeedbackRules.CombinedSquash(_squash.Step(Time.deltaTime), _holdStretch);
             SquashPulse.ToScale(SquashValue, out float wide, out float tall);
             _body.localScale = new Vector3(wide, tall, wide);
 

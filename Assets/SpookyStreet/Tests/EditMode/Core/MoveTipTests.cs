@@ -118,7 +118,7 @@ namespace SpookyStreet.Tests.Core
             }
 
             Assert.IsTrue(english.TryGet(LocalizationKeys.TipHoldJump, out string hold));
-            Assert.AreEqual("Hold Jump to jump higher", hold);
+            Assert.AreEqual("Keep holding Jump to go much higher", hold);
         }
 
         // --- Coach: motor steps → triggers ----------------------------------------------------------
@@ -193,8 +193,9 @@ namespace SpookyStreet.Tests.Core
             sim.Run(0.4f, default, () => sim.Tips.Current != MoveTip.None);
             Assert.AreEqual(MoveTip.Glide, sim.Tips.Current);
             Assert.Less(sim.State.VelocityY, -MoveTipCoach.GlideHintFallSpeed + 0.5f);
-            sim.Frame(new MotorInput { JumpHeld = true });
-            Assert.IsTrue(sim.State.Gliding, "holding again spreads the cape at once (no fresh press)");
+            // Holding again (no fresh press) spreads the cape once the apex hang has passed (TestFlight 12.1).
+            sim.Run(0.1f, new MotorInput { JumpHeld = true }, () => sim.State.Gliding);
+            Assert.IsTrue(sim.State.Gliding, "holding again spreads the cape");
             Assert.AreEqual(MoveTip.None, sim.Tips.Current, "performed: the tip goes");
             Assert.IsTrue(sim.Tips.LastEndedByPerforming);
         }
@@ -204,7 +205,7 @@ namespace SpookyStreet.Tests.Core
         {
             var sim = new Sim();
             sim.Frame(new MotorInput { JumpPressed = true, JumpHeld = true });
-            sim.Run(1.5f, new MotorInput { JumpHeld = true }, () => sim.Grounded);
+            sim.Run(2.5f, new MotorInput { JumpHeld = true }, () => sim.Grounded);
             Assert.IsTrue(sim.Tips.HasShown(MoveTip.Glide), "glided on its own: learned");
             Assert.AreEqual(MoveTip.None, sim.Tips.Current);
         }
@@ -235,7 +236,7 @@ namespace SpookyStreet.Tests.Core
         {
             var sim = new Sim();
             sim.Frame(new MotorInput { JumpPressed = true, JumpHeld = true });
-            sim.Run(1.5f, new MotorInput { JumpHeld = true }, () => sim.Grounded);
+            sim.Run(2.5f, new MotorInput { JumpHeld = true }, () => sim.Grounded);
             Assert.AreNotEqual(MoveTip.ChainJump, sim.Tips.Current);
             Assert.IsFalse(sim.Tips.HasShown(MoveTip.ChainJump));
         }
@@ -247,7 +248,7 @@ namespace SpookyStreet.Tests.Core
             var run = new MotorInput { MoveX = 1f };
             sim.Run(0.5f, run);
             sim.Frame(new MotorInput { MoveX = 1f, JumpPressed = true, JumpHeld = true });
-            sim.Run(1.5f, new MotorInput { MoveX = 1f, JumpHeld = true }, () => sim.Grounded);
+            sim.Run(2.5f, new MotorInput { MoveX = 1f, JumpHeld = true }, () => sim.Grounded);
             sim.Run(0.1f, run);
             Assert.AreNotEqual(MoveTip.Dive, sim.Tips.Current, "no roll yet: no dive tip");
 

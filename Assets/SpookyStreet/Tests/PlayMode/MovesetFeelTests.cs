@@ -93,7 +93,7 @@ namespace SpookyStreet.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator ChainJumpPressedJustBeforeLandingWhileJoggingReachesTwoMetres()
+        public IEnumerator ChainJumpPressedJustBeforeLandingWhileJoggingReachesTwoPointFourMetres()
         {
             yield return StartGame();
             var game = GameBootstrap.Instance;
@@ -167,7 +167,7 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue((game.Feedback.Played & MoveBursts.ChainSecond) != 0);
             Assert.Greater(game.Feedback.ActivePieces, 0, "the burst's pieces are alive");
 
-            // Hold through the rise: the second chain jump reaches 2.0 m.
+            // Hold through the rise: the second chain jump reaches 2.4 m.
             float apex = 0f;
             deadline = Time.time + 1.5f;
             while ((pip.VerticalSpeed > 0f || pip.LastStep.Jumped) && Time.time < deadline)
@@ -180,8 +180,74 @@ namespace SpookyStreet.Tests.PlayMode
             Release(pad.buttonSouth, queueEventOnly: true);
             Set(pad.leftStick, Vector2.zero);
             Debug.Log($"[MovesetFeel] early chain: lead {lead:F3} s, apex {apex:F3} m, jog {0.45f} stick");
-            Assert.That(apex, Is.EqualTo(2.0f).Within(0.12f), "second chained jump, held: 2.0 m");
+            Assert.That(apex, Is.EqualTo(2.4f).Within(0.12f), "second chained jump, held: 2.4 m");
             Assert.AreEqual(0, pip.SafeReturns);
+        }
+
+        [UnityTest]
+        public IEnumerator HoldingJumpShootsPipAboveTwoMetresBeforeTheCapeOpens()
+        {
+            // TestFlight 12.1: "holding or tapping quickly, the jump is the same; when I hold, she comes down gliding".
+            yield return StartGame();
+            var game = GameBootstrap.Instance;
+            var pip = game.Pip;
+            var avatar = pip.GetComponent<PipAvatar>();
+            pip.Teleport(OnPath);
+            pip.transform.rotation = Quaternion.identity;
+            yield return Wait(0.3f);
+            Assert.IsTrue(pip.Grounded, "standing on the path");
+            float ground = pip.transform.position.y;
+            int burstsBefore = game.Feedback.BurstsPlayed;
+
+            Press(_keyboard.spaceKey, queueEventOnly: true);
+            float apex = 0f;
+            float minSquash = 0f;
+            bool boosted = false;
+            float deadline = Time.time + 3f;
+            while (!pip.Gliding && Time.time < deadline)
+            {
+                yield return null;
+                boosted |= pip.LastStep.BoostStarted;
+                minSquash = Mathf.Min(minSquash, avatar.SquashValue);
+                if (!pip.Gliding)
+                {
+                    apex = Mathf.Max(apex, pip.transform.position.y - ground);
+                }
+            }
+
+            Debug.Log($"[MovesetFeel] high jump: apex {apex:F3} m before the cape, min squash {minSquash:F3}");
+            Assert.IsTrue(pip.Gliding, "held on past the apex and its hang, the cape opens");
+            Assert.GreaterOrEqual(apex, 1.95f, "the held jump reaches about 2.1 m before any glide starts");
+            Assert.IsTrue(boosted, "the hold boost engaged");
+            Assert.IsTrue((game.Feedback.Played & MoveBursts.BoostPuff) != 0, "the boost puffs paper under Pip's feet");
+            Assert.Greater(game.Feedback.BurstsPlayed, burstsBefore);
+            Assert.Less(minSquash, MoveFeedbackRules.HeldJumpStretch + 0.01f, "the cape flares: Pip stretches tall");
+
+            Release(_keyboard.spaceKey, queueEventOnly: true);
+            deadline = Time.time + 3f;
+            while (!pip.Grounded && Time.time < deadline)
+            {
+                yield return null;
+            }
+
+            Assert.IsTrue(pip.Grounded, "lands again");
+            Assert.AreEqual(0, pip.SafeReturns);
+
+            // A tap stays the routes' 1.0 m jump, with no boost.
+            yield return Wait(0.3f);
+            ground = pip.transform.position.y;
+            yield return Tap(_keyboard.spaceKey);
+            float tapApex = 0f;
+            deadline = Time.time + 2f;
+            do
+            {
+                tapApex = Mathf.Max(tapApex, pip.transform.position.y - ground);
+                yield return null;
+            }
+            while (!pip.Grounded && Time.time < deadline);
+
+            Debug.Log($"[MovesetFeel] tap: apex {tapApex:F3} m");
+            Assert.That(tapApex, Is.EqualTo(1.0f).Within(0.1f), "a tap still peaks at 1.0 m");
         }
 
         [UnityTest]
@@ -302,7 +368,7 @@ namespace SpookyStreet.Tests.PlayMode
 
             AmbientMotion.ReducedMotion = true;
             int played = feedback.BurstsPlayed;
-            feedback.Play(MoveBursts.ChainThird | MoveBursts.DiveDust);
+            feedback.Play(MoveBursts.ChainThird | MoveBursts.DiveDust | MoveBursts.BoostPuff);
             Assert.AreEqual(played, feedback.BurstsPlayed, "reduced motion skips the bursts");
             Assert.AreEqual(0, feedback.ActivePieces);
         }

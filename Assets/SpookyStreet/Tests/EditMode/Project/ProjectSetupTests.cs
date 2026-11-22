@@ -37,7 +37,22 @@ namespace SpookyStreet.Tests.Project
             Assert.AreEqual(0.15f, tuning.jumpBufferTime, 1e-4f);
             Assert.AreEqual(0.35f, tuning.chainJumpWindow, 1e-4f);
             Assert.AreEqual(0.25f, tuning.chainJumpMinSpeedFraction, 1e-4f);
-            Assert.AreEqual(1.6f, tuning.jumpHoldApexHeight, 1e-4f);
+            // TestFlight 12.1 ("holding or tapping, the jump is the same"): a hold boost to 2.1 m, an apex float
+            // before the cape, chain stages at 2.4 m and 2.8 m held (D21 amendment, docs/S000.6-moveset.md).
+            Assert.AreEqual(2.1f, tuning.jumpHoldApexHeight, 1e-4f);
+            Assert.AreEqual(0.1f, tuning.jumpBoostDelay, 1e-4f);
+            Assert.AreEqual(6f, tuning.jumpBoostSpeed, 1e-4f);
+            Assert.AreEqual(50f, tuning.jumpBoostAcceleration, 1e-4f);
+            Assert.AreEqual(0.12f, tuning.apexHangTime, 1e-4f);
+            Assert.AreEqual(0.25f, tuning.apexHangGravityScale, 1e-4f);
+            Assert.AreEqual(2.4f / 2.1f, tuning.chainJumpSecondHeightScale, 1e-4f);
+            Assert.AreEqual(2.8f / 2.1f, tuning.chainJumpThirdHeightScale, 1e-4f);
+            Assert.AreEqual(1.25f, tuning.chainJumpSecondTapScale, 1e-4f, "tapped chain kept as on 12.1");
+            Assert.AreEqual(1.5f, tuning.chainJumpThirdTapScale, 1e-4f, "tapped chain kept as on 12.1");
+            var data = tuning.ToData();
+            Assert.AreEqual(tuning.jumpBoostSpeed, data.JumpBoostSpeed, 1e-6f, "ToData carries the boost");
+            Assert.AreEqual(tuning.apexHangTime, data.ApexHangTime, 1e-6f, "ToData carries the apex hang");
+            Assert.AreEqual(tuning.chainJumpThirdTapScale, data.ChainJumpThirdTapScale, 1e-6f, "ToData carries tap scales");
             Assert.AreEqual(3.8f, tuning.cameraDistance, 1e-4f);
         }
 

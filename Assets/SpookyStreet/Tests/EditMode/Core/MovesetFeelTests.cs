@@ -136,7 +136,7 @@ namespace SpookyStreet.Tests.Core
             Assert.AreEqual(0.15f, t.JumpBufferTime, 1e-6f, "a press this early before landing still counts");
             Assert.AreEqual(0.25f, t.ChainJumpMinSpeedFraction, 1e-6f, "a light jog keeps the chain");
             Assert.AreEqual(1f, t.JumpApexHeight, 1e-6f, "tap height unchanged");
-            Assert.AreEqual(1.6f, t.JumpHoldApexHeight, 1e-6f, "hold height unchanged");
+            Assert.AreEqual(2.1f, t.JumpHoldApexHeight, 1e-6f, "hold height raised after TestFlight 12.1");
         }
 
         // --- Buffered chain before landing --------------------------------------------------------
@@ -149,7 +149,7 @@ namespace SpookyStreet.Tests.Core
             Assert.IsTrue(early.Jumped, "the early press jumps on touchdown");
             Assert.AreEqual(2, early.Stage, "and continues the chain");
             Assert.That(early.Lead, Is.InRange(0.05f, 0.15f + 1e-3f), "pressed about 0.1 s before landing");
-            Assert.That(early.Apex, Is.EqualTo(2.0f).Within(fps < 45f ? 0.05f : 0.02f), "second chain jump, held: 2.0 m");
+            Assert.That(early.Apex, Is.EqualTo(2.4f).Within(fps < 45f ? 0.05f : 0.02f), "second chain jump, held: 2.4 m");
             Assert.IsFalse(early.GlidedBeforeLanding, "a press about to become a jump never spreads the cape");
         }
 
