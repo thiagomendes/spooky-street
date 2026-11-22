@@ -257,9 +257,39 @@ def door(b, P, width=1.1, height=2.02):
         b.box(P["ink"], (0.035, 0.03, 0.11), (-hw - 0.002, -0.05, z), bevel=0.005, tint=1.0)
 
 
-def shingles(b, mat, width, length, M, tab=0.5, exposure=0.42, thick=0.045, keep=None, palette=None, skirt=0.0):
+def _mouth_top(mouth, x):
+    """Up-slope edge of a dormer mouth (half width, y at the eave, y at the ridge) at `x`; None beside it."""
+    hm, ye, yr = mouth
+    return yr - (yr - ye) * abs(x) / hm if abs(x) < hm else None
+
+
+def _open_mouth(bm, mouth):
+    """Cut a shingle tab along the edge of a dormer mouth; returns the pieces that lie outside it."""
+    hm, ye, yr = mouth
+
+    def cut(src, co, no):
+        part = src.copy()
+        _bm.ops.bisect_plane(part, geom=part.verts[:] + part.edges[:] + part.faces[:], dist=1e-5, plane_co=co, plane_no=no,
+                             clear_inner=True)
+        return part
+    out = []
+    for sx in (1, -1):
+        half = cut(bm, (0, 0, 0), (sx, 0, 0))
+        beside = cut(half, (sx * hm, 0, 0), (sx, 0, 0))
+        within = cut(half, (sx * hm, 0, 0), (-sx, 0, 0))
+        above = cut(within, (0, yr, 0), (sx * (yr - ye), hm, 0))
+        out += [beside, above]
+        half.free()
+        within.free()
+    bm.free()
+    return [piece for piece in out if piece.faces]
+
+
+def shingles(b, mat, width, length, M, tab=0.5, exposure=0.42, thick=0.045, keep=None, palette=None, skirt=0.0, mouth=None):
     """Fish-scale shingle courses on a plane: local x across, y up the slope, z out. `keep(cx, y0, y1, hw)`
-    drops tabs (hips, dormers, the round window); `palette` is a list of tint triples picked per tab."""
+    drops tabs (hips, dormers, the round window); `palette` is a list of tint triples picked per tab.
+    `mouth` (half width, y at the eave, y at the ridge) opens the courses where a room runs into a dormer, without
+    disturbing the random tints of the other tabs."""
     rows = int(math.ceil((length + skirt) / exposure))
     with b.at(M):
         for j in range(rows):
@@ -272,6 +302,17 @@ def shingles(b, mat, width, length, M, tab=0.5, exposure=0.42, thick=0.045, keep
                 x0, x1 = max(-width / 2, cx - hw), min(width / 2, cx + hw)
                 if x1 - x0 < 0.06 or (keep and not keep(cx, y0, y1, hw)):
                     continue
+                crosses = False
+                if mouth and y0 < mouth[2] - 0.05:
+                    near = 0.0 if x0 < 0.0 < x1 else min(abs(x0), abs(x1))
+                    tops = [_mouth_top(mouth, x) for x in (near, x0, x1)]
+                    crosses = tops[0] is not None and y0 - 0.03 < tops[0]
+                    if all(t is not None and y1 < t for t in tops[1:]):  # wholly inside
+                        b.rng.uniform(-0.02, 0.02)  # the draws this tab would have made
+                        if palette:
+                            b.rng.choice(palette)
+                        b.rng.uniform(0.82, 1.12)
+                        continue
                 jit = b.rng.uniform(-0.02, 0.02)
                 pts = [(max(x0, min(x1, cx + hw * math.cos(a))), y0 + jit + hw * 0.62 * (1 + math.sin(a)))
                        for a in (math.radians(180 + 180 * s / ARC) for s in range(ARC + 1))]
@@ -288,21 +329,32 @@ def shingles(b, mat, width, length, M, tab=0.5, exposure=0.42, thick=0.045, keep
                     bm.faces.new((top[q], top[k], bot[k], bot[q]))
                 tint = b.rng.choice(palette) if palette else (1, 1, 1)
                 v = b.rng.uniform(0.82, 1.12)
-                b.add_bm(bm, mat, None, tuple(c * v for c in tint))
+                for piece in (_open_mouth(bm, mouth) if crosses else [bm]):
+                    b.add_bm(piece, mat, None, tuple(c * v for c in tint))
 
 
 ARC = 4  # segments in a shingle's rounded butt
 ROOF_TINTS = [(1, 1, 1)] * 5 + [(1.25, 0.9, 1.05), (0.75, 0.85, 1.25), (0.8, 0.8, 0.9)]
 
 
-def roof(b, P, width=U, length=2.4, pitch=35.0, M=None, notch=None, rafters=True, mat=None, hole=None):
+def roof(b, P, width=U, length=2.4, pitch=35.0, M=None, notch=None, rafters=True, mat=None, hole=None, mouth=None):
     """Roof panel: shingles on a deck board with a fascia and exposed rafter tails. Origin at the eave centre,
-    x along the eave, rising toward +Y. `notch` = (x0, x1, up) leaves a gap at the eave for a wall dormer."""
+    x along the eave, rising toward +Y. `notch` = (x0, x1, up) leaves a gap at the eave for a wall dormer.
+    `mouth` = (half width, y at the dormer eave, y at its ridge) opens the roof where a room runs into the
+    dormer (needs a symmetric `notch`), so that nothing of the roof crosses that room."""
     M = (M if M is not None else T()) @ R("X", pitch)
     with b.at(M):
         if notch:
             x0, x1, up = notch
             for a0, a1, y0 in ((-width / 2, x0, 0.0), (x1, width / 2, 0.0), (x0, x1, up)):
+                if mouth and y0 > 0:
+                    hm, ye, yr = mouth
+                    side = [(hm, y0), (a1, y0), (a1, length), (0.0, length), (0.0, yr), (hm, ye)]
+                    for sx in (1, -1):
+                        b.prism(P["roofdeck"], side, 0.07, (S(-1, 1, 1) if sx < 0 else T()) @ R("X", -90), tint=0.8)
+                        b.box(P["trim_x"], (a1 - hm, 0.05, 0.16), (sx * (a1 + hm) / 2, y0 - 0.02, -0.06), bevel=0.014,
+                              tint=None if sx > 0 else 1.0)
+                    continue
                 b.box(P["roofdeck"], (a1 - a0, length - y0, 0.07), ((a0 + a1) / 2, (length + y0) / 2, -0.035), bevel=0, tint=0.8)
                 b.box(P["trim_x"], (a1 - a0, 0.05, 0.16), ((a0 + a1) / 2, y0 - 0.02, -0.06), bevel=0.014)
         else:
@@ -320,7 +372,7 @@ def roof(b, P, width=U, length=2.4, pitch=35.0, M=None, notch=None, rafters=True
             if hole and hole[0] < cx < hole[1] and hole[2] < y0 and y1 < hole[3]:
                 return False  # buried under a dormer
             return not (notch and notch[0] - 0.1 < cx < notch[1] + 0.1 and y0 < notch[2] - 0.05)
-    shingles(b, mat or P["shingle"], width, length, M, keep=keep, palette=ROOF_TINTS, skirt=0.06)
+    shingles(b, mat or P["shingle"], width, length, M, keep=keep, palette=ROOF_TINTS, skirt=0.06, mouth=mouth)
 
 
 def corner_trim(b, P, height=WALL):
