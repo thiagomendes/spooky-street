@@ -47,8 +47,8 @@ integration steps in §12. The visual target is the mocks in `docs/evidence/s002
 - Runs 75 and 78 (commit `091ca6d`, Unity 6000.3.28f1): EditMode 378/378, PlayMode 60/60, Visual 6/6, magenta 0 %
   in every frame. The existing `CaseWiringTests` and `CaseInteriorTests` pass with the replay running after Bea's
   line, because it never takes the controls.
-- The final validation run of the merge with `main` (D25) and the gamepad/keyboard gate is listed in the hand-off
-  report.
+- **Run 79** (commit `d320df9`: `main` merged with D24, D25 and June's Walk, plus the gamepad/keyboard gate):
+  EditMode 378/378, PlayMode 61/61 (with the new two-button gate test), Visual 6/6, all green.
 
 **Frames** (run 78, reviewed against the `nonverbal_v2` mock sheets):
 
