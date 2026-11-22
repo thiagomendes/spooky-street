@@ -23,7 +23,7 @@ namespace SpookyStreet.World
         /// The wind wheel's axle in its local frame. Exported about Blender's Y (front to back), which is Unity's
         /// local Z after the importer's axis conversion.
         /// </summary>
-        public static readonly Vector3 WindWheelAxis = Vector3.forward;
+        public static readonly Vector3 WindWheelAxis = Vector3.forward; // world space
 
         /// <summary>Pitch (degrees about local X) that stands the flat-modelled paper bats up toward the street.</summary>
         public const float BatTilt = 65f;
@@ -104,7 +104,12 @@ namespace SpookyStreet.World
             BuildHouseColliders();
             WindWheel = ModelKit.FindDeep(House, EnvironmentLayout.WindWheel);
             OwlPuppet = ModelKit.FindDeep(House, EnvironmentLayout.OwlPuppet);
-            Motion.AddSpinner(WindWheel, WindWheelAxis);
+            // Children keep Blender's Z-up local frames (only the FBX root carries the axis conversion), so express
+            // the axle in world space (front-to-back, along the street axis) and convert it to the wheel's frame.
+            if (WindWheel != null)
+            {
+                Motion.AddSpinner(WindWheel, Quaternion.Inverse(WindWheel.rotation) * WindWheelAxis);
+            }
             Motion.AddSway(OwlPuppet);
 
             foreach (var placement in EnvironmentLayout.Street)
@@ -127,7 +132,7 @@ namespace SpookyStreet.World
                         var gate = ModelKit.FindDeep(instance, EnvironmentLayout.Gate);
                         if (gate != null)
                         {
-                            gate.localRotation = Quaternion.Euler(0f, EnvironmentLayout.GateOpenYaw, 0f) * gate.localRotation;
+                            gate.rotation = Quaternion.AngleAxis(EnvironmentLayout.GateOpenYaw, Vector3.up) * gate.rotation;
                         }
 
                         break;
@@ -140,7 +145,7 @@ namespace SpookyStreet.World
                 var bat = Spawn(placement);
                 if (bat != null)
                 {
-                    bat.localRotation *= Quaternion.Euler(BatTilt, 0f, 0f);
+                    bat.rotation = Quaternion.AngleAxis(-BatTilt, Vector3.right) * bat.rotation;
                 }
 
                 Motion.AddBob(bat);
@@ -178,10 +183,10 @@ namespace SpookyStreet.World
             ModelYawCorrection = 180f;
             Debug.LogWarning("[EnvironmentDressing] Owl house imported facing +Z (attic window behind its origin); " +
                              "turning the environment models 180 degrees.");
-            House.localRotation = Quaternion.Euler(0f, EnvironmentLayout.HouseYaw + ModelYawCorrection, 0f);
+            House.localRotation = Quaternion.Euler(0f, ModelYawCorrection, 0f) * House.localRotation;
             if (houseDressing != null)
             {
-                houseDressing.localRotation = House.localRotation;
+                houseDressing.localRotation = Quaternion.Euler(0f, ModelYawCorrection, 0f) * houseDressing.localRotation;
             }
         }
 

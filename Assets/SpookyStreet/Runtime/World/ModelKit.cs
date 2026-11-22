@@ -109,7 +109,9 @@ namespace SpookyStreet.World
             var instance = Object.Instantiate(prefab, parent, false);
             instance.name = model;
             instance.transform.localPosition = localPosition;
-            instance.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+            // Keep the prefab's own root rotation: a single-root FBX from Blender carries its Z-up -> Y-up
+            // conversion on that root (CI run 26 showed every prop lying on its back when it was overwritten).
+            instance.transform.localRotation = Quaternion.Euler(0f, yaw, 0f) * prefab.transform.localRotation;
             instance.transform.localScale = Vector3.one * scale;
             if (parent != null)
             {
