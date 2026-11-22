@@ -31,10 +31,13 @@ namespace SpookyStreet.Core.Animation
         public const string Talk = "Talk";
         public const string SitIdle = "SitIdle";
         public const string SitTalk = "SitTalk";
+        public const string KneeTap = "KneeTap";
+        public const string Point = "Point";
+        public const string OpenBooth = "OpenBooth";
         public const string Wave = "Wave";
 
         /// <summary>Witness clips that cycle; <see cref="Wave"/> plays once.</summary>
-        public static readonly string[] WitnessLooping = { Talk, SitIdle, SitTalk };
+        public static readonly string[] WitnessLooping = { Talk, SitIdle, SitTalk, KneeTap };
 
         public static readonly WitnessClipSet Standing = new WitnessClipSet(Idle, Talk, Wave);
         public static readonly WitnessClipSet Seated = new WitnessClipSet(SitIdle, SitTalk, Wave);
