@@ -257,6 +257,14 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(Lines.JuneGreet, director.Dialogue.CurrentLine.Key);
             yield return SkipDialogue();
             Assert.IsTrue(cast.JuneWalking, "June walks down after her lines");
+            yield return Wait(2f);
+            Assert.AreEqual(cast.JuneHasWalk ? CaseCast.WalkClip : "Idle", cast.June.Avatar.Loop,
+                "June steps on her walk clip when she has one, and glides on Idle otherwise");
+            if (cast.JuneHasWalk)
+            {
+                Assert.AreEqual(1f, cast.June.Avatar.ClipSpeed(CaseCast.WalkClip), 0.25f,
+                    "the walk plays at its authored pace while she cruises at 1.1 m/s over the floor plan");
+            }
             yield return WaitForJune();
             Vector3 june = cast.June.transform.position;
             Assert.Less(Vector3.Distance(june, At(CaseStage.JuneFoyer.Position)), 0.2f, "June at her foyer mark");
@@ -290,6 +298,7 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(director.State.Has(CaseFact.LinkedArm));
             Assert.IsTrue(workshop.ArmSeated.gameObject.activeSelf);
             Assert.IsFalse(workshop.ArmSlipped.gameObject.activeSelf);
+            Assert.IsFalse(director.Captions.HasDirectionCue, "what Pip sees in the workshop takes no direction cue");
 
             yield return Use(CaseStage.PointCrank, new Vector3(0.75f, CaseRouteLayout.FloorY, 14.2f));
             Assert.IsTrue(director.State.Has(CaseFact.TestedOwl));
@@ -316,6 +325,7 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Frames(3);
             Assert.IsTrue(director.State.Has(CaseFact.CaseClosed), "closure on the arrival porch");
             Assert.IsTrue(director.FinalePlaying, "the finale frames the booth from the arrival sightline");
+            Assert.IsFalse(director.Captions.Showing, "the finale starts clean: no caption left over from the workshop");
             Assert.IsTrue(cast.Kit.gameObject.activeSelf, "Kit at her booth");
             Assert.AreEqual("OpenBooth", cast.Kit.Avatar.OneShot, "Kit opens her booth");
             Assert.IsFalse(director.Dialogue.IsOpen, "the reopening plays before the card");
@@ -524,8 +534,11 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Wait(0.5f);
             Assert.IsTrue(house.View.ShowInterior);
             Assert.IsFalse(house.RecessCard.gameObject.activeSelf, "the dark recess card hides with the interior shown");
-            bool high = Game.CameraRig.OutputCamera.transform.position.y > InteriorVisibility.HighCamera;
-            Assert.AreEqual(high, !house.Attic.gameObject.activeSelf, "attic hides exactly when the camera is high");
+            Vector3 lens = Game.CameraRig.OutputCamera.transform.position;
+            bool lensInside = CaseRouteLayout.Inside(lens.x, lens.z);
+            bool high = lens.y > InteriorVisibility.HighCamera;
+            // D24: with the lens inside the house nothing is cut away; only a high lens outside hides the attic.
+            Assert.AreEqual(high && !lensInside, !house.Attic.gameObject.activeSelf, "attic hides only from a high lens outside");
             Game.Pip.Teleport(new Vector3(0f, 0.1f, 0f));
             yield return Wait(0.3f);
             Assert.IsFalse(house.View.ShowInterior, "back on the plaza");

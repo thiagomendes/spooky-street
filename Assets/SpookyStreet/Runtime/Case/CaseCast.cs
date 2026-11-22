@@ -20,13 +20,34 @@ namespace SpookyStreet.Case
         public static readonly WitnessClipSet JuneSeated =
             new WitnessClipSet(CharacterClips.KneeTap, CharacterClips.KneeTap, null);
 
+        /// <summary>
+        /// June's walk loop (`CharacterClips.Walk`; frame 0 is mid-stride, so it cross-fades in and out). Played while
+        /// she moves if her model has it; otherwise she glides on Idle. Designed for <see cref="CaseStage.JuneWalkSpeed"/>.
+        /// </summary>
+        public const string WalkClip = CharacterClips.Walk;
+
+        /// <summary>Below this speed (m/s, the ease in and out) she shows Idle rather than stepping in place.</summary>
+        public const float StepSpeed = 0.35f;
+
+        /// <summary>The walk clip's authored pace over the floor plan (0.55 m steps, 1.0 s cycle).</summary>
+        public const float ClipPace = 1.1f;
+
+        /// <summary>Walk ↔ Idle cross-fade (the clip's frame 0 is mid-stride): 0.2 s, i.e. weight 5 per second.</summary>
+        public const float WalkBlendRate = 5f;
+
+        private float _restBlendRate = 4f;
+
         private float _walked = -1f;
+        private float _walkTime;
         private float _walkLength;
         private JunePlacement _placement = JunePlacement.Attic;
         private Transform _pip;
 
         public Witness June { get; private set; }
         public Witness Kit { get; private set; }
+
+        /// <summary>True when June's model has a walk loop (otherwise she glides on Idle).</summary>
+        public bool JuneHasWalk => June != null && June.Avatar.HasClip(WalkClip);
 
         /// <summary>True while June walks down to the foyer.</summary>
         public bool JuneWalking => _walked >= 0f;
@@ -41,7 +62,7 @@ namespace SpookyStreet.Case
             cast._pip = pip;
             cast.June = Spawn(go.transform, materials, "June", CaseStage.JuneAttic, JuneSeated, pip);
             cast.Kit = Spawn(go.transform, materials, "Kit", CaseStage.KitBooth, CharacterClips.Standing, pip);
-            cast._walkLength = CaseStage.PathLength(CaseStage.JuneWalk);
+            cast._walkLength = CaseStage.PlanLength(CaseStage.JuneWalk);
             if (Debug.isDebugBuild)
             {
                 Debug.Log($"[CaseCast] June {(cast.June != null ? string.Join(",", cast.June.Avatar.ClipNames) : "absent")}, " +
@@ -95,6 +116,8 @@ namespace SpookyStreet.Case
             }
 
             June.enabled = true;
+            June.Avatar.BlendRate = _restBlendRate;
+            June.Avatar.SetClipSpeed(WalkClip, 1f);
             var spot = placement == JunePlacement.Attic ? CaseStage.JuneAttic
                 : placement == JunePlacement.Foyer ? CaseStage.JuneFoyer
                 : CaseStage.JunePorch;
@@ -115,7 +138,10 @@ namespace SpookyStreet.Case
             June.Conversing = false;
             June.enabled = false;
             June.Avatar.PlayLoop(CharacterClips.Idle);
+            _restBlendRate = June.Avatar.BlendRate;
+            June.Avatar.BlendRate = WalkBlendRate;
             _walked = 0f;
+            _walkTime = 0f;
         }
 
         /// <summary>The reopening: June on the porch, Kit at her booth opening it.</summary>
@@ -152,11 +178,30 @@ namespace SpookyStreet.Case
                 return;
             }
 
-            _walked += dt * CaseStage.JuneWalkSpeed;
-            var p = CaseStage.Along(CaseStage.JuneWalk, _walked, out float hx, out float hz);
+            // She turns toward the path, eases in and out, and turns into corners ahead of them. While she moves she
+            // plays Walk (if her model has it; Idle otherwise), its playback matched to her pace over the floor plan:
+            // 1.1 m/s on level floors, the same plan pace (~1.3 m/s along the slope) on the stair.
+            _walkTime += dt;
+            float before = _walked;
+            _walked = CaseStage.JuneWalkDistance(_walkTime);
+            float speed = (_walked - before) / dt;
+            bool stepping = speed > StepSpeed && JuneHasWalk;
+            string loop = stepping ? WalkClip : CharacterClips.Idle;
+            if (June.Avatar.Loop != loop)
+            {
+                June.Avatar.PlayLoop(loop);
+            }
+
+            if (JuneHasWalk)
+            {
+                June.Avatar.SetClipSpeed(WalkClip, Mathf.Clamp(speed / ClipPace, 0.3f, 1.5f));
+            }
+
+            var p = CaseStage.AlongPlan(CaseStage.JuneWalk, _walked, out _, out _);
+            CaseStage.JuneFacing(_walked, out float hx, out float hz);
             June.transform.SetPositionAndRotation(new Vector3(p.X, p.Y, p.Z),
-                Quaternion.Slerp(June.transform.rotation, Quaternion.LookRotation(new Vector3(hx, 0f, hz)), 8f * dt));
-            if (_walked >= _walkLength)
+                Quaternion.Slerp(June.transform.rotation, Quaternion.LookRotation(new Vector3(hx, 0f, hz)), 10f * dt));
+            if (_walked >= _walkLength - 1e-3f)
             {
                 PlaceJune(JunePlacement.Foyer);
                 _walked = -1f;

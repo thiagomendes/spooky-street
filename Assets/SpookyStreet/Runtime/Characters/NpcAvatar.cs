@@ -126,6 +126,29 @@ namespace SpookyStreet.Characters
 
         public bool HasClip(string clipName) => clipName != null && _slot.ContainsKey(clipName);
 
+        /// <summary>Cross-fade rate (weight per second): 5 gives 0.2 s fades.</summary>
+        public float BlendRate
+        {
+            get => blendRate;
+            set => blendRate = Mathf.Max(0.01f, value);
+        }
+
+        /// <summary>Playback speed of <paramref name="clipName"/> (1 = authored); false when the clip is missing.</summary>
+        public bool SetClipSpeed(string clipName, float speed)
+        {
+            if (!IsAnimated || !HasClip(clipName))
+            {
+                return false;
+            }
+
+            _playables[_slot[clipName]].SetSpeed(speed);
+            return true;
+        }
+
+        /// <summary>Playback speed of <paramref name="clipName"/> (0 when absent).</summary>
+        public float ClipSpeed(string clipName) =>
+            IsAnimated && HasClip(clipName) ? (float)_playables[_slot[clipName]].GetSpeed() : 0f;
+
         /// <summary>Clip length in seconds (0 when absent).</summary>
         public float LengthOf(string clipName) => HasClip(clipName) ? _lengths[_slot[clipName]] : 0f;
 

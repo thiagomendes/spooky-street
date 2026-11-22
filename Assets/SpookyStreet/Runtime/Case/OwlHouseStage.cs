@@ -349,7 +349,10 @@ namespace SpookyStreet.Case
                 }
             }
 
-            SetView(InteriorVisibility.Decide(pip.x, pip.y, pip.z, camera.y, DoorOpen, true));
+            // D24: a lens inside the house never cuts the attic away (the interior camera keeps it out of the loft);
+            // only a high camera outside the shell still hides it.
+            bool lensInside = CaseRouteLayout.Inside(camera.x, camera.z);
+            SetView(InteriorVisibility.Decide(pip.x, pip.y, pip.z, lensInside ? float.MinValue : camera.y, DoorOpen, true));
             bool inside = CaseRouteLayout.Inside(pip.x, pip.z) || View.ShowInterior;
             if (inside != _wallsClear)
             {

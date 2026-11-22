@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using SpookyStreet.Core.World;
+using Lines = SpookyStreet.Core.Localization.LocalizationKeys.CaseLines;
 using UiKeys = SpookyStreet.Core.Localization.LocalizationKeys.CaseUi;
 
 namespace SpookyStreet.Core.Case
@@ -318,8 +319,35 @@ namespace SpookyStreet.Core.Case
         Left,
     }
 
+    /// <summary>
+    /// Direction cues for captions. Only a sound heard from somewhere (the arrival knocks from the attic, the hall
+    /// floor's hum from the workshop) gets the arrow and the direction word; captions for what Pip sees or does (the
+    /// grille, the arm clicking in, the crank's gap, the owl bowing in the cutaway) never do. A source within
+    /// <see cref="MinSourceDistance"/> of Pip (horizontally) is "here", not a direction, so it gets no cue either.
+    /// </summary>
     public static class CaptionDirection
     {
+        /// <summary>Closer than this to Pip, a sound's source needs no direction cue.</summary>
+        public const float MinSourceDistance = 1.5f;
+
+        private static readonly HashSet<string> DirectionalSounds = new HashSet<string>(StringComparer.Ordinal)
+        {
+            Lines.CaptionArrivalKnocks,
+            Lines.CaptionFoyerHum,
+        };
+
+        /// <summary>Caption keys that describe a sound coming from a place (and so may carry a direction cue).</summary>
+        public static IReadOnlyCollection<string> DirectionalSoundKeys => DirectionalSounds;
+
+        public static bool IsDirectionalSound(string key) => key != null && DirectionalSounds.Contains(key);
+
+        /// <summary>
+        /// Whether the caption <paramref name="key"/> shows a direction cue: a directional sound whose source lies at
+        /// least <see cref="MinSourceDistance"/> from the listener (horizontal metres between them).
+        /// </summary>
+        public static bool ShouldCue(string key, bool hasSource, float sourceDistance) =>
+            hasSource && IsDirectionalSound(key) && sourceDistance >= MinSourceDistance;
+
         /// <summary>
         /// Signed angle in degrees from the camera's forward to the source, both projected on the ground; positive
         /// means to the right (clockwise seen from above). 0 when either vector is degenerate.
