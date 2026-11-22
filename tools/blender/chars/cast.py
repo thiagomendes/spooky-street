@@ -416,8 +416,8 @@ def build_vale(craft):
         arm = [(sh, el, 0.28, 0.3, 0.3, 0.07), (sh, el, 0.55, -0.25, -0.35, 0.05), (sh, el, 0.82, 0.2, 0.3, 0.075),
                (el, wr, 0.12, -0.2, -0.3, 0.05), (el, wr, 0.4, 0.25, 0.35, 0.07), (el, wr, 0.66, -0.15, -0.3, 0.05),
                (el, wr, 0.88, 0.1, 0.25, 0.06)]
-        leg = [(hip, knee, 0.28, 0.2, 0.3, 0.08), (hip, knee, 0.52, -0.22, -0.35, 0.06), (hip, knee, 0.78, 0.15, 0.3, 0.085),
-               (knee, ankle, 0.05, -0.2, -0.3, 0.06), (knee, ankle, 0.32, 0.22, 0.32, 0.08),
+        leg = [(hip, knee, 0.28, 0.2, 0.3, 0.08), (hip, knee, 0.52, -0.22, -0.35, 0.06),
+               (hip, knee, 0.78, 0.15, 0.3, 0.085), (knee, ankle, 0.05, -0.2, -0.3, 0.06), (knee, ankle, 0.32, 0.22, 0.32, 0.08),
                (knee, ankle, 0.58, -0.12, -0.3, 0.055), (knee, ankle, 0.82, 0.1, 0.25, 0.07)]
         for a, b, f, tilt_x, tilt_y, width in arm:
             c = a.lerp(b, f)
@@ -468,6 +468,42 @@ def build_vale(craft):
 
 # --- Aunt Kit: fortune teller ------------------------------------------------------------------------------
 
+def owl_brooch(craft, size=1.0):
+    """Aunt Kit's painted owl pin, built around the origin facing -Y: antique-gold rim, deep amber enamel body
+    with ear tufts and folded wings, a gold V brow, round eyes, a small beak, talons on a crescent-moon perch."""
+    u = 0.001 * size  # millimetres
+    gold = craft.smooth(H(0xC9982C), 0.3).copy()
+    gold.node_tree.nodes["Principled BSDF"].inputs["Metallic"].default_value = 0.45
+    enamel, wing = craft.smooth(H(0x8A4312), 0.15), craft.smooth(H(0x4E250B), 0.2)
+    half = [(0, 27), (9, 28), (21, 44), (25, 24), (29, 2), (24, -20), (13, -33), (0, -37)]
+    body = [(x * u, zz * u) for x, zz in half] + [(-x * u, zz * u) for x, zz in reversed(half[1:-1])]
+    parts = [flat("Kit_OwlRim", gold, [(x * 1.13, zz * 1.1) for x, zz in body], 5 * u),
+             flat("Kit_OwlBody", enamel, body, 6 * u, (0, -3 * u, 0)),
+             pm.ellipsoid("Kit_OwlChest", craft.smooth(C["amber"], 0.2), (0, -3 * u, -14 * u), (12 * u, 3 * u, 16 * u),
+                          subsurf=1),
+             pm.curve_tube("Kit_OwlBrow", gold, [(-20 * u, -5 * u, 31 * u), (-9 * u, -6 * u, 21 * u),
+                                                 (0, -6 * u, 13 * u), (9 * u, -6 * u, 21 * u),
+                                                 (20 * u, -5 * u, 31 * u)], 2.2 * u, taper=(1, 1)),
+             flat("Kit_OwlBeak", craft.smooth(V["orange"], 0.25), [(-4 * u, 4 * u), (4 * u, 4 * u), (0, -7 * u)], 4 * u,
+                  (0, -7 * u, 0)),
+             pm.curve_tube("Kit_OwlPerch", gold, [(-30 * u, -4 * u, -32 * u), (-16 * u, -5 * u, -42 * u),
+                                                  (0, -5 * u, -45 * u), (16 * u, -5 * u, -42 * u),
+                                                  (30 * u, -4 * u, -32 * u)], 3.2 * u, taper=(0.35, 0.35))]
+    for s in (1, -1):
+        parts += [pm.ellipsoid("Kit_OwlWing", wing, (s * 20 * u, -4 * u, -8 * u), (8 * u, 3 * u, 21 * u),
+                               rotation=(0, s * 0.22, 0), subsurf=1),
+                  pm.torus("Kit_OwlEyeRing", gold, (s * 11 * u, -5 * u, 9 * u), 9 * u, 2.2 * u,
+                           rotation=(math.pi / 2, 0, 0), segments=24, sides=8),
+                  pm.ellipsoid("Kit_OwlEye", craft.smooth(V["candy"], 0.15), (s * 11 * u, -5 * u, 9 * u),
+                               (8 * u, 3 * u, 8 * u), subsurf=1),
+                  pm.ellipsoid("Kit_OwlPupil", craft.smooth(V["black"], 0.15), (s * 11 * u, -7 * u, 9 * u),
+                               (4.5 * u, 2.5 * u, 4.5 * u), subsurf=1)]
+        for dx in (-4, 0, 4):
+            parts.append(pm.ellipsoid("Kit_OwlTalon", gold, ((s * 9 + dx) * u, -8 * u, -40 * u),
+                                      (1.8 * u, 2.5 * u, 4.5 * u), segments=10, rings=6, subsurf=0))
+    return parts
+
+
 def build_kit(craft):
     P = an.Proportions(h=1.64, child=False, build=0.93, neck=1.35)
     z, T, r, hc = P.z, P.torso, P.head_r, P.head_c
@@ -500,7 +536,7 @@ def build_kit(craft):
     sx, sz = P.shoulder_x, z["shoulder"]
     hem_z = P.elbow(1).z - 0.02
     shawl = ell_lathe("Kit_Shawl", craft.felt(V["berry"]),
-                      [(sx * 0.52, z["neck"] + 0.035, 0.9, 24), (sx + 0.016, sz + 0.09, 0.7, 12),
+                      [(sx * 0.52, z["neck"] + 0.012, 0.9, 24), (sx + 0.016, sz + 0.09, 0.7, 12),
                        (sx + 0.092, sz + 0.02, 0.6, 6), (sx + 0.118, z["chest"] - 0.05, 0.56, 4),
                        (sx + 0.14, hem_z, 0.56, 4)], hem=shawl_hem, thickness=0.008, folds=7, fold_depth=0.04,
                       inner=craft.felt(V["purple"]))
@@ -514,19 +550,8 @@ def build_kit(craft):
         if hit:
             fringe.append((hit[0] - hit[1] * 0.003, hit[0] - hit[1] * 0.003 + Vector((0, 0, -0.06 - 0.008 * (i % 3)))))
     rods("Kit_ShawlFringe", craft.felt(V["purple"]), fringe, 0.0022)
-    pin_at, pin_normal = on_shawl((0.085, -3, z["chest"] + 0.02), (0, 1, 0))
-    amber = craft.smooth(C["amber"], 0.3)
-    owl = [flat("Kit_OwlFace", amber, pm.smooth_outline([(0.0, 0.056), (0.042, 0.044), (0.058, 0.0), (0.04, -0.052),
-                                                        (0.0, -0.066), (-0.04, -0.052), (-0.058, 0.0),
-                                                        (-0.042, 0.044)], 5), 0.007)]
-    for s in (1, -1):
-        owl.append(pm.ellipsoid("Kit_OwlEye", craft.smooth(V["white"], 0.2), (s * 0.023, -0.002, 0.012),
-                                (0.02, 0.006, 0.02), subsurf=1))
-        owl.append(pm.ellipsoid("Kit_OwlPupil", craft.smooth(V["black"], 0.2), (s * 0.023, -0.007, 0.012),
-                                (0.01, 0.004, 0.01), subsurf=1))
-    owl.append(flat("Kit_OwlBeak", craft.smooth(V["orange"], 0.3), [(-0.01, -0.01), (0.01, -0.01), (0.0, -0.032)],
-                    0.004, (0, -0.004, 0)))
-    an.mount("Kit_OwlPin", pin_at + pin_normal * 0.007, pin_normal, owl)
+    pin_at, pin_normal = on_shawl((0.062, -3, z["shoulder"] - 0.035), (0, 1, 0))
+    an.mount("Kit_OwlBrooch", pin_at + pin_normal * 0.006, pin_normal, owl_brooch(craft))
 
     # Dark curls, an orange headscarf with coin trim and a knot at the side, big hoop earrings.
     hair = craft.felt(C["kit_hair"])
@@ -594,7 +619,7 @@ def build_bea_with_bike(craft):
 
 # name, builder, width of the lineup tile in metres, where the tile is centred relative to the character
 LINEUP = (("Bea", build_bea_with_bike, 2.0, -0.47), ("Pip", pip_vampire.build_pip, 0.95, 0.0),
-          ("June", build_june, 1.0, 0.0), ("Kit", build_kit, 1.0, 0.0), ("Vale", build_vale, 1.0, -0.03))
+          ("June", build_june, 1.0, 0.0), ("Kit", build_kit, 0.95, 0.0), ("Vale", build_vale, 1.25, -0.06))
 GROUPS = [entry[0] for entry in LINEUP]
 SPACING = 4.0  # metres between characters on the stage, so no shadow reaches a neighbour's tile
 LINEUP_HEIGHT = 2.3  # metres of stage in an 800-pixel-high lineup tile
@@ -619,9 +644,10 @@ def lineup_view(x, centre, lens=85):
     return (x + centre, -distance, 1.85), (x + centre, 0.0, 1.0), lens
 
 
-def portrait_view(P, x):
+def portrait_view(P, x, drop=0.0):
+    """Face portrait; `drop` lowers and widens the frame to take in something worn at the collar."""
     hc = P.head_c
-    return (x - 0.34, -1.75, hc.z + 0.14), (x, 0.0, hc.z + 0.04), 85
+    return (x - 0.34, -1.75 - 2.5 * drop, hc.z + 0.14 - drop), (x, 0.0, hc.z + 0.04 - drop), 85
 
 
 def main():
@@ -638,7 +664,14 @@ def main():
         solo(name)
         full.append(co.render_view(cam, *lineup_view(x, centre), round(width * PIXELS_PER_METRE), 800,
                                    f"{tmp}_{name}.png"))
-        faces.append(co.render_view(cam, *portrait_view(P, x), face_width, 540, f"{tmp}_{name}_face.png"))
+        faces.append(co.render_view(cam, *portrait_view(P, x, 0.08 if name == "Kit" else 0.0), face_width, 540,
+                                    f"{tmp}_{name}_face.png"))
+    # Inset: Aunt Kit's owl brooch up close, in the corner of her portrait.
+    P, x = placed["Kit"]
+    solo("Kit")
+    pin = (x + 0.062, 0.0, P.z["shoulder"] - 0.04)
+    inset = co.render_view(cam, (pin[0] - 0.1, -1.2, pin[2] + 0.06), pin, 200, 150, 190, f"{tmp}_brooch.png")
+    faces[GROUPS.index("Kit")][8:198, 8:158] = inset
     sheet = np.concatenate([np.concatenate(faces, axis=1), np.concatenate(full, axis=1)], axis=0)  # rows bottom-up
     co.save_sheet(sheet, out)
     print("cast sheet ->", out)

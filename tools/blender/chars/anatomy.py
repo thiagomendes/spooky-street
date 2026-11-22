@@ -30,7 +30,7 @@ class Proportions:
             f = dict(ankle=0.06, knee=0.27, hip=0.49, pelvis=0.5, waist=0.58, chest=0.67, shoulder=0.72,
                      neck=0.765, elbow=0.56, wrist=0.43)
         else:
-            f = dict(ankle=0.055, knee=0.29, hip=0.52, pelvis=0.53, waist=0.62, chest=0.73, shoulder=0.8,
+            f = dict(ankle=0.055, knee=0.29, hip=0.52, pelvis=0.53, waist=0.62, chest=0.75, shoulder=0.825,
                      neck=0.83, elbow=0.61, wrist=0.47)
         self.z = {k: v * u for k, v in f.items()}
         self.head_c = Vector((0.0, 0.0, h - self.head_r * 1.02))
