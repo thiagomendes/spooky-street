@@ -18,7 +18,7 @@ namespace SpookyStreet.EditorTools
         public const int MaxTextureSize = 2048;
         public const string IosPlatform = "iPhone";
 
-        public override uint GetVersion() => 3;
+        public override uint GetVersion() => 4;
 
         public static bool IsGameModelPath(string path) => path.StartsWith(ModelsRoot, System.StringComparison.Ordinal);
 
@@ -119,6 +119,9 @@ namespace SpookyStreet.EditorTools
             var type = TextureTypeFor(assetPath);
             bool normal = type == TextureImporterType.NormalMap;
             importer.textureType = type;
+            // A minimal .meta leaves the shape unset and Unity then imports a cube map, which Resources.Load<Texture2D>
+            // cannot return (CI run 23: Pip drawn with the flat fallback colour).
+            importer.textureShape = TextureImporterShape.Texture2D;
             importer.sRGBTexture = !normal && IsColorTexture(assetPath);
             importer.mipmapEnabled = true;
             importer.streamingMipmaps = false;

@@ -84,6 +84,9 @@ namespace SpookyStreet.Tests.Project
             if (baseColor != null)
             {
                 Assert.AreEqual(TextureImporterType.Default, baseColor.textureType);
+                Assert.AreEqual(TextureImporterShape.Texture2D, baseColor.textureShape);
+                Assert.IsNotNull(Resources.Load<Texture2D>("Models/Characters/Pip/Pip_BaseColor"),
+                    "baked colour texture must load as a Texture2D from Resources");
                 Assert.IsTrue(baseColor.sRGBTexture, "BaseColor must be sRGB");
                 Assert.IsTrue(baseColor.mipmapEnabled);
                 AssertIosOverride(baseColor);
