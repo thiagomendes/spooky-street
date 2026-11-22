@@ -180,12 +180,6 @@
   "atlas": "Env",
   "px_per_m": 107
  },
- "Maple": {
-  "triangles": 4952,
-  "children": {},
-  "atlas": "Env",
-  "px_per_m": 36
- },
  "TreehousePlatform": {
   "triangles": 3444,
   "children": {},
