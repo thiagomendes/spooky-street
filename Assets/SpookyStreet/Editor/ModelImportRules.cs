@@ -10,7 +10,7 @@ namespace SpookyStreet.EditorTools
     /// code so they are reviewable and survive .meta regeneration (tools/unity_meta.py writes bare importer metas):
     /// no imported materials (the runtime builds URP Lit materials from the baked textures, so nothing can fall
     /// back to the magenta error shader), axis conversion baked into the hierarchy, a Generic rig with clean,
-    /// correctly looping clip names for characters (contract in <see cref="PipClips"/>), and no animation for props.
+    /// correctly looping clip names for characters (contract in <see cref="CharacterClips"/>), and no animation for props.
     /// Textures: sRGB colour, NormalMap type for <c>*_Normal</c>, linear masks, mipmaps, ASTC on iOS at 2048.
     /// </summary>
     public sealed class ModelImportRules : AssetPostprocessor
@@ -19,7 +19,7 @@ namespace SpookyStreet.EditorTools
         public const int MaxTextureSize = 2048;
         public const string IosPlatform = "iPhone";
 
-        public override uint GetVersion() => 5;
+        public override uint GetVersion() => 6; // 6: witness loops (Talk, SitIdle, SitTalk)
 
         public static bool IsGameModelPath(string path) => path.StartsWith(ModelsRoot, System.StringComparison.Ordinal);
 
@@ -107,11 +107,11 @@ namespace SpookyStreet.EditorTools
             for (int i = 0; i < clips.Length; i++)
             {
                 string name = PipClips.CleanClipName(clips[i].takeName);
-                bool loop = PipClips.IsLooping(name);
+                bool loop = CharacterClips.IsLooping(name);
                 clips[i].name = name;
                 clips[i].loopTime = loop;
                 clips[i].wrapMode = loop ? WrapMode.Loop : WrapMode.ClampForever;
-                // Clips are authored in place; the CharacterController moves Pip, never root motion.
+                // Clips are authored in place (Mr. Vale's seated pelvis is in his clips); no root motion.
                 clips[i].lockRootRotation = true;
                 clips[i].lockRootHeightY = true;
                 clips[i].lockRootPositionXZ = true;

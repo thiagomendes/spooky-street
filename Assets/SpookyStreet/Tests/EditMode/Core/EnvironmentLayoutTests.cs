@@ -22,6 +22,11 @@ namespace SpookyStreet.Tests.Core
             {
                 yield return p;
             }
+
+            foreach (var p in EnvironmentLayout.Witnesses)
+            {
+                yield return p;
+            }
         }
 
         [Test]
