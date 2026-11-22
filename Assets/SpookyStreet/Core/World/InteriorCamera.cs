@@ -141,6 +141,12 @@ namespace SpookyStreet.Core.World
         /// <summary>Rafters, the wind-drive rod and the roof boards: keep this far below the ceiling slope.</summary>
         public const float RoofMargin = 0.3f;
 
+        /// <summary>
+        /// Extra cost of a swing past 90°: the lens then looks back at Pip and the stick's directions flip, so a shorter
+        /// boom behind Pip is preferred whenever one exists.
+        /// </summary>
+        public const float FacingPenalty = 6f;
+
         /// <summary>How far the shoulder may drop when the room is too tight at the profile's rise.</summary>
         public const float LowShoulder = 0.4f;
 
@@ -195,8 +201,8 @@ namespace SpookyStreet.Core.World
                     // A low shoulder and a near-level pitch keep the lens under the hall's joists at full length.
                     return new InteriorCameraProfile(2.4f, 0.1f, -4f, 9f);
                 case InteriorRoom.Stair:
-                    // Look down over the balustrade from the stairwell.
-                    return new InteriorCameraProfile(2.2f, 0.2f, 10f, 45f);
+                    // Look down over the balustrade from the stairwell; under the low loft behind the stair, from high above Pip.
+                    return new InteriorCameraProfile(2.2f, 0.2f, 10f, 66f);
                 case InteriorRoom.Attic:
                 case InteriorRoom.Alcove:
                     return new InteriorCameraProfile(2.2f, 0.15f, 2f, 40f);
@@ -387,6 +393,7 @@ namespace SpookyStreet.Core.World
                     foreach (float pitch in Pitches(preferred, profile))
                     {
                         float bound = Math.Abs(pitch - preferred) * 0.06f + Math.Abs(yawOffset) * 0.05f +
+                                      (Math.Abs(yawOffset) > 90f ? FacingPenalty : 0f) +
                                       Math.Abs(yawOffset - request.PreviousYawOffset) * 0.015f +
                                       (rise - hands[h].Rise) * 2f;
                         candidates.Add((bound, h, yawOffset, pitch));
@@ -440,6 +447,11 @@ namespace SpookyStreet.Core.World
                 {
                     yield return preferred + k;
                 }
+            }
+
+            if (profile.MaxPitch > preferred + 1e-3f && (profile.MaxPitch - preferred) % 8f > 1e-3f)
+            {
+                yield return profile.MaxPitch;
             }
 
             if (preferred - 6f >= profile.MinPitch - 1e-3f)

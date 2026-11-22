@@ -534,8 +534,11 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Wait(0.5f);
             Assert.IsTrue(house.View.ShowInterior);
             Assert.IsFalse(house.RecessCard.gameObject.activeSelf, "the dark recess card hides with the interior shown");
-            bool high = Game.CameraRig.OutputCamera.transform.position.y > InteriorVisibility.HighCamera;
-            Assert.AreEqual(high, !house.Attic.gameObject.activeSelf, "attic hides exactly when the camera is high");
+            Vector3 lens = Game.CameraRig.OutputCamera.transform.position;
+            bool lensInside = CaseRouteLayout.Inside(lens.x, lens.z);
+            bool high = lens.y > InteriorVisibility.HighCamera;
+            // D24: with the lens inside the house nothing is cut away; only a high lens outside hides the attic.
+            Assert.AreEqual(high && !lensInside, !house.Attic.gameObject.activeSelf, "attic hides only from a high lens outside");
             Game.Pip.Teleport(new Vector3(0f, 0.1f, 0f));
             yield return Wait(0.3f);
             Assert.IsFalse(house.View.ShowInterior, "back on the plaza");
