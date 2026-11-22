@@ -47,7 +47,12 @@ namespace SpookyStreet.Player
         }
 
         /// <summary>Returns true when Pip should be returned to <see cref="Anchor"/>.</summary>
-        public bool Tick(bool grounded, float verticalVelocity, float deltaTime)
+        /// <param name="glidingOverGround">
+        /// True while Pip glides with solid ground below: a controlled descent, so the fall clock pauses (a long
+        /// glide is not a fall). A glide over the void keeps counting, and the depth and kill-plane limits always
+        /// apply, so falling still returns Pip within the safety limit.
+        /// </param>
+        public bool Tick(bool grounded, float verticalVelocity, float deltaTime, bool glidingOverGround = false)
         {
             if (grounded)
             {
@@ -63,7 +68,10 @@ namespace SpookyStreet.Player
             {
                 _groundedTime = 0f;
                 _groundCollider = null;
-                _fallingTime = verticalVelocity < 0f ? _fallingTime + deltaTime : 0f;
+                if (!glidingOverGround)
+                {
+                    _fallingTime = verticalVelocity < 0f ? _fallingTime + deltaTime : 0f;
+                }
             }
 
             if (!HasAnchor)

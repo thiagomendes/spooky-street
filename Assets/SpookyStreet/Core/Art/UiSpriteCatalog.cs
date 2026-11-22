@@ -82,6 +82,9 @@ namespace SpookyStreet.Core.Art
         public const string IconPlay = "icon_play";
         public const string IconClose = "icon_close";
 
+        /// <summary>Use disc glyph while no interaction is in range: Use rolls on the ground and dives in the air.</summary>
+        public const string IconRoll = "icon_roll";
+
         public static readonly UiSpriteSpec[] All =
         {
             new UiSpriteSpec(FeltDiscNight, UiSpriteDraw.Simple),
@@ -103,6 +106,7 @@ namespace SpookyStreet.Core.Art
             new UiSpriteSpec(IconGlobe, UiSpriteDraw.Simple),
             new UiSpriteSpec(IconPlay, UiSpriteDraw.Simple),
             new UiSpriteSpec(IconClose, UiSpriteDraw.Simple),
+            new UiSpriteSpec(IconRoll, UiSpriteDraw.Simple),
         };
 
         /// <summary>Resources.Load path for a sprite name.</summary>

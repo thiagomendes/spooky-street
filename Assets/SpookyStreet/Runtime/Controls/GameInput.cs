@@ -99,6 +99,25 @@ namespace SpookyStreet.Controls
             return pressed;
         }
 
+        /// <summary>True while Jump is down on any device (variable jump height and the bat-cape glide).</summary>
+        public bool ReadJumpHeld()
+        {
+            bool held = _gameplay.enabled && Jump.IsPressed();
+            return held || (Touch != null && Touch.JumpHeld);
+        }
+
+        /// <summary>Use pressed this frame on any device (edge, never repeats while held).</summary>
+        public bool ConsumeUsePressed()
+        {
+            bool pressed = _gameplay.enabled && Use.WasPressedThisFrame();
+            if (Touch != null && Touch.ConsumeUse())
+            {
+                pressed = true;
+            }
+
+            return pressed;
+        }
+
         public bool ConsumeRecenterPressed() => _gameplay.enabled && Recenter.WasPressedThisFrame();
 
         public bool PausePressedThisFrame() => Pause.WasPressedThisFrame();

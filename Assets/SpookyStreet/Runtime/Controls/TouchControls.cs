@@ -9,11 +9,19 @@ namespace SpookyStreet.Controls
     {
         public FloatingStick Stick { get; set; }
         public TouchButton JumpButton { get; set; }
+
+        /// <summary>The contextual Use disc (interaction verb, or roll/dive while nothing is in range).</summary>
+        public TouchButton UseButton { get; set; }
         public OrbitDragArea OrbitArea { get; set; }
 
         public Vector2 StickValue => Stick != null && Stick.isActiveAndEnabled ? Stick.Value : Vector2.zero;
 
         public bool ConsumeJump() => JumpButton != null && JumpButton.ConsumePress();
+
+        /// <summary>True while a thumb holds the Jump disc.</summary>
+        public bool JumpHeld => JumpButton != null && JumpButton.isActiveAndEnabled && JumpButton.Held;
+
+        public bool ConsumeUse() => UseButton != null && UseButton.ConsumePress();
 
         /// <summary>Orbit drag accumulated since the last call, in reference-canvas pixels.</summary>
         public Vector2 ConsumeOrbitDelta() => OrbitArea != null ? OrbitArea.ConsumeDelta() : Vector2.zero;
@@ -29,6 +37,11 @@ namespace SpookyStreet.Controls
             if (JumpButton != null)
             {
                 JumpButton.ResetButton();
+            }
+
+            if (UseButton != null)
+            {
+                UseButton.ResetButton();
             }
 
             if (OrbitArea != null)

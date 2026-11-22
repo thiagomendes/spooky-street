@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using SpookyStreet.Core.Animation;
+using SpookyStreet.Core.Movement;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
@@ -15,7 +16,9 @@ namespace SpookyStreet.Player
     /// <see cref="SetLedgeHanging"/> and <see cref="PlayOneShot"/>. A missing optional clip falls back along
     /// <see cref="PipClips.Fallback"/> and is reported once in development builds; only Idle is required.
     /// Weights ease toward their targets so transitions never pop, and the graph runs on game time, so pause
-    /// (timeScale 0) freezes Pip mid-pose.
+    /// (timeScale 0) freezes Pip mid-pose. Motor moves drive it directly: the glide pose follows
+    /// <see cref="PipMotor.Gliding"/>, a roll (ground roll or dive landing) plays Roll timed to the roll, the third
+    /// chain jump tucks into the same clip as a flip, and jumping out of a roll cancels it.
     /// </summary>
     public sealed class PipAnimator : MonoBehaviour
     {
@@ -29,6 +32,9 @@ namespace SpookyStreet.Player
 
         [Tooltip("Ground speed the Run clip was authored at (m/s, from the export report).")]
         [SerializeField] private float runClipSpeed = 4.5f;
+
+        [Tooltip("Seconds the Roll clip is played over as the third chain jump's flip.")]
+        [SerializeField] private float flipDuration = 0.5f;
 
         private readonly Dictionary<string, int> _slot = new Dictionary<string, int>();
         private readonly PipPoseTracker _tracker = new PipPoseTracker();
@@ -111,7 +117,17 @@ namespace SpookyStreet.Player
                 _graph.Destroy();
             }
 
+            if (_motor != null)
+            {
+                _motor.Stepped -= OnMotorStep;
+            }
+
             _motor = motor;
+            if (_motor != null)
+            {
+                _motor.Stepped += OnMotorStep;
+            }
+
             _maxSpeed = Mathf.Max(0.1f, maxSpeed);
             _slot.Clear();
             animator.applyRootMotion = false;
@@ -189,7 +205,13 @@ namespace SpookyStreet.Player
         /// Plays a one-shot clip (e.g. <see cref="PipClips.Roll"/>, <see cref="PipClips.Interact"/>) over every
         /// pose, then blends back. Returns false, without error, when the clip is missing or the graph is not built.
         /// </summary>
-        public bool PlayOneShot(string clipName)
+        public bool PlayOneShot(string clipName) => PlayOneShot(clipName, 0f);
+
+        /// <summary>
+        /// As <see cref="PlayOneShot(string)"/>, retimed so the clip lasts <paramref name="duration"/> seconds
+        /// (0 keeps its authored length); used to match Roll to the motor's roll.
+        /// </summary>
+        public bool PlayOneShot(string clipName, float duration)
         {
             if (!IsReady || clipName == null || !_slot.TryGetValue(clipName, out int slot))
             {
@@ -201,10 +223,12 @@ namespace SpookyStreet.Player
                 return false;
             }
 
+            float length = _lengths[slot];
+            float playFor = duration > 0f ? Mathf.Clamp(duration, length * 0.4f, length * 2.5f) : length;
             _playables[slot].SetTime(0);
-            _playables[slot].SetSpeed(1);
+            _playables[slot].SetSpeed(length / playFor);
             _oneShotSlot = slot;
-            _oneShotRemaining = _lengths[slot];
+            _oneShotRemaining = playFor;
             OneShot = clipName;
             return true;
         }
@@ -220,8 +244,42 @@ namespace SpookyStreet.Player
         public float WeightOf(string clipName) =>
             IsReady && _slot.TryGetValue(clipName, out int slot) ? _mixer.GetInputWeight(slot) : 0f;
 
+        private void OnMotorStep(MotorStep step)
+        {
+            if (!IsReady)
+            {
+                return;
+            }
+
+            if (step.RollStarted)
+            {
+                PlayOneShot(PipClips.Roll, _motor != null && _motor.TuningData != null ? _motor.TuningData.RollDuration : 0f);
+            }
+            else if (step.Jumped)
+            {
+                if (step.ChainStage >= 3)
+                {
+                    PlayOneShot(PipClips.Roll, flipDuration);
+                }
+                else if (OneShot == PipClips.Roll)
+                {
+                    CancelOneShot();
+                }
+            }
+            else if (step.Landed && OneShot == PipClips.Roll && _motor != null && !_motor.Rolling)
+            {
+                // A flip that is still tucked at touchdown gives way to the landing.
+                CancelOneShot();
+            }
+        }
+
         private void OnDestroy()
         {
+            if (_motor != null)
+            {
+                _motor.Stepped -= OnMotorStep;
+            }
+
             if (_graph.IsValid())
             {
                 _graph.Destroy();
@@ -247,7 +305,7 @@ namespace SpookyStreet.Player
                 Grounded = _motor == null || _motor.Grounded,
                 VerticalSpeed = _motor != null ? _motor.VerticalSpeed : 0f,
                 HorizontalSpeed = speed,
-                Gliding = _gliding,
+                Gliding = _gliding || (_motor != null && _motor.Gliding),
                 WallSliding = _wallSliding,
                 LedgeHanging = _ledgeHanging,
             };

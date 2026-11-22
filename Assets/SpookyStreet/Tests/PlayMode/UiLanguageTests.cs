@@ -5,6 +5,7 @@ using SpookyStreet.App;
 using SpookyStreet.Controls;
 using SpookyStreet.Core.Art;
 using SpookyStreet.Core.Flow;
+using SpookyStreet.Core.Localization;
 using SpookyStreet.Localization;
 using SpookyStreet.UI;
 using UnityEngine;
@@ -103,8 +104,8 @@ namespace SpookyStreet.Tests.PlayMode
             var safe = game.Ui.SafeArea;
             Rect safeRect = safe.rect;
             var controls = Controls(game.Ui.Hud);
-            Assert.GreaterOrEqual(controls.Count, 2, "expected Jump and Pause");
-            controls.Add((RectTransform)game.Ui.UseButton.transform); // a disc only until Use has an action
+            Assert.GreaterOrEqual(controls.Count, 3, "expected Jump, Use and Pause");
+            Assert.Contains((RectTransform)game.Ui.UseButton.transform, controls, "Use is a touch button in play");
             foreach (var control in controls)
             {
                 Rect r = CanvasRect(control, safe);
@@ -115,8 +116,11 @@ namespace SpookyStreet.Tests.PlayMode
                     $"{control.name} {r} leaves the safe area {safeRect}");
             }
 
-            // Use stays hidden until something can be used; Jump and Pause match the documented sizes.
-            Assert.IsFalse(game.Ui.UseButton.activeSelf, "Use must stay hidden until relevant");
+            // With nothing to interact with, Use is the moveset button (roll on the ground, dive in the air): shown,
+            // with the "Roll" verb. Pause matches the documented size.
+            Assert.IsTrue(game.Ui.UseButton.activeInHierarchy, "Use is shown in play");
+            Assert.AreEqual(LocalizationKeys.HudRoll, game.Ui.UseVerbKey, "Use reads Roll with no interaction in range");
+            Assert.AreEqual(UiFactory.UseDiameter, ((RectTransform)game.Ui.UseButton.transform).rect.width, 0.01f);
             Assert.AreEqual(UiFactory.SystemDiscDiameter, ((RectTransform)game.Ui.PauseButton.transform).rect.width, 0.01f);
             var verb = game.Ui.UseButton.transform.Find("VerbTag");
             Assert.IsNotNull(verb, "Use shows its verb on a paper tag");

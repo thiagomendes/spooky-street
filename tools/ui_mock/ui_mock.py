@@ -544,10 +544,23 @@ def icon_draw(sp, name, cx, cy, s, color, w=4.0):
         sp.ellipse((*P(0.2, -0.06), *P(0.36, 0.1)), fill=color)
     elif name == "check":
         L([(-0.28, 0.02), (-0.08, 0.22), (0.3, -0.2)], w * 1.3)
+    elif name == "roll":  # tumble: a loop turning forward (clockwise) with an arrowhead, speed dashes behind
+        ox, oy, r = 0.1, -0.04, 0.25
+        a0, a1 = math.radians(150), math.radians(395)
+        arc = [(ox + r * math.cos(a), oy + r * math.sin(a)) for a in np.linspace(a0, a1, 30)]
+        L(arc, w * 1.1)
+        ex, ey = arc[-1]
+        tx, ty = -math.sin(a1), math.cos(a1)  # clockwise tangent at the arrow tip
+        nx, ny = -ty, tx
+        L([(ex - 0.15 * tx + 0.11 * nx, ey - 0.15 * ty + 0.11 * ny), (ex + 0.03 * tx, ey + 0.03 * ty),
+           (ex - 0.15 * tx - 0.11 * nx, ey - 0.15 * ty - 0.11 * ny)], w * 1.1)
+        L([(-0.44, -0.08), (-0.27, -0.08)], w * 0.8)
+        L([(-0.4, 0.1), (-0.25, 0.1)], w * 0.8)
+        L([(-0.18, 0.34), (0.34, 0.34)], w * 0.8)
 
 
 ICONS = ["jump", "examine", "talk", "pause", "notebook", "bat", "radio", "gear", "globe", "star", "close", "play",
-         "skip", "next", "home", "arrow", "knock", "captions", "motion", "vibrate", "hand", "sound", "check"]
+         "skip", "next", "home", "arrow", "knock", "captions", "motion", "vibrate", "hand", "sound", "check", "roll"]
 
 
 # --------------------------------------------------------------------------------------------------- backgrounds
@@ -1224,7 +1237,7 @@ def mock_sheet(mocks, out_dir):
 # sizes and borders in step with Assets/SpookyStreet/Core/Art/UiSpriteCatalog.cs (a Core test checks the PNGs).
 UNITY_UI = os.path.join(ROOT, "Assets", "SpookyStreet", "Content", "Resources", "UI")
 WHITE = (255, 255, 255, 255)
-EXPORT_ICONS = ["jump", "examine", "pause", "notebook", "bat", "gear", "globe", "play", "close"]
+EXPORT_ICONS = ["jump", "examine", "pause", "notebook", "bat", "gear", "globe", "play", "close", "roll"]
 STITCH_TILE, STITCH_BORDER, STITCH_INSET, STITCH_R = 144, 48, 18, 20
 STITCH_DASH, STITCH_PERIOD, STITCH_W = 13.0, 24.0, 4.2
 
