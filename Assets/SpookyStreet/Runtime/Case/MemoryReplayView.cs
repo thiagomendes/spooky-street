@@ -36,6 +36,9 @@ namespace SpookyStreet.Case
         public const string TreehouseCameraName = "MemoryReplayTreehouse";
         public const string FrontDoorCameraName = "MemoryReplayFrontDoor";
 
+        /// <summary>Cinemachine's wildcard camera name in custom blends.</summary>
+        public const string AnyCameraLabel = "**ANY CAMERA**";
+
         private static readonly Color Lilac = new Color(0.62f, 0.52f, 0.86f, 1f);
         private static readonly Color GhostTint = new Color(0.93f, 0.95f, 1f, 0.72f);
 
@@ -267,7 +270,7 @@ namespace SpookyStreet.Case
 
             var style = cut ? CinemachineBlendDefinition.Styles.Cut : CinemachineBlendDefinition.Styles.EaseInOut;
             var blend = new CinemachineBlendDefinition(style, MemoryReplayTiming.DefaultBlend);
-            string any = CinemachineBlenderSettings.kBlendFromAnyCameraLabel;
+            const string any = AnyCameraLabel;
             _blends.CustomBlends = new[]
             {
                 new CinemachineBlenderSettings.CustomBlend { From = any, To = TreehouseCameraName, Blend = blend },
