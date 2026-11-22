@@ -23,6 +23,9 @@
   translator context, referenced through `LocalizationKeys`. Never key saved progress off display text.
 - Changing the Unity patch: update `ProjectVersion.txt` and both workflow image tags + digests together.
 - Signing secrets live only in the `testflight` environment; PR jobs must never reference them.
+- Portability (D25, `docs/portability.md`): one codebase for iPhone first, later iPad, Mac, Android, PC/Steam and
+  Switch. Input only via Input System actions, prompts per control scheme, any aspect ratio and safe area,
+  URP quality tiers, platform services behind interfaces.
 - Spend no money; never submit for App Review or external TestFlight testing.
 - Agents (owner policy): the main session orchestrates. 3D/graphics modelling agents use model `fable`
   (Fable 5.2) at medium effort; everything else uses Opus 5.5 at medium effort. If Fable does not improve the
