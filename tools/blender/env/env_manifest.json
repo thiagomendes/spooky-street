@@ -1,6 +1,6 @@
 {
  "OwlHouse": {
-  "triangles": 24808,
+  "triangles": 25446,
   "children": {
    "AtticWindow_Glow": {
     "triangles": 108,
@@ -44,7 +44,7 @@
    }
   },
   "atlas": "OwlHouse",
-  "px_per_m": 74
+  "px_per_m": 67
  },
  "OwlHouseDressing": {
   "triangles": 8815,
