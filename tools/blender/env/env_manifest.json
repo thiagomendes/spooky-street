@@ -47,7 +47,7 @@
   "px_per_m": 74
  },
  "OwlHouseDressing": {
-  "triangles": 8719,
+  "triangles": 8815,
   "children": {
    "Face_Glow": {
     "triangles": 223,
@@ -67,16 +67,16 @@
    }
   },
   "atlas": "Env",
-  "px_per_m": 143
+  "px_per_m": 142
  },
  "Bench": {
-  "triangles": 792,
+  "triangles": 802,
   "children": {},
   "atlas": "Env",
-  "px_per_m": 143
+  "px_per_m": 142
  },
  "CandyBowl": {
-  "triangles": 2745,
+  "triangles": 2891,
   "children": {
    "Face_Glow": {
     "triangles": 29,
@@ -88,10 +88,10 @@
    }
   },
   "atlas": "Env",
-  "px_per_m": 310
+  "px_per_m": 308
  },
  "FenceSection": {
-  "triangles": 628,
+  "triangles": 640,
   "children": {},
   "atlas": "Env",
   "px_per_m": 107
@@ -109,16 +109,16 @@
    }
   },
   "atlas": "Env",
-  "px_per_m": 119
+  "px_per_m": 118
  },
  "Hedge": {
-  "triangles": 4182,
+  "triangles": 4196,
   "children": {},
   "atlas": "Env",
-  "px_per_m": 54
+  "px_per_m": 53
  },
  "StreetLamp": {
-  "triangles": 1030,
+  "triangles": 1036,
   "children": {
    "Lamp_Glow": {
     "triangles": 36,
@@ -130,10 +130,10 @@
    }
   },
   "atlas": "Env",
-  "px_per_m": 143
+  "px_per_m": 142
  },
  "PartyTable": {
-  "triangles": 2582,
+  "triangles": 2588,
   "children": {
    "Face_Glow": {
     "triangles": 29,
@@ -145,7 +145,7 @@
    }
   },
   "atlas": "Env",
-  "px_per_m": 179
+  "px_per_m": 178
  },
  "PaperBat": {
   "triangles": 796,
@@ -160,34 +160,34 @@
    }
   },
   "atlas": "Env",
-  "px_per_m": 358
+  "px_per_m": 355
  },
  "Crate": {
-  "triangles": 1051,
+  "triangles": 1066,
   "children": {},
   "atlas": "Env",
-  "px_per_m": 155
+  "px_per_m": 154
  },
  "Awning": {
-  "triangles": 713,
+  "triangles": 731,
   "children": {},
   "atlas": "Env",
   "px_per_m": 83
  },
  "PlankBridge": {
-  "triangles": 1550,
+  "triangles": 1552,
   "children": {},
   "atlas": "Env",
   "px_per_m": 107
  },
  "Maple": {
-  "triangles": 4750,
+  "triangles": 4952,
   "children": {},
   "atlas": "Env",
   "px_per_m": 36
  },
  "TreehousePlatform": {
-  "triangles": 3400,
+  "triangles": 3444,
   "children": {},
   "atlas": "Env",
   "px_per_m": 95
@@ -196,7 +196,7 @@
   "triangles": 400,
   "children": {},
   "atlas": "Env",
-  "px_per_m": 238
+  "px_per_m": 237
  },
  "JackOLantern": {
   "triangles": 531,
@@ -211,34 +211,34 @@
    }
   },
   "atlas": "Env",
-  "px_per_m": 238
+  "px_per_m": 237
  },
  "Mailbox": {
-  "triangles": 526,
+  "triangles": 549,
   "children": {},
   "atlas": "Env",
-  "px_per_m": 179
+  "px_per_m": 178
  },
  "Kit_Floor": {
-  "triangles": 508,
+  "triangles": 520,
   "children": {},
   "atlas": "Env",
   "px_per_m": 89
  },
  "Kit_Steps": {
-  "triangles": 518,
+  "triangles": 526,
   "children": {},
   "atlas": "Env",
   "px_per_m": 89
  },
  "Kit_Post": {
-  "triangles": 406,
+  "triangles": 418,
   "children": {},
   "atlas": "Env",
   "px_per_m": 89
  },
  "Kit_Rail": {
-  "triangles": 918,
+  "triangles": 942,
   "children": {},
   "atlas": "Env",
   "px_per_m": 89
@@ -250,13 +250,13 @@
   "px_per_m": 89
  },
  "Kit_Window": {
-  "triangles": 857,
+  "triangles": 873,
   "children": {},
   "atlas": "Env",
   "px_per_m": 89
  },
  "Kit_Door": {
-  "triangles": 2431,
+  "triangles": 2455,
   "children": {
    "FrontDoor": {
     "triangles": 1862,
@@ -277,7 +277,7 @@
   "px_per_m": 89
  },
  "Kit_Corner": {
-  "triangles": 188,
+  "triangles": 204,
   "children": {},
   "atlas": "Env",
   "px_per_m": 89
