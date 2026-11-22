@@ -28,9 +28,33 @@ The exterior rule (a face stays if some outside viewpoint sees it) would delete 
 uses the same ray test with a 0.3 m reach against the static shell; the other models use the exterior rule
 unchanged. Every room wall is a single inward face, so a camera outside the shell sees in through the near walls.
 
+## Exterior split (branch `feature/s002-owlhouse-split`)
+
+`OwlHouse.fbx` is re-exported so the two ways in are open. Its root is now an empty; the static mesh is divided into
+named children (pivots in model space, Blender axes, from `env_manifest.json`):
+
+| Child | Triangles | Pivot | Use |
+|---|---|---|---|
+| `OwlHouseBody` | 14.5k | origin | walls, roofs, dormer, trim, owl saddle and mast; hide while Pip is inside |
+| `Porch` | 6.4k | origin | deck, steps, posts, rails, porch roof; keep visible |
+| `FrontDoor` | 1.9k | (-0.55, -2.015, 0.6) | unchanged |
+| `DoorRecessCard` | 2 | origin | dark card 0.125 m behind the door plane; hide whenever the interior is shown |
+| `SideWindowPane` | 88 | (-3.045, 0.5, 2.5), the south jamb at the sill | muntins; hide (or swing) to open June's window |
+| `SideWindow_Glow` | 48 | child of `SideWindowPane` | the lit pane; hidden with its parent |
+| `OwlPuppet`, `WindWheel`, `AtticWindow_Glow` | unchanged | unchanged | unchanged |
+
+Total 25.6k triangles (was 25.4k). The 1.2 m recess box and the window's backing slab are gone, and the main roof
+is opened under the dormer so nothing of the exterior crosses June's alcove. June's window is now 1.0 m wide with a
+1.45 m apex (spring line at 0.95 m), sill still at 2.5 m; `OwlHouseInterior` has the matching inner frame, reveal
+and `SillSnag` (pivot now (-2.83, 1.47, 2.92)). The porch keeps the faces seen from the foyer through the door.
+
+Review sheet from the re-imported FBX files (`env_split_review.py`): `docs/evidence/s002/split_review.jpg`. Rows:
+street before / after; west side before / after and the open door; foyer looking out with the body hidden, and the
+window from the bridge with a Pip-sized capsule; the inner and outer window frames.
+
 ## What is not proven here
 
 - No Unity import, collider, placement or device check has run: these are Blender re-import renders only.
-- The exterior `OwlHouse` still has the lit pane, muntins and backing slab in June's window and a 1.2 m dark recess
-  behind the front door, all in its main mesh. The interior cannot be entered or seen through them until the
-  exterior is hidden while Pip is inside or re-exported with those pieces as separate children.
+- The game code does not yet hide `OwlHouseBody`, `DoorRecessCard` or `SideWindowPane`; until it does, an opened
+  door shows the dark card and the window stays closed.
+- The inner sill board sits 3 mm above the outer sill where they overlap; watch for shimmer on device.

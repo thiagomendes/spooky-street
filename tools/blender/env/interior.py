@@ -41,6 +41,8 @@ GRILLE = (-0.85, 0.85, 0.58, 1.0)  # x0, x1, z0, z1 in the mechanism frame
 PANEL = (-0.25, 0.65, 1.08, 1.95)
 ALC_Y0, ALC_Y1, ALC_EAVE, ALC_RIDGE = 2.3, 3.7, 3.9, 4.5
 SILL_Z = 2.5
+WIN_W, WIN_SPRING = 1.0, 0.95  # June's window: must match owl_house.SIDE_W / SIDE_SPRING (1.45 m apex)
+SNAG = (X0 + 0.03, 3.0 + WIN_W / 2 - 0.03, SILL_Z + 0.42)  # the cloth on the north jamb
 DOOR_HINGE = T(-0.55, -0.015, FL)  # the exterior FrontDoor pivot
 SILVER = H(0xDAE2EE)
 
@@ -577,12 +579,13 @@ def build_interior(craft):
             pts = [(-X1, Y1, za), (X1, Y1, za), (X1, Y1, KNEE), (xb, Y1, zb), (-xb, Y1, zb), (-X1, Y1, KNEE)]
         face(a, P["board_x"], pts, (0, 3, za), a.vary(0.8, 1.08))
     # ----- June's dormer alcove: the round-topped window is open, its sill is the floor level -----
-    wx = X0
-    arch = [(ALC_Y0, 3.3), (2.6, 3.3)] + [(y, z) for y, z in arc(3.0, 3.3, 0.4, 180, 0, 10)][1:] + [(ALC_Y1, 3.3), (ALC_Y1, ALC_EAVE),
-                                                                                                 (3.0, ALC_RIDGE), (ALC_Y0, ALC_EAVE)]
-    face(a, P["wains"], [(wx, y, z) for y, z in arch], (0, 3, 3.3), 0.95)
-    for y0, y1 in ((ALC_Y0, 2.6), (3.4, ALC_Y1)):
-        face(a, P["wains"], [(wx, y0, LOFT), (wx, y1, LOFT), (wx, y1, 3.3), (wx, y0, 3.3)], (0, 3, 3), a.vary(0.9, 1.05))
+    wx, hw, sp = X0, WIN_W / 2, WIN_SPRING
+    zs = SILL_Z + sp
+    arch = [(ALC_Y0, zs), (3.0 - hw, zs)] + [(y, z) for y, z in arc(3.0, zs, hw, 180, 0, 12)][1:] + [(ALC_Y1, zs), (ALC_Y1, ALC_EAVE),
+                                                                                                  (3.0, ALC_RIDGE), (ALC_Y0, ALC_EAVE)]
+    face(a, P["wains"], [(wx, y, z) for y, z in arch], (0, 3, zs), 0.95)
+    for y0, y1 in ((ALC_Y0, 3.0 - hw), (3.0 + hw, ALC_Y1)):
+        face(a, P["wains"], [(wx, y0, LOFT), (wx, y1, LOFT), (wx, y1, zs), (wx, y0, zs)], (0, 3, 3), a.vary(0.9, 1.05))
     for y in (ALC_Y0, ALC_Y1):
         face(a, P["wains"], [(wx, y, KNEE), (wx, y, ALC_EAVE), (-ceil_x(ALC_EAVE), y, ALC_EAVE)], (0, 3.0, 3.5), 0.88)
     for sy in (-1, 1):
@@ -591,24 +594,26 @@ def build_interior(craft):
              (-2.4, 3.0, 3.0), 0.85 + 0.1 * sy)
     with a.at(T(wx, 3.0, SILL_Z) @ R("Z", 90)):  # window surround, room toward local -Y
         for sx in (-1, 1):
-            a.box(P["trim_z"], (0.09, 0.07, 0.8), (sx * 0.445, -0.03, 0.4), bevel=0.016)
-        a.ring(P["trim_x"], 0.4, 0.49, 0.07, T(0, -0.065, 0.8), a0=0, a1=180, segs=12, tint=1.0)
-        a.box(P["trim_x"], (0.13, 0.1, 0.15), (0, -0.045, 1.25), bevel=0.02, tint=1.06)
-        a.box(P["trim_x"], (1.1, 0.34, 0.05), (0, 0.06, -0.022), bevel=0.014, tint=1.02)  # the sill board, flush with the floor
-        for sx, x in ((-1, -0.4), (1, 0.4)):  # reveal through the wall thickness
-            face(a, P["trim_z"], [(x, 0, 0), (x, 0.16, 0), (x, 0.16, 0.8), (x, 0, 0.8)], (0, 0.08, 0.4), 0.85)
-        pts = [(x, z) for x, z in arc(0.0, 0.8, 0.4, 0, 180, 10)]
+            a.box(P["trim_z"], (0.09, 0.07, sp), (sx * (hw + 0.045), -0.03, sp / 2), bevel=0.016)
+        a.ring(P["trim_x"], hw, hw + 0.09, 0.07, T(0, -0.065, sp), a0=0, a1=180, segs=12, tint=1.0)
+        a.box(P["trim_x"], (0.13, 0.1, 0.15), (0, -0.045, sp + hw + 0.05), bevel=0.02, tint=1.06)
+        a.box(P["trim_x"], (WIN_W + 0.3, 0.34, 0.05), (0, 0.06, -0.022), bevel=0.014, tint=1.02)  # the sill board, flush with the floor
+        rv = hw - 0.004  # the reveal lines the exterior opening: just inside it, on the same 12 chords as the outer arch
+        for sx, x in ((-1, -rv), (1, rv)):  # reveal through the wall thickness
+            face(a, P["trim_z"], [(x, 0, 0), (x, 0.16, 0), (x, 0.16, sp), (x, 0, sp)], (0, 0.08, sp / 2), 0.85)
+        pts = [(x, z) for x, z in arc(0.0, sp, rv, 0, 180, 12)]
         for (xa, za), (xb, zb) in zip(pts, pts[1:]):
-            face(a, P["trim_x"], [(xa, 0, za), (xb, 0, zb), (xb, 0.16, zb), (xa, 0.16, za)], (0, 0.08, 0.8), 0.85)
-        with a.at(T(0.42, 0.0, 0.0) @ R("Z", 62)):  # the inner shutter leaf, swung into the room
-            for z in (0.04, 0.4, 0.76):
-                a.box(P["shutter"], (0.4, 0.03, 0.07), (-0.2, 0, z), bevel=0.008)
-            for x in (-0.03, -0.37):
-                a.box(P["shutter_z"], (0.06, 0.03, 0.8), (x, 0, 0.4), bevel=0.008)
-            for k in range(5):
-                a.box(P["shutter"], (0.3, 0.012, 0.09), (-0.2, 0, 0.1 + 0.13 * k + (0.08 if k > 2 else 0)), rot=R("X", 28), bevel=0)
-    a.part = "SillSnag"  # the matching snag on the sill (evidence)
-    cloth_snag(a, craft, T(X0 + 0.03, 3.37, SILL_Z + 0.42) @ R("Z", 90), 0.8)
+            face(a, P["trim_x"], [(xa, 0, za), (xb, 0, zb), (xb, 0.16, zb), (xa, 0.16, za)], (0, 0.08, sp), 0.85)
+        lw = hw - 0.02
+        with a.at(T(hw + 0.02, 0.0, 0.0) @ R("Z", 98)):  # the inner shutter leaf, swung back clear of the way in
+            for z in (0.04, sp / 2, sp - 0.04):
+                a.box(P["shutter"], (lw, 0.03, 0.07), (-lw / 2, 0, z), bevel=0.008)
+            for x in (-0.03, -lw + 0.03):
+                a.box(P["shutter_z"], (0.06, 0.03, sp), (x, 0, sp / 2), bevel=0.008)
+            for k in range(6):
+                a.box(P["shutter"], (lw - 0.1, 0.012, 0.09), (-lw / 2, 0, 0.1 + 0.13 * k + (0.08 if k > 2 else 0)), rot=R("X", 28), bevel=0)
+    a.part = "SillSnag"  # the matching snag on the jamb (evidence)
+    cloth_snag(a, craft, T(*SNAG) @ R("Z", 90), 0.8)
     a.part = "Attic"
     # ----- June's corner: stool, lamp glow, crafts -----
     stool(a, P, T(-1.75, 4.05, LOFT), cushion=P["felt_v"])
@@ -840,5 +845,5 @@ def interior_pivots():
     return {
         "InnerDoor": DOOR_HINGE,
         "DoorLatch": T(0.12, 0.13, FL + 0.95),
-        "SillSnag": T(X0 + 0.03, 3.37, SILL_Z + 0.42),
+        "SillSnag": T(*SNAG),
     }

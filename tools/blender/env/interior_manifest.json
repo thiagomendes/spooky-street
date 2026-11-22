@@ -1,9 +1,9 @@
 {
  "OwlHouseInterior": {
-  "triangles": 25005,
+  "triangles": 24998,
   "children": {
    "Attic": {
-    "triangles": 10063,
+    "triangles": 10056,
     "pivot": [
      0.0,
      0.0,
@@ -78,13 +78,13 @@
     "triangles": 112,
     "pivot": [
      -2.83,
-     1.37,
+     1.47,
      2.92
     ]
    }
   },
   "atlas": "OwlHouseInterior",
-  "px_per_m": 85
+  "px_per_m": 87
  },
  "WorkshopMechanism": {
   "triangles": 5420,
