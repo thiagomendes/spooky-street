@@ -22,7 +22,7 @@ namespace SpookyStreet.Core.Animation
 
     /// <summary>
     /// The clip contract for every character the import rules see: Pip's clips (<see cref="PipClips"/>) plus the
-    /// witnesses' (tools/blender/export/witness_anims.py). Bea stands (Idle, Talk, Wave); Mr. Vale sits on the
+    /// witnesses' (tools/blender/export/witness_anims.py). Bea stands (Idle, Talk, Wave, Point); Mr. Vale sits on the
     /// bench (SitIdle, SitTalk and a seated Wave) and has no Idle, so his required clip is SitIdle.
     /// </summary>
     public static class CharacterClips

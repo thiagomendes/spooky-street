@@ -12,7 +12,9 @@ Outputs in --out (default Assets/SpookyStreet/Content/Resources/Models/Character
 and starts from it when it exists, so animation edits re-export in seconds. `--count` only prints triangle counts.
 
 Costume bones (none deform the body skin):
-  Bea   Pumpkin (child of Chest: the whole pumpkin, leaf collar and stitched face), Ponytail_1, Ponytail_2
+  Bea   Pumpkin (child of Chest: the whole pumpkin, leaf collar and stitched face), Ponytail_1, Ponytail_2;
+        Index_L / _R (child of Hand: the index finger alone) and FingerTips_L / _R (child of Fingers: the
+        second joint of the other three), so she can point with one finger; see split_hand
   Vale  Cauldron (child of Hand_R, at the grip, like Pip's Pail), Bandage_Head / _ArmL / _ArmR / _Belly / _Knee
 Bea's bicycle is a separate static prop: see bike_export.py.
 """
@@ -160,6 +162,77 @@ class Bea:
     @staticmethod
     def meta(P, info):
         return {}
+
+    @staticmethod
+    def refit(rig, objs, table):
+        return split_hand(rig, objs, table)
+
+
+def split_hand(rig, objs, table):
+    """Bea's pointing hand. The shared skeleton moves all four fingers with one bone (`Fingers_<S>`), which can
+    only make a paddle or a flat fold. Two more bones per hand, weights only (no vertex, UV or texture changes):
+      Index_<S>       child of Hand, hinged at the index finger's own knuckle: takes that finger's share of
+                      Fingers, so she can point with one finger while Fingers curls the other three
+      FingerTips_<S>  child of Fingers, at the middle joint of those three: with Fingers it closes a fist
+    Runs on the staged rig (fresh or from --cache) and does nothing if the bones are already there. Existing
+    clips look the same: Index follows Fingers and FingerTips stays straight unless a pose says otherwise
+    (witness_anims `index<S>`, `tips<S>`). Returns the extended bone table."""
+    if "Index_L" in rig.data.bones:
+        return table
+    at = {b: (Vector(h), Vector(t)) for b, _p, h, t, _d in table}
+    added = []
+    for S, s in (("L", 1.0), ("R", -1.0)):
+        head, tail = at["Fingers_" + S]
+        along = (tail - head).normalized()
+        k = (tail - head).length / 0.045  # the hand's scale: the bone is 0.045 long in hand units (human_bones)
+        _back, across, _along = anims.hand_axes(head, along, at["Thumb_" + S][0], s)
+        knuckle = head - across * (0.0235 * k)  # on the Fingers hinge line, so old clips keep their exact shape
+        joint = head + along * (0.022 * k)
+        added += [("Index_" + S, "Hand_" + S, knuckle, knuckle + along * (0.045 * k), False),
+                  ("FingerTips_" + S, "Fingers_" + S, joint, tail.copy(), False)]
+        moved = 0
+        for o in objs:
+            src = o.vertex_groups.get("Fingers_" + S)
+            if src is None:
+                continue
+            index = o.vertex_groups.new(name="Index_" + S)
+            tips = o.vertex_groups.new(name="FingerTips_" + S)
+            M = o.matrix_world
+            fingers = {1: [], 2: [], 3: []}  # middle, ring, little: (distance past the knuckle line, vertex, weight)
+            for v in o.data.vertices:
+                g = next((g for g in v.groups if g.group == src.index), None)
+                if g is None:
+                    continue
+                r = (M @ v.co) - head
+                y = r.dot(across) / k
+                if y < -0.0157:  # the index finger: halfway to the middle finger's axis
+                    index.add([v.index], g.weight, "REPLACE")
+                    src.remove([v.index])
+                    moved += 1
+                else:
+                    fingers[1 if y < 0.0 else 2 if y < 0.0157 else 3].append((r.dot(along) / k, v.index, g.weight))
+            for verts in fingers.values():
+                # The game fingers are a few uneven rings of triangles. A blended joint would shear them into
+                # shards, so each finger hinges in the widest gap between its rings around the middle joint
+                # and everything past the gap follows FingerTips rigidly.
+                reach = sorted(t for t, _i, _w in verts if 0.012 < t < 0.034)
+                gap, cut = max((b - a, (a + b) / 2) for a, b in zip(reach, reach[1:]))
+                for t, i, weight in verts:
+                    if t > cut:
+                        tips.add([i], weight, "REPLACE")
+                        src.remove([i])
+        if not moved:
+            raise RuntimeError("no index finger found for side " + S)
+    ce.activate(rig)
+    bpy.ops.object.mode_set(mode="EDIT")
+    for name, parent, head, tail, _d in added:
+        eb = rig.data.edit_bones.new(name)
+        eb.head, eb.tail = head, tail
+        eb.parent = rig.data.edit_bones[parent]
+    bpy.ops.object.mode_set(mode="OBJECT")
+    for name, *_rest in added:
+        rig.pose.bones[name].rotation_mode = "QUATERNION"
+    return table + added
 
 
 # --- Mr. Vale ----------------------------------------------------------------------------------------------
@@ -478,6 +551,8 @@ def main(cast=None):
         if args["cache"]:
             bpy.ops.wm.save_as_mainfile(filepath=args["cache"], compress=True)
     table = [(b, p, Vector(h), Vector(t), d) for b, p, h, t, d in json.loads(rig["char_table"])]
+    if hasattr(W, "refit"):
+        table = W.refit(rig, objs, table)
     meta = json.loads(rig["char_meta"])
     srig = solver_rig(table, meta["shoe"])
     A = getattr(W, "anims", anims)  # the module with this character's solver and clips
