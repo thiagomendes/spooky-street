@@ -112,7 +112,11 @@ made.
   - The notebook spread, the questions and the hint radio render.
   - The slip labels and "Tap to continue" were still blank. Andika's line box is about 1.5 × the font size, and uGUI
     draws nothing when a line does not fit.
-- **Next run:** fixed by giving those labels their full height. Its frames are the evidence for that fix.
+- **Fix (`65f1adc`):** give those labels their full height.
+- **CI run 46** (`65f1adc`): cancelled at the 60-minute job limit. EditMode and PlayMode exited 0. The visual step's
+  editor stalled right after start-up, before any test or scene log, and was not stopped by the 20-minute step
+  timeout. The code had not changed since run 45. This looks like a runner stall, but it is unconfirmed. The run
+  after it re-checks it and is the frame evidence for the label fix.
 - **Not run:** device. No device pass is claimed.
 
 ## What the interior pass needs
