@@ -12,4 +12,5 @@ run shellcheck ci/unity/*.sh ci/ios/*.sh tools/check-local.sh
 run yamllint -c .yamllint.yml .github
 if command -v ruby > /dev/null; then run ruby -c ios/fastlane/Fastfile; fi
 run dotnet test tools/core-tests --nologo
+run python3 -m unittest discover -s tools/audio/tests -t tools/audio
 echo "All local checks passed."

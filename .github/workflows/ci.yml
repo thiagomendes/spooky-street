@@ -48,6 +48,8 @@ jobs:
         run: shellcheck ci/unity/*.sh ci/ios/*.sh tools/check-local.sh
       - name: Lint YAML
         run: yamllint -c .yamllint.yml .github
+      - name: Audio synthesis tests (determinism, loudness, checks, catalog sync)
+        run: python -m unittest discover -s tools/audio/tests -t tools/audio
       - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           dotnet-version: "8.0.x"
