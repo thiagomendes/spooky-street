@@ -16,6 +16,9 @@ namespace SpookyStreet.Core.World
 
         /// <summary>A slim box around a lamp pole (the arm and lantern stay open).</summary>
         Pole,
+
+        /// <summary>An upright capsule around a standing character.</summary>
+        Capsule,
     }
 
     /// <summary>
@@ -165,7 +168,7 @@ namespace SpookyStreet.Core.World
             new Placement(Pumpkin, 1.55f, 0f, -0.9f, 10f, collider: PlacementCollider.Bounds, halfX: 0.2f, halfZ: 0.2f),
             new Placement(JackOLantern, -1.5f, 0f, 0.8f, 25f, collider: PlacementCollider.Bounds, halfX: 0.35f, halfZ: 0.35f),
             new Placement(PartyTable, 4.6f, 0f, -2.6f, -15f, collider: PlacementCollider.Bounds, halfX: 0.9f, halfZ: 0.6f),
-            new Placement(Bench, 8f, 0f, 0f, 144f, collider: PlacementCollider.Bounds, halfX: 0.75f, halfZ: 0.75f),
+            new Placement(Bench, BenchX, 0f, BenchZ, BenchYaw, collider: PlacementCollider.Bounds, halfX: 0.75f, halfZ: 0.75f),
             new Placement(Pumpkin, 1.45f, 0f, 2.4f, -30f, collider: PlacementCollider.Bounds, halfX: 0.2f, halfZ: 0.2f),
 
             // Front yard (z = 5): hedge west of the gate, the gate swung open on the path, picket fence east. The two
@@ -190,6 +193,103 @@ namespace SpookyStreet.Core.World
             new Placement(Maple, -9.5f, 0f, 12f, 200f, collider: PlacementCollider.Trunk, halfX: 0.4f, halfZ: 0.4f),
             new Placement(TreehousePlatform, -9.5f, 0f, 12f, 200f, detail: false),
         };
+
+        // --- Witnesses of the first case (S000.5): Bea with her bicycle, Mr. Vale on the bench -----------------
+
+        // Model names (FBX file names): the characters in Resources/Models/Characters/<Name>, the bicycle with the
+        // environment models.
+        public const string Bea = "Bea";
+        public const string Vale = "Vale";
+        public const string BeaBicycle = "BeaBicycle";
+
+        /// <summary>
+        /// Character and environment models face -Z in their own frame (Blender -Y, the same import as Pip), so a
+        /// model at yaw Y faces the Unity yaw Y + 180.
+        /// </summary>
+        public const float ModelFacingOffset = 180f;
+
+        /// <summary>The plaza bench (spec §4: +8, 0), turned toward the owl house door (Mr. Vale's viewpoint).</summary>
+        public const float BenchX = 8f;
+        public const float BenchZ = 0f;
+        public const float BenchYaw = 144f;
+
+        /// <summary>Seat height of Bench.fbx; Mr. Vale's seated clips put his pelvis on it.</summary>
+        public const float BenchSeatHeight = 0.47f;
+
+        /// <summary>
+        /// Mr. Vale sits this far along the bench's local X from its centre, clear of the cushion at -0.42 (the
+        /// review's stand-in bench, tools/blender/export/witness_review.py). His root stands on the ground under the
+        /// seat with the bench's yaw; the clips carry the seated pelvis.
+        /// </summary>
+        public const float ValeBenchOffsetX = 0.28f;
+
+        /// <summary>
+        /// Bea west of the plaza (spec §4), between the maple and the arrival path, readable from both, well clear of
+        /// the route. Facing about east toward the plaza so the point in her Talk clip (55 degrees to her left, 11
+        /// up) lands on the owl house front and attic window.
+        /// </summary>
+        public const float BeaX = -7.2f;
+        public const float BeaZ = -1.3f;
+        public const float BeaFacingYaw = 85f;
+
+        /// <summary>Where Bea points in Talk, relative to her facing (negative = to her left).</summary>
+        public const float BeaPointYaw = -55f;
+
+        /// <summary>Where Mr. Vale points in SitTalk, relative to his facing (about straight ahead, slightly left).</summary>
+        public const float ValePointYaw = -6f;
+
+        /// <summary>
+        /// The bicycle beside Bea as reviewed (witness_review.py BIKE_AT, BIKE_YAW): 0.86 m to her right and 0.36 m
+        /// behind her, turned 66 degrees so the front wheel and basket come round to her right hand.
+        /// </summary>
+        public const float BikeRight = 0.86f;
+        public const float BikeBehind = 0.36f;
+        public const float BikeYawRelative = -66f;
+
+        /// <summary>Bicycle footprint (local X across the handlebar, local Z along the 1.26 m wheelbase).</summary>
+        public const float BikeWidth = 0.6f;
+        public const float BikeLength = 1.3f;
+
+        /// <summary>Radius and height of Bea's capsule collider.</summary>
+        public const float WitnessRadius = 0.25f;
+        public const float WitnessHeight = 1.4f;
+
+        /// <summary>Bea, her bicycle and Mr. Vale. Yaw is model yaw (as every placement): facing is yaw + 180.</summary>
+        public static readonly Placement[] Witnesses = BuildWitnesses();
+
+        /// <summary>
+        /// World position of a point given in a model's own frame (<paramref name="localX"/>, <paramref name="localZ"/>)
+        /// for a model at (<paramref name="x"/>, <paramref name="z"/>) turned by <paramref name="yaw"/> (Unity yaw).
+        /// </summary>
+        public static void LocalToWorld(float x, float z, float yaw, float localX, float localZ, out float worldX,
+            out float worldZ)
+        {
+            double r = yaw * Math.PI / 180.0;
+            float c = (float)Math.Cos(r);
+            float s = (float)Math.Sin(r);
+            worldX = x + localX * c + localZ * s;
+            worldZ = z - localX * s + localZ * c;
+        }
+
+        private static Placement[] BuildWitnesses()
+        {
+            float beaYaw = BeaFacingYaw - ModelFacingOffset;
+            // In the model's own frame the character faces -Z with her right toward -X, so the bicycle (to her
+            // right, behind her) is at (-right, +behind).
+            LocalToWorld(BeaX, BeaZ, beaYaw, -BikeRight, BikeBehind, out float bikeX, out float bikeZ);
+            float bikeYaw = beaYaw + BikeYawRelative;
+            Footprint(BikeWidth, BikeLength, bikeYaw, out float bikeHalfX, out float bikeHalfZ);
+            LocalToWorld(BenchX, BenchZ, BenchYaw, ValeBenchOffsetX, 0f, out float valeX, out float valeZ);
+            return new[]
+            {
+                new Placement(Bea, BeaX, 0f, BeaZ, beaYaw, collider: PlacementCollider.Capsule,
+                    halfX: WitnessRadius, halfZ: WitnessRadius, detail: false),
+                new Placement(BeaBicycle, bikeX, 0f, bikeZ, bikeYaw, collider: PlacementCollider.Bounds,
+                    halfX: bikeHalfX, halfZ: bikeHalfZ, detail: false),
+                // Covered by the bench's collider.
+                new Placement(Vale, valeX, 0f, valeZ, BenchYaw, halfX: 0.3f, halfZ: 0.3f, detail: false),
+            };
+        }
 
         /// <summary>
         /// Folded paper bats as decoration (not yet collectibles): circling the street lamp, under the owl house

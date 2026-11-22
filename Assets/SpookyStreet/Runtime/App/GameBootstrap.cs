@@ -1,4 +1,5 @@
 using SpookyStreet.CameraSystem;
+using SpookyStreet.Characters;
 using SpookyStreet.Core.Flow;
 using SpookyStreet.Controls;
 using SpookyStreet.Localization;
@@ -50,6 +51,9 @@ namespace SpookyStreet.App
         /// <summary>The original environment models (owl house, porch kit, props) when committed.</summary>
         public EnvironmentDressing Environment { get; private set; }
 
+        /// <summary>Bea, her bicycle and Mr. Vale when their models are committed (ambient only until S002).</summary>
+        public WitnessCast Witnesses { get; private set; }
+
         private void Awake()
         {
             // Last loaded scene wins; a reload (tests, "back to title" later) replaces the previous instance.
@@ -80,6 +84,7 @@ namespace SpookyStreet.App
             Environment.Build(world);
             Atmosphere.Build(world, Materials, Environment.Anchors);
             Pip = CreatePip(movementTuning, Materials);
+            Witnesses = WitnessCast.Build(world, Materials, Pip.transform, Environment.UsesModels);
 
             int obstacleLayers = Physics.DefaultRaycastLayers & ~(1 << Pip.gameObject.layer);
             CameraRig = CameraRig.Create(Pip, movementTuning, _input, Flow, obstacleLayers);

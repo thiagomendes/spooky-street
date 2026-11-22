@@ -83,6 +83,49 @@ namespace SpookyStreet.Tests.Project
             Assert.IsTrue(PipAnimator.CanAnimate(loaded), "Idle clip not loadable from Resources");
         }
 
+        [TestCase("Bea", "Idle", "Talk")]
+        [TestCase("Vale", "SitIdle", "SitTalk")]
+        public void WitnessModelsImportWithLoopingClipsAndAOneShotWave(string model, string rest, string engaged)
+        {
+            string fbx = ModelImportRules.ModelsRoot + "Characters/" + model + "/" + model + ".fbx";
+            var importer = AssetImporter.GetAtPath(fbx) as ModelImporter;
+            if (importer == null)
+            {
+                Assert.Ignore(model + ".fbx is not committed.");
+            }
+
+            Assert.AreEqual(ModelImporterAnimationType.Generic, importer.animationType);
+            Assert.AreEqual(ModelImporterMaterialImportMode.None, importer.materialImportMode);
+            var names = new System.Collections.Generic.List<string>();
+            foreach (var clip in importer.clipAnimations)
+            {
+                StringAssert.DoesNotContain("|", clip.name, "clip name not cleaned: " + clip.name);
+                Assert.AreEqual(CharacterClips.IsLooping(clip.name), clip.loopTime, clip.name + " loop flag");
+                names.Add(clip.name);
+            }
+
+            CollectionAssert.Contains(names, rest);
+            CollectionAssert.Contains(names, engaged);
+            CollectionAssert.Contains(names, CharacterClips.Wave);
+            Assert.IsTrue(CharacterClips.IsLooping(rest) && CharacterClips.IsLooping(engaged));
+            Assert.IsFalse(CharacterClips.IsLooping(CharacterClips.Wave));
+            var loaded = Resources.LoadAll<AnimationClip>(SpookyStreet.Characters.NpcAvatar.PathFor(model));
+            Assert.IsNotNull(PipAnimator.Find(loaded, rest), rest + " not loadable from Resources");
+        }
+
+        [Test]
+        public void BicycleImportsAsAStaticProp()
+        {
+            var importer = AssetImporter.GetAtPath(ModelImportRules.ModelsRoot + "Environment/BeaBicycle.fbx") as ModelImporter;
+            if (importer == null)
+            {
+                Assert.Ignore("BeaBicycle.fbx is not committed.");
+            }
+
+            Assert.AreEqual(ModelImporterAnimationType.None, importer.animationType);
+            Assert.IsFalse(importer.importAnimation);
+        }
+
         [Test]
         public void PipTexturesImportWithTheirRoles()
         {

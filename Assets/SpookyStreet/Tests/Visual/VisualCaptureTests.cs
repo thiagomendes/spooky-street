@@ -112,6 +112,28 @@ namespace SpookyStreet.Tests.Visual
             camera.transform.position = new Vector3(-3.2f, 1.8f, -0.5f);
             camera.transform.LookAt(new Vector3(0f, 3f, 11f));
             yield return Shot("07_owl_house");
+
+            // Witnesses (S000.5): Bea with her bicycle west of the plaza, from her front-right (her bike side), and
+            // Mr. Vale on the bench from the front. Skipped without their models.
+            var cast = game.Witnesses;
+            if (cast != null && cast.Bea != null)
+            {
+                var bea = cast.Bea.transform;
+                camera.fieldOfView = 45f;
+                camera.transform.position = bea.position + bea.forward * 2.6f + bea.right * 1.5f + Vector3.up * 1.25f;
+                camera.transform.LookAt(bea.position + bea.right * 0.4f - bea.forward * 0.1f + Vector3.up * 0.7f);
+                yield return Shot("08_bea");
+            }
+
+            if (cast != null && cast.Vale != null)
+            {
+                var vale = cast.Vale.transform;
+                camera.fieldOfView = 45f;
+                camera.transform.position = vale.position + vale.forward * 2.7f + vale.right * 0.9f + Vector3.up * 1.2f;
+                camera.transform.LookAt(vale.position + vale.forward * 0.2f + Vector3.up * 0.65f);
+                yield return Shot("09_vale");
+            }
+
             camera.fieldOfView = fieldOfView;
             game.Ui.Hud.SetActive(true);
             if (brain != null)
