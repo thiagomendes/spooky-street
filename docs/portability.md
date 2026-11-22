@@ -27,6 +27,8 @@ the current rule is to spend no money.
   Anchor layouts; never use fixed pixel positions.
 - **Graphics scale through URP quality tiers and asset LODs.** No feature may require a specific device.
   Expensive effects need a cheaper fallback.
+- **Mystery and story interactions work with every scheme** (D26, D27): sticker placing by drag or tap-tap with
+  a cursor over tray and slots, and skip or rewatch for every cutscene and replay, on touch, gamepad and keyboard.
 - **Saves and settings go through the save abstraction** (`Core/Save`). No platform paths in gameplay code.
 - **Platform services stay behind interfaces** and are optional: achievements, cloud save, store, haptics, audio
   session.
