@@ -108,6 +108,27 @@ namespace SpookyStreet.Tests.PlayMode
         private static IEnumerator StandByBea() =>
             StandAt(CaseStage.PointBea, PointPosition(CaseStage.PointBea) - PointPosition(CaseStage.PointBicycle), 1.0f);
 
+        /// <summary>
+        /// uGUI draws nothing when a line does not fit its rect (Andika's line box is ~1.5 × the font size): every
+        /// non-empty label must show at least one character (CI run 45 frames).
+        /// </summary>
+        private static void AssertEveryLabelDraws(GameObject root)
+        {
+            Canvas.ForceUpdateCanvases();
+            foreach (var text in root.GetComponentsInChildren<UnityEngine.UI.Text>())
+            {
+                if (string.IsNullOrEmpty(text.text))
+                {
+                    continue;
+                }
+
+                var settings = text.GetGenerationSettings(text.rectTransform.rect.size);
+                var generator = new TextGenerator();
+                generator.Populate(text.text, settings);
+                Assert.Greater(generator.characterCountVisible, 0, $"{text.name} ('{text.text}') draws nothing: rect too short");
+            }
+        }
+
         [UnityTest]
         public IEnumerator TalkingToBeaRecordsBeaSpokeAndPlaysHerLine()
         {
@@ -123,6 +144,8 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(Speaker.Bea, director.Dialogue.CurrentLine.Speaker);
             Assert.AreEqual(Lines.BeaSawCape, director.Dialogue.CurrentLine.Key);
             Assert.AreEqual("I saw June's silver cape go in. Right there!", director.Dialogue.CurrentText);
+            yield return null;
+            AssertEveryLabelDraws(director.Dialogue.gameObject);
             Assert.IsFalse(game.Controls.GameplayEnabled, "the conversation holds gameplay input");
             Assert.IsTrue(File.Exists(SaveSlotPaths.ForCase(_saves).Latest), "a gained fact autosaves");
 
@@ -312,6 +335,7 @@ namespace SpookyStreet.Tests.PlayMode
             director.OpenNotebook();
             yield return Frames(2);
             Assert.AreEqual(1, notebook.FoundSlips.Count);
+            AssertEveryLabelDraws(notebook.gameObject);
             notebook.FoundSlips[0].onClick.Invoke();
             Assert.AreEqual(NoteKeys.NoteBench, director.Captions.CurrentKey);
             notebook.Close();
