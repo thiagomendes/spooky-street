@@ -46,6 +46,20 @@ is in `tools/blender/env/env_lib.py`.
 - Shadows are indigo, never black.
 - A dark screen still shows required footing.
 
+### The sky (S000.7)
+
+The sky is paper and felt like everything else, never photographic (benchmarks: `docs/evidence/s000.7/`).
+
+- **Paint:** horizon mist rising through haunted purple and night violet to a deep violet zenith, on grained paper,
+  with three faint paper-cut cloud strips near the horizon. No aurora.
+- **Moon:** a big full paper moon with stitched felt craters and a soft halo, upper left of the arrival view. The
+  moon, halo, stars and shooting star all stay **below the bloom threshold**; the attic window remains the brightest
+  point.
+- **Clouds:** cut-paper sheets in the night-violet family, two sheets per cloud, with a pale moonlit cut edge. They
+  drift slowly on three rings; the middle ring passes in front of the moon.
+- **Life:** stars twinkle, a shooting star falls every 20–40 s, two or three paper bats cross the moon now and then.
+  Pausing freezes all of it. Reduced motion removes the shooting stars and bats and slows the clouds and twinkle.
+
 ## 4. Characters
 
 Benchmarks: `pip_vampire_v5_fable.png`, `cast_v5_standard_fable.png` and `pip_game_review.png`.

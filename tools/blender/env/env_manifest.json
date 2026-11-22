@@ -1,9 +1,17 @@
 {
  "OwlHouse": {
-  "triangles": 25446,
+  "triangles": 25603,
   "children": {
    "AtticWindow_Glow": {
     "triangles": 108,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "DoorRecessCard": {
+    "triangles": 2,
     "pivot": [
      0.0,
      0.0,
@@ -18,6 +26,14 @@
      0.6
     ]
    },
+   "OwlHouseBody": {
+    "triangles": 14497,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
    "OwlPuppet": {
     "triangles": 1960,
     "pivot": [
@@ -26,13 +42,30 @@
      6.7153
     ]
    },
+   "Porch": {
+    "triangles": 6444,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "SideWindowPane": {
+    "triangles": 88,
+    "pivot": [
+     -3.045,
+     0.5,
+     2.5
+    ]
+   },
    "SideWindow_Glow": {
     "triangles": 48,
     "pivot": [
      0.0,
      0.0,
      0.0
-    ]
+    ],
+    "parent": "SideWindowPane"
    },
    "WindWheel": {
     "triangles": 594,
@@ -44,7 +77,7 @@
    }
   },
   "atlas": "OwlHouse",
-  "px_per_m": 67
+  "px_per_m": 70
  },
  "OwlHouseDressing": {
   "triangles": 8815,
@@ -179,12 +212,6 @@
   "children": {},
   "atlas": "Env",
   "px_per_m": 107
- },
- "Maple": {
-  "triangles": 4952,
-  "children": {},
-  "atlas": "Env",
-  "px_per_m": 36
  },
  "TreehousePlatform": {
   "triangles": 3444,

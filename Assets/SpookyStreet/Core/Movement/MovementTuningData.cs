@@ -19,13 +19,41 @@ namespace SpookyStreet.Core.Movement
         public float DecelerationTime = 0.12f;
 
         /// <summary>
-        /// Apex height in meters of a tapped jump (Jump released at once). Holding Jump rises to
-        /// <see cref="JumpHoldApexHeight"/>; releasing early cuts the rise in between (spec §5 v1.2).
+        /// Apex height in meters of a tapped jump (Jump released before <see cref="JumpBoostDelay"/>): the take-off
+        /// speed reaches exactly this under plain gravity. Routes rely on it (S002 interior jump distances).
         /// </summary>
         public float JumpApexHeight = 1f;
 
-        /// <summary>Apex height in meters while Jump is held through the rise.</summary>
-        public float JumpHoldApexHeight = 1.6f;
+        /// <summary>
+        /// Apex height in meters while Jump is held through the rise (spec §5 v1.2 variable jump). The extra height
+        /// comes from the hold boost, early in the arc (D21 amendment after TestFlight 12.1: 1.6 → 2.1 m).
+        /// </summary>
+        public float JumpHoldApexHeight = 2.1f;
+
+        /// <summary>
+        /// Seconds after take-off with Jump still held before the hold boost engages. A tap released sooner is a
+        /// plain <see cref="JumpApexHeight"/> jump, however it lands within that time.
+        /// </summary>
+        public float JumpBoostDelay = 0.1f;
+
+        /// <summary>
+        /// Upward speed (m/s) the hold boost drives Pip to and holds for the boost phase: a sustained thrust, so a
+        /// held jump visibly shoots up instead of only floating longer. Chain stages scale it by √(height scale).
+        /// </summary>
+        public float JumpBoostSpeed = 6f;
+
+        /// <summary>Net upward acceleration (m/s²) that ramps the rise up to <see cref="JumpBoostSpeed"/>.</summary>
+        public float JumpBoostAcceleration = 50f;
+
+        /// <summary>
+        /// Apex float of a held jump (seconds): past the apex with Jump still held, Pip hangs under reduced gravity
+        /// before the cape may open. Every jump's glide waits this long past its apex, so the high jump and the
+        /// glide read as two moves.
+        /// </summary>
+        public float ApexHangTime = 0.12f;
+
+        /// <summary>Gravity multiplier during the apex float.</summary>
+        public float ApexHangGravityScale = 0.25f;
 
         /// <summary>Gravity in m/s² (positive number, applied downward).</summary>
         public float Gravity = 25f;
@@ -33,8 +61,13 @@ namespace SpookyStreet.Core.Movement
         /// <summary>Seconds after leaving ground during which a jump is still accepted.</summary>
         public float CoyoteTime = 0.10f;
 
-        /// <summary>Seconds a jump press is remembered before landing.</summary>
-        public float JumpBufferTime = 0.12f;
+        /// <summary>
+        /// Seconds a jump press is remembered before landing: a press this long before touchdown still jumps, and
+        /// continues an open chain (S000.6 feel pass: 0.12 → 0.15 s so a thumb that is a little early still chains).
+        /// A fresh press in the air spreads the cape only once it has been held longer than this, so an early chain
+        /// press never brakes the fall into a glide and misses the landing.
+        /// </summary>
+        public float JumpBufferTime = 0.15f;
 
         /// <summary>Fraction of ground acceleration available in the air.</summary>
         public float AirControl = 0.6f;
@@ -47,17 +80,29 @@ namespace SpookyStreet.Core.Movement
 
         // --- Chain jump -------------------------------------------------------------------------
 
-        /// <summary>Seconds after landing in which another jump continues the chain.</summary>
-        public float ChainJumpWindow = 0.2f;
+        /// <summary>Seconds after landing in which another jump continues the chain (feel pass: 0.2 → 0.35 s).</summary>
+        public float ChainJumpWindow = 0.35f;
 
-        /// <summary>Chain continues only at or above this fraction of MaxSpeed (running, not standing).</summary>
-        public float ChainJumpMinSpeedFraction = 0.5f;
+        /// <summary>
+        /// Chain continues only at or above this fraction of MaxSpeed (feel pass: 0.5 → 0.25, so a light jog chains;
+        /// standing still or creeping does not).
+        /// </summary>
+        public float ChainJumpMinSpeedFraction = 0.25f;
 
-        /// <summary>Height scale of the second chained jump (held: 1.6 m → 2.0 m).</summary>
-        public float ChainJumpSecondHeightScale = 1.25f;
+        /// <summary>Held height scale of the second chained jump (2.1 m → 2.4 m).</summary>
+        public float ChainJumpSecondHeightScale = 8f / 7f;
 
-        /// <summary>Height scale of the third chained jump (held: 1.6 m → 2.4 m, with a flip).</summary>
-        public float ChainJumpThirdHeightScale = 1.5f;
+        /// <summary>Held height scale of the third chained jump (2.1 m → 2.8 m, with a flip).</summary>
+        public float ChainJumpThirdHeightScale = 4f / 3f;
+
+        /// <summary>
+        /// Tapped height scale of the second chained jump (1.0 m → 1.25 m). Kept as on TestFlight 12.1, where the
+        /// owner already chained with taps; separate from the held scale so the high jump does not weaken it.
+        /// </summary>
+        public float ChainJumpSecondTapScale = 1.25f;
+
+        /// <summary>Tapped height scale of the third chained jump (1.0 m → 1.5 m).</summary>
+        public float ChainJumpThirdTapScale = 1.5f;
 
         // --- Bat-cape glide ---------------------------------------------------------------------
 
@@ -103,22 +148,56 @@ namespace SpookyStreet.Core.Movement
         /// <summary>Held apex height, never below the tapped one.</summary>
         public float EffectiveHoldApexHeight => Math.Max(JumpHoldApexHeight, Math.Max(0.01f, JumpApexHeight));
 
-        /// <summary>Initial upward speed that reaches exactly the held apex under Gravity.</summary>
+        /// <summary>Take-off speed of a plain (stage 1) jump: reaches exactly the tapped apex under Gravity.</summary>
         public float JumpVelocity => JumpVelocityFor(1f);
 
         /// <summary>Take-off speed for a jump whose apex heights are scaled by <paramref name="heightScale"/>.</summary>
         public float JumpVelocityFor(float heightScale) =>
-            (float)Math.Sqrt(2.0 * Gravity * EffectiveHoldApexHeight * Math.Max(0.01f, heightScale));
+            (float)Math.Sqrt(2.0 * Gravity * Math.Max(0.01f, JumpApexHeight) * Math.Max(0.01f, heightScale));
+
+        /// <summary>Hold-boost speed for a jump scaled by <paramref name="heightScale"/>.</summary>
+        public float JumpBoostSpeedFor(float heightScale) =>
+            Math.Max(0.1f, JumpBoostSpeed) * (float)Math.Sqrt(Math.Max(0.01f, heightScale));
 
         /// <summary>
-        /// Gravity multiplier while rising after Jump is released. Released at take-off the apex is exactly
-        /// JumpApexHeight (times the chain scale); held, it is JumpHoldApexHeight.
+        /// Seconds the hold boost lasts once engaged (its ramp up to the boost speed plus the hold at that speed) so
+        /// that a jump held through the rise peaks at exactly the held apex times <paramref name="heightScale"/>.
+        /// Exact for constant acceleration; at least the ramp when the boost alone would overshoot.
         /// </summary>
-        public float JumpCutGravityMultiplier => EffectiveHoldApexHeight / Math.Max(0.01f, JumpApexHeight);
+        public float JumpBoostDurationFor(float heightScale) => JumpBoostDurationFor(heightScale, heightScale);
+
+        /// <summary>
+        /// Boost duration for a jump whose tapped apex is scaled by <paramref name="tapScale"/> (take-off speed) and
+        /// whose held apex is scaled by <paramref name="holdScale"/> (boost speed and target).
+        /// </summary>
+        public float JumpBoostDurationFor(float tapScale, float holdScale)
+        {
+            float scale = Math.Max(0.01f, holdScale);
+            float g = Math.Max(0.01f, Gravity);
+            float target = EffectiveHoldApexHeight * scale;
+            float v0 = JumpVelocityFor(tapScale);
+            float delay = Math.Max(0f, JumpBoostDelay);
+            float vd = v0 - g * delay;
+            float yd = v0 * delay - 0.5f * g * delay * delay;
+            float vb = JumpBoostSpeedFor(scale);
+            float rampRate = vd < vb ? Math.Max(0.01f, JumpBoostAcceleration) : g;
+            float ramp = Math.Abs(vb - vd) / rampRate;
+            float yr = yd + (vd + vb) * 0.5f * ramp;
+            float hold = (target - yr - vb * vb / (2f * g)) / vb;
+            return ramp + Math.Max(0f, hold);
+        }
 
         /// <summary>Height scale of chain stage 1, 2 or 3.</summary>
         public float ChainHeightScale(int stage) =>
             stage >= 3 ? ChainJumpThirdHeightScale : stage == 2 ? ChainJumpSecondHeightScale : 1f;
+
+        /// <summary>Tapped height scale of chain stage 1, 2 or 3 (sets the take-off speed).</summary>
+        public float ChainTapScale(int stage) =>
+            stage >= 3 ? ChainJumpThirdTapScale : stage == 2 ? ChainJumpSecondTapScale : 1f;
+
+        /// <summary>Hold-boost duration of chain stage 1, 2 or 3.</summary>
+        public float JumpBoostDurationForStage(int stage) =>
+            JumpBoostDurationFor(ChainTapScale(stage), ChainHeightScale(stage));
 
         public MovementTuningData Clone() => (MovementTuningData)MemberwiseClone();
     }

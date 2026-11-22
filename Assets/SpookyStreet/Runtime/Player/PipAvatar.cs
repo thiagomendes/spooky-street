@@ -53,6 +53,7 @@ namespace SpookyStreet.Player
         private float _gait;
         private float _phase;
         private readonly SquashPulse _squash = new SquashPulse();
+        private float _holdStretch;
 
         public Transform Body => _body;
 
@@ -259,15 +260,37 @@ namespace SpookyStreet.Player
             return go.transform;
         }
 
+        /// <summary>Current squash value (negative = stretched tall), for tests and diagnostics.</summary>
+        public float SquashValue { get; private set; }
+
         private void OnMotorStep(MotorStep step)
         {
-            if (step.GlideStarted)
+            // Readability (S000.6 feel pass, MoveFeedbackRules): chained jumps stretch more at each stage and land
+            // with a growing squash; a dive snaps the cape back.
+            if (step.Jumped)
+            {
+                _squash.Kick(MoveFeedbackRules.TakeOffStretch(step.ChainStage));
+            }
+            else if (step.DiveStarted)
+            {
+                _squash.Kick(MoveFeedbackRules.DiveSnapStretch);
+            }
+            else if (step.BoostStarted)
+            {
+                // The high jump's boost: the cape flares up as Pip shoots up.
+                _squash.Kick(MoveFeedbackRules.BoostFlareStretch);
+            }
+            else if (step.GlideStarted)
             {
                 _squash.Kick(glideSquash);
             }
             else if (step.RollStarted)
             {
                 _squash.Kick(rollSquash);
+            }
+            else if (step.Landed && _motor != null)
+            {
+                _squash.Kick(MoveFeedbackRules.LandingSquash(_motor.ChainStage));
             }
         }
 
@@ -287,7 +310,12 @@ namespace SpookyStreet.Player
             }
 
             // Squash from the feet (the body's origin), so the cape spreads without lifting Pip off the ground.
-            SquashPulse.ToScale(_squash.Step(Time.deltaTime), out float wide, out float tall);
+            // A held jump keeps a small extra stretch while it rises, so a hold reads differently from a tap.
+            float holdTarget = _motor != null && _motor.HoldingJumpRise ? MoveFeedbackRules.HeldJumpStretch : 0f;
+            _holdStretch = Mathf.MoveTowards(_holdStretch, holdTarget,
+                MoveFeedbackRules.HeldJumpStretchRate * Time.deltaTime);
+            SquashValue = MoveFeedbackRules.CombinedSquash(_squash.Step(Time.deltaTime), _holdStretch);
+            SquashPulse.ToScale(SquashValue, out float wide, out float tall);
             _body.localScale = new Vector3(wide, tall, wide);
 
             // The imported model's clips carry breathing, gait and antenna motion.

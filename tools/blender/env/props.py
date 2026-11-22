@@ -16,6 +16,7 @@ import numpy as np
 from mathutils import Matrix, Vector, noise
 
 import env_lib as el
+import maple as mp
 import porch_kit as pk
 from env_lib import E, R, S, T, V, Builder, H, arc, catenary, grouped, lc, shade
 
@@ -700,75 +701,14 @@ def build_bridge(craft, length=2.6, width=1.0):
     b.finish("Bridge")
 
 
-def foliage(b, craft, centre, radii, seed, cards=96):
-    """One clump of maple crown: a smooth painted mass under layered paper maple leaves that hang tip-down and
-    curl outward. Colour runs from rust underneath to warm amber on top (the `foliage` material)."""
-    rng = b.rng
-    fol = craft.foliage(H(0x9E3420), H(0xF8AE3C), 3.7, 7.3)
-    tints = ((1.0, 1.0, 1.0), (1.0, 1.0, 1.0), (1.15, 1.08, 0.8), (0.95, 0.72, 0.62), (1.1, 0.58, 0.5))
-    cx, cy, cz = centre
-
-    def radial(a, i):
-        return 1 + 0.13 * noise.noise(Vector((math.cos(a) * 1.4, math.sin(a) * 1.4, i * 0.6 + seed * 3.1)))
-    n = 9
-    prof = [(math.sin(math.pi * i / n) if 0 < i < n else 0.0, -math.cos(math.pi * i / n) * (0.9 if i == 0 else 1.0)) for i in range(n + 1)]
-    b.lathe(fol, prof, 16, T(cx, cy, cz) @ S(*radii), radial=radial, tint=b.vary(0.42, 0.52))
-    up = Vector((0, 0, 1))
-    for _ in range(cards):
-        u, v = rng.uniform(0, 2 * math.pi), rng.uniform(-1.0, 1.0)
-        nrm = Vector((math.cos(u) * math.sqrt(1 - v * v), math.sin(u) * math.sqrt(1 - v * v), v))
-        p = Vector((cx + nrm.x * radii[0], cy + nrm.y * radii[1], cz + nrm.z * radii[2])) + nrm * rng.uniform(0.02, 0.16)
-        face = (nrm + up * 0.25 + Vector((0.01, 0.0, 0.0))).normalized()
-        tip = nrm * 0.3 - up * 0.8 + Vector((rng.uniform(-0.5, 0.5), rng.uniform(-0.5, 0.5), 0))
-        zc = (tip - face * tip.dot(face)).normalized()
-        yc = -face
-        xc = yc.cross(zc)
-        m = Matrix((xc, yc, zc)).transposed().to_4x4()
-        t = rng.choice(tints)
-        k = rng.uniform(0.85, 1.2)
-        leaf(b, craft, T(*p) @ m, rng.uniform(0.3, 0.44), None, curl=0.5, low=True, mat=fol, tint=(t[0] * k, t[1] * k, t[2] * k), fold=0.2)
-
-
 def build_maple(craft, treehouse=True, crown=True):
-    """The maple and the treehouse platform base at 2.4 m (simplified): leaning trunk with root flare, three
-    boughs, an autumn crown, and a braced plank deck with kit rails on two sides."""
+    """The maple (`maple.py`: buttressed trunk, four limbs, grown branches, paper-leaf rosettes) and the
+    treehouse platform base at 2.4 m: a braced plank deck with kit rails on two sides."""
     b = Builder(81)
-    bark = craft.timber(E["bark"], "Z", wear=0.9, bare=H(0x7A5A78), rough=0.9)
-
-    def radial(a, i):
-        return 1 + (0.22 if i < 2 else 0.07) * math.cos(5 * a + i) + 0.05 * math.cos(11 * a)
-    lean = lambda z: (0.05 * z + 0.015 * z * z, -0.02 * z)  # noqa: E731
-    rings = [(0.62, 0.0), (0.46, 0.25), (0.38, 0.7), (0.34, 1.5), (0.31, 2.4), (0.29, 3.2), (0.24, 3.9)]
-    bm = bmesh.new()
-    prev = None
-    segs = 12
-    for i, (r, z) in enumerate(rings):
-        ox, oy = lean(z)
-        ring = [bm.verts.new((ox + r * radial(2 * math.pi * s / segs, i) * math.cos(2 * math.pi * s / segs),
-                              oy + r * radial(2 * math.pi * s / segs, i) * math.sin(2 * math.pi * s / segs), z)) for s in range(segs)]
-        if prev:
-            for s in range(segs):
-                bm.faces.new((prev[s], prev[(s + 1) % segs], ring[(s + 1) % segs], ring[s]))
-        prev = ring
-    bm.faces.new(prev)
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
-    b.add_bm(bm, bark, tint=1.0)
-    top = Vector((lean(3.9)[0], lean(3.9)[1], 3.85))
-    boughs = [(top, Vector((-1.5, 0.3, 5.2)), 0.2), (top, Vector((1.9, -0.2, 5.5)), 0.2), (top, Vector((0.5, 0.9, 6.0)), 0.18),
-              (Vector((lean(3.0)[0], lean(3.0)[1], 3.0)), Vector((-1.9, -0.5, 4.1)), 0.14),
-              (Vector((lean(3.3)[0], lean(3.3)[1], 3.3)), Vector((2.3, 0.4, 4.2)), 0.13)]
-    for a, c2, r in boughs:
-        mid = a.lerp(c2, 0.5) + Vector((0, 0, 0.25))
-        b.rod(bark, a, mid, r, 7, 1.0, r2=r * 0.75)
-        b.rod(bark, mid, c2, r * 0.75, 7, 0.95, r2=r * 0.4)
+    lean = mp.lean
+    mp.add_wood(b, craft)
     if crown:
-        for k, (c2, rad) in enumerate((((-1.6, 0.3, 5.5), (1.5, 1.3, 1.0)), ((1.9, -0.1, 5.8), (1.6, 1.4, 1.1)), ((0.3, 0.7, 6.5), (1.7, 1.5, 1.15)),
-                                       ((-2.1, -0.5, 4.4), (1.1, 1.0, 0.75)), ((2.5, 0.4, 4.5), (1.1, 1.0, 0.75)), ((0.2, -0.6, 5.6), (1.3, 1.1, 0.9)))):
-            foliage(b, craft, c2, rad, k)
-    for k in range(7):  # fallen leaves round the roots
-        a = 0.9 * k
-        leaf(b, craft, T(1.0 * math.cos(a) + 0.2, 0.9 * math.sin(a), 0.012 + 0.002 * k) @ R("Z", 50 * k) @ R("X", 86), 0.2,
-             (E["leaf_a"], E["leaf_b"], E["leaf_c"])[k % 3])
+        mp.add_leaves(b, craft)
     b.finish("Maple")
     if not treehouse:
         return

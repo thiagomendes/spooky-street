@@ -11,22 +11,39 @@ namespace SpookyStreet.Player
         [Min(0.1f)] public float maxSpeed = 4f;
         [Min(0.01f)] public float accelerationTime = 0.15f;
         [Min(0.01f)] public float decelerationTime = 0.12f;
-        [Tooltip("Apex of a tapped jump (Jump released at once).")]
+        [Tooltip("Apex of a tapped jump (Jump released before the boost delay). Routes rely on it.")]
         [Min(0.1f)] public float jumpApexHeight = 1f;
-        [Tooltip("Apex while Jump is held through the rise; releasing early cuts in between.")]
-        [Min(0.1f)] public float jumpHoldApexHeight = 1.6f;
+        [Tooltip("Apex while Jump is held through the rise; releasing during the boost lands in between.")]
+        [Min(0.1f)] public float jumpHoldApexHeight = 2.1f;
+        [Tooltip("Seconds after take-off with Jump still held before the hold boost engages.")]
+        [Min(0f)] public float jumpBoostDelay = 0.1f;
+        [Tooltip("Upward speed the hold boost drives to and holds (m/s): the high jump visibly shoots up.")]
+        [Min(0.5f)] public float jumpBoostSpeed = 6f;
+        [Tooltip("Upward acceleration that ramps the rise to the boost speed (m/s²).")]
+        [Min(1f)] public float jumpBoostAcceleration = 50f;
+        [Tooltip("Apex float of a held jump before the cape may open (seconds).")]
+        [Min(0f)] public float apexHangTime = 0.12f;
+        [Range(0f, 1f)] public float apexHangGravityScale = 0.25f;
         [Min(1f)] public float gravity = 25f;
         [Min(0f)] public float coyoteTime = 0.10f;
-        [Min(0f)] public float jumpBufferTime = 0.12f;
+        [Tooltip("A Jump press this long before landing still jumps (and chains).")]
+        [Min(0f)] public float jumpBufferTime = 0.15f;
         [Range(0f, 1f)] public float airControl = 0.6f;
         [Min(1f)] public float maxFallSpeed = 20f;
 
         [Header("Chain jump (jump again right after landing while running)")]
-        [Min(0f)] public float chainJumpWindow = 0.2f;
+        [Tooltip("Seconds after landing in which Jump continues the chain.")]
+        [Min(0f)] public float chainJumpWindow = 0.35f;
         [Tooltip("Fraction of max speed needed to keep the chain going.")]
-        [Range(0f, 1f)] public float chainJumpMinSpeedFraction = 0.5f;
-        [Min(1f)] public float chainJumpSecondHeightScale = 1.25f;
-        [Min(1f)] public float chainJumpThirdHeightScale = 1.5f;
+        [Range(0f, 1f)] public float chainJumpMinSpeedFraction = 0.25f;
+        [Tooltip("Height scale of the 2nd chained jump (held 2.1 m to 2.4 m).")]
+        [Min(1f)] public float chainJumpSecondHeightScale = 8f / 7f;
+        [Tooltip("Height scale of the 3rd chained jump (held 2.1 m to 2.8 m).")]
+        [Min(1f)] public float chainJumpThirdHeightScale = 4f / 3f;
+        [Tooltip("Height scale of the 2nd chained jump when tapped (1.0 m to 1.25 m).")]
+        [Min(1f)] public float chainJumpSecondTapScale = 1.25f;
+        [Tooltip("Height scale of the 3rd chained jump when tapped (1.0 m to 1.5 m).")]
+        [Min(1f)] public float chainJumpThirdTapScale = 1.5f;
 
         [Header("Bat-cape glide (hold Jump while falling)")]
         [Min(0.5f)] public float glideFallSpeed = 1.75f;
@@ -85,10 +102,17 @@ namespace SpookyStreet.Player
             AirControl = airControl,
             MaxFallSpeed = maxFallSpeed,
             JumpHoldApexHeight = jumpHoldApexHeight,
+            JumpBoostDelay = jumpBoostDelay,
+            JumpBoostSpeed = jumpBoostSpeed,
+            JumpBoostAcceleration = jumpBoostAcceleration,
+            ApexHangTime = apexHangTime,
+            ApexHangGravityScale = apexHangGravityScale,
             ChainJumpWindow = chainJumpWindow,
             ChainJumpMinSpeedFraction = chainJumpMinSpeedFraction,
             ChainJumpSecondHeightScale = chainJumpSecondHeightScale,
             ChainJumpThirdHeightScale = chainJumpThirdHeightScale,
+            ChainJumpSecondTapScale = chainJumpSecondTapScale,
+            ChainJumpThirdTapScale = chainJumpThirdTapScale,
             GlideFallSpeed = glideFallSpeed,
             GlideBrakeDeceleration = glideBrakeDeceleration,
             GlideAirControl = glideAirControl,

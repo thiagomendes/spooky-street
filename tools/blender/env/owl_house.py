@@ -18,7 +18,7 @@ from mathutils import Vector
 import env_lib as el
 import porch_kit as pk
 import props as pr
-from env_lib import E, R, S, T, Builder, H, grouped, lc, owl_outline, scallop_strip, shade
+from env_lib import E, R, S, T, Builder, H, arc, grouped, lc, owl_outline, scallop_strip, shade
 from porch_kit import FLOOR, POST, WALL
 
 PITCH = 50.0
@@ -29,6 +29,11 @@ RIDGE_Z = EAVE_Z + RISE
 WIN_Z, WIN_R = EAVE_Z + 1.5, 0.56  # the round attic window
 SILL_Z = 2.5  # June's side window (spec §4 attic sill)
 DORMER_Y, DORMER_TOP = 3.0, 3.98
+SIDE_W, SIDE_SPRING = 1.0, 0.95  # the way in: Pip is 1.2 m tall with a 0.28 m capsule radius
+SIDE_APEX = SIDE_SPRING + SIDE_W / 2  # 1.45 m above the sill
+SIDE_WINDOW = T(-HALF, DORMER_Y, 0) @ R("Z", -90) @ T(0, -0.025, SILL_Z)  # sill centre, front toward local -Y
+ALCOVE = (0.715, 4.0, 4.6)  # June's alcove inside the dormer (interior.ALC_*: 0.7 half width, eave 3.9, ridge 4.5), with margin
+SIDE_PANE_HINGE = T(*(SIDE_WINDOW @ Vector((SIDE_W / 2, -0.02, 0.0))))  # the pane's jamb, opposite the open casement
 OWL_Z = RIDGE_Z + 0.34
 WHEEL = Vector((0.0, 0.5, RIDGE_Z + 2.45))
 
@@ -118,7 +123,7 @@ def build_house(craft, dress=True, lights=True, attic=3.4):
                 pk.door(b, P)
     for y, kind in ((1, ""), (3, "dormer"), (5, "w")):
         with b.at(T(-HALF, y, FLOOR) @ R("Z", -90)):
-            pk.wall(b, P, openings=((win,) if kind == "w" else ((-0.4, 0.4, SILL_Z - FLOOR, WALL),) if kind else ()))
+            pk.wall(b, P, openings=((win,) if kind == "w" else ((-SIDE_W / 2, SIDE_W / 2, SILL_Z - FLOOR, WALL),) if kind else ()))
             if kind == "w":
                 pk.window(b, P)
     for y, kind in ((1, ""), (3, "w"), (5, "")):
@@ -136,6 +141,7 @@ def build_house(craft, dress=True, lights=True, attic=3.4):
     b.prism(P["back"], tri, 0.1, T(0, 0.02, EAVE_Z), tint=0.85)
     b.prism(P["clap"], tri, 0.1, T(0, DEPTH - 0.12, EAVE_Z), tint=0.9)
     b.box(P["trim_x"], (2 * HALF + 0.1, 0.07, 0.14), (0, -0.03, EAVE_Z + 0.02), bevel=0.016)
+    b.box(P["trim_x"], (1.14, 0.14, 0.03), (0, 0.07, FLOOR), bevel=0.008, tint=0.9)  # threshold through the wall thickness
 
     def keep(cx, y0, y1, hw):
         if abs(cx) + hw > (RISE - y1) / tan + 0.16 or y1 < 0.5:  # outside the gable, or behind the porch roof
@@ -151,7 +157,8 @@ def build_house(craft, dress=True, lights=True, attic=3.4):
     length = (HALF + OVER) / math.cos(math.radians(PITCH))
     eave = EAVE_Z - OVER * tan
     width = DEPTH + 2 * OVER
-    pk.roof(r, P, width, length, PITCH, T(-HALF - OVER, DEPTH / 2, eave) @ R("Z", -90), notch=(-0.95, 0.95, 0.62), hole=(-0.45, 0.45, 0.5, 1.9))
+    pk.roof(r, P, width, length, PITCH, T(-HALF - OVER, DEPTH / 2, eave) @ R("Z", -90), notch=(-0.95, 0.95, 0.62), hole=(-0.45, 0.45, 0.5, 1.9),
+            mouth=(ALCOVE[0], (ALCOVE[1] - eave) / math.sin(math.radians(PITCH)), (ALCOVE[2] - eave) / math.sin(math.radians(PITCH))))
     pk.roof(r, P, width, length, PITCH, T(HALF + OVER, DEPTH / 2, eave) @ R("Z", 90))
     r.cyl(P["trim_y"], 0.09, width + 0.06, T(0, DEPTH / 2, RIDGE_Z + 0.02) @ R("X", 90), segments=8)
     barge = scallop_strip(length + 0.12, 0.16, 13, 0.08, 4)
@@ -181,12 +188,14 @@ def build_house(craft, dress=True, lights=True, attic=3.4):
     with d.at(T(-HALF, DORMER_Y, 0) @ R("Z", -90)):
         hh = DORMER_TOP - EAVE_Z
         with d.at(T(0, 0, EAVE_Z)):
-            pk.wall(d, P, 1.6, hh, openings=((-0.4, 0.4, 0.0, 0.93),), base=False, frieze=False)
-        d.box(P["back"], (0.9, 0.05, 1.3), (0, 0.1, SILL_Z + 0.65), bevel=0, tint=0.5)
+            pk.wall(d, P, 1.6, hh, openings=((-SIDE_W / 2, SIDE_W / 2, 0.0, SILL_Z + SIDE_APEX - EAVE_Z),), base=False, frieze=False)
+        for sx in (1, -1):  # wall between the square opening and the arch (the interior model is behind the opening)
+            spandrel = arc(0.0, SIDE_SPRING, SIDE_W / 2 + 0.012, 0, 90, 6) + [(0.0, SIDE_APEX + 0.01), (SIDE_W / 2, SIDE_APEX + 0.01)]
+            d.prism(P["clap"], spandrel, 0.12, T(0, 0.0, SILL_Z) @ (S(-1, 1, 1) if sx < 0 else T()), tint=0.85)
         for sx in (-1, 1):
             d.box(P["clap"], (0.09, 1.55, hh), (sx * 0.76, 0.78, EAVE_Z + hh / 2), bevel=0.012, tint=0.9)
             d.box(P["trim_z"], (0.1, 0.06, hh + 0.3), (sx * 0.78, -0.035, EAVE_Z + hh / 2 - 0.15), bevel=0.014)
-        pk.arch_window(d, P, 0.8, 0.8, T(0, -0.025, SILL_Z), P["paper_dim"])
+        pk.arch_window(d, P, SIDE_W, SIDE_SPRING, T(0, -0.025, SILL_Z), P["paper_dim"])
         dp, dh = 40.0, 0.8 * math.tan(math.radians(40.0))
         dl = 1.02 / math.cos(math.radians(dp))
         de = DORMER_TOP - 0.22 * math.tan(math.radians(dp))

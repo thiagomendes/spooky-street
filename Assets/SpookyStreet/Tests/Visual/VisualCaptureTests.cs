@@ -2,7 +2,10 @@ using System.Collections;
 using NUnit.Framework;
 using SpookyStreet.App;
 using SpookyStreet.Case;
+using SpookyStreet.Core.Animation;
 using SpookyStreet.Core.Flow;
+using SpookyStreet.Core.Tips;
+using SpookyStreet.World;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
@@ -46,6 +49,22 @@ namespace SpookyStreet.Tests.Visual
             Assert.LessOrEqual(magenta, MaxMagenta,
                 $"{name}: {magenta:P1} of the frame is error-shader magenta (missing or non-URP material)");
             Assert.Greater(FrameCapture.MeanLuminance(FrameCapture.LastFrame), 0.02f, $"{name}: frame is black");
+        }
+
+        private static IEnumerator WaitGameTime(float seconds)
+        {
+            float until = Time.time + seconds;
+            while (Time.time < until)
+            {
+                yield return null;
+            }
+        }
+
+        /// <summary>Lets <paramref name="seconds"/> of game time pass, then freezes time for the capture.</summary>
+        private static IEnumerator FreezeAfter(float seconds)
+        {
+            yield return WaitGameTime(seconds);
+            Time.timeScale = 0f;
         }
 
         [UnityTest]
@@ -168,6 +187,53 @@ namespace SpookyStreet.Tests.Visual
             game.Pip.Teleport(parkedAt);
             pip.rotation = parkedRotation;
 
+            // Moveset feedback (S000.6 feel pass): the third chain jump's paper burst, then a dive's speed streaks and
+            // landing dust, played at Pip on the path and frozen a moment later, seen from Pip's front-right. The
+            // bursts are triggered directly here; MovesetTests drives the real moves.
+            until = Time.time + 0.4f;
+            while (Time.time < until)
+            {
+                yield return null;
+            }
+
+            Vector3 feet = pip.position;
+            camera.fieldOfView = 45f;
+            camera.transform.position = feet + pip.forward * 2.4f + pip.right * 1.1f + Vector3.up * 0.9f;
+            camera.transform.LookAt(feet + Vector3.up * 0.35f);
+            game.Feedback.Play(MoveBursts.ChainThird);
+            yield return FreezeAfter(0.14f);
+            yield return Shot("11_chain_burst");
+            Time.timeScale = 1f;
+            yield return WaitGameTime(0.8f);
+            game.Feedback.Play(MoveBursts.DiveStreak | MoveBursts.DiveDust);
+            yield return FreezeAfter(0.12f);
+            yield return Shot("12_dive_dust");
+            Time.timeScale = 1f;
+            yield return WaitGameTime(0.6f);
+
+            // Handcrafted sky (owner request): the paper moon from above the west lawn, with a cloud sliding across
+            // it and bats in front of it, then a shooting star forced mid-streak above the roofs seen from the
+            // arrival porch. Time is frozen so the forced flight and streak hold for the captures.
+            var sky = game.Sky;
+            Assert.IsNotNull(sky, "16_sky_moon: the handcrafted sky should be built");
+            Assert.IsTrue(sky.Crafted, "with a graphics device the sky must use its own shaders, not the fallback");
+            Time.timeScale = 0f;
+            camera.fieldOfView = 34f;
+            camera.transform.position = new Vector3(-13f, 9f, 0f);
+            camera.transform.LookAt(Atmosphere.MoonPosition + new Vector3(4f, -3.5f, 0f));
+            sky.ShowCloudOverMoon(camera.transform.position, -12f); // covering the left half of the disc
+            sky.ShowBats(0.62f); // just past the middle: all three bats over the clear half
+            yield return Shot("16_sky_moon");
+
+            camera.fieldOfView = 50f;
+            camera.transform.position = MagicSky.ReferenceView;
+            Vector3 streak = sky.ShowShootingStar(0.5f, 25f);
+            camera.transform.LookAt(streak + new Vector3(-4f, -10f, 0f));
+            yield return Shot("17_shooting_star");
+            Assert.IsTrue(sky.ShootingStar.activeSelf, "17_shooting_star: the streak should be mid-flight");
+            Time.timeScale = 1f;
+            yield return null;
+
             camera.fieldOfView = fieldOfView;
             game.Ui.Hud.SetActive(true);
             if (brain != null)
@@ -176,6 +242,14 @@ namespace SpookyStreet.Tests.Visual
             }
 
             yield return null;
+
+            // First-time tip on its paper tag above the Jump disc (fresh in-memory store so it can show).
+            game.Ui.FirstPrompt.SetActive(false);
+            game.Ui.Tips.UseStore(new MemoryTipStore());
+            Assert.IsTrue(game.Ui.Tips.Scheduler.TryShow(MoveTip.Glide), "13_move_tip: tip should show");
+            yield return WaitGameTime(0.4f);
+            yield return Shot("13_move_tip");
+            game.Ui.Tips.HideNow();
 
             Press(_keyboard.escapeKey, queueEventOnly: true);
             yield return null;

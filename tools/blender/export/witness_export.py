@@ -347,6 +347,8 @@ def build_game_parts(W, char):
         if spec is None:
             raise RuntimeError("no game spec for " + src.name)
         parts.append(ce.realize(src, spec, post))
+        if hasattr(W, "after"):
+            W.after(P, src.name, parts[-1])
         if src.name == n + "_Head":
             ce.keep_skull_front(parts[-1], P.head_c, lambda d: W.skull(d)[0])
             me = parts[-1].data
@@ -365,7 +367,7 @@ def weight_parts(W, parts, P, rig, table, info):
     body = next(o for o in parts if o["src"] == n + "_Body")
     names, Wt = ce.body_auto_weights(body, rig, table)
     ctx = {
-        "info": info,
+        "info": info, "P": P,
         "on_trunk": SkinSource(body, names, Wt, {"Hips", "Spine", "Chest", "Shoulder_L", "Shoulder_R"}),
         "on_neck": SkinSource(body, names, Wt, {"Chest", "Neck"}),
         "on_arm": {S: SkinSource(body, names, Wt, {"UpperArm_" + S, "LowerArm_" + S}) for S in "LR"},
@@ -451,9 +453,10 @@ def solver_rig(table, f):
     return rig
 
 
-def main():
+def main(cast=None):
+    """`cast`: {name: character class}; junekit_export.py passes its own."""
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-    W = WITNESSES[argv[0]]
+    W = (cast or WITNESSES)[argv[0]]
     n = W.name
 
     def opt(name, default, cast=str):
@@ -477,13 +480,14 @@ def main():
     table = [(b, p, Vector(h), Vector(t), d) for b, p, h, t, d in json.loads(rig["char_table"])]
     meta = json.loads(rig["char_meta"])
     srig = solver_rig(table, meta["shoe"])
-    anims.bind(srig)
+    A = getattr(W, "anims", anims)  # the module with this character's solver and clips
+    A.bind(srig)
     if "thigh_r" in meta:
         anims.VALE_THIGH_R = meta["thigh_r"]
-    clips = ce.key_clips(rig, W.clips, anims.solve, anims.FPS)
+    clips = ce.key_clips(rig, W.clips, A.solve, A.FPS)
     fbx = os.path.join(args["out"], n + ".fbx")
     os.makedirs(args["out"], exist_ok=True)
-    ce.export_fbx(rig, objs, fbx, anims.FPS)
+    ce.export_fbx(rig, objs, fbx, A.FPS)
     heads = {b: [round(c, 4) for c in h] for b, _p, h, _t, _d in table}
     report = {
         "fbx": fbx, "textures": json.loads(rig["char_textures"]),
@@ -496,6 +500,8 @@ def main():
         report["seat"] = {"seat_height": anims.SEAT, "hips_offset_from_rest": [round(c, 4) for c in off],
                           "hips_rest": heads["Hips"],
                           "pelvis_seated": [round(a + b, 4) for a, b in zip(heads["Hips"], off)]}
+    if hasattr(W, "report"):
+        W.report(report, heads, meta)
     report["triangles"]["total"] = sum(report["triangles"].values())
     log(json.dumps(report, indent=1))
     if args["report"]:

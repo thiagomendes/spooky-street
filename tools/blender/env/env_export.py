@@ -1,10 +1,14 @@
 """Game export of the approved environment corner (spec §4, §6): the owl house, its Halloween dressing, the
 hero props and the porch kit modules as FBX files plus baked texture atlases that `ModelKit` can load.
 
-The approved builders (`owl_house.py`, `props.py`, `porch_kit.py`) are reused unchanged. This script swaps their
+The approved builders (`owl_house.py`, `props.py`, `porch_kit.py`) are reused as they are. This script swaps their
 `Builder` for `GameBuilder`, which drops trim that cannot be seen at phone distance (tiny pieces, hairline
 chamfers), tags faces for the separately animated children (`OwlPuppet`, `WindWheel`, `FrontDoor`, `Gate`) and
 the emissive `*_Glow` objects, and marks paper cards so they get real back faces (URP Lit culls back faces).
+
+The owl house is a split model: an empty root with `OwlHouseBody`, `Porch`, `FrontDoor`, `DoorRecessCard` and
+`SideWindowPane` (parent of `SideWindow_Glow`) as children, so the game can hide the body and open the door and
+June's window onto `OwlHouseInterior`. Re-export it alone with `only=OwlHouse` (its atlas holds nothing else).
 
 Pipeline: build -> triangulate + weighted normals -> smart UV project -> pack every model of an atlas into one
 UV square -> Cycles bake of the procedural craft materials (base colour, emission, tangent normal) -> rebuild
@@ -58,8 +62,16 @@ class Ctx:
     """Settings and collected geometry for the model(s) being built."""
 
     def __init__(self, model, min_size=0.0, min_bevel=0.0, classify=None, glow=None, per_finish=False, skip_finish=(),
-                 ground=True, behind=None, sharp=75.0):
+                 ground=True, behind=None, sharp=75.0, main=None, finish_parts=None, blockers=None, eyes=None, split=False):
         self.model, self.min_size, self.min_bevel, self.classify = model, min_size, min_bevel, classify
+        # Split models (the owl house): the static mesh is divided into named children instead of living on the
+        # root. `main` names the child for everything untagged, `finish_parts` maps a builder's `finish` name to
+        # another child. All of them are static: they occlude each other and are culled like a main mesh.
+        self.main, self.finish_parts = main, finish_parts or {}
+        self.static = tuple(dict.fromkeys([main, *self.finish_parts.values()]))
+        self.blockers = blockers  # (verts, faces) that only occlude: openings that the interior model fills
+        self.eyes = eyes or {}  # static part -> viewpoints (builder space) that see it while the other parts are hidden
+        self.split = split  # openings stay open for the interior model (no recess box, hideable pane)
         self.sharp = sharp  # auto-smooth angle (the review builders use 75)
         self.ground, self.behind = ground, behind  # hidden-face culling: stands on the ground / extra occluder model
         self.glow = glow or model
@@ -148,6 +160,9 @@ class GameBuilder(el.Builder):
         self.sheets.extend([self.sheet] * n)
 
     def finish(self, name, sharp=75.0):
+        tag = CTX.finish_parts.get(name, CTX.main)
+        if tag is not None:
+            self.parts = [tag if p is None else p for p in self.parts]
         if name not in CTX.skip_finish:
             CTX.builders.setdefault(name if CTX.per_finish else CTX.model, []).append(self)
         holder = bpy.data.objects.new("_built_" + name, None)  # the review builders expect an object back
@@ -175,7 +190,9 @@ def _tagging(module, fname, **attrs):
 
 def _door_game(inner):
     """The door leaf (with everything mounted on it) becomes `FrontDoor`; the frame stays on the wall, and a
-    dark recess behind the opening keeps the house from being see-through when the door swings."""
+    dark recess behind the opening keeps the house from being see-through when the door swings. On a split
+    model the interior shell is behind the door instead: the recess is only a thin `DoorRecessCard` child at the
+    back of the wall thickness, to be hidden whenever the interior is shown."""
     def door(b, P, width=1.1, height=2.02):
         inv, hw = b.stack[-1].inverted(), width / 2
 
@@ -188,6 +205,13 @@ def _door_game(inner):
         inner(b, P, width, height)
         b.part_fn = prev
         bm = bmesh.new()
+        if CTX.split:
+            x, y, z = hw + 0.02, RECESS_CARD_Y, height + 0.02
+            bm.faces.new([bm.verts.new(p) for p in ((-x, y, 0.0), (x, y, 0.0), (x, y, z), (-x, y, z))])
+            prev_part, b.part = b.part, "DoorRecessCard"
+            b.add_bm(bm, P["ink"], None, 0.6, smooth=False)
+            b.part = prev_part
+            return
         bmesh.ops.create_cube(bm, size=1.0)
         for v in bm.verts:
             v.co = Vector((v.co.x * (width + 0.04), v.co.y * 1.2 + 0.66, (v.co.z + 0.5) * (height + 0.02)))
@@ -196,6 +220,26 @@ def _door_game(inner):
         bmesh.ops.reverse_faces(bm, faces=bm.faces[:])
         b.add_bm(bm, P["ink"], None, 0.6, smooth=False)
     return door
+
+
+RECESS_CARD_Y = 0.125  # just behind the wall's backing slab (0.02..0.12), in front of the interior shell (0.14)
+
+
+def _arch_game(inner):
+    """June's side window: the muntins become `SideWindowPane` (the lit pane is `SideWindow_Glow`, exported as
+    its child), so the game can hide the pane and leave the round-topped opening clear."""
+    def arch_window(b, P, w, h, M, lit, sill=0.3):
+        inv = (b.stack[-1] @ M).inverted()
+
+        def part(pts):
+            loc = [inv @ p for p in pts]
+            inside = (max(abs(p.x) for p in loc) <= w / 2 + 0.002 and min(p.y for p in loc) >= -0.06
+                      and max(p.z for p in loc) <= h + w / 2 and min(p.z for p in loc) >= -0.001)
+            return "SideWindowPane" if inside else None
+        prev, b.part_fn = b.part_fn, part if CTX.split else b.part_fn
+        inner(b, P, w, h, M, lit, sill)
+        b.part_fn = prev
+    return arch_window
 
 
 def _wheel_game(inner):
@@ -214,8 +258,7 @@ def _wheel_game(inner):
     return wind_wheel
 
 
-GAME_LEAF = [(0.0, -0.55), (0.05, -0.2), (0.42, -0.3), (0.6, 0.1), (0.37, 0.19), (0.44, 0.47), (0.0, 0.8)]  # crown leaf
-CROWN_CARDS, CROWN_LEAF_SCALE = 68, 1.25  # the review crown has 96 smaller leaves per clump
+GAME_LEAF = [(0.0, -0.55), (0.05, -0.2), (0.42, -0.3), (0.6, 0.1), (0.37, 0.19), (0.44, 0.47), (0.0, 0.8)]  # fallen leaf
 HEAP_SCALE = 1.0
 
 
@@ -227,31 +270,26 @@ def install_hooks():
     oh.wind_wheel = _wheel_game(oh.wind_wheel)
     _tagging(oh, "owl_puppet", part="OwlPuppet")
     _tagging(pk, "round_window", glow_tag="AtticWindow")
+    pk.arch_window = _arch_game(pk.arch_window)
     _tagging(pk, "arch_window", glow_tag="SideWindow")
     _tagging(pr, "hanging_lamp", glow_tag="Lamp")
     _tagging(pr, "_carve", glow_tag="Face", solid=True)  # carved faces lie on the shell: no back faces needed
     pr.MAPLE_MID = GAME_LEAF
-    leaf, foliage, heap = pr.leaf, pr.foliage, pr.candy_heap
-
-    def game_leaf(b, craft, M, size, rgb, curl=0.25, low=False, mat=None, tint=None, fold=0.25):
-        leaf(b, craft, M, size * (CROWN_LEAF_SCALE if mat is not None else 1.0), rgb, curl, low, mat, tint, fold)
-
-    def game_foliage(b, craft, centre, radii, seed, cards=96):
-        foliage(b, craft, centre, radii, seed, CROWN_CARDS)
+    heap = pr.candy_heap
 
     def game_heap(b, craft, radius, height, count, s=1.0, lollies=2):
         heap(b, craft, radius, height, count, s * HEAP_SCALE, lollies)
-    pr.leaf, pr.foliage, pr.candy_heap = game_leaf, game_foliage, game_heap
-    _tagging(pr, "foliage", solid=True)  # crown leaves lie on the clumps facing out: single-sided
+    pr.candy_heap = game_heap
 
 
 # --- models ------------------------------------------------------------------------------------------------
 
 class Model:
-    def __init__(self, name, atlas, build, weight=1.0, origin=(0, 0, 0), pivots=None, **ctx):
+    def __init__(self, name, atlas, build, weight=1.0, origin=(0, 0, 0), pivots=None, nest=None, **ctx):
         self.name, self.atlas, self.build, self.weight = name, atlas, build, weight
         self.origin = Vector(origin)
         self.pivots = pivots or {}  # part name -> Matrix (builder space) of the child's pivot frame
+        self.nest = nest or {}  # part name -> the part it is a child of (it then shares that part's pivot frame)
         self.ctx = ctx
         self.parts = {}  # part name -> working object (builder space, identity transform)
         self.tris = {}
@@ -344,7 +382,7 @@ def model_list(craft):
         Model("Crate", "Env", pr.build_crate, 1.3, min_size=0.03),
         Model("Awning", "Env", pr.build_awning, 0.7),
         Model("PlankBridge", "Env", pr.build_bridge, 0.9, min_size=0.03),
-        Model("Maple", "Env", lambda c: pr.build_maple(c, treehouse=False), 0.3),
+        # `Maple` has its own textures and export (`env_export_maple.py`); the Env atlas keeps its old texels unused
         Model("TreehousePlatform", "Env", lambda c: pr.build_maple(c, treehouse=True, crown=False), 0.8,
               skip_finish=("Maple",)),
         Model("Pumpkin", "Env", _pumpkin, 2.0),
@@ -355,9 +393,85 @@ def model_list(craft):
                 pivots={"FrontDoor": T(-0.55, -0.015, 0.0)})
     return [
         Model("OwlHouse", "OwlHouse", _house, 1.0, origin=HOUSE_ORIGIN, min_size=0.03, min_bevel=0.0,
-              pivots={"OwlPuppet": owl, "WindWheel": T(*oh.WHEEL), "FrontDoor": door_hinge}),
+              pivots={"OwlPuppet": owl, "WindWheel": T(*oh.WHEEL), "FrontDoor": door_hinge, "SideWindowPane": oh.SIDE_PANE_HINGE},
+              nest={"SideWindow_Glow": "SideWindowPane"}, split=True, main="OwlHouseBody", finish_parts={"House_Porch": "Porch"},
+              blockers=_house_blockers(), eyes={"Porch": DOOR_EYES}),
         Model("OwlHouseDressing", "Env", _dressing, 1.2, origin=HOUSE_ORIGIN, min_size=0.012, behind="OwlHouse"),
     ] + props + [kit]
+
+
+def _house_blockers():
+    """The owl house's two ways in, closed for the visibility test only: the interior model fills them in game, so
+    the insides of the exterior walls must not count as seen through them. Each is a shallow box that leaves the
+    reveals of the wall thickness in view (door: back and floor; side window: back)."""
+    x, y, z0, z1 = 0.6, RECESS_CARD_Y, pk.FLOOR + 0.005, pk.FLOOR + 2.1
+    wx, hw = -oh.HALF + RECESS_CARD_Y, oh.SIDE_W / 2 + 0.05
+    y0, y1, s0, s1 = oh.DORMER_Y - hw, oh.DORMER_Y + hw, oh.SILL_Z - 0.05, oh.SILL_Z + oh.SIDE_APEX + 0.05
+    quads = [[(-x, y, 0.0), (x, y, 0.0), (x, y, z1), (-x, y, z1)],
+             [(-x, -0.2, z0), (x, -0.2, z0), (x, y, z0), (-x, y, z0)],
+             [(wx, y0, s0), (wx, y1, s0), (wx, y1, s1), (wx, y0, s1)]]
+    return [p for q in quads for p in q], [tuple(range(4 * i, 4 * i + 4)) for i in range(len(quads))]
+
+
+# Where Pip stands in the foyer looking out through the open door (builder space). The porch keeps every face
+# these points can see, because the body is hidden while Pip is inside.
+DOOR_EYES = [(x, y, pk.FLOOR + z) for x in (-0.42, 0.0, 0.42) for y in (0.1, 1.2) for z in (0.45, 1.0, 1.6)]
+
+
+def seen_from(verts, faces, keep, eyes):
+    """Also keep the faces that one of `eyes` can see past the model's own geometry."""
+    bvh = BVHTree.FromPolygons(verts, [t for f in faces for t in _triangles(verts, f)], all_triangles=True, epsilon=0.0)
+    eyes = [Vector(e) for e in eyes]
+    out = list(keep)
+    for i, f in enumerate(faces):
+        if out[i]:
+            continue
+        for tri in _triangles(verts, f):
+            a, b2, c2 = (Vector(verts[k]) for k in tri)
+            n = (b2 - a).cross(c2 - a)
+            if n.length < 1e-10:
+                continue
+            n.normalize()
+            for o in (p + n * 0.003 for p in _tri_grid(a, b2, c2)):
+                for e in eyes:
+                    d = e - o
+                    dist = d.length
+                    if d.dot(n) > 0.02 * dist and bvh.ray_cast(o, d / dist, dist)[0] is None:
+                        out[i] = True
+                        break
+                if out[i]:
+                    break
+            if out[i]:
+                break
+    return out
+
+
+def _merge(*geoms):
+    verts, faces = [], []
+    for g in geoms:
+        if g:
+            base = len(verts)
+            verts += g[0]
+            faces += [tuple(base + i for i in f) for f in g[1]]
+    return (verts, faces) if faces else None
+
+
+def _static_geometry(builders, part):
+    """Solid (non-paper) faces of one static part, for occlusion."""
+    verts, faces = [], []
+    for b in builders:
+        local = {}
+        for f, p, sh in zip(b.faces, b.parts, b.sheets):
+            if p != part or sh:
+                continue
+            idx = []
+            for v in f:
+                if v not in local:
+                    local[v] = len(verts)
+                    verts.append(b.verts[v])
+                idx.append(local[v])
+            faces.append(idx)
+    return verts, faces
 
 
 def clear_scene_objects(keep):
@@ -487,9 +601,14 @@ def mesh_from_builders(name, builders, part, model=None):
             sheets.append(sh)
     if not faces:
         return None
-    if part is None and model is not None:
-        OCCLUDERS[model] = (verts, [f for f, sh in zip(faces, sheets) if not sh])
-        keep = visible(verts, faces, cards, OCCLUDERS.get(CTX.behind), CTX.ground, sheets)
+    if part in CTX.static and model is not None:
+        others = [_static_geometry(builders, p) for p in CTX.static if p != part]
+        OCCLUDERS[model] = _merge((verts, [f for f, sh in zip(faces, sheets) if not sh]), *others)
+        keep = visible(verts, faces, cards, _merge(OCCLUDERS.get(CTX.behind), CTX.blockers, *others), CTX.ground, sheets)
+        if part in CTX.eyes:
+            n0 = sum(keep)
+            keep = seen_from(verts, faces, keep, CTX.eyes[part])
+            log(f"  {name}: {sum(keep) - n0} more faces kept for the viewpoints inside")
         faces, cols, mat_ids, smooth, cards = ([x for x, k in zip(seq, keep) if k] for seq in (faces, cols, mat_ids, smooth, cards))
         used = sorted({i for f in faces for i in f})
         index = {v: i for i, v in enumerate(used)}
@@ -612,9 +731,9 @@ def _uv_and_area(me):
     return uv, a3, a2
 
 
-def unwrap_and_pack(models, atlas, size):
+def unwrap_and_pack(models, atlas, size, **pack):
     """Smart-project every part, give each model `weight` x the common texel density, then pack all islands of
-    the atlas into one square."""
+    the atlas into one square. `pack` overrides the island packer's settings."""
     objs = [(m, o) for m in models if m.atlas == atlas for o in m.parts.values()]
     if not objs:
         return 0.0
@@ -635,8 +754,8 @@ def unwrap_and_pack(models, atlas, size):
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="SELECT")
     bpy.ops.uv.select_all(action="SELECT")
-    bpy.ops.uv.pack_islands(udim_source="CLOSEST_UDIM", rotate=True, rotate_method="CARDINAL", scale=True, merge_overlap=False,
-                            margin_method="FRACTION", margin=1.0 / size, shape_method="AABB")
+    bpy.ops.uv.pack_islands(**{**dict(udim_source="CLOSEST_UDIM", rotate=True, rotate_method="CARDINAL", scale=True, merge_overlap=False,
+                                      margin_method="FRACTION", margin=1.0 / size, shape_method="AABB"), **pack})
     bpy.ops.object.mode_set(mode="OBJECT")
     used = area = 0.0
     for m, o in objs:
@@ -769,9 +888,7 @@ def bake_atlas(models, atlas, size, samples, out_dir):
 
 # --- final meshes and FBX ----------------------------------------------------------------------------------
 
-def final_object(name, src, to_local, material):
-    """Plain game mesh: one material, baked UVs, the approved shading normals, real back faces on cards,
-    geometry moved into its pivot frame by `to_local`."""
+def _final_arrays(src, to_local):
     me = src.data
     me.calc_normals_split()
     nl = len(me.loops)
@@ -800,6 +917,17 @@ def final_object(name, src, to_local, material):
         loops = np.arange(nl).reshape(-1, 3)[card][:, ::-1].ravel()
         nrm = np.concatenate([nrm, -nrm[loops]])
         uv = np.concatenate([uv, uv[loops]])
+    return co, tris, nrm, uv
+
+
+def final_object(name, src, to_local, material, merge=()):
+    """Plain game mesh: one material, baked UVs, the approved shading normals, real back faces on cards,
+    geometry moved into its pivot frame by `to_local`. `merge`: further working meshes that become part of it."""
+    co, tris, nrm, uv = _final_arrays(src, to_local)
+    for other in merge:
+        co2, tris2, nrm2, uv2 = _final_arrays(other, to_local)
+        tris = np.concatenate([tris, tris2 + len(co)])
+        co, nrm, uv = np.concatenate([co, co2]), np.concatenate([nrm, nrm2]), np.concatenate([uv, uv2])
     out = bpy.data.meshes.new(name)
     out.from_pydata(co.tolist(), [], tris.tolist())
     out.uv_layers.new(name="UVMap").data.foreach_set("uv", uv.ravel())
@@ -818,7 +946,7 @@ def export_model(m, materials, out_dir):
     root_name = m.name
     children = []
     if None in m.parts:
-        root = final_object(root_name, m.parts[None], shift, materials[m.atlas])
+        root = final_object(root_name, m.parts[None], shift, materials[m.atlas], getattr(m, "merge", ()))
     else:
         root = bpy.data.objects.new(root_name, None)
         el.pm.link(root)
@@ -829,15 +957,24 @@ def export_model(m, materials, out_dir):
         if part is None:
             continue
         # the child's pivot frame in model space; glow parts without one share the model origin
-        frame = shift @ m.pivots[part] if part in m.pivots else Matrix.Identity(4)
-        rest = Matrix.Translation(frame.translation)  # children are exported unrotated (gate closed)
+        holder = m.nest.get(part)  # a nested part lives in its parent's pivot frame
+        key = holder or part
+        frame = shift @ m.pivots[key] if key in m.pivots else Matrix.Identity(4)
+        rest = Matrix.Identity(4) if holder else Matrix.Translation(frame.translation)  # exported unrotated (gate closed)
         mat = materials["Glow"] if part.endswith(GLOW_SUFFIX) else materials[m.atlas]
         child = final_object(part, src, frame.inverted() @ shift, mat)
         child.parent = root
         child.matrix_local = rest
         children.append(child)
         report["children"][part] = {"triangles": len(child.data.polygons), "pivot": [round(c, 4) for c in rest.translation]}
+        if holder:
+            report["children"][part]["parent"] = holder
         report["triangles"] += len(child.data.polygons)
+    for child in children:
+        holder = next((c for c in children if c.name == m.nest.get(child.name)), None)
+        if holder is not None:
+            child.parent = holder
+            child.matrix_local = Matrix.Identity(4)
     bpy.context.view_layer.update()
     _select([root] + children)
     bpy.ops.export_scene.fbx(

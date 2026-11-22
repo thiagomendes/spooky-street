@@ -204,8 +204,13 @@ namespace SpookyStreet.Controls
         }
     }
 
-    /// <summary>Press-edge button for thumbs: holding never generates repeated presses.</summary>
-    public sealed class TouchButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler
+    /// <summary>
+    /// Press-edge button for thumbs: holding never generates repeated presses. A thumb already pressing another
+    /// touch button that slides onto this one presses it too (slide from Jump to Use mid-glide dives without lifting
+    /// the thumb); a hover or a camera drag never does.
+    /// </summary>
+    public sealed class TouchButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler,
+        IPointerEnterHandler
     {
         private bool _pendingPress;
         private int _pointerId = int.MinValue;
@@ -232,6 +237,26 @@ namespace SpookyStreet.Controls
         }
 
         public void OnPointerExit(PointerEventData eventData) => OnPointerUp(eventData);
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (eventData == null || Held)
+            {
+                return;
+            }
+
+            GameObject pressedOn = eventData.rawPointerPress != null ? eventData.rawPointerPress : eventData.pointerPress;
+            if (pressedOn == null || pressedOn == gameObject)
+            {
+                return;
+            }
+
+            var origin = pressedOn.GetComponentInParent<TouchButton>();
+            if (origin != null && origin != this)
+            {
+                OnPointerDown(eventData);
+            }
+        }
 
         public bool ConsumePress()
         {
