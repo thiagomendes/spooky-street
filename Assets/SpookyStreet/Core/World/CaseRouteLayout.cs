@@ -421,7 +421,7 @@ namespace SpookyStreet.Core.World
                 new RoutePoint("leg 2 top", -7.0f, TreehouseY, 15.85f),
                 new RoutePoint("shed roof", -6.5f, TreehouseY, 14.0f),
                 new RoutePoint("bridge head", -5.6f, TreehouseY, BridgeZ),
-                new RoutePoint("bridge end", -3.55f, ExteriorSillY, BridgeZ),
+                new RoutePoint("bridge end", -3.7f, ExteriorSillY, BridgeZ),
                 new RoutePoint("at the window", -3.34f, ExteriorSillY, BridgeZ)),
             new RouteLeg("attic, stair and hall", ThresholdId.FrontDoor,
                 new RoutePoint("dormer arrival", -1.7f, LoftY, InteriorFrontZ + 1.5f),

@@ -33,6 +33,10 @@ namespace SpookyStreet.World
         private RectTransform _crease;
         private RectTransform _shade;
         private RectTransform _fold;
+        private RectTransform _edge;
+
+        /// <summary>Bone paper, a touch warmer than the baked card so the full-screen sheet never reads grey.</summary>
+        private static readonly Color PageTint = new Color(1f, 0.975f, 0.92f, 1f);
         private Image _glyph;
 
         public Canvas Canvas { get; private set; }
@@ -64,7 +68,7 @@ namespace SpookyStreet.World
             catcher.raycastTarget = true;
 
             var page = UiFactory.Sprite(_root, "Page", null, Color.white, Vector2.zero, Vector2.zero, Vector2.zero);
-            UiFactory.ApplySurface(page, UiSpriteCatalog.PaperCard, Palette.WarmPaper, Color.white);
+            UiFactory.ApplySurface(page, UiSpriteCatalog.PaperCard, Palette.WarmPaper, PageTint);
             UiFactory.InkShadow(page, new Vector2(-10f, -12f), 0.55f);
             _page = page.rectTransform;
             UiFactory.StitchLayer(page.transform, Palette.HauntedPurple);
@@ -86,6 +90,10 @@ namespace SpookyStreet.World
             var crease = UiFactory.Sprite(_page, "Crease", null, UiFactory.WithAlpha(Palette.InkBlack, 0.28f),
                 Vector2.zero, Vector2.zero, Vector2.zero);
             _crease = crease.rectTransform;
+            // The cut edge itself: an ink outline, as on every paper card.
+            var edgeLine = UiFactory.Sprite(_page, "EdgeInk", null, UiFactory.WithAlpha(Palette.InkBlack, 0.7f),
+                Vector2.zero, Vector2.zero, Vector2.zero);
+            _edge = edgeLine.rectTransform;
 
             // The place's stamp: a puppet part in a stitched ring, like the goal stickers.
             var ring = UiFactory.Sprite(_page, "StampRing", UiSprites.TryLoad(UiSpriteCatalog.StitchRing),
@@ -140,6 +148,8 @@ namespace SpookyStreet.World
             _crease.gameObject.SetActive(lifting);
             _shade.gameObject.SetActive(lifting);
             _fold.gameObject.SetActive(lifting);
+            _edge.gameObject.SetActive(!wipe.ReducedMotion && wipe.Phase != WipePhase.Covered);
+            Edge(_edge, edge, 3f, inside: true);
             if (lifting)
             {
                 Edge(_fold, edge, 2.5f * curl, inside: true, offset: curl);

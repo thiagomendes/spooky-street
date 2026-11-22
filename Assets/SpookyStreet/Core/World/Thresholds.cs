@@ -87,11 +87,12 @@ namespace SpookyStreet.Core.World
 
         private const float Ifz = CaseRouteLayout.InteriorFrontZ;
 
-        /// <summary>On the street: Pip on the sill against the window plane (the body stops Pip at x −3.33).</summary>
+        /// <summary>On the street: Pip at the bridge's end and on the sill, against the window plane (the body stops
+        /// Pip's capsule at x −3.33, its skin a few centimetres before).</summary>
         public static readonly ThresholdEnd DormerOutside = new ThresholdEnd(ThresholdId.Dormer, false,
-            -3.42f, -2.9f, CaseRouteLayout.ExteriorSillY - 0.3f, CaseRouteLayout.ExteriorSillY + 0.9f,
+            -3.55f, -2.9f, CaseRouteLayout.ExteriorSillY - 0.3f, CaseRouteLayout.ExteriorSillY + 0.9f,
             CaseRouteLayout.ExteriorWindowZ - 0.45f, CaseRouteLayout.ExteriorWindowZ + 0.45f,
-            -3.95f, 2.49f, CaseRouteLayout.ExteriorWindowZ, -90f);
+            -4.1f, 2.47f, CaseRouteLayout.ExteriorWindowZ, -90f);
 
         /// <summary>In the attic: Pip in the window's reveal (the view box stops Pip at x −3.53).</summary>
         public static readonly ThresholdEnd DormerInside = new ThresholdEnd(ThresholdId.Dormer, true,
@@ -102,7 +103,7 @@ namespace SpookyStreet.Core.World
         /// <summary>On the porch: Pip in the open doorway (the body stops Pip at z 10.72).</summary>
         public static readonly ThresholdEnd DoorOutside = new ThresholdEnd(ThresholdId.FrontDoor, false,
             -0.5f, 0.5f, CaseRouteLayout.FloorY - 0.3f, CaseRouteLayout.FloorY + 0.9f,
-            CaseRouteLayout.FrontZ - 0.42f, CaseRouteLayout.FrontZ + 0.3f,
+            CaseRouteLayout.FrontZ - 0.5f, CaseRouteLayout.FrontZ + 0.3f,
             0f, CaseRouteLayout.FloorY, CaseRouteLayout.FrontZ - 1.55f, 180f);
 
         /// <summary>In the hall: Pip in the open doorway (the view box stops Pip at builder depth −0.06).</summary>

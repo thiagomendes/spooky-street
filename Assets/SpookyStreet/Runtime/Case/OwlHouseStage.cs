@@ -271,6 +271,11 @@ namespace SpookyStreet.Case
             AddLight("JuneLamp", InteriorPoint(-1.3f, CaseRouteLayout.LoftY + 1.6f, 2.2f), 6f, 2.0f);
             AddLight("AtticBackLamp", InteriorPoint(1.4f, CaseRouteLayout.LoftY + 1.8f, 5.2f), 6f, 1.6f);
             AddLight("NookLamp", InteriorPoint(2.85f, 1.7f, 4.2f), 3.2f, 1.4f);
+            // The treehouse cabin's lamp in the lookout bay (it is seamless on the maple: always on), so its closed
+            // roof reads as boards from inside rather than as the night.
+            CaseRouteLayout.CabinToWorld(CaseRouteLayout.CabinPlatX + 0.6f, CaseRouteLayout.CabinPlatY + 0.9f, out float cx,
+                out float cz);
+            AddLight("CabinLamp", new Vector3(cx, CaseRouteLayout.TreehouseY + 1.55f, cz), 3.2f, 1.3f, false);
             // The route lantern (exterior: always on).
             AddLight("BridgeLantern", new Vector3(CaseRouteLayout.RoofMaxX - 0.1f, 4.2f, CaseRouteLayout.BridgeZ + 0.05f), 6f,
                 1.6f, false);

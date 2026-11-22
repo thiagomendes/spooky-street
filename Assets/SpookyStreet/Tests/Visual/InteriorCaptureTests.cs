@@ -136,7 +136,7 @@ namespace SpookyStreet.Tests.Visual
             brain.enabled = true;
 
             // 19: in by June's window (the page turns), then near June on her stool (gameplay camera).
-            yield return Cross(new Vector3(-3.95f, 2.55f, CaseRouteLayout.ExteriorWindowZ),
+            yield return Cross(new Vector3(-4.3f, 2.55f, CaseRouteLayout.ExteriorWindowZ),
                 new Vector3(-3.36f, 2.55f, CaseRouteLayout.ExteriorWindowZ));
             Assert.IsTrue(director.State.Has(CaseFact.EnteredByWindow), "19: entered by the window");
             Assert.IsTrue(director.House.InteriorShown, "19: the interior is drawn");

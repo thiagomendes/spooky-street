@@ -180,7 +180,7 @@ namespace SpookyStreet.Tests.PlayMode
         private static IEnumerator EnterByWindow()
         {
             yield return Cross(Thresholds.DormerOutside,
-                new Vector3(-3.95f, 2.5f, CaseRouteLayout.ExteriorWindowZ),
+                new Vector3(-4.3f, 2.5f, CaseRouteLayout.ExteriorWindowZ),
                 new Vector3(-3.36f, 2.5f, CaseRouteLayout.ExteriorWindowZ));
             yield return Frames(3);
         }
