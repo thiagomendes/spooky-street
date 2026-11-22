@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bmesh
 import bpy
 import numpy as np
-from mathutils import Vector, noise
+from mathutils import Matrix, Vector, noise
 
 import env_lib as el
 import porch_kit as pk
@@ -22,6 +22,8 @@ from env_lib import E, R, S, T, V, Builder, H, arc, catenary, grouped, lc, shade
 BAT = el.co.bat_outline(1.0)  # 1.24 units wide
 BUNTING = ("orange", "purple", "candy", "lime", "berry")
 DETAIL = 1  # 2 for a prop that fills the frame (the key frame's foreground bowl)
+JACK_GLOW = 1.0  # scene-wide scale of carved-face emission
+LAMP_GLOW = 1.0  # scene-wide scale of lantern-glass emission
 
 
 # --- pumpkins and candy ------------------------------------------------------------------------------------
@@ -77,14 +79,14 @@ def _carve(b, glow, surf, r, hz, style):
         b.poly(glow, [surf(*dn[i]), surf(*dn[i + 1]), surf(*up[i + 1]), surf(*up[i])], tint=1.0, smooth=True)
 
 
-def pumpkin(b, craft, r, squash=0.8, M=None, style=0, rgb=None, lobes=8, glow=2.6, stem=True):
+def pumpkin(b, craft, r, squash=0.8, M=None, style=0, rgb=None, lobes=8, glow=2.6, stem=True, per_lobe=3):
     """Jack-o'-lantern (style None = uncarved). Sits on the ground at the local origin."""
     hz, prof, radial, surf = _pumpkin_shell(r, squash, lobes)
     mat = craft.tinted(rgb or E["orange"], 0.6, 0.2, 6.0, sheen=0.25)
     with b.at((M if M is not None else T()) @ T(0, 0, hz * 0.92)):
-        b.lathe(mat, prof + [(0.0, hz * 0.84)], lobes * 3, radial=radial, tint=b.vary(0.92, 1.06))
+        b.lathe(mat, prof + [(0.0, hz * 0.84)], lobes * per_lobe, radial=radial, tint=b.vary(0.92, 1.06))
         if style is not None:
-            _carve(b, craft.glow(H(0xFFC64D), glow), surf, r, hz, style)
+            _carve(b, craft.glow(H(0xFFC64D), glow * JACK_GLOW), surf, r, hz, style)
         if stem:
             green = lc(H(0x5E7A32))
             p0, p1 = Vector((0, 0, hz * 0.8)), Vector((0.03 * r, 0.02 * r, hz * 0.8 + 0.3 * r))
@@ -93,48 +95,62 @@ def pumpkin(b, craft, r, squash=0.8, M=None, style=0, rgb=None, lobes=8, glow=2.
             b.rod(craft.paint(), p1, p2, 0.068 * r, 7, shade(green, 0.85), r2=0.05 * r)
 
 
-def candy(b, paint, kind, M, a, c, s=1.0):
-    """One sweet at the local origin: 0 wrapped, 1 lollipop, 2 candy corn, 3 gumball."""
-    seg = 8 * DETAIL
+def candy(b, craft, kind, M, a, c, s=1.0):
+    """One sweet at the local origin: 0 wrapped with twisted ends, 1 round lollipop, 2 candy corn, 3 gumball,
+    4 foil-wrapped drop. All lathed and smooth-shaded; DETAIL sets the facet count."""
+    paint = craft.paint()
+    seg, rings = int(round(8 * DETAIL)), int(round(4 * DETAIL))
 
     def ball(rx, rz):
-        n = 4 * DETAIL
-        return [(rx * math.sin(math.pi * i / n) if 0 < i < n else 0.0, -rz * math.cos(math.pi * i / n)) for i in range(n + 1)]
+        return [(rx * math.sin(math.pi * i / rings) if 0 < i < rings else 0.0, -rz * math.cos(math.pi * i / rings)) for i in range(rings + 1)]
     with b.at(M):
         if kind == 0:
-            b.lathe(paint, ball(0.022 * s, 0.03 * s), seg, tint=lc(a))
+            b.lathe(paint, ball(0.021 * s, 0.03 * s), seg, tint=lc(a))
+            wrap = lc(el.blend(c, (1, 1, 1), 0.35))
+            twist = [(0.008 * s, 0.024 * s), (0.0055 * s, 0.031 * s), (0.013 * s, 0.043 * s), (0.022 * s, 0.056 * s)]
             for e in (1, -1):
-                b.cyl(paint, 0.004 * s, 0.026 * s, T(0, 0, e * 0.04 * s) @ (R("X", 180) if e < 0 else T()), r2=0.02 * s, segments=6, tint=lc(c))
+                b.lathe(paint, twist, seg, R("X", 180) if e < 0 else None, tint=wrap,
+                        radial=lambda ang, i: 1 + (0.24 if i >= 2 else 0.0) * math.cos(seg / 2 * ang))
         elif kind == 1:
-            b.disc(paint, 0.04 * s, 0.014 * s, T(0, -0.007 * s, 0.12 * s), segs=12 * DETAIL, tint=lc(a), bevel=0.004 * s)
-            b.disc(paint, 0.02 * s, 0.018 * s, T(0, -0.009 * s, 0.12 * s), segs=8, tint=lc(c), bevel=0.003 * s)
-            b.rod(paint, (0, 0, -0.04 * s), (0, 0, 0.085 * s), 0.004 * s, 5, lc(V["bone"]))
+            with b.at(T(0, 0, 0.125 * s) @ R("X", 90)):
+                b.lathe(paint, ball(0.043 * s, 0.011 * s), seg * 2, tint=lc(a))
+                b.lathe(paint, ball(0.028 * s, 0.0135 * s), seg * 2, tint=lc(c))
+                b.lathe(paint, ball(0.014 * s, 0.0155 * s), seg, tint=lc(a))
+            b.rod(paint, (0, 0, -0.04 * s), (0, 0, 0.09 * s), 0.004 * s, 6, lc(V["bone"]))
         elif kind == 2:
-            for (r0, r1, z0, z1), col in zip(((0.022, 0.016, 0, 0.02), (0.016, 0.009, 0.02, 0.042), (0.009, 0.002, 0.042, 0.06)),
-                                             (V["candy"], V["orange"], V["white"])):
-                b.cyl(paint, r0 * s, (z1 - z0) * s, T(0, 0, (z0 + z1) / 2 * s), r2=r1 * s, segments=6, tint=lc(col))
-        else:
+            with b.at(S(1.0, 0.62, 1.0)):
+                b.lathe(paint, [(0.0, 0.0), (0.016 * s, 0.001 * s), (0.022 * s, 0.008 * s), (0.0195 * s, 0.021 * s)], seg, tint=lc(V["candy"]))
+                b.lathe(paint, [(0.0195 * s, 0.021 * s), (0.013 * s, 0.041 * s)], seg, tint=lc(V["orange"]))
+                b.lathe(paint, [(0.013 * s, 0.041 * s), (0.007 * s, 0.054 * s), (0.003 * s, 0.06 * s), (0.0, 0.061 * s)], seg, tint=lc(V["white"]))
+        elif kind == 3:
             b.lathe(paint, ball(0.024 * s, 0.024 * s), seg, tint=lc(a))
+        else:
+            b.lathe(craft.foil(), [(0.0, 0.0), (0.019 * s, 0.002 * s), (0.025 * s, 0.012 * s), (0.019 * s, 0.027 * s), (0.007 * s, 0.04 * s),
+                                   (0.004 * s, 0.05 * s), (0.0, 0.052 * s)], seg, tint=lc(a),
+                    radial=lambda ang, i: 1 + 0.05 * math.cos(seg / 2 * ang))
+            b.poly(craft.paper_white(), [(0.0, 0.0, 0.048 * s), (0.03 * s, 0.004 * s, 0.062 * s), (0.032 * s, 0.004 * s, 0.054 * s)], tint=lc(V["bone"]))
 
 
 SWEETS = ("orange", "purple", "lime", "candy", "berry", "bone")
 
 
 def candy_heap(b, craft, radius, height, count, s=1.0, lollies=2):
-    paint = craft.paint()
     rng = b.rng
+    foils = (H(0xE9B83A), H(0x9B5BE0), H(0x58C06A), H(0xE8527A))
     for k in range(count):
         rho = math.sqrt(rng.random()) * radius * 0.86
         ang = rng.uniform(0, 2 * math.pi)
         z = height * (1 - (rho / radius) ** 2) + 0.012 * s
         m = T(rho * math.cos(ang), rho * math.sin(ang), z) @ R("Z", rng.uniform(0, 360)) @ R("X", rng.uniform(60, 120))
+        kind = rng.choice((0, 0, 0, 0, 2, 3, 4, 4))
         a, c = V[rng.choice(SWEETS)], V[rng.choice(SWEETS)]
-        kind = rng.choice((0, 0, 0, 2, 3))
-        candy(b, paint, kind, m if kind != 2 else m @ T(0, 0, -0.03 * s), a, c, s)
+        if kind == 4:
+            a = rng.choice(foils)
+        candy(b, craft, kind, m if kind not in (2, 4) else m @ T(0, 0, -0.03 * s), a, c, s)
     for k in range(lollies):
         ang = 2.2 + 2.6 * k
         m = T(radius * 0.45 * math.cos(ang), radius * 0.45 * math.sin(ang), height * 0.75) @ R("Y", 22 * (1 if k else -1)) @ R("Z", 15 + 40 * k)
-        candy(b, paint, 1, m, V[("berry", "lime")[k % 2]], V[("bone", "candy")[k % 2]], s * 1.25)
+        candy(b, craft, 1, m, V[("berry", "lime")[k % 2]], V[("bone", "candy")[k % 2]], s * 1.25)
 
 
 def candy_bowl(b, craft, r=0.3, M=None, spill=True, heap=46, glow=2.4):
@@ -147,10 +163,10 @@ def candy_bowl(b, craft, r=0.3, M=None, spill=True, heap=46, glow=2.4):
     with b.at((M if M is not None else T())):
         with b.at(T(0, 0, hz * 0.92)):
             b.lathe(mat, prof + [(rim_r - 0.012 * k, rim_z + 0.016 * k), (rim_r - 0.04 * k, rim_z + 0.012 * k),
-                                 (rim_r - 0.05 * k, rim_z - 0.03 * k)], 27 * DETAIL, radial=radial, tint=1.0)
+                                 (rim_r - 0.05 * k, rim_z - 0.03 * k)], 9 * int(round(3 * DETAIL)), radial=radial, tint=1.0)
             b.lathe(craft.tinted(H(0x7A2A12), 0.8, 0.1), [(rim_r - 0.045 * k, rim_z - 0.02 * k), (rim_r * 0.62, rim_z + 0.055 * k),
                                                           (0.0, rim_z + 0.1 * k)], 18, tint=1.0)
-            _carve(b, craft.glow(H(0xFFC64D), glow), surf, r, hz, 3)
+            _carve(b, craft.glow(H(0xFFC64D), glow * JACK_GLOW), surf, r, hz, 3)
             with b.at(T(0, 0, rim_z - 0.01 * k)):
                 candy_heap(b, craft, rim_r - 0.05 * k, 0.13 * k, heap, 1.25 * k ** 0.5)
         if spill:
@@ -158,13 +174,16 @@ def candy_bowl(b, craft, r=0.3, M=None, spill=True, heap=46, glow=2.4):
             for x, y, kind, a, rz in ((0.36, -0.2, 0, "purple", 30), (-0.38, -0.12, 0, "lime", -50), (0.28, -0.33, 3, "berry", 0),
                                       (-0.22, -0.36, 2, "candy", 20)):
                 m = T(x * k, y * k, 0.027 if kind != 2 else 0.02) @ R("Z", rz) @ (R("X", 90) if kind != 3 else T())
-                candy(b, paint, kind, m @ (T(0, 0, -0.03) if kind == 2 else T()), V[a], V["bone"], 1.25)
+                candy(b, craft, kind, m @ (T(0, 0, -0.03) if kind == 2 else T()), V[a], V["bone"], 1.25)
     return hz
 
 
 def build_candy_bowl(craft, r=0.3, spill=True, seed=3):
+    global DETAIL
     b = Builder(seed)
+    DETAIL = 1.5  # the hero bowl; dressing bowls stay at 1
     hz = candy_bowl(b, craft, r, None, spill)
+    DETAIL = 1
     b.finish("CandyBowl")
     el.point_light("CandyBowlGlow", (0, -r * 1.25, hz * 0.8), 2.5, (1.0, 0.62, 0.25), 0.06, shadow=False)
 
@@ -240,7 +259,7 @@ def hanging_lamp(b, craft, drop=0.35, s=1.0, glow=2.4):
     z0 = -drop - 0.02
     with b.at(T(0, 0, z0) @ S(s)):
         b.lathe(ink, [(0.0, 0.0), (0.03, -0.01), (0.05, -0.05), (0.15, -0.1), (0.16, -0.115), (0.11, -0.12)], 6, tint=1.0)
-        b.lathe(craft.glow(E["glow"], glow), [(0.105, -0.115), (0.12, -0.2), (0.115, -0.3), (0.085, -0.36)], 6, tint=1.0)
+        b.lathe(craft.glow(E["glow"] if LAMP_GLOW >= 1 else E["amber"], glow * LAMP_GLOW), [(0.105, -0.115), (0.12, -0.2), (0.115, -0.3), (0.085, -0.36)], 6, tint=1.0)
         for k in range(6):
             a = math.radians(60 * k)
             b.rod(ink, (0.108 * math.cos(a), 0.108 * math.sin(a), -0.115), (0.124 * math.cos(a), 0.124 * math.sin(a), -0.2), 0.008, 4, 1.0)
@@ -267,28 +286,29 @@ def build_dressing(craft):
 
 
 def build_paper_bat(craft):
-    """The collectible: a folded black-paper bat with pin-prick glowing eyes, shown hanging from a peg stand
-    (in game it flutters free)."""
+    """The collectible: a folded black-paper bat with a thin glowing candy-yellow edge and pin-prick eyes,
+    shown on a wire stand (in game it flutters free)."""
     b = Builder(9)
     P = pk.paints(craft)
     b.lathe(P["shutter"], [(0.0, 0.0), (0.1, 0.0), (0.1, 0.02), (0.07, 0.035), (0.0, 0.035)], 14, T(0, 0.13, 0), tint=1.0)
-    wire = [(0.0, 0.13, 0.03), (0.0, 0.14, 0.2), (0.0, 0.12, 0.32), (0.0, 0.092, 0.39)]
+    wire = [(0.0, 0.13, 0.03), (0.0, 0.14, 0.2), (0.0, 0.12, 0.32), (0.0, 0.1, 0.39)]
     for a, c in zip(wire, wire[1:]):
         b.rod(craft.paint(), a, c, 0.004, 5, lc(E["bone_dim"]))
-    b.disc(craft.glow(H(0x5A4690), 0.3), 0.17, 0.004, T(0, 0.16, 0.41), segs=24, tint=1.0)  # soft halo card behind (FX)
-    for k in range(3):  # sparkle flecks of the pick-up glow
-        a = 2.1 * k + 0.5
-        b.poly(craft.glow(E["candy"], 3.0), [(0.2 * math.cos(a) - 0.008, 0.06, 0.42 + 0.14 * math.sin(a)), (0.2 * math.cos(a) + 0.008, 0.06, 0.42 + 0.14 * math.sin(a)),
-                                            (0.2 * math.cos(a), 0.06, 0.436 + 0.14 * math.sin(a))], tint=1.0)
 
     def crease(x, z):  # accordion folds across each wing
         return 0.012 * math.cos(abs(x) * 60.0)
     k = 0.34 / 1.24
+    out = [(x * k, z * k) for x, z in BAT]
     m = T(0, 0.085, 0.4) @ R("X", -8)
-    b.paper(craft.paper_white(), [(x * k, z * k) for x, z in BAT], m, lc(H(0x40345E)), fold=0.5, curl=0.5, cuts=2, crease=crease)
+    b.paper(craft.paper_white(), out, m, lc(H(0x231D30)), fold=0.5, curl=0.5, cuts=2, crease=crease)
+    rim = [(x * 1.07, z * 1.1 + 0.001) for x, z in out]  # the same fold, a hair bigger, just behind: a lit edge
+    b.paper(craft.glow(E["candy"], 1.7), rim, m @ T(0, 0.012, 0), 1.0, fold=0.5, curl=0.5, cuts=2, crease=crease)
+    eye = craft.glow(E["candy"], 4.0)
     for s in (1, -1):
-        b.poly(craft.glow(E["candy"], 4.0), [(s * 0.013 - 0.006, -0.011, 0.03), (s * 0.013 + 0.006, -0.011, 0.03),
-                                            (s * 0.013, -0.012, 0.04)], tint=1.0, M=m)
+        b.poly(eye, [(s * 0.013 - 0.006, -0.011, 0.03), (s * 0.013 + 0.006, -0.011, 0.03), (s * 0.013, -0.012, 0.04)], tint=1.0, M=m)
+    star = el.co.star_outline(0.016, 4)
+    for x, z, sc in ((-0.2, 0.52, 1.0), (0.19, 0.5, 0.7), (0.07, 0.29, 0.8)):
+        b.poly(eye, [(x + px * sc, 0.06, z + pz * sc) for px, pz in star], tint=1.0)
     b.finish("PaperBat")
     el.point_light("PaperBatGlow", (0, -0.12, 0.44), 0.35, (1.0, 0.8, 0.4), 0.03, shadow=False)
 
@@ -381,47 +401,51 @@ def build_fence(craft, length=3.4, gate_at=0.55, gate=True, name="Fence"):
 
 
 def build_hedge(craft, w=2.2, d=0.8, h=1.15, seed=21, name="Hedge"):
-    """Trimmed hedge block: clipped faces with a soft bevel, leaf cards breaking the outline, bare stems
-    underneath and a couple of fallen maple leaves on top."""
+    """Trimmed hedge block: clipped faces with softly rounded top edges, dense small leaves breaking the
+    outline, darker toward the ground, bare stems underneath and a couple of fallen maple leaves on top."""
     b = Builder(seed)
     mat = craft.tinted(E["hedge"], 0.95, 0.4, 13.0)
     rng = b.rng
     bm = bmesh.new()
     bmesh.ops.create_cube(bm, size=1.0)
-    bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=5, use_grid_fill=True)
+    bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=6, use_grid_fill=True)
     hh = h - 0.12
     for v in bm.verts:
         n = v.co * 2
-        k = 1 - 0.035 * (abs(n.x) ** 6 + abs(n.y) ** 6 + abs(n.z) ** 6 - 1)
+        soft = 0.03 + 0.075 * max(0.0, n.z) ** 2  # the top edges are rounded over, the foot stays crisp
+        k = 1 - soft * (abs(n.x) ** 6 + abs(n.y) ** 6 + abs(n.z) ** 6 - 1)
         taper = 1 - 0.07 * (v.co.z + 0.5)  # clipped a little narrower toward the top
-        p = Vector((v.co.x * w * taper, v.co.y * d * taper, v.co.z * hh)) * k
-        bump = noise.noise(p * 2.6 + Vector((seed, 0, 0))) * 0.045
+        p = Vector((v.co.x * w * taper * k, v.co.y * d * taper * k, v.co.z * hh * (1 - (1 - k) * 0.5)))
+        bump = noise.noise(p * 2.6 + Vector((seed, 0, 0))) * 0.04
         v.co = p + Vector((n.x, n.y, n.z)).normalized() * bump + Vector((0, 0, hh / 2 + 0.12))
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     bm.normal_update()
+
+    def grade(z):
+        return 0.55 + 0.75 * max(0.0, min(1.0, z / h)) ** 1.3
     cards = []
     for f in bm.faces:
         c, nrm = f.calc_center_median(), f.normal.copy()
         for _ in range(3):
-            p = c + Vector((rng.uniform(-0.09, 0.09), rng.uniform(-0.06, 0.06), rng.uniform(-0.07, 0.07)))
+            p = c + Vector((rng.uniform(-0.07, 0.07), rng.uniform(-0.05, 0.05), rng.uniform(-0.06, 0.06)))
             tan = nrm.cross(Vector((rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(-1, 1))))
             if tan.length < 0.1:
                 continue
             tan.normalize()
             out = (nrm * rng.uniform(0.2, 0.7) + tan * 0.9).normalized()
             side = out.cross(nrm).normalized()
-            ln, wd = rng.uniform(0.06, 0.1), rng.uniform(0.02, 0.032)
-            lightness = rng.uniform(0.75, 1.5) * (1.2 if nrm.z > 0.5 else 1.0)
+            ln, wd = rng.uniform(0.045, 0.08), rng.uniform(0.016, 0.027)
+            lightness = rng.uniform(0.8, 1.4) * grade(p.z) * (1.15 if nrm.z > 0.5 else 1.0)
             cards.append(([p - out * 0.02, p + out * ln * 0.45 + side * wd, p + out * ln, p + out * ln * 0.45 - side * wd],
-                          (lightness * 0.95, lightness, lightness * 0.72)))
-    b.add_bm(bm, mat, tint=(1.0, 1.0, 1.0))
+                          (lightness * 0.95, lightness, lightness * 0.74)))
+    b.add_bm(bm, mat, tint=lambda c: (grade(c.z) * 0.85,) * 3)
     for pts, tint in cards:
         b.poly(mat, pts, tint=tint)
     for i in range(5):
         x = -w / 2 + 0.25 + i * (w - 0.5) / 4 + rng.uniform(-0.08, 0.08)
         b.rod(craft.paint(), (x, rng.uniform(-0.1, 0.1), 0.0), (x + rng.uniform(-0.05, 0.05), 0, 0.22), 0.028, 6, lc(E["bark"]), r2=0.02)
     for k in range(3):
-        leaf(b, craft, T(rng.uniform(-w / 2.5, w / 2.5), rng.uniform(-d / 3, d / 3), h + 0.035) @ R("Z", rng.uniform(0, 360)) @ R("X", 80), 0.16,
+        leaf(b, craft, T(rng.uniform(-w / 2.6, w / 2.6), rng.uniform(-d / 4, d / 4), h + 0.03) @ R("Z", rng.uniform(0, 360)) @ R("X", 80), 0.16,
              (E["leaf_a"], E["leaf_b"], E["leaf_c"])[k])
     return b.finish(name)
 
@@ -430,13 +454,14 @@ MAPLE = [(0.0, -0.5), (0.1, -0.5), (0.08, -0.2), (0.42, -0.34), (0.36, -0.1), (0
          (0.2, 0.52), (0.0, 0.8)]
 
 
-MAPLE_LOW = [(0.0, -0.5), (0.3, -0.25), (0.6, 0.05), (0.35, 0.2), (0.4, 0.5), (0.12, 0.4), (0.0, 0.8)]
+MAPLE_MID = [(0.0, -0.55), (0.045, -0.52), (0.05, -0.2), (0.42, -0.3), (0.33, -0.06), (0.62, 0.1), (0.37, 0.19), (0.44, 0.47), (0.19, 0.36), (0.0, 0.8)]
 
 
-def leaf(b, craft, M, size, rgb, curl=0.25, low=False):
-    half = MAPLE_LOW if low else MAPLE
+def leaf(b, craft, M, size, rgb, curl=0.25, low=False, mat=None, tint=None, fold=0.25):
+    """A paper maple leaf (five points and a stem), folded on its midrib with curled edges."""
+    half = MAPLE_MID if low else MAPLE
     out = [(x * size, z * size) for x, z in half] + [(-x * size, z * size) for x, z in reversed(half[1:-1])]
-    b.paper(craft.paper_white(), out, M, lc(rgb), fold=0.25, curl=curl, cuts=0)
+    b.paper(mat or craft.paper_white(), out, M, tint if tint is not None else lc(rgb), fold=fold, curl=curl, cuts=0)
 
 
 def build_street_lamp(craft, height=3.1):
@@ -675,25 +700,33 @@ def build_bridge(craft, length=2.6, width=1.0):
     b.finish("Bridge")
 
 
-def foliage(b, craft, centre, radii, seed, cards=60):
-    """One clump of maple crown: a lumpy painted mass with paper maple leaves breaking the outline."""
+def foliage(b, craft, centre, radii, seed, cards=80):
+    """One clump of maple crown: a smooth painted mass under layered paper maple leaves that hang tip-down and
+    curl outward. Colour runs from rust underneath to warm amber on top (the `foliage` material)."""
     rng = b.rng
-    mat = craft.tinted(E["leaf_a"], 0.9, 0.35, 5.0)
-    cols = (E["leaf_a"], E["leaf_a"], E["leaf_b"], E["leaf_c"])
+    fol = craft.foliage(H(0x9E3420), H(0xF8AE3C), 3.7, 7.3)
+    tints = ((1.0, 1.0, 1.0), (1.0, 1.0, 1.0), (1.15, 1.08, 0.8), (0.95, 0.72, 0.62), (1.1, 0.58, 0.5))
     cx, cy, cz = centre
 
     def radial(a, i):
-        return 1 + 0.24 * noise.noise(Vector((math.cos(a) * 1.9, math.sin(a) * 1.9, i * 0.8 + seed * 3.1)))
-    prof = [(0.0, -0.9), (0.55, -0.78), (0.9, -0.45), (1.0, 0.0), (0.92, 0.4), (0.62, 0.78), (0.0, 0.98)]
-    hue = ((1.0, 1.0, 1.0), (1.1, 0.8, 0.7), (1.05, 1.15, 0.9))[seed % 3]
-    b.lathe(mat, prof, 14, T(cx, cy, cz) @ S(*radii), radial=radial, tint=tuple(c * b.rng.uniform(0.75, 0.95) for c in hue))
+        return 1 + 0.13 * noise.noise(Vector((math.cos(a) * 1.4, math.sin(a) * 1.4, i * 0.6 + seed * 3.1)))
+    n = 9
+    prof = [(math.sin(math.pi * i / n) if 0 < i < n else 0.0, -math.cos(math.pi * i / n) * (0.9 if i == 0 else 1.0)) for i in range(n + 1)]
+    b.lathe(fol, prof, 16, T(cx, cy, cz) @ S(*radii), radial=radial, tint=b.vary(0.6, 0.72))
+    up = Vector((0, 0, 1))
     for _ in range(cards):
-        u, v = rng.uniform(0, 2 * math.pi), rng.uniform(-0.9, 1.0)
+        u, v = rng.uniform(0, 2 * math.pi), rng.uniform(-0.75, 1.0)
         nrm = Vector((math.cos(u) * math.sqrt(1 - v * v), math.sin(u) * math.sqrt(1 - v * v), v))
-        p = Vector((cx + nrm.x * radii[0], cy + nrm.y * radii[1], cz + nrm.z * radii[2])) * 1.0
-        q = nrm.to_track_quat("Y", "Z").to_matrix().to_4x4()
-        leaf(b, craft, T(*(p + nrm * 0.04)) @ q @ R("Y", rng.uniform(0, 360)) @ R("X", rng.uniform(-50, 50)), rng.uniform(0.34, 0.56),
-             shade(rng.choice(cols), rng.uniform(0.75, 1.2)), low=True)
+        p = Vector((cx + nrm.x * radii[0], cy + nrm.y * radii[1], cz + nrm.z * radii[2])) + nrm * rng.uniform(0.02, 0.16)
+        face = (nrm + up * 0.25).normalized()
+        tip = nrm * 0.3 - up * 0.8 + Vector((rng.uniform(-0.5, 0.5), rng.uniform(-0.5, 0.5), 0))
+        zc = (tip - face * tip.dot(face)).normalized()
+        yc = -face
+        xc = yc.cross(zc)
+        m = Matrix((xc, yc, zc)).transposed().to_4x4()
+        t = rng.choice(tints)
+        k = rng.uniform(0.85, 1.2)
+        leaf(b, craft, T(*p) @ m, rng.uniform(0.3, 0.44), None, curl=0.5, low=True, mat=fol, tint=(t[0] * k, t[1] * k, t[2] * k), fold=0.2)
 
 
 def build_maple(craft, treehouse=True, crown=True):

@@ -36,13 +36,17 @@ import pip_anims as anims  # noqa: E402
 
 DEFAULT_OUT = os.path.join(REPO, "Assets", "SpookyStreet", "Content", "Resources", "Models", "Characters", "Pip")
 RIG_NAME = "Pip_Rig"
-GROUPS = ("Body", "Hair", "Cape", "Pail")  # atlas meshes; the face is its own mesh with its own map
+GROUPS = ("Body", "Hair", "Cape", "Pail")
+PART_NAMES = []  # source part of every face (face attribute "part" indexes this)
+# small surface details: they never count as cover when deciding which faces are hidden
+DETAIL = re.compile(r"Pip_(SleeveFold|VestButton|VestPiping|Brooch|Clasp|Jabot|ShortsHem|Shoe.Lace|HairGroove|"
+                    r"HairStrand|BatClip|Lash|Brow|Smile|Glint|Cuff)")  # atlas meshes; the face is its own mesh with its own map
 
 # Source part (regex on the builder's object name) -> group, subdivision level (None = as built), curve
 # (bevel resolution, spline resolution), keep bevel modifiers, triangle target (None = no decimation).
 PARTS = [
     (r"Pip_Head$", "Face", 0, None, True, None),
-    (r"Pip_Sclera", "Face", 0, None, True, None),
+    (r"Pip_Sclera", "Face", 0, None, True, 520),
     (r"Pip_Iris", "Face", None, None, True, None),
     (r"Pip_Pupil", "Face", None, None, True, 120),
     (r"Pip_Glint", "Face", None, None, True, None),
@@ -53,40 +57,40 @@ PARTS = [
     (r"Pip_Fang", "Face", 0, None, True, 96),
     (r"Pip_(Mouth|Tongue)", "Face", None, None, True, None),
     (r"Pip_Hair$", "Hair", 0, None, True, None),
-    (r"Pip_HairGroove", "Hair", None, (0, 2), True, 96),
-    (r"Pip_HairStrand", "Hair", None, (0, 1), True, 56),
+    (r"Pip_HairGroove", "Hair", None, (0, 2), True, 72),
+    (r"Pip_HairStrand", "Hair", None, (0, 1), True, 40),
     (r"Pip_BatClipFelt", "Hair", None, None, False, None),
-    (r"Pip_Body$", "Body", None, None, True, None),
-    (r"Pip_Shorts$", "Body", 1, None, True, 1000),
-    (r"Pip_ShortsLeg", "Body", 1, None, True, 340),
-    (r"Pip_ShortsHem", "Body", 0, None, True, 150),
-    (r"Pip_Vest$", "Body", 1, None, True, 1700),
+    (r"Pip_Body$", "Body", None, None, True, 4400),
+    (r"Pip_Shorts$", "Body", 1, None, True, 800),
+    (r"Pip_ShortsLeg", "Body", 1, None, True, 250),
+    (r"Pip_ShortsHem", "Body", 0, None, True, 72),
+    (r"Pip_Vest$", "Body", 1, None, True, 1400),
     (r"Pip_VestButtonDisc", "Body", 0, None, True, 56),
     (r"Pip_VestPiping", "Body", None, (0, 3), True, 110),
     (r"Pip_Brooch", "Body", 0, None, True, 90),
-    (r"Pip_Jabot", "Body", 0, None, True, 330),
-    (r"Pip_SleeveFold", "Body", 0, None, True, 100),
-    (r"Pip_Cuff", "Body", 0, None, True, 190),
-    (r"Pip_CapeCollar", "Body", 1, None, True, 640),
+    (r"Pip_Jabot", "Body", 0, None, True, 240),
+    (r"Pip_SleeveFold", "Body", 0, None, True, 72),
+    (r"Pip_Cuff", "Body", 0, None, True, 150),
+    (r"Pip_CapeCollar", "Body", 1, None, True, 520),
     (r"Pip_ClaspButton", "Body", 0, None, True, 72),
     (r"Pip_ClaspCord", "Body", None, (0, 3), True, 72),
-    (r"Pip_Hand[LR]Finger", "Body", None, None, True, 190),
+    (r"Pip_Hand[LR]Finger", "Body", None, None, True, 160),
     (r"Pip_Hand[LR]Thumb", "Body", None, None, True, 210),
     (r"Pip_Hand[LR]Palm", "Body", 0, None, True, 240),
     (r"Pip_Hand[LR]Wrist", "Body", None, None, True, 96),
     (r"Pip_Hand[LR]Nail", "Body", 0, None, True, 32),
-    (r"Pip_Shoe[LR]Upper", "Body", 0, None, True, 480),
+    (r"Pip_Shoe[LR]Upper", "Body", 0, None, True, 400),
     (r"Pip_Shoe[LR]ToeCap", "Body", 0, None, True, 220),
     (r"Pip_Shoe[LR]HeelCounter", "Body", 0, None, True, 180),
     (r"Pip_Shoe[LR]HeelTab", "Body", 0, None, True, 36),
-    (r"Pip_Shoe[LR]Lace", "Body", None, (0, 2), True, 32),
-    (r"Pip_Shoe[LR]Sole", "Body", None, None, True, 340),
+    (r"Pip_Shoe[LR]Lace", "Body", None, (0, 2), True, 24),
+    (r"Pip_Shoe[LR]Sole", "Body", None, None, True, 260),
     (r"Pip_Shoe[LR]Tongue", "Body", 0, None, True, 90),
     (r"Pip_Shoe[LR]Collar", "Body", 0, None, True, 200),
-    (r"Pip_Cape$", "Cape", 1, None, True, 3200),
+    (r"Pip_Cape$", "Cape", 1, None, True, "unsubdiv"),
     (r"Pip_CapeStarFelt", "Cape", None, None, False, None),
     (r"Pip_CapeStitch", "Cape", None, None, True, 420),
-    (r"Pip_Pail$", "Pail", 0, None, True, 1000),
+    (r"Pip_Pail$", "Pail", 0, None, True, 800),
     (r"Pip_PailRim", "Pail", 0, None, True, 180),
     (r"Pip_Pail(Eye|Grin)", "Pail", None, None, False, None),
     (r"Pip_PailHandle", "Pail", None, (0, 3), True, 140),
@@ -155,9 +159,13 @@ def realize(src, spec):
     bpy.context.scene.collection.objects.link(obj)
     me.calc_loop_triangles()
     count = len(me.loop_triangles)
-    if target is not None and count > target * 1.1:
+    if target is not None and (target == "unsubdiv" or count > target * 1.1):
         dec = obj.modifiers.new("Dec", "DECIMATE")
-        dec.ratio = target / count
+        if target == "unsubdiv":  # keeps both cloth shells on the same regular grid, so they never cross
+            dec.decimate_type = "UNSUBDIV"
+            dec.iterations = 1
+        else:
+            dec.ratio = target / count
         deps = bpy.context.evaluated_depsgraph_get()
         deps.update()
         low = bpy.data.meshes.new_from_object(obj.evaluated_get(deps))
@@ -176,6 +184,25 @@ def realize(src, spec):
     obj["src"] = src.name
     obj["grp"] = group
     return obj
+
+
+def trim_hair(obj, P):
+    """Drop the bob's inner shell where nothing can look at it: keep it beside the cheeks and along the hem."""
+    r, hc = P.head_r, P.head_c
+    centre = hc + Vector((0, r * 0.04, r * 0.1))
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bm.normal_update()
+    doomed = []
+    for f in bm.faces:
+        c = f.calc_center_median()
+        inner = f.normal.dot(c - centre) < 0
+        lon = abs(math.degrees(math.atan2(c.x, -c.y)))
+        if inner and lon > 80 and c.z > hc.z - 0.36 * r:
+            doomed.append(f)
+    bmesh.ops.delete(bm, geom=doomed, context="FACES")
+    bm.to_mesh(obj.data)
+    bm.free()
 
 
 def build_game_parts():
@@ -198,6 +225,19 @@ def build_game_parts():
         if spec is None:
             raise RuntimeError("no game spec for " + src.name)
         parts.append(realize(src, spec))
+        if src.name == "Pip_Hair":
+            trim_hair(parts[-1], P)
+        if src.name == "Pip_Head":
+            me = parts[-1].data
+            # the crown and back of the skull are always under the bob (and would wrap the face's UV island)
+            bm = bmesh.new()
+            bm.from_mesh(me)
+            doomed = [f for f in bm.faces if (lambda d: d.y > 0.42 and d.z > -0.7)(
+                (f.calc_center_median() - P.head_c).normalized())]
+            bmesh.ops.delete(bm, geom=doomed, context="FACES")
+            bm.to_mesh(me)
+            bm.free()
+            me.attributes.new("skull", "INT", "FACE").data.foreach_set("value", [1] * len(me.polygons))
     for o in [o for o in bpy.data.objects if not o.name.startswith("G_")]:
         bpy.data.objects.remove(o, do_unlink=True)
     for cu in list(bpy.data.curves):
@@ -508,6 +548,10 @@ def limit_weights(obj, limit=4):
 
 def join(parts, name):
     for o in parts:
+        if "part" not in o.data.attributes:
+            PART_NAMES.append(o["src"])
+            o.data.attributes.new("part", "INT", "FACE").data.foreach_set(
+                "value", [len(PART_NAMES) - 1] * len(o.data.polygons))
         if "grp" not in o.data.attributes:
             o.data.attributes.new("grp", "INT", "FACE").data.foreach_set(
                 "value", [GROUPS.index(o["grp"]) if o["grp"] in GROUPS else 0] * len(o.data.polygons))
@@ -519,17 +563,47 @@ def join(parts, name):
     return obj
 
 
-def remove_hidden(objs, occluders, rings=2):
-    """Delete faces that no ray can reach from outside (sampled over the hemisphere), keeping a safety margin of
-    `rings` faces around everything visible so joints can flex without opening holes."""
-    verts, tris = [], []
-    for o in occluders:
-        me = o.data
-        me.calc_loop_triangles()
-        off = len(verts)
-        verts += [v.co.copy() for v in me.vertices]
-        tris += [tuple(i + off for i in t.vertices) for t in me.loop_triangles]
-    tree = BVHTree.FromPolygons(verts, tris)
+def region_of(bone):
+    """Body region a bone belongs to; only geometry of the same region may hide a face."""
+    if bone == "Head" or bone.startswith("Hair"):
+        return "head"
+    m = re.match(r"(Shoulder|UpperArm|LowerArm|Hand|Fingers|Thumb)_([LR])$", bone)
+    if m:
+        return "arm" + m.group(2)
+    m = re.match(r"(UpperLeg|LowerLeg|Foot|Toe)_([LR])$", bone)
+    if m:
+        return "leg" + m.group(2)
+    return "core"
+
+
+def remove_hidden(objs, rings):
+    """Delete faces that no ray can reach from outside (sampled over the hemisphere).
+
+    A face only counts as hidden when geometry of its own body region (head, core, each arm, each leg) covers
+    it, so nothing that can move away (an arm resting against the vest, the cape) ever justifies a hole; small
+    details never count as cover; and a margin of `rings[obj.name]` faces around everything visible is kept."""
+    work = []
+    soup = {}
+    for o in objs:
+        bm = bmesh.new()
+        bm.from_mesh(o.data)
+        bm.normal_update()
+        deform = bm.verts.layers.deform.verify()
+        part = bm.faces.layers.int["part"]
+        names = [g.name for g in o.vertex_groups]
+        regions = {}
+        for f in bm.faces:
+            total = {}
+            for v in f.verts:
+                for gi, w in v[deform].items():
+                    total[gi] = total.get(gi, 0.0) + w
+            regions[f] = region_of(names[max(total, key=total.get)])
+            if not DETAIL.match(PART_NAMES[f[part]]):
+                verts, polys = soup.setdefault(regions[f], ([], []))
+                polys.append(tuple(range(len(verts), len(verts) + len(f.verts))))
+                verts.extend(v.co.copy() for v in f.verts)
+        work.append((o, bm, regions))
+    trees = {r: BVHTree.FromPolygons(v, p) for r, (v, p) in soup.items()}
     dirs = []
     for i in range(72):  # Fibonacci sphere
         zz = 1 - 2 * (i + 0.5) / 72
@@ -537,12 +611,12 @@ def remove_hidden(objs, occluders, rings=2):
         a = i * math.pi * (3 - math.sqrt(5))
         dirs.append(Vector((rr * math.cos(a), rr * math.sin(a), zz)))
     removed = 0
-    for o in objs:
-        bm = bmesh.new()
-        bm.from_mesh(o.data)
-        bm.normal_update()
+    for o, bm, regions in work:
         hidden = set()
         for f in bm.faces:
+            tree = trees.get(regions[f])
+            if tree is None:
+                continue
             n = f.normal
             c = f.calc_center_median()
             seen = False
@@ -556,7 +630,7 @@ def remove_hidden(objs, occluders, rings=2):
                     break
             if not seen:
                 hidden.add(f)
-        for _ in range(rings):
+        for _ in range(rings[o.name]):
             hidden = {f for f in hidden if all(g in hidden for v in f.verts for g in v.link_faces)}
         removed += len(hidden)
         bmesh.ops.delete(bm, geom=list(hidden), context="FACES")
@@ -572,6 +646,40 @@ def unwrap(obj, margin):
     bpy.ops.mesh.select_all(action="SELECT")
     bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=margin, area_weight=0.0,
                              correct_aspect=True, scale_to_bounds=False)
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+
+def unwrap_face(face, P):
+    """Smart UV for the small parts, but the skull becomes ONE island (azimuthal projection about the facing
+    direction), so no seam crosses the cheeks, blush or mouth."""
+    unwrap(face, 0.006)
+    me = face.data
+    uv = me.uv_layers.active.data
+    skull = np.zeros(len(me.polygons), dtype=np.int32)
+    me.attributes["skull"].data.foreach_get("value", skull)
+    area3 = area_uv = 0.0
+    for poly in me.polygons:
+        if skull[poly.index]:
+            continue
+        pts = [uv[li].uv for li in poly.loop_indices]
+        area_uv += abs(sum(a.x * b.y - b.x * a.y for a, b in zip(pts, pts[1:] + pts[:1]))) * 0.5
+        area3 += poly.area
+    k = math.sqrt(area_uv / area3)  # UV units per metre used by the other islands
+    hc = P.head_c
+    for poly in me.polygons:
+        if not skull[poly.index]:
+            continue
+        for li in poly.loop_indices:
+            d = (me.vertices[me.loops[li].vertex_index].co - hc).normalized()
+            theta = math.acos(max(-1.0, min(1.0, -d.y)))
+            phi = math.atan2(d.z, d.x)
+            rad = k * P.head_r * theta
+            uv[li].uv = (5.0 + rad * math.cos(phi), 5.0 + rad * math.sin(phi))
+    activate(face)
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.select_all(action="SELECT")
+    bpy.ops.uv.pack_islands(rotate=False, margin=0.006)
     bpy.ops.object.mode_set(mode="OBJECT")
 
 
@@ -672,7 +780,7 @@ def bake_all(meshes, face, out, tex, face_tex, samples, ao_samples, ao_strength=
         shade = pixels(ao)[:, :, :3]
         # sRGB-encoded bake: darken creases a little, tinted toward the night purple rather than grey
         tint = np.array((0.80, 0.74, 0.92), dtype=np.float32)
-        k = ao_strength * (1.0 - np.clip(shade, 0.0, 1.0))
+        k = (ao_strength if label == "atlas" else ao_strength * 0.5) * (1.0 - np.clip(shade, 0.0, 1.0))
         rgb[:, :, :3] *= 1.0 - k * (1.0 - tint * 0.55)
         rgb[:, :, 3] = 1.0
         bpy.data.images.remove(ao)
@@ -795,6 +903,11 @@ def stage_model(args):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     P, parts, info = build_game_parts()
     log("parts", len(parts), "triangles before culling", sum(tri_count(o) for o in parts))
+    counts = {}
+    for o in parts:
+        key = re.sub(r"[.\d]+$", "", o["src"])
+        counts[key] = counts.get(key, 0) + tri_count(o)
+    log("per part:", ", ".join(f"{k[4:]} {v}" for k, v in sorted(counts.items(), key=lambda kv: -kv[1])))
     table = bone_table(P, info)
     rig = build_armature(table)
     weight_parts(parts, P, rig, table)
@@ -802,16 +915,16 @@ def stage_model(args):
     face = join(lists["Face"], "Pip_Face")
     by_group = {g: join(lists[g], "Tmp_" + g) for g in GROUPS}
     solid = [face, by_group["Hair"], by_group["Body"]]
-    log("hidden faces removed", remove_hidden(solid, solid))
+    log("hidden faces removed", remove_hidden(solid, {"Pip_Face": 1, "Tmp_Hair": 1, "Tmp_Body": 2}))
     atlas = join([by_group[g] for g in GROUPS], "Tmp_Atlas")
     unwrap(atlas, 0.0035)
-    unwrap(face, 0.006)
+    unwrap_face(face, P)
     meshes = split_groups(atlas)
     paths = bake_all(meshes, face, args["out"], args["tex"], args["face_tex"], args["samples"], args["ao_samples"])
     objs = [meshes[g] for g in GROUPS] + [face]
     for o in objs:
         limit_weights(o)
-        for name in ("orco", "grp"):
+        for name in ("orco", "grp", "skull", "part"):
             if name in o.data.attributes:
                 o.data.attributes.remove(o.data.attributes[name])
         o.parent = rig

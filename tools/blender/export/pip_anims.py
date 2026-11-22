@@ -285,7 +285,7 @@ def jump_start(u):
                     legL_fwd=52, legR_fwd=48, kneeL=78, kneeR=72, footL=6, footR=6,
                     armL_fwd=-42, armL_out=16, elbowL=36, armR_fwd=-26, armR_out=18, elbowR=22,
                     fingersL=40, hair_back=5, pail_x=10)
-    cape(crouch, [8, 4, 0], flare=[4, 5, 6])
+    cape(crouch, [34, 22, 10], flare=[5, 8, 11])
     stretch = pose(ground=0.0, hz=0.02, hip_pitch=-3, spine_pitch=-6, chest_pitch=-8, head_pitch=-10,
                    legL_fwd=8, kneeL=10, footL=58, toeL=-10, legR_fwd=-8, kneeR=6, footR=62, toeR=-10,
                    armL_fwd=165, armL_out=10, elbowL=6, fingersL=20, shoulderL=18, shoulderR=6,
@@ -317,8 +317,9 @@ def fall(u):
              armR_fwd=16 - 6 * math.sin(2 * a), armR_out=58 + 8 * math.sin(2 * a + 2.0), elbowR=22,
              pail_x=-6 + 6 * math.sin(a), pail_y=-8 + 4 * math.sin(2 * a),
              hair_back=-10 + 3 * math.sin(2 * a), hair_flare=14 + 4 * math.sin(2 * a + 1), hair_side=2 * math.sin(a))
-    cape(p, [100 + 14 * i + 9 * math.sin(2 * a - 1.0 * i) for i in range(3)],
-         flare=[10 + 6 * i + 5 * math.sin(2 * a - 1.0 * i + 1.3) for i in range(3)], fan=[8, 14, 20],
+    cape(p, [112 + 20 * i + 10 * math.sin(2 * a - 1.0 * i) for i in range(3)],
+         side_back=[100 + 24 * i + 12 * math.sin(2 * a - 1.0 * i + 0.9) for i in range(3)],
+         flare=[14 + 8 * i + 6 * math.sin(2 * a - 1.0 * i + 1.3) for i in range(3)], fan=[10, 18, 26],
          sway=4 * math.sin(a))
     return p
 
@@ -328,11 +329,11 @@ def land(u):
                  legL_fwd=74, legR_fwd=70, kneeL=104, kneeR=98, legL_out=10, legR_out=10,
                  armL_fwd=6, armL_out=58, elbowL=28, armR_fwd=4, armR_out=40, elbowR=20, fingersL=-8,
                  hair_back=10, hair_flare=8, pail_x=12)
-    cape(hit, [-6, -14, -20], flare=[10, 16, 22])
+    cape(hit, [52, 30, 8], flare=[12, 20, 28])
     first = _stand(hip_pitch=14, spine_pitch=6, chest_pitch=2, head_pitch=-6,
                    legL_fwd=40, legR_fwd=38, kneeL=56, kneeR=52, legL_out=6, legR_out=6,
                    armL_fwd=10, armL_out=40, elbowL=20, armR_fwd=6, armR_out=30, elbowR=14, hair_back=-6)
-    cape(first, [60, 70, 80], flare=[8, 12, 16])
+    cape(first, [70, 84, 96], flare=[8, 12, 16])
     up = _stand(hip_pitch=-2, spine_pitch=-2, chest_pitch=-3, head_pitch=3, kneeL=2, kneeR=2, legL_fwd=1, legR_fwd=1,
                 armL_out=10, armR_out=8, shoulderL=6, shoulderR=6, hz=0.0, hair_back=-4)
     cape(up, [8, 12, 14], flare=[4, 6, 8])
@@ -370,8 +371,9 @@ def wall_slide(u):
              shoulderL=12,
              armR_fwd=-16, armR_out=34 + 3 * math.sin(a), elbowR=16, pail_x=-4 + 4 * math.sin(a), pail_y=-6,
              hair_back=-12 + 2 * math.sin(2 * a), hair_flare=10 + 3 * math.sin(2 * a + 1))
-    cape(p, [118 + 12 * i + 8 * math.sin(2 * a - 1.0 * i) for i in range(3)],
-         flare=[8 + 5 * i + 4 * math.sin(2 * a - 1.0 * i + 1) for i in range(3)], fan=[6, 10, 14],
+    cape(p, [112 + 22 * i + 9 * math.sin(2 * a - 1.0 * i) for i in range(3)],
+         side_back=[102 + 24 * i + 10 * math.sin(2 * a - 1.0 * i + 0.9) for i in range(3)],
+         flare=[10 + 7 * i + 5 * math.sin(2 * a - 1.0 * i + 1) for i in range(3)], fan=[8, 14, 20],
          sway=3 * math.sin(a))
     return p
 
@@ -381,8 +383,8 @@ def ledge_hang(u):
     a = TAU * u
     sw = math.sin(a)
     p = pose(hip_pitch=3 * sw, hip_roll=5, spine_roll=4, spine_pitch=-3, chest_pitch=-4, chest_roll=5,
-             head_pitch=-22, head_roll=-8, head_yaw=6,
-             shoulderL=34, armL_fwd=172, armL_out=6, elbowL=8, handL_pitch=-14, fingersL=85, thumbL=20,
+             head_pitch=-20, head_roll=-14, head_yaw=6,
+             shoulderL=30, armL_fwd=170, armL_out=20, elbowL=10, handL_pitch=-14, fingersL=85, thumbL=20,
              shoulderR=-4, armR_fwd=6 + 4 * sw, armR_out=22, elbowR=14, pail_x=6 * math.sin(a - 0.9), pail_y=-4,
              legL_fwd=10 + 7 * math.sin(a - 0.7), kneeL=26 + 8 * math.sin(a - 1.4), footL=38, legL_out=4,
              legR_fwd=-4 + 7 * math.sin(a - 1.0), kneeR=14 + 8 * math.sin(a - 1.9), footR=42, legR_out=5,
@@ -396,7 +398,7 @@ def roll(u):
     start = _stand(ground=1.0, hip_pitch=34, spine_pitch=14, chest_pitch=10, head_pitch=-10,
                    legL_fwd=58, kneeL=70, legR_fwd=30, kneeR=52, footR=20,
                    armL_fwd=70, armL_out=10, elbowL=30, armR_fwd=20, armR_out=16, elbowR=30, pail_world=1.0)
-    cape(start, [30, 40, 50], flare=[5, 8, 10])
+    cape(start, [52, 50, 48], flare=[5, 8, 10])
     tuck = pose(ground=0.0, hz=-0.3, spine_pitch=34, chest_pitch=30, neck_pitch=14, head_pitch=24,
                 legL_fwd=118, kneeL=128, footL=-10, legR_fwd=112, kneeR=124, footR=-10, legL_out=6, legR_out=6,
                 armL_fwd=62, armL_out=14, elbowL=98, armL_twist=30, fingersL=60,
@@ -404,7 +406,7 @@ def roll(u):
     end = _stand(ground=1.0, hip_pitch=24, spine_pitch=10, chest_pitch=6, head_pitch=-12,
                  legL_fwd=50, kneeL=66, legR_fwd=46, kneeR=62,
                  armL_fwd=20, armL_out=30, elbowL=30, armR_fwd=10, armR_out=24, elbowR=24, pail_world=1.0)
-    cape(end, [20, 26, 32], flare=[5, 8, 10])
+    cape(end, [44, 36, 28], flare=[5, 8, 10])
     tuck_a, tuck_b = dict(tuck), dict(tuck)
     tuck_a["hz"], tuck_b["hz"] = -0.26, -0.27
     p = keyed([(0.0, start), (0.2, tuck_a), (0.5, tuck), (0.8, tuck_b), (1.0, end)], u)
@@ -427,7 +429,7 @@ def interact(u):
                    head_yaw=4, legL_fwd=10, kneeL=14, legR_fwd=-4, kneeR=6, hy=-0.02,
                    shoulderL=6, armL_fwd=84, armL_out=4, elbowL=16, handL_pitch=-24, fingersL=-4,
                    armR_fwd=-12, armR_out=12, elbowR=14, pail_x=8, hair_back=4)
-    cape(reach, [10, 14, 18], flare=[3, 5, 7])
+    cape(reach, [22, 20, 18], flare=[3, 5, 7])
     wind = _stand(hip_pitch=2, spine_pitch=1, chest_yaw=8, head_pitch=2, armL_fwd=30, armL_out=12, elbowL=86,
                   handL_pitch=10, fingersL=30, armR_fwd=-4, armR_out=8, elbowR=10)
     cape(wind, [4, 5, 6], flare=[2, 3, 4])

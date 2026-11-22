@@ -56,7 +56,7 @@ def floor(b, P, width=U, depth=U, skirt=("front",)):
     w = width / n
     for i in range(n):
         x = -width / 2 + (i + 0.5) * w
-        b.box(P["deck"], (w - 0.008, depth + 0.06, 0.05), (x, depth / 2 - 0.03, FLOOR - 0.025), bevel=0.01)
+        b.box(P["deck"], (w - 0.008, depth + 0.06, 0.05), (x, depth / 2 - 0.03, FLOOR - 0.025), drop=("-z", "+y"))
     b.box(P["trim_x"], (width, 0.06, 0.14), (0, 0.03, FLOOR - 0.12), bevel=0.012)
     b.box(P["back"], (width - 0.02, depth - 0.1, 0.1), (0, depth / 2, FLOOR - 0.1), bevel=0)
     sides = {"front": T(0, 0.05, 0), "left": T(-width / 2 + 0.05, depth / 2, 0) @ R("Z", -90) @ T(0, 0, 0),
@@ -69,7 +69,7 @@ def floor(b, P, width=U, depth=U, skirt=("front",)):
             m = round(span / 0.16)
             for i in range(m):
                 x = -span / 2 + (i + 0.5) * span / m
-                b.box(P["wall_v"], (0.1, 0.025, FLOOR - 0.2), (x, 0.0, (FLOOR - 0.2) / 2 + 0.01), bevel=0.008)
+                b.box(P["wall_v"], (0.1, 0.025, FLOOR - 0.2), (x, 0.0, (FLOOR - 0.2) / 2 + 0.01), drop=("+y", "-z", "+z"))
             b.box(P["back"], (span, 0.02, 0.07), (0, 0.02, 0.06), bevel=0)
     for sx in (-1, 1):  # corner piers
         b.box(P["trim_z"], (0.14, 0.14, FLOOR - 0.06), (sx * (width / 2 - 0.07), 0.07, (FLOOR - 0.06) / 2), bevel=0.015)
@@ -111,9 +111,8 @@ def post(b, P, height=POST, brackets=(-1, 1)):
             b.disc(P["orange"], 0.045, 0.02, T(0.13, -0.066, -0.13), segs=10, tint=1.0, bevel=0.006)
 
 
-BALUSTER = [(-0.05, 0.0), (0.05, 0.0), (0.05, 0.08), (0.022, 0.14), (0.022, 0.2), (0.055, 0.3), (0.055, 0.4),
-            (0.02, 0.5), (0.02, 0.56), (0.05, 0.6), (-0.05, 0.6), (-0.02, 0.56), (-0.02, 0.5), (-0.055, 0.4),
-            (-0.055, 0.3), (-0.022, 0.2), (-0.022, 0.14), (-0.05, 0.08)]
+BALUSTER = [(-0.05, 0.0), (0.05, 0.0), (0.05, 0.08), (0.022, 0.16), (0.055, 0.3), (0.055, 0.4), (0.02, 0.53), (0.05, 0.6),
+            (-0.05, 0.6), (-0.02, 0.53), (-0.055, 0.4), (-0.055, 0.3), (-0.022, 0.16), (-0.05, 0.08)]
 
 
 def rail(b, P, length=U, rhythm=0):
@@ -128,7 +127,7 @@ def rail(b, P, length=U, rhythm=0):
             b.box(P["shutter_z"], (0.11, 0.03, 0.6), (x, 0, 0.45), bevel=0.01)
             b.disc(P["candy"], 0.03, 0.006, T(x, -0.021, 0.5), segs=10, tint=1.0)
         else:
-            b.prism(P["trim_z"], BALUSTER, 0.03, T(x, -0.015, 0.15), bevel=0.007)
+            b.prism(P["trim_z"], BALUSTER, 0.03, T(x, -0.015, 0.15))
 
 
 def wall(b, P, width=U, height=WALL, openings=(), base=True, frieze=True):
@@ -145,7 +144,7 @@ def wall(b, P, width=U, height=WALL, openings=(), base=True, frieze=True):
         return out
 
     for x0, x1 in spans(0.0, height):
-        b.box(P["back"], (x1 - x0, 0.1, height), ((x0 + x1) / 2, 0.07, height / 2), bevel=0, tint=0.8)
+        b.box(P["back"], (x1 - x0, 0.1, height), ((x0 + x1) / 2, 0.07, height / 2), tint=0.8, drop=("+z", "-z"))
     for o in openings:  # backing above and below each hole
         if o[2] > 0.05:
             b.box(P["back"], (o[1] - o[0], 0.1, o[2]), ((o[0] + o[1]) / 2, 0.07, o[2] / 2), bevel=0, tint=0.8)
@@ -162,7 +161,7 @@ def wall(b, P, width=U, height=WALL, openings=(), base=True, frieze=True):
                 cut = b.rng.uniform(x0 + 0.5, x1 - 0.5)
                 pieces = [(x0, cut), (cut, x1)]
             for p0, p1 in pieces:
-                b.box(P["clap"], (p1 - p0 - 0.004, 0.035, h * 1.07), ((p0 + p1) / 2, 0.005, (i + 0.5) * h), bevel=0.008,
+                b.box(P["clap"], (p1 - p0 - 0.004, 0.035, h * 1.07), ((p0 + p1) / 2, 0.005, (i + 0.5) * h), drop=("+y", "+z"),
                       rot=tilt, tint=b.vary(0.8, 1.12))
     if base:
         for x0, x1 in spans(0.0, 0.16):
@@ -190,11 +189,11 @@ def window(b, P, cx=0.0, z0=0.75, w=0.8, h=1.2, shutters=True, lit=None):
             for ex in (-1, 1):
                 b.box(P["shutter_z"], (0.05, 0.035, h), (x + ex * (sw / 2 - 0.025), -0.04, zc), bevel=0.008)
             for z in (z0 + 0.03, zc, z0 + h - 0.03):
-                b.box(P["shutter"], (sw - 0.1, 0.035, 0.06), (x, -0.04, z), bevel=0.008)
+                b.box(P["shutter"], (sw - 0.1, 0.035, 0.06), (x, -0.04, z), drop=("+y", "+x", "-x"))
             for half in (0, 1):
                 for k in range(4):
                     z = z0 + 0.06 + half * (h / 2 - 0.03) + (k + 0.5) * (h / 2 - 0.09) / 4
-                    b.box(P["shutter"], (sw - 0.1, 0.012, 0.1), (x, -0.04, z), bevel=0, rot=R("X", 28))
+                    b.box(P["shutter"], (sw - 0.1, 0.012, 0.1), (x, -0.04, z), rot=R("X", 28), drop=("+x", "-x", "+y"))
             b.box(P["ink"], (0.03, 0.02, 0.07), (x - sx * (sw / 2 + 0.005), -0.05, z0 + h * 0.25), bevel=0.004, tint=1.0)
             b.box(P["ink"], (0.03, 0.02, 0.07), (x - sx * (sw / 2 + 0.005), -0.05, z0 + h * 0.75), bevel=0.004, tint=1.0)
 
@@ -275,7 +274,7 @@ def shingles(b, mat, width, length, M, tab=0.5, exposure=0.42, thick=0.045, keep
                     continue
                 jit = b.rng.uniform(-0.02, 0.02)
                 pts = [(max(x0, min(x1, cx + hw * math.cos(a))), y0 + jit + hw * 0.62 * (1 + math.sin(a)))
-                       for a in (math.radians(180 + 180 * s / 5) for s in range(6))]
+                       for a in (math.radians(180 + 180 * s / ARC) for s in range(ARC + 1))]
                 pts += [(x1, y1), (x0, y1)]
                 bm = _bm.new()
                 span = y1 - y0
@@ -284,18 +283,19 @@ def shingles(b, mat, width, length, M, tab=0.5, exposure=0.42, thick=0.045, keep
                 bm.faces.new(top)
                 for k in range(len(pts)):
                     q = (k + 1) % len(pts)
-                    if k == len(pts) - 2:
-                        continue  # the top edge is under the next course
+                    if k >= ARC:
+                        continue  # only the rounded butt shows: the sides and top sit against other tabs
                     bm.faces.new((top[q], top[k], bot[k], bot[q]))
                 tint = b.rng.choice(palette) if palette else (1, 1, 1)
                 v = b.rng.uniform(0.82, 1.12)
                 b.add_bm(bm, mat, None, tuple(c * v for c in tint))
 
 
+ARC = 4  # segments in a shingle's rounded butt
 ROOF_TINTS = [(1, 1, 1)] * 5 + [(1.25, 0.9, 1.05), (0.75, 0.85, 1.25), (0.8, 0.8, 0.9)]
 
 
-def roof(b, P, width=U, length=2.4, pitch=35.0, M=None, notch=None, rafters=True, mat=None):
+def roof(b, P, width=U, length=2.4, pitch=35.0, M=None, notch=None, rafters=True, mat=None, hole=None):
     """Roof panel: shingles on a deck board with a fascia and exposed rafter tails. Origin at the eave centre,
     x along the eave, rising toward +Y. `notch` = (x0, x1, up) leaves a gap at the eave for a wall dormer."""
     M = (M if M is not None else T()) @ R("X", pitch)
@@ -317,6 +317,8 @@ def roof(b, P, width=U, length=2.4, pitch=35.0, M=None, notch=None, rafters=True
                 b.box(P["trim_y"], (0.08, 0.55, 0.12), (x, 0.3, -0.125), bevel=0.016)
 
         def keep(cx, y0, y1, hw):
+            if hole and hole[0] < cx < hole[1] and hole[2] < y0 and y1 < hole[3]:
+                return False  # buried under a dormer
             return not (notch and notch[0] - 0.1 < cx < notch[1] + 0.1 and y0 < notch[2] - 0.05)
     shingles(b, mat or P["shingle"], width, length, M, keep=keep, palette=ROOF_TINTS, skirt=0.06)
 

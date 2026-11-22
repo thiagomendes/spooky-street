@@ -44,6 +44,13 @@ def import_pip(folder):
                              use_anim=True, ignore_leaf_bones=True)
     rig = next(o for o in bpy.data.objects if o.type == "ARMATURE")
     meshes = [o for o in bpy.data.objects if o.type == "MESH"]
+    # Blender's importer re-connects bones whose head sits on the parent's tail, which would discard the hips'
+    # translation keys here (Unity has no such notion): disconnect them all.
+    bpy.context.view_layer.objects.active = rig
+    bpy.ops.object.mode_set(mode="EDIT")
+    for eb in rig.data.edit_bones:
+        eb.use_connect = False
+    bpy.ops.object.mode_set(mode="OBJECT")
 
     def image(name, data=False):
         img = bpy.data.images.load(os.path.join(folder, name))
@@ -114,7 +121,7 @@ def main():
     print("[pip_review] imported", [o.name for o in meshes], "tris", tris, "actions", sorted(actions))
     cam = co.stage()
     scene = bpy.context.scene
-    scene.eevee.taa_render_samples = 32
+    scene.eevee.taa_render_samples = 16
     tmp = os.path.splitext(out)[0]
 
     def set_pose(clip, frame):
@@ -147,16 +154,16 @@ def main():
     detail = shot((-0.62, -1.2, 0.42), (0.03, -0.05, 0.25), 50, 640, 472, "", "detail")
     rows.append(np.concatenate([portrait, detail], axis=1))
     # --- contact strip ---
-    tw, th, per_row = 200, 250, 8
+    tw, th, per_row = 266, 330, 6
     strip = []
     for i, (clip, frame, yaw, pitch, look) in enumerate(STRIP):
         set_pose(clip, frame)
         a, e = math.radians(yaw), math.radians(pitch)
         target = Vector((0, 0, look))
-        loc = target + 6.2 * Vector((-math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
-        strip.append(shot(loc, target, 85, tw, th, f"{clip} {frame}", f"s{i}", 0.085))
+        loc = target + 4.7 * Vector((-math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
+        strip.append(shot(loc, target, 85, tw, th, f"{clip} {frame}", f"s{i}", 0.07))
     for r in range(0, len(strip), per_row):
-        rows.append(np.concatenate(strip[r:r + per_row], axis=1))
+        rows.append(np.pad(np.concatenate(strip[r:r + per_row], axis=1), ((0, 0), (0, 1600 - tw * per_row), (0, 0)), constant_values=0.07))
     sheet = np.concatenate(rows[::-1], axis=0)  # image rows run bottom-up
     co.save_sheet(sheet, out)
     print("[pip_review] sheet ->", out, sheet.shape)

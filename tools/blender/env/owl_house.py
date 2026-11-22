@@ -30,7 +30,7 @@ WIN_Z, WIN_R = EAVE_Z + 1.5, 0.56  # the round attic window
 SILL_Z = 2.5  # June's side window (spec §4 attic sill)
 DORMER_Y, DORMER_TOP = 3.0, 3.98
 OWL_Z = RIDGE_Z + 0.34
-WHEEL = Vector((0.0, 1.05, RIDGE_Z + 2.0))
+WHEEL = Vector((0.0, 0.5, RIDGE_Z + 2.45))
 
 
 def owl_puppet(b, P, craft, height=0.95):
@@ -41,29 +41,31 @@ def owl_puppet(b, P, craft, height=0.95):
     wing = craft.timber(E["plum"], "Z", wear=0.35, bare=E["timber_dark"])
     paint = craft.paint()
     b.prism(body, owl_outline(height, 3), 0.22, T(0, -0.11, 0), bevel=0.012, tint=1.0)
-    chest = [(-12 * u, 30 * u), (12 * u, 30 * u), (17 * u, 14 * u), (0, 2 * u), (-17 * u, 14 * u)]
-    b.prism(P["candy"], chest, 0.03, T(0, -0.135, 0), bevel=0.01, tint=1.0)
+    n = 6
+    dome = [(math.sin(math.pi * i / n) if 0 < i < n else 0.0, -math.cos(math.pi * i / n)) for i in range(n + 1)]
+    b.lathe(body, dome, 14, T(0, -0.11, 26 * u) @ S(25 * u, 0.085, 24 * u), tint=1.0)  # a round belly on the slab
+    b.lathe(P["candy"], dome, 12, T(0, -0.15, 17 * u) @ S(15 * u, 0.06, 14 * u), tint=1.0)  # domed chest
     for row in range(3):  # painted feather chevrons
         w = (9 - 2.2 * row) * u
         z = (24 - 7 * row) * u
-        b.prism(P["orange"], [(-w, z), (0, z - 4 * u), (w, z), (w, z + 2.4 * u), (0, z - 1.6 * u), (-w, z + 2.4 * u)], 0.01,
-                T(0, -0.143, 0), tint=1.0 - 0.08 * row)
+        b.prism(P["orange"], [(-w, z), (0, z - 4 * u), (w, z), (w, z + 2.4 * u), (0, z - 1.6 * u), (-w, z + 2.4 * u)], 0.03,
+                T(0, -0.218 + 0.004 * row, 0), tint=1.0 - 0.08 * row)
     for s in (1, -1):
         shape = [(0.0, 0.0), (9 * u, -4 * u), (12 * u, -30 * u), (4 * u, -44 * u), (-5 * u, -30 * u), (-4 * u, -8 * u)]
-        with b.at(T(s * 22 * u, -0.045, 58 * u) @ (S(-1, 1, 1) if s < 0 else T()) @ R("Y", -10)):
+        with b.at(T(s * 22 * u, -0.045, 58 * u) @ (S(-1, 1, 1) if s < 0 else T()) @ R("Y", -12) @ R("Z", -26)):  # panels cupped forward
             b.prism(wing, shape, 0.06, T(0, -0.09, 0), bevel=0.016)
             for k in range(3):
                 b.prism(P["door_x"], scallop_strip(13 * u, 0.4 * u, 2, 2.6 * u, 3), 0.012, T(-2 * u, -0.1, (-12 - 9 * k) * u), tint=1.2)
             b.disc(paint, 2.4 * u, 0.02, T(2 * u, -0.105, -4 * u), segs=8, tint=lc(E["brass"]), bevel=0.004)
         ex, ez = s * 12 * u, 49 * u
-        b.ring(P["trim_x"], 7.6 * u, 12.5 * u, 0.06, T(ex, -0.165, ez), segs=20, tint=1.0)
-        b.disc(P["eye"], 8 * u, 0.02, T(ex, -0.125, ez), segs=20, tint=1.0)
-        b.disc(P["ink"], 3.6 * u, 0.02, T(ex, -0.137, ez), segs=12, tint=1.0, bevel=0.004)
+        b.ring(P["trim_x"], 7.6 * u, 12.5 * u, 0.06, T(ex, -0.185, ez), segs=20, tint=1.0)
+        b.disc(P["eye"], 8 * u, 0.02, T(ex, -0.145, ez), segs=20, tint=1.0)
+        b.disc(P["ink"], 3.6 * u, 0.02, T(ex, -0.157, ez), segs=12, tint=1.0, bevel=0.004)
         for k in range(3):  # toes over the perch bar
             b.box(paint, (0.028, 0.11, 0.035), (s * 9 * u + (k - 1) * 0.034, -0.085, 0.012), bevel=0.01, tint=lc(E["orange"]))
     for s in (1, -1):  # the V brow
-        b.box(wing, (21 * u, 0.03, 5.5 * u), (s * 12 * u, -0.185 - 0.004 * s, 63.5 * u), bevel=0.01, rot=R("Y", s * 30), tint=1.25)
-    b.lathe(paint, [(0.0, 0.0), (5.5 * u, 0.0), (0.0, 0.085)], 4, T(0, -0.11, 40 * u) @ R("X", 115) @ R("Z", 45), tint=lc(E["orange"]))
+        b.box(wing, (21 * u, 0.03, 5.5 * u), (s * 12 * u, -0.205 - 0.004 * s, 63.5 * u), bevel=0.01, rot=R("Y", s * 30), tint=1.25)
+    b.lathe(paint, [(0.0, 0.0), (5.5 * u, 0.0), (0.0, 0.085)], 4, T(0, -0.16, 40 * u) @ R("X", 112) @ R("Z", 45), tint=lc(E["orange"]))
 
 
 def wind_wheel(b, P, craft, radius=0.72):
@@ -73,7 +75,8 @@ def wind_wheel(b, P, craft, radius=0.72):
     wood = craft.timber(E["timber_dark"], "Z", wear=0.3)
     drop = WHEEL.z - RIDGE_Z
     b.box(wood, (0.09, 0.09, drop + 0.1), (0, 0.12, -drop / 2 + 0.05), bevel=0.016)
-    b.box(wood, (0.07, 0.9, 0.06), (0, 0.35, -drop + 0.5), bevel=0.012, rot=R("X", -55))
+    b.box(wood, (0.07, 1.5, 0.06), (0, 0.5, -drop + 0.72), bevel=0.012, rot=R("X", -62))
+    b.box(wood, (0.16, 0.16, 0.1), (0, 0.12, -drop + 0.12), bevel=0.02)
     b.cyl(paint, 0.075, 0.2, R("X", 90) @ T(0, 0, -0.03), segments=10, tint=lc(E["brass"]))
     b.lathe(paint, [(0.075, 0.0), (0.05, 0.05), (0.0, 0.07)], 10, T(0, -0.07, 0) @ R("X", 90), tint=lc(E["orange"]))
     cols = (E["orange"], E["bone"], E["purple"], E["bone"])
@@ -103,7 +106,8 @@ def build_house(craft, dress=True, lights=True, attic=3.4):
         n = 30
         for i in range(n):
             y = (i + 0.5) * DEPTH / n
-            b.box(P["wall_v"], (0.03, DEPTH / n - 0.012, FLOOR - 0.03), (sx * (HALF + 0.0), y, FLOOR / 2 - 0.015), bevel=0, tint=b.vary(0.75, 1.0))
+            b.box(P["wall_v"], (0.03, DEPTH / n - 0.012, FLOOR - 0.03), (sx * (HALF + 0.0), y, FLOOR / 2 - 0.015), bevel=0, tint=b.vary(0.75, 1.0),
+                  drop=("-z", "-x" if sx > 0 else "+x"))
     win, dr = (-0.4, 0.4, 0.75, 1.95), (-0.57, 0.57, 0.0, 2.02)
     for x, kind in ((-2, "w"), (0, "d"), (2, "w")):
         with b.at(T(x, 0, FLOOR)):
@@ -134,7 +138,7 @@ def build_house(craft, dress=True, lights=True, attic=3.4):
     b.box(P["trim_x"], (2 * HALF + 0.1, 0.07, 0.14), (0, -0.03, EAVE_Z + 0.02), bevel=0.016)
 
     def keep(cx, y0, y1, hw):
-        if abs(cx) + hw > (RISE - y1) / tan + 0.16:
+        if abs(cx) + hw > (RISE - y1) / tan + 0.16 or y1 < 0.5:  # outside the gable, or behind the porch roof
             return False
         return math.hypot(cx, (y0 + y1) / 2 + 0.05 - (WIN_Z - EAVE_Z)) > WIN_R + 0.2
     pk.shingles(b, P["scale"], 2 * HALF, RISE, T(0, 0.02, EAVE_Z) @ R("X", 90), tab=0.44, exposure=0.33, keep=keep,
@@ -147,7 +151,7 @@ def build_house(craft, dress=True, lights=True, attic=3.4):
     length = (HALF + OVER) / math.cos(math.radians(PITCH))
     eave = EAVE_Z - OVER * tan
     width = DEPTH + 2 * OVER
-    pk.roof(r, P, width, length, PITCH, T(-HALF - OVER, DEPTH / 2, eave) @ R("Z", -90), notch=(-0.95, 0.95, 0.62))
+    pk.roof(r, P, width, length, PITCH, T(-HALF - OVER, DEPTH / 2, eave) @ R("Z", -90), notch=(-0.95, 0.95, 0.62), hole=(-0.45, 0.45, 0.5, 1.9))
     pk.roof(r, P, width, length, PITCH, T(HALF + OVER, DEPTH / 2, eave) @ R("Z", 90))
     r.cyl(P["trim_y"], 0.09, width + 0.06, T(0, DEPTH / 2, RIDGE_Z + 0.02) @ R("X", 90), segments=8)
     barge = scallop_strip(length + 0.12, 0.16, 13, 0.08, 4)
@@ -219,7 +223,7 @@ def build_house(craft, dress=True, lights=True, attic=3.4):
     pk.roof(p, P, 6.5, pl, pp, T(0, -2.3, 2.83))
     for i in range(9):
         x = -2.8 + i * 0.7
-        p.box(P["trim_y"], (0.07, pl - 0.5, 0.1), (x, -1.2 + 0.2, 2.83 + 0.325 - 0.14), bevel=0.012, rot=R("X", pp), tint=0.8)
+        p.box(P["trim_y"], (0.07, pl - 0.5, 0.1), (x, -1.2 + 0.2, 2.83 + 0.325 - 0.14), rot=R("X", pp), tint=0.8, drop=("+z", "+y", "-y"))
     p.finish("House_Porch")
 
     # --- the owl and its wheel ---
@@ -233,7 +237,7 @@ def build_house(craft, dress=True, lights=True, attic=3.4):
     o.cyl(P["trim_x"], 0.035, 0.66, T(0, -0.02, OWL_Z - 0.01) @ R("Y", 90), segments=8)
     with o.at(T(0, -0.02, OWL_Z)):
         owl_puppet(o, P, craft)
-    o.rod(craft.paint(), (0, 0.06, OWL_Z + 0.35), (0, WHEEL.y + 0.1, WHEEL.z - 0.75), 0.014, 5, lc(E["bone_dim"]))
+    o.rod(craft.paint(), (0, 0.1, OWL_Z + 0.45), (0, WHEEL.y + 0.1, OWL_Z + 0.95), 0.014, 5, lc(E["bone_dim"]))
     with o.at(T(*WHEEL)):
         wind_wheel(o, P, craft)
     o.finish("House_Owl")
@@ -252,7 +256,7 @@ def dress_house(craft, P, lights=True):
     spots = (((-0.62, -2.45, 0.2), 0.135, 0, None, 10), ((0.62, -2.16, 0.4), 0.125, 1, H(0xF0E3C4), -15), ((-1.45, -2.8, 0.0), 0.3, 2, None, 12),
              ((1.38, -2.62, 0.0), 0.2, 0, H(0xF59A23), -20), ((1.5, -0.55, FLOOR), 0.19, 1, None, -8), ((-2.45, -1.2, FLOOR), 0.16, 2, H(0xF59A23), 25))
     for pos, rad, style, rgb, rz in spots:
-        pr.pumpkin(b, craft, rad, 0.8, T(*pos) @ R("Z", rz), style=style, rgb=rgb)
+        pr.pumpkin(b, craft, rad, 0.8, T(*pos) @ R("Z", rz), style=style, rgb=rgb, per_lobe=3 if rad > 0.25 else 2)
         if lights:
             el.point_light("JackGlow", (pos[0], pos[1] - rad * 1.5, pos[2] + rad * 0.8), 1.2 + 14 * rad * rad, (1.0, 0.6, 0.22), 0.05, shadow=False)
     z = FLOOR + POST - 0.03
@@ -273,7 +277,7 @@ def dress_house(craft, P, lights=True):
     for k in range(3):
         a = math.radians(120 * k + 30)
         b.rod(wood, (sx + 0.17 * math.cos(a), sy + 0.17 * math.sin(a), FLOOR), (sx + 0.1 * math.cos(a), sy + 0.1 * math.sin(a), FLOOR + 0.37), 0.022, 6)
-    pr.candy_bowl(b, craft, 0.16, T(sx, sy, FLOOR + 0.41), spill=False, heap=26)
+    pr.candy_bowl(b, craft, 0.16, T(sx, sy, FLOOR + 0.41), spill=False, heap=15)
     # doormat, broom
     mat = craft.felt(el.V["orange"])
     b.box(mat, (0.8, 0.5, 0.025), (0, -0.42, FLOOR + 0.012), bevel=0.008, tint=1.0)
@@ -320,9 +324,12 @@ def main():
         root.location.y += 40.0
     el.stage_ground(craft, 200.0)
     print("TRIS House:", el.triangles(house), flush=True)
+    dg = bpy.context.evaluated_depsgraph_get()
     for obj in bpy.data.objects:
         if obj.parent is house and obj.type == "MESH":
-            print(f"TRIS   {obj.name}: {len(obj.data.polygons)} polys", flush=True)
+            me = obj.evaluated_get(dg).to_mesh()
+            me.calc_loop_triangles()
+            print(f"TRIS   {obj.name}: {len(me.loop_triangles)}", flush=True)
     for name, root, _x in kit:
         print(f"TRIS Kit {name}: {el.triangles(root)}", flush=True)
     final = quality == "final"
@@ -332,11 +339,11 @@ def main():
     tmp = os.path.splitext(out)[0]
     kit_names = [root.name for _n, root, _x in kit]
     views = {
-        "hero": ((-10.5, -15.5, 4.6), (-0.1, 1.2, 4.0), 47, 1150, 900, ["House"]),
-        "front": ((0.0, -40.0, 3.4), (0.0, 0.0, 4.45), 125, 850, 900, ["House"]),
-        "side": ((-42.0, 2.0, 3.4), (0.0, 2.0, 4.45), 112, 1000, 720, ["House"]),
+        "hero": ((-10.5, -15.5, 4.6), (-0.1, 1.2, 4.3), 44, 1150, 900, ["House"]),
+        "front": ((0.0, -40.0, 3.4), (0.0, 0.0, 4.75), 116, 850, 900, ["House"]),
+        "side": ((-42.0, 2.0, 3.4), (0.0, 2.0, 4.75), 104, 1000, 720, ["House"]),
         "door": ((-1.6, -7.2, 1.75), (-0.05, 0.0, 1.62), 60, 500, 720, ["House"]),
-        "owl": ((-3.6, -8.0, 6.3), (0.0, 0.4, 7.05), 70, 500, 720, ["House"]),
+        "owl": ((-3.4, -7.0, 6.9), (0.0, 0.3, 7.65), 50, 500, 720, ["House"]),
         "kit": ((-8.0, 40.0 - 80.0, 13.0), (0.0, 40.4, 1.15), 122, 2000, 440, kit_names),
     }
     todo = [v for v in rest if v in views] or list(views)

@@ -138,6 +138,47 @@ class EnvCraft(craft_lib.Craft):
         """White craft paper coloured by the piece tint (bunting, bats, moths)."""
         return self.tinted((1.0, 1.0, 1.0), 0.95, 0.16, 40.0, sheen=0.2)
 
+    def foil(self):
+        """Crinkled sweet-wrapper foil coloured by the piece tint."""
+        def build():
+            mat, nodes, links, bsdf = self._base("Foil")
+            vec = self._coords(nodes, links)
+            crinkle = self._noise(nodes, links, vec, 260.0, 2.0)
+            attr = nodes.new("ShaderNodeAttribute")
+            attr.attribute_name = "tint"
+            links.new(attr.outputs["Color"], bsdf.inputs["Base Color"])
+            links.new(self._bump(nodes, links, crinkle, 0.5, 0.002), bsdf.inputs["Normal"])
+            bsdf.inputs["Metallic"].default_value = 0.75
+            bsdf.inputs["Roughness"].default_value = 0.32
+            return mat
+        return self._cached(("foil",), build)
+
+    def foliage(self, low, high, z0, z1):
+        """Leaf paint that runs from `low` (rust, underneath) to `high` (warm, on top) over object height
+        z0..z1, mottled, times the piece tint."""
+        def build():
+            mat, nodes, links, bsdf = self._base("Foliage")
+            coord = nodes.new("ShaderNodeTexCoord")
+            split = nodes.new("ShaderNodeSeparateXYZ")
+            links.new(coord.outputs["Object"], split.inputs[0])
+            fade = nodes.new("ShaderNodeMapRange")
+            fade.inputs["From Min"].default_value, fade.inputs["From Max"].default_value = z0, z1
+            links.new(split.outputs["Z"], fade.inputs["Value"])
+            grad = self._mix_colors(nodes, links, fade.outputs["Result"], lin(low), lin(high))
+            blotch = self._noise(nodes, links, self._coords(nodes, links), 5.0, 3.0)
+            dull = nodes.new("ShaderNodeMix")
+            dull.data_type = "RGBA"
+            dull.blend_type = "MULTIPLY"
+            dull.inputs[0].default_value = 0.45
+            links.new(grad, dull.inputs[6])
+            links.new(blotch, dull.inputs[7])
+            links.new(self._tint(nodes, links, dull.outputs[2]), bsdf.inputs["Base Color"])
+            bsdf.inputs["Roughness"].default_value = 0.9
+            bsdf.inputs["Sheen Weight"].default_value = 0.2
+            mat.diffuse_color = lin(high)
+            return mat
+        return self._cached(("foliage", low, high, z0, z1), build)
+
     def glow(self, rgb, strength=2.0):
         """Lit paper or glass: emission only, so its value is the same from every angle."""
         def build():
@@ -218,6 +259,7 @@ class Builder:
 
     def add_bm(self, bm, mat, M=None, tint=None, smooth=True):
         tint = self.vary() if tint is None else ((tint,) * 3 if isinstance(tint, (int, float)) else tint)
+        per_face = callable(tint)  # tint(face centre in the piece's local space) -> triple
         M = self.stack[-1] @ (M if M is not None else Matrix.Identity(4))
         flip = M.determinant() < 0
         base = len(self.verts)
@@ -227,18 +269,25 @@ class Builder:
         for f in bm.faces:
             idx = [base + v.index for v in f.verts]
             self.faces.append(idx[::-1] if flip else idx)
-            self.cols.append(tint)
+            self.cols.append(tint(f.calc_center_median()) if per_face else tint)
             self.mat_ids.append(mi)
             self.smooth.append(smooth)
         bm.free()
 
-    def box(self, mat, size, centre=(0, 0, 0), bevel=0.012, rot=None, tint=None, M=None):
-        """Chamfered timber block. `rot` is a rotation matrix applied about the box centre."""
+    def box(self, mat, size, centre=(0, 0, 0), bevel=0.012, rot=None, tint=None, M=None, drop=()):
+        """Chamfered timber block. `rot` is a rotation matrix applied about the box centre. `drop` culls
+        whole faces that can never be seen, by outward axis: e.g. ("+y", "-z") (unbevelled boxes only)."""
         bm = bmesh.new()
         bmesh.ops.create_cube(bm, size=1.0)
         for v in bm.verts:
             v.co = Vector((v.co.x * size[0], v.co.y * size[1], v.co.z * size[2]))
         bevel = min(bevel, min(size) * 0.3)
+        if drop:
+            bevel = 0
+            axes = {"x": Vector((1, 0, 0)), "y": Vector((0, 1, 0)), "z": Vector((0, 0, 1))}
+            dirs = [axes[d[1]] * (1 if d[0] == "+" else -1) for d in drop]
+            bm.normal_update()
+            bmesh.ops.delete(bm, geom=[f for f in bm.faces if any(f.normal.dot(d) > 0.9 for d in dirs)], context="FACES")
         if bevel > 0:
             bmesh.ops.bevel(bm, geom=bm.edges[:], offset=bevel, offset_type="OFFSET", segments=1, profile=0.5,
                             affect="EDGES")

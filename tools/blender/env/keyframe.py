@@ -21,7 +21,7 @@ import props as pr
 from env_lib import E, R, S, T, Builder, H, grouped, lc, shade
 
 CAM = Vector((1.4, -13.4, 1.05))  # a child's eye height above the street
-YAW, PITCH_UP, LENS = -13.0, 10.5, 26.0
+YAW, PITCH_UP, LENS = -13.0, 11.6, 26.0
 
 
 def bearing(deg, dist, z=0.0):
@@ -90,9 +90,9 @@ def build_sky(craft):
     moon = CAM + Vector((moon_dir.x, moon_dir.y, math.tan(math.radians(19.5)))) * 170.0
     face = (CAM - moon).to_track_quat("-Y", "Z").to_matrix().to_4x4()
     with b.at(T(*moon) @ face):
-        b.disc(craft.glow(E["moon"], 0.92), 11.5, 0.2, segs=40, tint=1.0)
+        b.disc(craft.glow(E["moon"], 0.72), 11.5, 0.2, segs=40, tint=1.0)
         for x, z, r in ((-3.5, 3.0, 2.4), (3.6, -1.0, 1.7), (-1.0, -5.0, 2.0), (4.5, 5.0, 1.1)):
-            b.disc(craft.glow(H(0xD9CFAE), 0.8), r, 0.1, T(x, -0.2, z), segs=14, tint=1.0)
+            b.disc(craft.glow(H(0xD9CFAE), 0.62), r, 0.1, T(x, -0.2, z), segs=14, tint=1.0)
     star = craft.glow(H(0xFFF2C8), 1.6)
     for _ in range(150):
         az, elv = math.radians(rng.uniform(-75, 50)), math.radians(rng.uniform(7, 50))
@@ -110,6 +110,7 @@ def build_sky(craft):
 
 
 def build_scene(craft, quality):
+    pr.JACK_GLOW, pr.LAMP_GLOW = 0.5, 0.33  # practicals stay under the attic window (spec §6)
     grouped("House", lambda: oh.build_house(craft, attic=4.2))
     grouped("Ground", lambda: build_ground(craft))
     grouped("Skyline", lambda: build_skyline(craft))
@@ -154,7 +155,7 @@ def build_scene(craft, quality):
                 pk.rail(b, P, 1.9, rhythm=1)
             pr.candy_bowl(b, craft, 0.3, T(0, 0, 0.845) @ R("Z", 122), spill=False, heap=54, glow=1.3)
             for x, y, kind, a, rz in ((0.22, -0.2, 0, "purple", 30), (0.26, 0.02, 3, "lime", 0)):
-                pr.candy(b, craft.paint(), kind, T(x, y, 0.845 + 0.03) @ R("Z", rz) @ (R("X", 90) if kind == 0 else T()), el.V[a], el.V["bone"], 1.3)
+                pr.candy(b, craft, kind, T(x, y, 0.845 + 0.03) @ R("Z", rz) @ (R("X", 90) if kind == 0 else T()), el.V[a], el.V["bone"], 1.3)
         b.finish("Foreground")
         pr.DETAIL = 1
     grouped("Foreground", foreground)
@@ -165,9 +166,14 @@ def build_scene(craft, quality):
     pip_root.location = (at.x, at.y, 0)
     pip_root.rotation_euler.z = math.radians(180 - 24)
 
-    # a paper bat slipping sideways off the porch
+    # a paper bat slipping sideways off the porch, and maple leaves drifting down
     def falling():
         b = Builder(205)
+        rng = random.Random(11)
+        for k in range(9):
+            p = bearing(YAW - 30 + 4.2 * k + rng.uniform(-1, 1), rng.uniform(3.2, 7.5), rng.uniform(0.5, 3.4))
+            pr.leaf(b, craft, T(*p) @ R("Z", rng.uniform(0, 360)) @ R("X", rng.uniform(20, 160)) @ R("Y", rng.uniform(0, 360)), rng.uniform(0.11, 0.16),
+                    rng.choice((E["leaf_a"], E["leaf_b"], E["leaf_c"])), curl=0.5, low=True)
         pr.bat(b, craft.paper_white(), 0.34, T(2.55, -2.3, 2.0) @ R("Y", 62) @ R("X", 20), fold=0.3)
         b.finish("FallingBat")
     grouped("FallingBat", falling)
@@ -178,11 +184,11 @@ def build_scene(craft, quality):
     el.sun_light("Moon", to_scene, 1.5, (0.56, 0.66, 1.0), 3.0, 70.0)
     el.sun_light("SkyFill", (0.5, 1.0, -0.55), 0.3, (0.6, 0.55, 1.0), 20.0, 70.0)
     el.point_light("StreetWarm", (CAM.x + 2.4, CAM.y + 0.5, 3.0), 420, (1.0, 0.72, 0.42), 0.4, shadow=True)
-    for name, k in (("PorchLamp", 2.2), ("StreetLampGlow", 2.5), ("AtticGlow", 1.5)):
+    for name, k in (("PorchLamp", 1.5), ("StreetLampGlow", 2.0), ("AtticGlow", 1.5)):
         bpy.data.objects[name].data.energy *= k
-    for mat in bpy.data.materials:  # the street lantern must stay under the attic window in value
-        if mat.name.startswith("Glow_") and mat.name.endswith("_2.6"):
-            mat.node_tree.nodes["Principled BSDF"].inputs["Emission Strength"].default_value = 1.15
+    # a cool moon rim along the hedge top so it separates from the dark house behind it
+    rim = el.area_light("HedgeRim", (-6.5, -2.6, 3.4), (-6.0, -5.4, 1.0), 900, (0.5, 0.66, 1.0), 6.0)
+    rim.data.use_shadow = False
     return moon
 
 
@@ -217,6 +223,18 @@ def main():
     lum = np.clip(luminance(px), 0, 1) ** (1 / 2.2)  # display-referred value check (pixels load as linear)
     grey[:, :, 0] = grey[:, :, 1] = grey[:, :, 2] = lum ** 2.2
     el.co.save_sheet(grey, tmp + "_grey.png")
+    # value check: the attic window must hold the single brightest peak
+    from bpy_extras.object_utils import world_to_camera_view
+    uv = world_to_camera_view(bpy.context.scene, cam, Vector((0.0, -0.1, oh.WIN_Z)))
+    cx, cy = int(uv.x * width), int(uv.y * height)
+    rad = int(oh.WIN_R / (Vector((0.0, 0.0, oh.WIN_Z)) - CAM).length * LENS / 36.0 * width)
+    lum8 = np.clip(luminance(px), 0, 1)
+    yy, xx = np.mgrid[0:height, 0:width]
+    inside = (xx - cx) ** 2 + (yy - cy) ** 2 < (rad * 0.85) ** 2
+    outside = (xx - cx) ** 2 + (yy - cy) ** 2 > (rad * 1.6) ** 2
+    oy, ox = np.unravel_index(np.argmax(np.where(outside, lum8, 0)), lum8.shape)
+    print(f"VALUE attic mean {lum8[inside].mean():.3f} p50 {np.median(lum8[inside]):.3f} | outside max {lum8[outside].max():.3f} at x={ox} y_from_top={height - oy}"
+          f" | outside p99.9 {np.percentile(lum8[outside], 99.9):.3f} | clipped outside px {(lum8[outside] > 0.98).sum()}", flush=True)
     print("key frame ->", out)
 
 
