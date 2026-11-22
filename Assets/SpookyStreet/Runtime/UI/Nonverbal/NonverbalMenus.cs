@@ -1,4 +1,5 @@
 using System;
+using SpookyStreet.Controls;
 using SpookyStreet.Core.Art;
 using SpookyStreet.Core.Nonverbal;
 using UnityEngine;
@@ -26,6 +27,9 @@ namespace SpookyStreet.UI.Nonverbal
         private RectTransform _gateArea;
         private Image[] _spots;
         private Image _gateRing;
+        private Text _gateHint;
+        private ControlGlyphView[] _gateGlyphs;
+        private ControlScheme? _gateScheme;
         private GameObject _settings;
         private Image _helperTick;
         private Action _onGatePassed;
@@ -75,6 +79,7 @@ namespace SpookyStreet.UI.Nonverbal
             var hint = UiFactory.Label(content, "Hint", NvKeys.ParentGateHint, 34, TextAnchor.MiddleCenter, Palette.WarmPaper,
                 UiFactory.BoldFont);
             UiFactory.Place(hint.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, -120f), new Vector2(760f, 60f));
+            _gateHint = hint;
             _gateRing = UiFactory.Sprite(content, "Progress", UiFactory.Baked(UiSpriteCatalog.StitchRing),
                 Palette.CandyCornYellow, new Vector2(0.5f, 0.5f), new Vector2(0f, 30f), new Vector2(170f, 170f));
             _gateRing.type = Image.Type.Filled;
@@ -91,6 +96,14 @@ namespace SpookyStreet.UI.Nonverbal
                     UiSpriteCatalog.IconCheck, UiFactory.WithAlpha(UiFactory.Ink, 0f), null, 150f, Vector2.zero,
                     Vector2.zero, 1f);
                 _spots[i].raycastTarget = false;
+            }
+
+            // D25: with a gamepad or keyboard each spot carries its button (a shoulder bumper, or the Q and P keys).
+            _gateGlyphs = new ControlGlyphView[2];
+            for (int i = 0; i < 2; i++)
+            {
+                _gateGlyphs[i] = ControlGlyphView.Create(_spots[i].transform, "Glyph", new Vector2(0.5f, 0.5f),
+                    Vector2.zero, 76f);
             }
 
             var close = UiFactory.FeltDisc(content, "CloseGate", UiSpriteCatalog.FeltDiscNight, Palette.WarmPaper,
@@ -116,9 +129,39 @@ namespace SpookyStreet.UI.Nonverbal
             Canvas.ForceUpdateCanvases();
             PlaceSpot(_spots[0], Gate.ZoneA);
             PlaceSpot(_spots[1], Gate.ZoneB);
+            _gateScheme = null;
+            ApplyGateScheme();
             RefreshGate();
             return Gate;
         }
+
+        /// <summary>The gate's line and the spots' glyphs follow the active control scheme (touch, gamepad, keyboard).</summary>
+        private void ApplyGateScheme()
+        {
+            var scheme = ControlSchemeTracker.Current;
+            if (_gateScheme == scheme)
+            {
+                return;
+            }
+
+            _gateScheme = scheme;
+            var text = _gateHint != null ? _gateHint.GetComponent<SpookyStreet.Localization.LocalizedText>() : null;
+            if (text != null)
+            {
+                text.SetKey(ControlGlyphs.ParentGateHintKey(scheme));
+            }
+
+            _gateGlyphs[0].Show(ControlGlyphs.For(scheme, ControlPrompt.GateA));
+            _gateGlyphs[1].Show(ControlGlyphs.For(scheme, ControlPrompt.GateB));
+        }
+
+        /// <summary>The gate line's key now (tests).</summary>
+        public string GateHintKey => _gateHint != null
+            ? _gateHint.GetComponent<SpookyStreet.Localization.LocalizedText>()?.Key
+            : null;
+
+        /// <summary>The spots' glyphs (tests).</summary>
+        public ControlGlyphView GateGlyph(int spot) => _gateGlyphs[spot];
 
         private void PlaceSpot(Image spot, GateZone zone)
         {
@@ -357,6 +400,7 @@ namespace SpookyStreet.UI.Nonverbal
                 return;
             }
 
+            ApplyGateScheme();
             ReadTouches();
             ReadButtons();
             Gate.Update(Time.unscaledDeltaTime);

@@ -140,6 +140,7 @@ namespace SpookyStreet.UI
             var root = UiFactory.Stretch(UiFactory.Rect(canvasRoot, "Dialogue"));
             var view = root.gameObject.AddComponent<DialogueView>();
             view.Build(root);
+            DialogueGlyphs.Attach(view); // next and skip glyphs per control scheme (D25)
             root.gameObject.SetActive(false);
             return view;
         }

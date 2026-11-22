@@ -37,6 +37,17 @@ namespace SpookyStreet.Core.World
         /// </summary>
         public const float StreetView = 0.85f;
 
+        /// <summary>
+        /// The tier-1 hint's star flecks (candy corn, unlit sprites): bright but under the bloom threshold, so a hint
+        /// never blooms and the attic window and rooftop owl stay the brightest points.
+        /// </summary>
+        public const float HintSparkle = 0.95f;
+
+        /// <summary>
+        /// The workshop nook's hanging lamp shade (house v3 cutaway): a warm practical, well under the attic window.
+        /// </summary>
+        public const float NookLamp = 1.2f;
+
         /// <summary>Unlit moon disc colour scale: under the bloom threshold so it never competes with the attic.</summary>
         public const float Moon = 0.92f;
 

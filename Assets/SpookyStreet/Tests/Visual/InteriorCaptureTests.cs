@@ -183,6 +183,13 @@ namespace SpookyStreet.Tests.Visual
             yield return Wait(MechanismMotion.KnockTimes[1] + 0.12f);
             director.Cutaway.RenderInset();
             yield return Shot("20_workshop_cutaway");
+
+            // 35: the same cutaway on the third knock, re-lit by the nook's hanging lamp (S002 hints close): the top
+            // of the nook (cam, follower, arm) reads, and the owl and the attic window stay the brightest points.
+            yield return Wait(MechanismMotion.KnockTimes[2] - MechanismMotion.KnockTimes[1]);
+            Assert.IsTrue(director.Cutaway.Active, "35: the cutaway still plays");
+            director.Cutaway.RenderInset();
+            yield return Shot("35_nook_relit");
             director.Cutaway.Skip();
             yield return Wait(0.5f);
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using SpookyStreet.Core.Case;
+using SpookyStreet.App;
 using SpookyStreet.Core.World;
 using SpookyStreet.Player;
 using SpookyStreet.World;
@@ -31,6 +32,7 @@ namespace SpookyStreet.Case
         public const float DoorSwingSeconds = 0.9f;
 
         private readonly List<Light> _interiorLights = new List<Light>();
+        private GameObject _nookLamp;
         private Transform _body, _recess, _frontDoor, _innerDoor, _latch, _attic, _nookWall, _windowPane, _shroud;
         private Quaternion _frontRest, _innerRest, _latchRest;
         private Vector3 _latchAxis = Vector3.forward;
@@ -198,6 +200,7 @@ namespace SpookyStreet.Case
 
             BuildColliders();
             BuildLights();
+            BuildNookLamp(materials);
             BuildShroud(materials);
             LogParts();
             ShowInterior(false);
@@ -279,6 +282,57 @@ namespace SpookyStreet.Case
             // The route lantern (exterior: always on).
             AddLight("BridgeLantern", new Vector3(CaseRouteLayout.RoofMaxX - 0.1f, 4.2f, CaseRouteLayout.BridgeZ + 0.05f), 6f,
                 1.6f, false);
+        }
+
+        /// <summary>
+        /// Where the workshop nook's hanging lamp bulb sits: over the nook's open side, in front of the mechanism, above
+        /// the 1.6–2.6 m camera band (D24), so it lights the cam, follower and arm from the front and stays out of the
+        /// cutaway's frame.
+        /// </summary>
+        public static Vector3 NookLampBulb => InteriorPoint(1.75f, 3.05f, 4.45f);
+
+        /// <summary>
+        /// The workshop nook's warm practical (S002 hints close): a small lamp hanging from the loft over the
+        /// mechanism, with its own point light, so the top of the nook (the cam, the follower and the arm) reads in
+        /// the crank cutaway. The shade glows at <see cref="GlowLevels.NookLamp"/>, far under the attic window, and the
+        /// lamp hides with the interior.
+        /// </summary>
+        private void BuildNookLamp(MaterialLibrary materials)
+        {
+            Vector3 bulb = NookLampBulb;
+            var lamp = new GameObject("NookHangingLamp").transform;
+            lamp.SetParent(transform, false);
+            lamp.position = bulb;
+            _nookLamp = lamp.gameObject;
+            float cordTop = CaseRouteLayout.LoftUnderside;
+            float cordLength = Mathf.Max(0.05f, cordTop - (bulb.y + 0.16f));
+            LampPart(lamp, PrimitiveType.Cylinder, "Cord", new Vector3(0f, 0.16f + cordLength * 0.5f, 0f),
+                new Vector3(0.025f, cordLength * 0.5f, 0.025f), materials.Get(Palette.InkBlack));
+            LampPart(lamp, PrimitiveType.Cylinder, "Shade", new Vector3(0f, 0.1f, 0f), new Vector3(0.26f, 0.07f, 0.26f),
+                materials.Get(Palette.HauntedPurple));
+            LampPart(lamp, PrimitiveType.Sphere, "Bulb", new Vector3(0f, -0.02f, 0f), Vector3.one * 0.15f,
+                materials.Glow(Palette.PumpkinAmber, GlowLevels.NookLamp));
+            // Just under the shade: it lights the mechanism's top from the front (the cutaway camera's side).
+            AddLight("NookTopLamp", bulb + new Vector3(0f, -0.2f, 0f), 4.2f, 2.8f);
+        }
+
+        private static void LampPart(Transform parent, PrimitiveType type, string name, Vector3 local, Vector3 scale,
+            Material material)
+        {
+            var part = GameObject.CreatePrimitive(type);
+            part.name = name;
+            var collider = part.GetComponent<Collider>();
+            if (collider != null)
+            {
+                Destroy(collider);
+            }
+
+            part.transform.SetParent(parent, false);
+            part.transform.localPosition = local;
+            part.transform.localScale = scale;
+            var renderer = part.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
         private void AddLight(string name, Vector3 position, float range, float intensity, bool interior = true)
@@ -415,6 +469,11 @@ namespace SpookyStreet.Case
             foreach (var light in _interiorLights)
             {
                 light.enabled = show;
+            }
+
+            if (_nookLamp != null)
+            {
+                _nookLamp.SetActive(show);
             }
 
             // D24: nothing is cut away during play. The attic is always drawn; the exterior is always whole.

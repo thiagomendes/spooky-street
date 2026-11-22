@@ -66,6 +66,30 @@ namespace SpookyStreet.Characters
 
         public void SetTarget(Transform target) => _target = target;
 
+        /// <summary>A tier-1 hint's head turn can go further than the turn toward Pip (degrees).</summary>
+        public const float MaxPointLookYaw = 70f;
+
+        private Vector3 _lookPoint;
+        private float _lookUntil = -1f;
+
+        /// <summary>
+        /// Turns the head toward <paramref name="point"/> for <paramref name="seconds"/> of game time (a tier-1 hint:
+        /// "look there"), over the clip and instead of the turn toward Pip; then back.
+        /// </summary>
+        public void LookAt(Vector3 point, float seconds)
+        {
+            _lookPoint = point;
+            _lookUntil = Time.time + Mathf.Max(0f, seconds);
+        }
+
+        /// <summary>True while a <see cref="LookAt"/> turn holds.</summary>
+        public bool LookingAtPoint => _lookUntil >= 0f && Time.time < _lookUntil;
+
+        /// <summary>The point of the last <see cref="LookAt"/>.</summary>
+        public Vector3 LookPoint => _lookPoint;
+
+        public void StopLooking() => _lookUntil = -1f;
+
         /// <summary>True while a gesture one-shot plays (the head turn toward Pip is off so the head follows the arm).</summary>
         public bool Gesturing => _gesture != null && Avatar != null && Avatar.OneShot == _gesture;
 
@@ -145,9 +169,16 @@ namespace SpookyStreet.Characters
 
             Avatar.PlayLoop(Reaction.WantsEngagedLoop || Conversing ? Clips.Engaged : Clips.Rest);
             StepGesture(dt);
-            bool look = (Reaction.Attending || Conversing) && _target != null && !Gesturing;
+            bool point = LookingAtPoint && !Gesturing;
+            bool look = point || ((Reaction.Attending || Conversing) && _target != null && !Gesturing);
             _headWeight = Mathf.MoveTowards(_headWeight, look ? 1f : 0f, (Gesturing ? 8f : headTurnRate) * dt);
-            if (_target != null)
+            if (point)
+            {
+                Vector3 to = _lookPoint - transform.position;
+                float targetYaw = WitnessReaction.YawOf(to.x, to.z);
+                _headYaw = WitnessReaction.LookYaw(transform.eulerAngles.y, targetYaw, MaxPointLookYaw);
+            }
+            else if (_target != null)
             {
                 Vector3 to = _target.position - transform.position;
                 float targetYaw = WitnessReaction.YawOf(to.x, to.z);

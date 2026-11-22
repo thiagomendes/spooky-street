@@ -1,3 +1,5 @@
+using SpookyStreet.App;
+using SpookyStreet.Characters;
 using SpookyStreet.Core.Art;
 using SpookyStreet.Core.Case;
 using SpookyStreet.Core.World;
@@ -9,7 +11,11 @@ using UnityEngine;
 namespace SpookyStreet.Case
 {
     /// <summary>
-    /// The tier-2 hint in the world (docs/nonverbal-ux.md §6, D23.7): on a radio press at the "where" tier a paper-bat
+    /// The tier-1 and tier-2 hints in the world. Tier 1 "look" (S002 hints close): a soft paper sparkle, pooled star
+    /// flecks in candy corn under the bloom threshold, twinkles on the objective's target (<see cref="HintPresentation.TryTarget"/>,
+    /// sized to stay readable at phone size) for <see cref="HintPresentation.SparkleSeconds"/> or until the objective
+    /// changes, and the nearest witness or cast member in view turns their head to it for about 2 s.
+    /// Tier 2: the tier-2 hint in the world (docs/nonverbal-ux.md §6, D23.7): on a radio press at the "where" tier a paper-bat
     /// trail launches from Pip, one bat every 0.22 s, flies an arc to the objective and fades there, while a floating
     /// goal sticker (the place's puppet part in the orange key ring) pulses over the goal. Timing comes from the
     /// engine-free <see cref="BatTrailSchedule"/> (two waves 4 s apart, about 8 s, then silence until the next press).
@@ -53,6 +59,150 @@ namespace SpookyStreet.Case
         /// <summary>Whether the owl house's front door is open (hints then lead through it; June's window before).</summary>
         public System.Func<bool> DoorOpen { get; set; }
 
+        // ------------------------------------------------------------------------------- tier 1: sparkle and look
+
+        /// <summary>A star fleck's world height, and the share of the view height it keeps far away.</summary>
+        public const float FleckSize = 0.5f;
+        public const float FleckMinViewFraction = 0.055f;
+
+        /// <summary>Radius of the ring the flecks twinkle on round the target (grows with distance like the flecks).</summary>
+        public const float SparkleRadius = 0.6f;
+
+        private readonly SpriteRenderer[] _flecks = new SpriteRenderer[HintPresentation.SparkleFlecks];
+        private float _sparkleStarted = -1f;
+        private Vector3 _sparkleAt;
+
+        /// <summary>The characters who may look at a tier-1 target (witnesses and cast; set by the layer).</summary>
+        public System.Func<System.Collections.Generic.IReadOnlyList<Witness>> Lookers { get; set; }
+
+        /// <summary>The objective the sparkle shows (null when idle).</summary>
+        public CaseObjective? SparkleObjective { get; private set; }
+
+        public bool SparkleActive => SparkleObjective.HasValue;
+
+        public Vector3 SparkleTarget => _sparkleAt;
+
+        /// <summary>Star flecks drawn this frame (tests).</summary>
+        public int VisibleFlecks { get; private set; }
+
+        /// <summary>The character who turned to look at the last tier-1 target (null when nobody was in view).</summary>
+        public Witness Looker { get; private set; }
+
+        /// <summary>
+        /// A tier-1 radio press (or the Helper): the sparkle on <paramref name="objective"/>'s target and the nearest
+        /// character in view looks at it. False in free roam.
+        /// </summary>
+        public bool StartSparkle(CaseObjective objective)
+        {
+            Vector3 pip = _pip != null ? _pip.position : Vector3.zero;
+            if (!HintPresentation.TryTarget(objective, pip.x, pip.z, DoorOpen != null && DoorOpen(), out var target, out _))
+            {
+                StopSparkle();
+                return false;
+            }
+
+            SparkleObjective = objective;
+            _sparkleAt = new Vector3(target.X, target.Y, target.Z);
+            _sparkleStarted = Time.time;
+            Looker = ChooseLooker(pip);
+            if (Looker != null)
+            {
+                Looker.LookAt(_sparkleAt, HintPresentation.LookSeconds);
+            }
+
+            TickSparkle();
+            return true;
+        }
+
+        public void StopSparkle()
+        {
+            SparkleObjective = null;
+            _sparkleStarted = -1f;
+            TickSparkle();
+        }
+
+        private readonly System.Collections.Generic.List<LookCandidate> _candidates =
+            new System.Collections.Generic.List<LookCandidate>();
+
+        private Witness ChooseLooker(Vector3 pip)
+        {
+            var lookers = Lookers?.Invoke();
+            if (lookers == null)
+            {
+                return null;
+            }
+
+            var cam = Camera.main;
+            _candidates.Clear();
+            foreach (var w in lookers)
+            {
+                bool available = w != null && w.isActiveAndEnabled && !w.Conversing && !w.Gesturing;
+                Vector3 at = w != null ? w.transform.position : Vector3.zero;
+                bool inView = false;
+                if (available && cam != null)
+                {
+                    Vector3 v = cam.WorldToViewportPoint(at + Vector3.up * 1.2f);
+                    inView = v.z > 0f && v.x > 0.02f && v.x < 0.98f && v.y > 0.02f && v.y < 0.98f;
+                }
+
+                _candidates.Add(new LookCandidate(at.x, at.y, at.z, inView, available));
+            }
+
+            int index = HintPresentation.ChooseLooker(_candidates, pip.x, pip.z);
+            return index >= 0 ? lookers[index] : null;
+        }
+
+        private void TickSparkle()
+        {
+            float now = Time.time;
+            if (SparkleObjective.HasValue && now - _sparkleStarted > HintPresentation.SparkleSeconds)
+            {
+                SparkleObjective = null;
+            }
+
+            bool on = SparkleObjective.HasValue;
+            int visible = 0;
+            var cam = Camera.main;
+            Quaternion face = cam != null ? cam.transform.rotation : Quaternion.identity;
+            float scale = on ? Readable(FleckSize, _sparkleAt, cam, FleckMinViewFraction) / FleckSize : 1f;
+            float age = on ? now - _sparkleStarted : 0f;
+            // Fade in over 0.3 s and out over the last 0.8 s.
+            float envelope = on ? Mathf.Clamp01(age / 0.3f) * Mathf.Clamp01((HintPresentation.SparkleSeconds - age) / 0.8f) : 0f;
+            Vector3 right = cam != null ? cam.transform.right : Vector3.right;
+            Vector3 up = cam != null ? cam.transform.up : Vector3.up;
+            for (int i = 0; i < _flecks.Length; i++)
+            {
+                var fleck = _flecks[i];
+                if (fleck == null)
+                {
+                    continue;
+                }
+
+                if (!on)
+                {
+                    fleck.gameObject.SetActive(false);
+                    continue;
+                }
+
+                // Three big flecks and three small ones on a slowly turning ring; each twinkles at 0.6 Hz, staggered.
+                bool big = i % 2 == 0;
+                float phase = i / (float)_flecks.Length;
+                float twinkle = 0.5f + 0.5f * Mathf.Sin((now * 0.6f + phase) * 2f * Mathf.PI);
+                float angle = (phase + now * 0.05f) * 2f * Mathf.PI;
+                float radius = SparkleRadius * scale * (big ? 1f : 0.62f);
+                Vector3 at = _sparkleAt + (right * Mathf.Cos(angle) + up * Mathf.Sin(angle)) * radius;
+                fleck.gameObject.SetActive(true);
+                fleck.transform.SetPositionAndRotation(at, face * Quaternion.Euler(0f, 0f, now * 40f * (big ? 1f : -1.5f)));
+                SetSize(fleck, FleckSize * scale * (big ? 1f : 0.6f) * (0.75f + 0.35f * twinkle), 1f);
+                Color c = Palette.CandyCornYellow * GlowLevels.HintSparkle;
+                c.a = envelope * (0.55f + 0.45f * twinkle);
+                fleck.color = c;
+                visible++;
+            }
+
+            VisibleFlecks = visible;
+        }
+
         public static HintGuide Create(Transform parent, Transform pip)
         {
             var go = new GameObject("HintGuide");
@@ -71,6 +221,12 @@ namespace SpookyStreet.Case
             guide._glyph.gameObject.SetActive(true);
             guide._ring = Billboard(guide._stickerRing.transform, "Ring", PuppetAtlas.Get(PuppetParts.KeyRing), 63);
             guide._ring.gameObject.SetActive(true);
+            var star = UiSprites.TryLoad(UiSpriteCatalog.HintStar) ?? PuppetAtlas.Get("pg.star");
+            for (int i = 0; i < guide._flecks.Length; i++)
+            {
+                guide._flecks[i] = Billboard(go.transform, "StarFleck" + i, star, 64);
+            }
+
             return guide;
         }
 
@@ -209,7 +365,11 @@ namespace SpookyStreet.Case
             Tick();
         }
 
-        private void LateUpdate() => Tick();
+        private void LateUpdate()
+        {
+            Tick();
+            TickSparkle();
+        }
 
         private void Tick()
         {
