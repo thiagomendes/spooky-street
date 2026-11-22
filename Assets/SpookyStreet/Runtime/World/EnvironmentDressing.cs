@@ -13,6 +13,11 @@ namespace SpookyStreet.World
     /// motion and reports where the warm practical lights belong.
     /// Same pattern as <see cref="PipAvatar"/>: when the models are not committed, <see cref="Available"/> is
     /// false, <see cref="Build"/> does nothing and the greybox stays exactly as before.
+    /// The street set (S000.4: lawn, stepping-stone path, sidewalk, boundary hedges, neighbour houses and leaf
+    /// scatter) comes in when all of its models are committed (<see cref="StreetSetAvailable"/>). It draws over the
+    /// greybox ground, path, hedge and skyline, whose gameplay colliders stay (see
+    /// <see cref="GreyboxBuilder.UseStreetSet"/>). The pieces never move, so they spawn under their own
+    /// <see cref="StreetRoot"/> and are statically batched; nothing animated lives there.
     /// </summary>
     public sealed class EnvironmentDressing
     {
@@ -29,6 +34,7 @@ namespace SpookyStreet.World
         public const float BatTilt = 65f;
 
         private readonly ModelKit _kit;
+        private readonly ModelKit _streetKit;
         private readonly int _safeLayer;
 
         public EnvironmentDressing(MaterialLibrary materials)
@@ -36,12 +42,27 @@ namespace SpookyStreet.World
             _kit = new ModelKit(materials, ModelFolder) { FallbackAtlas = ModelKit.DefaultFallbackAtlas };
             int layer = LayerMask.NameToLayer(SafeGroundTracker.SafeGroundLayerName);
             _safeLayer = layer >= 0 ? layer : 0;
+            // Street-set models share the Street atlas (the Lawn has its own textures, which take precedence).
+            _streetKit = new ModelKit(materials, ModelFolder) { FallbackAtlas = EnvironmentLayout.StreetAtlas };
             Available = _kit.Has(EnvironmentLayout.OwlHouse);
+            StreetSetAvailable = Available && HasAll(_streetKit, EnvironmentLayout.StreetSetModels);
             Anchors = AtmosphereAnchors.Greybox;
         }
 
         /// <summary>True when the owl house model is committed (the rest of the kit comes with it).</summary>
         public bool Available { get; }
+
+        /// <summary>True when every street-set model is committed (they replace the greybox ground and skyline).</summary>
+        public bool StreetSetAvailable { get; }
+
+        /// <summary>True once <see cref="Build"/> has spawned the street set.</summary>
+        public bool UsesStreetSet { get; private set; }
+
+        /// <summary>Static, batched parent of the street set (null without it).</summary>
+        public Transform StreetRoot { get; private set; }
+
+        /// <summary>Number of street-set instances spawned (included in <see cref="SpawnedCount"/>).</summary>
+        public int StreetCount { get; private set; }
 
         /// <summary>True once <see cref="Build"/> has spawned the models.</summary>
         public bool UsesModels { get; private set; }
@@ -151,13 +172,14 @@ namespace SpookyStreet.World
                 Motion.AddBob(bat);
             }
 
+            BuildStreetSet();
             Anchors = FindAnchors(streetLamp, houseDressing);
             UsesModels = true;
             if (Debug.isDebugBuild)
             {
                 Debug.Log($"[EnvironmentDressing] {SpawnedCount} models, attic glow {(AtticWindow != null)} at " +
                           $"{Anchors.AtticWindow}, wind wheel {(WindWheel != null)}, owl {(OwlPuppet != null)}, " +
-                          $"animated {Motion.Count}, yaw correction {ModelYawCorrection:F0}");
+                          $"animated {Motion.Count}, street set {StreetCount}, yaw correction {ModelYawCorrection:F0}");
             }
 
             return Root;
@@ -190,15 +212,64 @@ namespace SpookyStreet.World
             }
         }
 
-        private Transform Spawn(in Placement placement)
+        /// <summary>
+        /// Lawn, path, sidewalk, boundary hedges, neighbour houses and leaves under one static root, then batched.
+        /// Ground pieces are at most 3 cm tall, so Pip keeps walking on the greybox's flat colliders; the hedge
+        /// colliders stay greybox boxes too, and the neighbours stand outside the block.
+        /// </summary>
+        private void BuildStreetSet()
         {
-            var instance = _kit.Spawn(placement.Model, Root, new Vector3(placement.X, placement.Y, placement.Z),
+            if (!StreetSetAvailable)
+            {
+                return;
+            }
+
+            StreetRoot = new GameObject("Street_Static").transform;
+            StreetRoot.SetParent(Root, false);
+            int before = SpawnedCount;
+            SpawnAll(EnvironmentLayout.LawnTiles);
+            SpawnAll(EnvironmentLayout.PathTiles);
+            SpawnAll(EnvironmentLayout.SidewalkTiles);
+            SpawnAll(EnvironmentLayout.BoundaryHedges);
+            SpawnAll(EnvironmentLayout.NeighbourHouses);
+            SpawnAll(EnvironmentLayout.LeafScatters);
+            StreetCount = SpawnedCount - before;
+            StaticBatchingUtility.Combine(StreetRoot.gameObject);
+            UsesStreetSet = true;
+        }
+
+        private void SpawnAll(Placement[] placements)
+        {
+            foreach (var placement in placements)
+            {
+                Spawn(placement, _streetKit, StreetRoot);
+            }
+        }
+
+        private static bool HasAll(ModelKit kit, string[] models)
+        {
+            foreach (var model in models)
+            {
+                if (!kit.Has(model))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private Transform Spawn(in Placement placement) => Spawn(placement, _kit, Root);
+
+        private Transform Spawn(in Placement placement, ModelKit kit, Transform parent)
+        {
+            var instance = kit.Spawn(placement.Model, parent, new Vector3(placement.X, placement.Y, placement.Z),
                 placement.Yaw + ModelYawCorrection, placement.Scale);
             if (instance == null)
             {
                 if (Debug.isDebugBuild)
                 {
-                    Debug.LogWarning($"[EnvironmentDressing] Missing model {_kit.Folder}{placement.Model}; skipped.");
+                    Debug.LogWarning($"[EnvironmentDressing] Missing model {kit.Folder}{placement.Model}; skipped.");
                 }
 
                 return null;

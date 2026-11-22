@@ -72,7 +72,11 @@ namespace SpookyStreet.App
 
             Materials = new MaterialLibrary(greyboxMaterial, glowMaterial);
             Environment = new EnvironmentDressing(Materials);
-            Transform world = new GreyboxBuilder(Materials) { UseEnvironmentModels = Environment.Available }.Build();
+            Transform world = new GreyboxBuilder(Materials)
+            {
+                UseEnvironmentModels = Environment.Available,
+                UseStreetSet = Environment.StreetSetAvailable,
+            }.Build();
             Environment.Build(world);
             Atmosphere.Build(world, Materials, Environment.Anchors);
             Pip = CreatePip(movementTuning, Materials);

@@ -88,6 +88,74 @@ namespace SpookyStreet.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator StreetSetReplacesTheGreyboxGroundEdgesAndSkyline()
+        {
+            yield return LoadGame();
+            var env = GameBootstrap.Instance.Environment;
+            var ground = GameObject.Find("Ground");
+            var hedge = GameObject.Find("Hedge_North");
+            Assert.IsNotNull(ground, "greybox ground collider missing");
+            Assert.IsNotNull(hedge, "greybox boundary collider missing");
+            Assert.IsTrue(ground.TryGetComponent<Collider>(out _), "Pip walks on the greybox ground collider");
+            Assert.IsTrue(hedge.TryGetComponent<Collider>(out _), "the block edge must still block Pip");
+            if (!env.StreetSetAvailable)
+            {
+                Assert.IsFalse(env.UsesStreetSet);
+                Assert.IsTrue(ground.TryGetComponent<Renderer>(out _), "greybox ground must draw without the street set");
+                Assert.IsNotNull(GameObject.Find("Skyline_House"), "greybox skyline missing without the street set");
+                Assert.Ignore("Street-set models are not committed; the greybox ground and skyline stay.");
+            }
+
+            Assert.IsTrue(env.UsesStreetSet, "street set committed but not spawned");
+            Assert.IsNotNull(env.StreetRoot);
+            int expected = EnvironmentLayout.LawnTiles.Length + EnvironmentLayout.PathTiles.Length +
+                           EnvironmentLayout.SidewalkTiles.Length + EnvironmentLayout.BoundaryHedges.Length +
+                           EnvironmentLayout.NeighbourHouses.Length + EnvironmentLayout.LeafScatters.Length;
+            Assert.AreEqual(expected, env.StreetCount, "every street-set placement should spawn");
+            Assert.IsFalse(ground.TryGetComponent<Renderer>(out _), "the lawn draws the block; the greybox ground must not");
+            Assert.IsFalse(hedge.TryGetComponent<Renderer>(out _), "boundary hedge models draw the block edge");
+            var path = GameObject.Find("Path");
+            Assert.IsTrue(path != null && path.TryGetComponent<Collider>(out _), "greybox path collider missing");
+            Assert.IsFalse(path.TryGetComponent<Renderer>(out _), "path stones replace the greybox path");
+            Assert.IsNull(GameObject.Find("Skyline_House"), "neighbour houses replace the skyline boxes");
+
+            // Nothing animated is under the statically batched root.
+            foreach (var moving in new[] { env.WindWheel, env.OwlPuppet, env.House })
+            {
+                Assert.IsFalse(moving != null && moving.IsChildOf(env.StreetRoot), moving + " must not be batched");
+            }
+
+            Assert.AreEqual(0, env.StreetRoot.GetComponentsInChildren<AmbientMotion>(true).Length);
+
+            int renderers = 0;
+            int batched = 0;
+            int neighbourWindows = 0;
+            foreach (var renderer in env.StreetRoot.GetComponentsInChildren<Renderer>(true))
+            {
+                renderers++;
+                batched += renderer.isPartOfStaticBatch ? 1 : 0;
+                if (renderer.name == "NeighbourWindow_Glow")
+                {
+                    neighbourWindows++;
+                    Assert.AreEqual(GlowLevels.NeighbourWindow, MaterialLibrary.EmissionIntensity(renderer.sharedMaterial),
+                        1e-3f, "neighbour windows glow at their own quiet level");
+                }
+
+                foreach (var material in renderer.sharedMaterials)
+                {
+                    Assert.IsTrue(material != null && material.HasProperty("_BaseMap") && material.GetTexture("_BaseMap") != null,
+                        $"{renderer.name} has no baked base map");
+                }
+            }
+
+            Debug.Log($"[EnvironmentDressingTests] street set: {env.StreetCount} instances, {renderers} renderers, " +
+                      $"{batched} statically batched, {neighbourWindows} neighbour windows");
+            Assert.Greater(renderers, 0);
+            Assert.Greater(batched, renderers / 2, "the street set should be statically batched");
+            Assert.AreEqual(EnvironmentLayout.NeighbourHouses.Length, neighbourWindows, "one lit window per neighbour");
+        }
+
+        [UnityTest]
         public IEnumerator AtticWindowIsTheBrightestGlowOnScreen()
         {
             yield return LoadGame();
