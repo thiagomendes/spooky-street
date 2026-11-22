@@ -11,6 +11,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import bmesh
 import bpy
 import numpy as np
 from mathutils import Vector
@@ -36,6 +37,104 @@ ALCOVE = (0.715, 4.0, 4.6)  # June's alcove inside the dormer (interior.ALC_*: 0
 SIDE_PANE_HINGE = T(*(SIDE_WINDOW @ Vector((SIDE_W / 2, -0.02, 0.0))))  # the pane's jamb, opposite the open casement
 OWL_Z = RIDGE_Z + 0.34
 WHEEL = Vector((0.0, 0.5, RIDGE_Z + 2.45))
+
+
+# --- the lit rooms seen from the street (decision D24.1) ---------------------------------------------------------
+# The real rooms are a separate model, away from the street. From outside, every window shows a warm painted
+# card, and the two ways in (the door, June's window) open onto a shallow closed view box, never onto the void.
+ROOM = {"wall": (0.60, 0.36, 0.20), "low": (0.40, 0.20, 0.22), "dark": (0.24, 0.12, 0.17), "lamp": (0.95, 0.72, 0.36), "halo": (0.78, 0.50, 0.25),
+        "floor": (0.42, 0.24, 0.12), "shade": (0.55, 0.30, 0.12)}
+VIEW_DOOR, VIEW_DORMER = 1.0, 0.85  # depth of the two view boxes behind the wall plane
+
+
+def _card(b, craft, tag):
+    """Returns cut(outline, colour): flat self-lit paper layers in the local XZ plane, each a hair nearer to -Y."""
+    y = [0.0]
+
+    def cut(outline, rgb, M=None):
+        y[0] -= 0.0012
+        bm = bmesh.new()
+        f = bm.faces.new([bm.verts.new((x, y[0], z)) for x, z in outline])
+        bm.normal_update()
+        if f.normal.y > 0:
+            bmesh.ops.reverse_faces(bm, faces=[f])
+        prev = getattr(b, "glow_tag", None)
+        b.glow_tag = tag
+        b.add_bm(bm, craft.glow(rgb, 1.0), M, 1.0, smooth=False)
+        b.glow_tag = prev
+    return cut
+
+
+def _rect(x0, x1, z0, z1):
+    return [(x0, z0), (x1, z0), (x1, z1), (x0, z1)]
+
+
+def _round(cx, cz, rx, rz=None, n=12):
+    return [(cx + rx * math.cos(2 * math.pi * i / n), cz + (rz or rx) * math.sin(2 * math.pi * i / n)) for i in range(n)]
+
+
+def room_card(b, craft, w, h, M, kind="window", flip=1):
+    """A warm painted card of a lit room: local XZ plane, seen from -Y, origin at the bottom centre."""
+    cut0 = _card(b, craft, "RoomCard")
+    hw = w / 2
+
+    def cut(outline, rgb):
+        cut0([(flip * x, z) for x, z in outline], rgb, M)
+    cut(_rect(-hw, hw, 0, h), ROOM["wall"])
+    if kind == "attic":  # roof boards, rafters, a star garland and the glow of the owl lantern
+        cut([(-hw, 0), (hw, 0), (hw, h * 0.2), (-hw, h * 0.34)], ROOM["low"])
+        cut(_round(0.12 * w, h * 0.62, 0.3 * w, 0.2 * h), ROOM["halo"])
+        cut(_round(0.12 * w, h * 0.62, 0.11 * w, 0.075 * h), ROOM["lamp"])
+        for x in (-0.36 * w, 0.02 * w, 0.4 * w):
+            cut([(x - 0.03 * w, h * 0.28), (x + 0.03 * w, h * 0.26), (x + 0.2 * w, h), (x + 0.14 * w, h)], ROOM["dark"])
+        for i in range(5):
+            x = -0.4 * w + i * 0.2 * w
+            z = h * (0.5 - 0.05 * math.sin(math.pi * i / 4))
+            cut([(x - 0.035 * w, z), (x, z - 0.035 * w), (x + 0.035 * w, z), (x, z + 0.035 * w)], ROOM["lamp"])
+        return
+    cut(_rect(-hw, hw, 0, h * 0.3), ROOM["low"])
+    cut(_rect(-hw, hw, h * 0.3, h * 0.33), ROOM["dark"])
+    if kind == "hall":  # the stair going up on the left, the coat rack, a lamp
+        n = 5
+        steps = [(-hw, 0)]
+        for i in range(n):
+            steps += [(-hw + (n - i) * 0.09 * w, i * 0.085 * h), (-hw + (n - i) * 0.09 * w, (i + 1) * 0.085 * h)]
+        cut(steps + [(-hw, n * 0.085 * h)], ROOM["dark"])
+        cut([(-hw, n * 0.085 * h + 0.3 * h), (-hw + 0.02 * w, n * 0.085 * h + 0.33 * h), (-hw + n * 0.09 * w + 0.03 * w, 0.33 * h), (-hw + n * 0.09 * w, 0.3 * h)],
+            ROOM["shade"])
+        cut(_round(0.18 * w, h * 0.68, 0.3 * w, 0.15 * h), ROOM["halo"])
+        cut(_round(0.18 * w, h * 0.68, 0.075 * w, 0.045 * h), ROOM["lamp"])
+        cut(_rect(0.02 * w, 0.42 * w, h * 0.5, h * 0.52), ROOM["dark"])
+        cut([(0.08 * w, h * 0.5), (0.18 * w, h * 0.5), (0.2 * w, h * 0.3), (0.06 * w, h * 0.3)], ROOM["low"])
+        cut([(0.26 * w, h * 0.5), (0.34 * w, h * 0.5), (0.35 * w, h * 0.36), (0.25 * w, h * 0.36)], ROOM["shade"])
+        return
+    cut(_round(0.16 * w, h * 0.7, 0.34 * w, 0.2 * h), ROOM["halo"])  # window: a lamp, a framed picture, the curtains
+    cut(_round(0.16 * w, h * 0.7, 0.09 * w, 0.055 * h), ROOM["lamp"])
+    cut(_rect(-0.2 * w, 0.02 * w, h * 0.5, h * 0.72), ROOM["dark"])
+    cut(_rect(-0.17 * w, -0.01 * w, h * 0.53, h * 0.69), ROOM["shade"])
+    for s in (-1, 1):
+        cut([(s * hw, 0), (s * hw, h), (s * (hw - 0.3 * w), h), (s * (hw - 0.24 * w), h * 0.55), (s * (hw - 0.12 * w), h * 0.4), (s * (hw - 0.1 * w), 0)], ROOM["dark"])
+
+
+def view_box(b, craft, x0, x1, y0, y1, z0, z1, M=None):
+    """The warm inward faces of a closed box behind an opening at y = y0 (floor, sides and ceiling; the back takes
+    a `room_card`)."""
+    def quad(pts, rgb, towards):
+        bm = bmesh.new()
+        f = bm.faces.new([bm.verts.new(p) for p in pts])
+        bm.normal_update()
+        if f.normal.dot(Vector(towards)) < 0:
+            bmesh.ops.reverse_faces(bm, faces=[f])
+        prev = getattr(b, "glow_tag", None)
+        b.glow_tag = "RoomCard"
+        b.add_bm(bm, craft.glow(rgb, 1.0), M, 1.0, smooth=False)
+        b.glow_tag = prev
+    quad([(x0, y0, z0), (x1, y0, z0), (x1, y1, z0), (x0, y1, z0)], ROOM["floor"], (0, 0, 1))
+    quad([(x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)], ROOM["dark"], (0, 0, -1))
+    zm = z0 + (z1 - z0) * 0.3
+    for x, s in ((x0, 1), (x1, -1)):
+        quad([(x, y0, z0), (x, y1, z0), (x, y1, zm), (x, y0, zm)], ROOM["dark"], (s, 0, 0))
+        quad([(x, y0, zm), (x, y1, zm), (x, y1, z1), (x, y0, z1)], ROOM["low"], (s, 0, 0))
 
 
 def owl_puppet(b, P, craft, height=0.95):
@@ -119,18 +218,23 @@ def build_house(craft, dress=True, lights=True, attic=3.4):
             pk.wall(b, P, openings=(win if kind == "w" else dr,))
             if kind == "w":
                 pk.window(b, P)
+                room_card(b, craft, 0.8, 1.2, T(0, -0.0102, 0.75), flip=1 if x < 0 else -1)
             else:
                 pk.door(b, P)
+                view_box(b, craft, -0.6, 0.6, 0.12, VIEW_DOOR, 0.0, 2.06)  # behind the door: a glimpse of the lit hall
+                room_card(b, craft, 1.2, 2.06, T(0, VIEW_DOOR, 0), "hall")
     for y, kind in ((1, ""), (3, "dormer"), (5, "w")):
         with b.at(T(-HALF, y, FLOOR) @ R("Z", -90)):
             pk.wall(b, P, openings=((win,) if kind == "w" else ((-SIDE_W / 2, SIDE_W / 2, SILL_Z - FLOOR, WALL),) if kind else ()))
             if kind == "w":
                 pk.window(b, P)
+                room_card(b, craft, 0.8, 1.2, T(0, -0.0102, 0.75))
     for y, kind in ((1, ""), (3, "w"), (5, "")):
         with b.at(T(HALF, y, FLOOR) @ R("Z", 90)):
             pk.wall(b, P, openings=(win,) if kind else ())
             if kind:
                 pk.window(b, P)
+                room_card(b, craft, 0.8, 1.2, T(0, -0.0102, 0.75), flip=-1)
     for x in (-2, 0, 2):
         with b.at(T(x, DEPTH, FLOOR) @ R("Z", 180)):
             pk.wall(b, P)
@@ -150,6 +254,17 @@ def build_house(craft, dress=True, lights=True, attic=3.4):
     pk.shingles(b, P["scale"], 2 * HALF, RISE, T(0, 0.02, EAVE_Z) @ R("X", 90), tab=0.44, exposure=0.33, keep=keep,
                 palette=[(1, 1, 1)] * 4 + [(0.8, 0.85, 1.1), (1.1, 0.95, 1.25)])
     pk.round_window(b, P, WIN_R, T(0, -0.035, WIN_Z), P["paper_glow"])
+    cut = _card(b, craft, "AtticWindow")  # painted on the lit paper: the owl lantern on its chain, a string of flags
+    wm, shade_rgb = T(0, -0.0665, WIN_Z), (0.62, 0.36, 0.14)
+    cut(_rect(-0.012, 0.012, 0.2, WIN_R), shade_rgb, wm)
+    cut(_round(0.0, 0.04, 0.17, 0.17, 14), shade_rgb, wm)
+    for s in (-1, 1):
+        cut([(s * 0.05, 0.17), (s * 0.15, 0.13), (s * 0.13, 0.27)], shade_rgb, wm)
+        cut(_round(s * 0.065, 0.07, 0.045, 0.045, 8), E["glow"], wm)
+    for i in range(6):
+        x = -0.42 + i * 0.168
+        z = -0.2 - 0.07 * math.sin(math.pi * i / 5)
+        cut([(x - 0.05, z), (x + 0.05, z), (x, z - 0.11)], shade_rgb, wm)
     b.finish("House_Walls")
 
     # --- main roof, bargeboards, ridge, chimney ---
@@ -196,6 +311,8 @@ def build_house(craft, dress=True, lights=True, attic=3.4):
             d.box(P["clap"], (0.09, 1.55, hh), (sx * 0.76, 0.78, EAVE_Z + hh / 2), bevel=0.012, tint=0.9)
             d.box(P["trim_z"], (0.1, 0.06, hh + 0.3), (sx * 0.78, -0.035, EAVE_Z + hh / 2 - 0.15), bevel=0.014)
         pk.arch_window(d, P, SIDE_W, SIDE_SPRING, T(0, -0.025, SILL_Z), P["paper_dim"])
+        view_box(d, craft, -0.58, 0.58, 0.12, VIEW_DORMER, SILL_Z - 0.02, SILL_Z + SIDE_APEX + 0.1)  # behind June's window: the lit attic
+        room_card(d, craft, 1.16, SIDE_APEX + 0.12, T(0, VIEW_DORMER, SILL_Z - 0.02), "attic")
         dp, dh = 40.0, 0.8 * math.tan(math.radians(40.0))
         dl = 1.02 / math.cos(math.radians(dp))
         de = DORMER_TOP - 0.22 * math.tan(math.radians(dp))

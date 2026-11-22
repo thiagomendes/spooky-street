@@ -44,21 +44,14 @@ def interior_models(craft):
         Model("WorkshopMechanism", "WorkshopMechanism", it.build_mechanism, 1.0, pivots=it.mechanism_pivots()),
         Model("ShedRamp", "Routes", rt.build_shed_ramp, 1.0),
         Model("SillBridge", "Routes", rt.build_sill_bridge, 1.5, ground=False),
-        Model("TreehouseCabin", "Routes", rt.build_cabin, 1.3, ground=False),
+        Model("TreehouseCabin", "Routes", rt.build_cabin, 1.3, ground=False, eyes={None: rt.CABIN_EYES}),
         Model("ClothSnag", "Routes", rt.build_cloth_snag, 5.0, ground=False),
     ]
 
 
 def _solids():
-    """What lies behind the single-sided shell: the ground under the foyer, the nook pit, the loft slab."""
-    x0, x1, y0, y1 = it.X0 - 0.5, it.X1 + 0.5, it.Y0 - 0.5, it.Y1 + 0.5
-    hx0, hx1, hy0, _hy1 = it.HOLE
-    quads = [[(x0, y0, it.FL - 0.004), (it.NOOK_X, y0, it.FL - 0.004), (it.NOOK_X, y1, it.FL - 0.004), (x0, y1, it.FL - 0.004)],
-             [(it.NOOK_X, y0, it.FL - 0.004), (x1, y0, it.FL - 0.004), (x1, it.NOOK_Y - it.PART_T, it.FL - 0.004), (it.NOOK_X, it.NOOK_Y - it.PART_T, it.FL - 0.004)],
-             [(it.NOOK_X, it.NOOK_Y, it.NOOK_Z - 0.004), (x1, it.NOOK_Y, it.NOOK_Z - 0.004), (x1, y1, it.NOOK_Z - 0.004), (it.NOOK_X, y1, it.NOOK_Z - 0.004)]]
-    z = it.LOFT - it.LOFT_T / 2
-    for xa, xb, ya, yb in ((x0, hx0, it.VOID_Y, y1), (hx0, hx1, it.VOID_Y, hy0), (hx1, x1, it.VOID_Y, y1)):
-        quads.append([(xa, ya, z), (xb, ya, z), (xb, yb, z), (xa, yb, z)])
+    """What lies behind the single-sided shell: the ground under the hall, the nook pit, the loft slab."""
+    quads = it.solid_quads()
     verts = [p for q in quads for p in q]
     return verts, [tuple(range(4 * i, 4 * i + 4)) for i in range(len(quads))]
 
