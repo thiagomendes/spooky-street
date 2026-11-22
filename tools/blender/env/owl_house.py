@@ -30,7 +30,7 @@ WIN_Z, WIN_R = EAVE_Z + 1.5, 0.56  # the round attic window
 SILL_Z = 2.5  # June's side window (spec §4 attic sill)
 DORMER_Y, DORMER_TOP = 3.0, 3.98
 OWL_Z = RIDGE_Z + 0.34
-WHEEL = Vector((0.0, 0.95, RIDGE_Z + 1.55))
+WHEEL = Vector((0.0, 1.05, RIDGE_Z + 2.0))
 
 
 def owl_puppet(b, P, craft, height=0.95):
@@ -66,7 +66,7 @@ def owl_puppet(b, P, craft, height=0.95):
     b.lathe(paint, [(0.0, 0.0), (5.5 * u, 0.0), (0.0, 0.085)], 4, T(0, -0.11, 40 * u) @ R("X", 115) @ R("Z", 45), tint=lc(E["orange"]))
 
 
-def wind_wheel(b, P, craft, radius=0.6):
+def wind_wheel(b, P, craft, radius=0.72):
     """The small roof wheel: eight pitched paddles on a hub, a rim hoop, tail vane and mast. Hub at the origin,
     axis along Y; the mast runs down `WHEEL.z - RIDGE_Z`."""
     paint = craft.paint()
@@ -332,11 +332,11 @@ def main():
     tmp = os.path.splitext(out)[0]
     kit_names = [root.name for _n, root, _x in kit]
     views = {
-        "hero": ((-10.5, -15.5, 4.6), (-0.1, 1.2, 3.75), 50, 1150, 900, ["House"]),
-        "front": ((0.0, -40.0, 3.4), (0.0, 0.0, 4.15), 135, 850, 900, ["House"]),
-        "side": ((-42.0, 2.0, 3.4), (0.0, 2.0, 4.15), 125, 1000, 720, ["House"]),
+        "hero": ((-10.5, -15.5, 4.6), (-0.1, 1.2, 4.0), 47, 1150, 900, ["House"]),
+        "front": ((0.0, -40.0, 3.4), (0.0, 0.0, 4.45), 125, 850, 900, ["House"]),
+        "side": ((-42.0, 2.0, 3.4), (0.0, 2.0, 4.45), 112, 1000, 720, ["House"]),
         "door": ((-1.6, -7.2, 1.75), (-0.05, 0.0, 1.62), 60, 500, 720, ["House"]),
-        "owl": ((-3.4, -7.5, 6.2), (0.0, 0.3, 6.75), 85, 500, 720, ["House"]),
+        "owl": ((-3.6, -8.0, 6.3), (0.0, 0.4, 7.05), 70, 500, 720, ["House"]),
         "kit": ((-8.0, 40.0 - 80.0, 13.0), (0.0, 40.4, 1.15), 122, 2000, 440, kit_names),
     }
     todo = [v for v in rest if v in views] or list(views)

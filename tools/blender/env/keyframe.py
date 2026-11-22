@@ -75,10 +75,10 @@ def build_skyline(craft):
                 b.box(dark, (0.06, 0.07, 0.9), (-w * 0.22 + k * w * 0.44, -3.03, h * 0.55), bevel=0, tint=1.0)
     tree = craft.tinted(H(0x2A2350), 1.0, 0.2, 0.6)
     for x, y, s in ((-19.0, 24.0, 1.0), (10.5, 24.0, 1.2), (20.0, 26.0, 0.9), (-5.0, 34.0, 1.3)):
-        b.rod(dark, (x, y, 0), (x, y, 4.0 * s), 0.3 * s, 6, 1.0)
+        b.rod(dark, (x, y, 0), (x, y, 3.0 * s), 0.22 * s, 6, 1.0)
         for k in range(3):
             b.lathe(tree, [(0.0, -1.8), (2.2, -1.0), (2.6, 0.2), (1.6, 1.4), (0.0, 1.9)], 9,
-                    T(x + (k - 1) * 1.6 * s, y, (5.2 + (k % 2) * 1.3) * s) @ S(s), radial=lambda a, i: 1 + 0.15 * math.cos(3 * a + i), tint=b.vary(0.85, 1.1))
+                    T(x + (k - 1) * 1.5 * s, y, (3.9 + (k % 2) * 1.5) * s) @ S(s), radial=lambda a, i: 1 + 0.15 * math.cos(3 * a + i), tint=b.vary(0.85, 1.1))
     b.finish("Skyline")
 
 
