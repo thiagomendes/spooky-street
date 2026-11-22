@@ -187,8 +187,7 @@ namespace SpookyStreet.Tests.Visual
             game.Ui.FirstPrompt.SetActive(false);
             game.CameraRig.Orbit.RequestRecenter();
             yield return Wait(1.6f);
-            layer.RadioButton.onClick.Invoke();
-            director.Captions.Clear();
+            layer.RadioButton.onClick.Invoke(); // the hint line stays: it carries the star badge
             Assert.IsTrue(layer.Guide.SparkleActive, "33_hint_sparkle: tier 1 should sparkle");
             yield return Wait(0.9f);
             Assert.Greater(layer.Guide.VisibleFlecks, 0, "33_hint_sparkle: flecks should be drawn");

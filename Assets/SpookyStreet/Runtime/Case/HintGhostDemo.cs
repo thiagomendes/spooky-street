@@ -170,10 +170,12 @@ namespace SpookyStreet.Case
         {
             float approach = Smooth(Mathf.Clamp01(t / 0.45f));
             float alpha = Mathf.Clamp01(t / 0.25f) * (1f - Mathf.Clamp01((t - 1.85f) / 0.3f));
-            // The hand comes in from the screen's inside (a control on the right gets a hand from the lower left), so
-            // it never leaves the screen edge; it leans the same way.
+            // The hand comes in from the screen's inside, so it never leaves an edge: a control on the right gets a hand
+            // from the left, and a control in the lower part of the screen (the thumb clusters) a hand from above,
+            // pointing down at it. It leans the way it came.
             bool fromLeft = centre.x > _root.rect.width * 0.5f;
-            var rest = new Vector2(fromLeft ? -size * 0.55f : size * 0.55f, -size * 0.7f);
+            bool fromAbove = centre.y < _root.rect.height * 0.45f;
+            var rest = new Vector2(fromLeft ? -size * 0.55f : size * 0.55f, fromAbove ? size * 0.7f : -size * 0.7f);
             Vector2 fingertip = centre + Vector2.Lerp(rest, Vector2.zero, approach);
             float press = 0f;
             float ring = 0f;
@@ -200,8 +202,11 @@ namespace SpookyStreet.Case
 
             var hand = _hand.rectTransform;
             hand.anchoredPosition = fingertip;
-            hand.localRotation = Quaternion.Euler(0f, 0f, fromLeft ? -22f : 22f);
-            hand.localScale = Vector3.one * (1f - 0.08f * press);
+            float lean = fromAbove ? (fromLeft ? -150f : 150f) : (fromLeft ? -22f : 22f);
+            hand.localRotation = Quaternion.Euler(0f, 0f, lean);
+            // From above the hand is mirrored, so it stays a right hand with its thumb toward the screen's centre.
+            float k = 1f - 0.08f * press;
+            hand.localScale = new Vector3(fromAbove ? -k : k, k, 1f);
             _hand.color = UiFactory.WithAlpha(UiFactory.PlayPaper, HandAlpha * alpha);
             _targetRing.gameObject.SetActive(ring > 0f);
             _targetRing.fillAmount = Demo == HintDemo.Use ? 1f : ring;
