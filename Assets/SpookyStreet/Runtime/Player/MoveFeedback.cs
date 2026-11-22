@@ -9,7 +9,8 @@ namespace SpookyStreet.Player
     /// <summary>
     /// Paper effects that make the moveset readable (S000.6 feel pass, rules in <see cref="MoveFeedbackRules"/>):
     /// a confetti-and-star burst at Pip's feet on the 2nd and 3rd chained jumps, short paper speed streaks on a
-    /// dive, and a dust puff when a dive lands in its roll. Craft style: double-sided paper pieces in palette
+    /// dive, a dust puff when a dive lands in its roll, and an upward star puff with a vertical speed line when a
+    /// held jump's boost engages (the high jump). Craft style: double-sided paper pieces in palette
     /// colours, candy-corn stars as the bright highlight. Cheap on mobile: one fixed pool of
     /// <see cref="PoolSize"/> small unlit quads built once (no particle system, no transparency, no shadows, no
     /// allocations per frame); a full pool recycles its oldest piece. Runs on game time, so pause freezes every
@@ -213,6 +214,12 @@ namespace SpookyStreet.Player
                 Dust(feet);
                 Record(MoveBursts.DiveDust);
             }
+
+            if ((bursts & MoveBursts.BoostPuff) != 0)
+            {
+                BoostPuff(_motor.transform.position);
+                Record(MoveBursts.BoostPuff);
+            }
         }
 
         private void Record(MoveBursts burst)
@@ -283,6 +290,53 @@ namespace SpookyStreet.Player
                 p.Size = Range(0.16f, 0.26f);
                 p.Life = Range(0.38f, 0.5f);
                 p.Renderer.sharedMaterial = _puffMaterials[i % _puffMaterials.Length];
+            }
+        }
+
+        /// <summary>
+        /// High-jump boost: paper stars and confetti puff up and out under Pip's feet (Pip shoots away from them, so
+        /// they read as kicked off), plus two short vertical speed lines trailing below.
+        /// </summary>
+        private void BoostPuff(Vector3 feet)
+        {
+            int count = MoveFeedbackRules.PieceCount(MoveBursts.BoostPuff);
+            for (int i = 0; i < count; i++)
+            {
+                float angle = (i + Random01() * 0.6f) / count * Mathf.PI * 2f;
+                var radial = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                bool star = i % 2 == 0;
+                ref Piece p = ref Take(star ? Kind.Star : Kind.Confetti);
+                p.Position = feet + radial * 0.1f - Vector3.up * 0.02f;
+                p.Velocity = radial * Range(0.7f, 1.3f) + Vector3.up * Range(0.8f, 1.5f);
+                p.Axis = new Vector3(Range(-1f, 1f), Range(-1f, 1f), Range(-1f, 1f)).normalized;
+                if (p.Axis.sqrMagnitude < 0.01f)
+                {
+                    p.Axis = Vector3.up;
+                }
+
+                p.Rotation = Quaternion.AngleAxis(Range(0f, 360f), p.Axis);
+                p.Spin = Range(360f, 720f);
+                p.Size = star ? Range(0.07f, 0.095f) : Range(0.055f, 0.075f);
+                p.Life = Range(0.45f, 0.6f);
+                p.Renderer.sharedMaterial = star ? _starMaterial : _confettiMaterials[i % _confettiMaterials.Length];
+            }
+
+            // Speed lines: the streak quad points its length down from Pip's feet and faces the camera.
+            Vector3 toCamera = _camera != null ? -_camera.forward : Vector3.back;
+            toCamera.y = 0f;
+            toCamera = toCamera.sqrMagnitude > 1e-4f ? toCamera.normalized : Vector3.back;
+            Vector3 side = Vector3.Cross(Vector3.up, toCamera);
+            for (int i = 0; i < 2; i++)
+            {
+                ref Piece p = ref Take(Kind.Streak);
+                p.Position = feet + side * (i == 0 ? -0.12f : 0.12f) + Vector3.up * 0.25f;
+                p.Velocity = Vector3.up * 0.8f; // trails: Pip rises much faster
+                p.Rotation = Quaternion.LookRotation(Vector3.up, toCamera);
+                p.Axis = Vector3.forward;
+                p.Spin = 0f;
+                p.Size = Range(0.6f, 0.8f);
+                p.Life = 0.22f;
+                p.Renderer.sharedMaterial = i == 0 ? _streakHighlight : _streakMaterial;
             }
         }
 

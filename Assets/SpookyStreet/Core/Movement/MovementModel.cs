@@ -64,8 +64,29 @@ namespace SpookyStreet.Core.Movement
         /// <summary>True between take-off and the next landing.</summary>
         public bool InJump;
 
-        /// <summary>Jump was let go since take-off: the rest of the rise uses the cut gravity.</summary>
+        /// <summary>Jump was let go since take-off: no hold boost (or no more of it) and no apex float.</summary>
         public bool JumpReleased;
+
+        /// <summary>Seconds of the current jump left before the hold boost engages (Jump still held).</summary>
+        public float BoostDelayLeft;
+
+        /// <summary>
+        /// Seconds of hold boost left in the current jump (pending or running); 0 once it has run out, Jump was let
+        /// go, Pip dived or hit a ceiling.
+        /// </summary>
+        public float BoostTimeLeft;
+
+        /// <summary>Upward speed the hold boost drives toward in the current jump (m/s).</summary>
+        public float BoostSpeed;
+
+        /// <summary>The hold boost engaged in the current jump: it is a high jump.</summary>
+        public bool Boosted;
+
+        /// <summary>Seconds of apex float left in the current jump.</summary>
+        public float HangTimeLeft;
+
+        /// <summary>Seconds of the current jump spent at or past its apex (falling); the glide waits for the hang.</summary>
+        public float FallTime;
 
         /// <summary>Stage (1–3) of the last jump in the current chain; 0 when no chain is open.</summary>
         public int ChainStage;
@@ -115,6 +136,9 @@ namespace SpookyStreet.Core.Movement
         /// </summary>
         public bool HoldingJumpRise => InJump && !JumpReleased && !Diving && VelocityY > 0f;
 
+        /// <summary>The hold boost is driving Pip up right now (high jump thrust).</summary>
+        public bool Boosting => InJump && !JumpReleased && !Diving && BoostTimeLeft > 0f && BoostDelayLeft <= 0f;
+
         /// <summary>Use would dive now (airborne past coyote time, no dive yet this airtime, not rolling).</summary>
         public bool CanDive(MovementTuningData tuning) =>
             !Grounded && TimeSinceGrounded > tuning.CoyoteTime && !Diving && !DiveUsed && !Rolling;
@@ -133,6 +157,9 @@ namespace SpookyStreet.Core.Movement
 
         /// <summary>Touched down this frame after being airborne.</summary>
         public bool Landed;
+
+        /// <summary>The hold boost engaged this frame (Jump still held about 0.1 s after take-off).</summary>
+        public bool BoostStarted;
 
         public bool GlideStarted;
         public bool GlideEnded;
@@ -272,10 +299,17 @@ namespace SpookyStreet.Core.Movement
                     EndRoll(ref state, ref step, tuning);
                 }
 
+                float scale = tuning.ChainHeightScale(stage);
                 state.ChainStage = stage;
-                state.VelocityY = tuning.JumpVelocityFor(tuning.ChainHeightScale(stage));
+                state.VelocityY = tuning.JumpVelocityFor(tuning.ChainTapScale(stage));
                 state.InJump = true;
                 state.JumpReleased = false;
+                state.BoostDelayLeft = Math.Max(0f, tuning.JumpBoostDelay);
+                state.BoostTimeLeft = tuning.JumpBoostDurationForStage(stage);
+                state.BoostSpeed = tuning.JumpBoostSpeedFor(scale);
+                state.Boosted = false;
+                state.HangTimeLeft = Math.Max(0f, tuning.ApexHangTime);
+                state.FallTime = 0f;
                 state.Grounded = false;
                 state.TimeSinceJumpPressed = float.PositiveInfinity;
                 state.TimeSinceGrounded = float.PositiveInfinity;
@@ -288,6 +322,12 @@ namespace SpookyStreet.Core.Movement
             if (!input.JumpHeld)
             {
                 state.JumpReleased = true;
+            }
+
+            if (state.JumpReleased)
+            {
+                // A tap (or a hold let go) gets no more boost: the rest of the rise is plain gravity.
+                state.BoostTimeLeft = 0f;
             }
 
             // --- Use: interaction first, then roll (ground) or dive (air) ------------------------
@@ -321,16 +361,18 @@ namespace SpookyStreet.Core.Movement
                 }
             }
 
-            // --- Bat-cape glide: Jump held while falling (after the apex) -------------------------
+            // --- Bat-cape glide: Jump held while falling (after the apex and its hang) ---------------
             // A fresh press that will touch down within the jump buffer is a buffered (chain) jump, not a glide: on
             // touch every press is briefly a hold, and spreading the cape there would brake the fall past the buffer
-            // and lose the jump. Higher up a fresh press glides at once, and a hold carried from take-off spreads the
-            // cape at the apex as before.
+            // and lose the jump. Higher up a fresh press glides at once. In a jump the cape waits until Pip has been
+            // past the apex for the apex hang (TestFlight 12.1: "when I hold, she just comes down gliding"), so a
+            // held high jump peaks, floats, and only then opens the cape.
             bool pressPending = state.TimeSinceJumpPressed <= tuning.JumpBufferTime;
             bool landingJump = pressPending && !state.Gliding &&
                                TimeToGround(state.VelocityY, input.GroundDistance, tuning.Gravity) <= tuning.JumpBufferTime;
+            bool pastApexHang = !state.InJump || state.FallTime >= tuning.ApexHangTime - 1e-5f;
             bool wantGlide = !state.Grounded && input.JumpHeld && state.VelocityY <= 0f && !state.Diving &&
-                             !state.Rolling && !landingJump;
+                             !state.Rolling && !landingJump && pastApexHang;
             if (wantGlide && !state.Gliding)
             {
                 state.Gliding = true;
@@ -365,19 +407,7 @@ namespace SpookyStreet.Core.Movement
             }
             else
             {
-                float v = state.VelocityY;
-                float time = deltaTime;
-                float dy = 0f;
-                if (v > 0f && state.InJump && state.JumpReleased && !state.Diving)
-                {
-                    // Variable jump: released early, the rest of the rise is cut by stronger gravity.
-                    dy += Approach(ref v, 0f, tuning.Gravity * tuning.JumpCutGravityMultiplier, ref time, false);
-                }
-
-                float terminal = state.Gliding ? -tuning.GlideFallSpeed : -tuning.MaxFallSpeed;
-                float rate = v >= terminal ? tuning.Gravity : state.Gliding ? tuning.GlideBrakeDeceleration : tuning.Gravity;
-                dy += Approach(ref v, terminal, rate, ref time, true);
-                state.VelocityY = v;
+                state.VelocityY = IntegrateAir(ref state, ref step, deltaTime, tuning, out float dy);
                 step.DeltaY = dy;
             }
 
@@ -392,6 +422,83 @@ namespace SpookyStreet.Core.Movement
             }
 
             return step;
+        }
+
+        /// <summary>
+        /// Airborne vertical motion, split exactly at each phase boundary inside the frame: the boost delay (plain
+        /// gravity), the hold boost (ramp up to the boost speed, then hold it), the rise to the apex, the apex float
+        /// of a held high jump, then the fall (capped by the glide). Returns the new vertical speed.
+        /// </summary>
+        private static float IntegrateAir(ref MotorState state, ref MotorStep step, float deltaTime,
+            MovementTuningData tuning, out float dy)
+        {
+            float v = state.VelocityY;
+            float time = deltaTime;
+            float g = tuning.Gravity;
+            float terminal = state.Gliding ? -tuning.GlideFallSpeed : -tuning.MaxFallSpeed;
+            dy = 0f;
+            for (int guard = 0; guard < 8 && time > 0f; guard++)
+            {
+                if (state.BoostTimeLeft > 0f && state.InJump && !state.Diving)
+                {
+                    if (state.BoostDelayLeft > 0f)
+                    {
+                        float wait = Math.Min(time, state.BoostDelayLeft);
+                        float slice = wait;
+                        dy += Approach(ref v, -tuning.MaxFallSpeed, g, ref slice, true);
+                        state.BoostDelayLeft -= wait;
+                        time -= wait;
+                        if (state.BoostDelayLeft <= 1e-6f)
+                        {
+                            state.BoostDelayLeft = 0f;
+                            state.Boosted = true;
+                            step.BoostStarted = true;
+                        }
+
+                        continue;
+                    }
+
+                    float burn = Math.Min(time, state.BoostTimeLeft);
+                    float boostSlice = burn;
+                    float rate = v < state.BoostSpeed ? tuning.JumpBoostAcceleration : g;
+                    dy += Approach(ref v, state.BoostSpeed, rate, ref boostSlice, true);
+                    state.BoostTimeLeft -= burn;
+                    time -= burn;
+                    if (state.BoostTimeLeft <= 1e-6f)
+                    {
+                        state.BoostTimeLeft = 0f;
+                    }
+
+                    continue;
+                }
+
+                if (v > 0f)
+                {
+                    // Rising to the apex under plain gravity (stops at the apex if it is inside this frame).
+                    dy += Approach(ref v, 0f, g, ref time, false);
+                    continue;
+                }
+
+                bool hang = state.InJump && state.Boosted && !state.JumpReleased && !state.Diving && !state.Gliding &&
+                            state.HangTimeLeft > 0f;
+                if (hang)
+                {
+                    float floatTime = Math.Min(time, state.HangTimeLeft);
+                    float hangSlice = floatTime;
+                    dy += Approach(ref v, terminal, g * tuning.ApexHangGravityScale, ref hangSlice, true);
+                    state.HangTimeLeft -= floatTime;
+                    state.FallTime += floatTime;
+                    time -= floatTime;
+                    continue;
+                }
+
+                float fall = time;
+                float fallRate = v >= terminal ? g : state.Gliding ? tuning.GlideBrakeDeceleration : g;
+                dy += Approach(ref v, terminal, fallRate, ref time, true);
+                state.FallTime += fall;
+            }
+
+            return v;
         }
 
         /// <summary>
@@ -416,6 +523,8 @@ namespace SpookyStreet.Core.Movement
             {
                 state.VelocityY = 0f;
             }
+
+            state.BoostTimeLeft = 0f;
         }
 
         private static void Accelerate(ref MotorState state, MotorInput input, float deltaTime, MovementTuningData tuning,
@@ -529,6 +638,7 @@ namespace SpookyStreet.Core.Movement
             state.DiveUsed = true;
             state.Gliding = false;
             state.JumpReleased = true;
+            state.BoostTimeLeft = 0f;
         }
 
         /// <summary>Normalizes the direction, falling back to the input's facing, then +Z.</summary>
