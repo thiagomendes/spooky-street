@@ -65,6 +65,7 @@ namespace SpookyStreet.World
             }
 
             BuildBoundary();
+            BoundaryWalls.Build(_root, _safeLayer);
             if (!StreetSet)
             {
                 BuildSkyline();
@@ -238,6 +239,9 @@ namespace SpookyStreet.World
         {
             if (StreetSet)
             {
+                // Just under the hedge models' top, whose fitted boxes give the standable top (CollisionRules).
+                size.y = SpookyStreet.Core.World.CollisionRules.BoundaryHedgeColliderHeight;
+                center.y = size.y * 0.5f;
                 ColliderBox(name, center, size, safe: false);
             }
             else

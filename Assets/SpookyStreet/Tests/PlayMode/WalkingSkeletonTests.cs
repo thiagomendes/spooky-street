@@ -125,7 +125,7 @@ namespace SpookyStreet.Tests.PlayMode
             }
 
             Vector3 safe = game.Pip.transform.position;
-            game.Pip.Teleport(new Vector3(30f, 2f, 30f)); // outside the floor
+            game.Pip.Teleport(new Vector3(40f, 2f, 40f)); // outside the walls and the lawn ring: no ground
             float deadline = Time.time + 2f;
             while (game.Pip.SafeReturns == 0 && Time.time < deadline)
             {
