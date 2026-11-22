@@ -365,7 +365,7 @@ namespace SpookyStreet.Core.World
             new RoutePoint("yard", CrateX, 0f, CrateZ - 1.0f),
             new RoutePoint("crate", CrateX, CrateSize, CrateZ),
             new RoutePoint("awning low", AwningX, AwningLowY, AwningWallZ - AwningRun + 0.1f),
-            new RoutePoint("awning high", AwningX, AwningHighY, AwningWallZ - 0.15f),
+            new RoutePoint("awning high", AwningX, 1.95f, AwningWallZ - 0.4f),
             new RoutePoint("shed roof", AwningX, TreehouseY, RoofMinZ + 0.4f),
         };
 
