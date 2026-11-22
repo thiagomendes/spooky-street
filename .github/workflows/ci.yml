@@ -148,11 +148,16 @@ jobs:
       - name: Summarise results
         if: always()
         run: |
+          # Print to the log first (cloud sessions read logs, not step summaries), then fail on the same result.
+          status=0
+          python3 tools/ci/nunit_summary.py ci-out/editmode-results.xml ci-out/playmode-results.xml \
+            ci-out/visual-results.xml > ci-out/summary.md || status=$?
+          cat ci-out/summary.md
           {
             echo "### Unity $(sed -n 's/^m_EditorVersion: //p' ProjectSettings/ProjectVersion.txt) tests"
-            python3 tools/ci/nunit_summary.py ci-out/editmode-results.xml ci-out/playmode-results.xml ci-out/visual-results.xml
+            cat ci-out/summary.md
           } >> "$GITHUB_STEP_SUMMARY"
-          python3 tools/ci/nunit_summary.py ci-out/editmode-results.xml ci-out/playmode-results.xml ci-out/visual-results.xml
+          exit "$status"
       - name: Print captured frames for review (base64 JPEG)
         if: always()
         run: |

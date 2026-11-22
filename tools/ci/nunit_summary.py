@@ -13,7 +13,15 @@ def summarise(path):
     passed = int(root.get("passed", 0))
     failed = int(root.get("failed", 0))
     skipped = int(root.get("skipped", 0)) + int(root.get("inconclusive", 0))
-    failures = [tc.get("fullname") for tc in root.iter("test-case") if tc.get("result") == "Failed"]
+    failures = []
+    for tc in root.iter("test-case"):
+        if tc.get("result") != "Failed":
+            continue
+        message = (tc.findtext("failure/message") or "").strip()
+        stack = (tc.findtext("failure/stack-trace") or "").strip().splitlines()[:4]
+        detail = " ".join(message.split())[:600]
+        where = " | ".join(line.strip() for line in stack)[:400]
+        failures.append(f"{tc.get('fullname')}: {detail}" + (f" @ {where}" if where else ""))
     return (total, failed, failures), f"| {os.path.basename(path)} | {total} | {passed} | {failed} | {skipped} |"
 
 
