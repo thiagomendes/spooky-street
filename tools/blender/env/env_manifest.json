@@ -1,0 +1,285 @@
+{
+ "OwlHouse": {
+  "triangles": 24808,
+  "children": {
+   "AtticWindow_Glow": {
+    "triangles": 108,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "FrontDoor": {
+    "triangles": 1862,
+    "pivot": [
+     -0.55,
+     -2.015,
+     0.6
+    ]
+   },
+   "OwlPuppet": {
+    "triangles": 1960,
+    "pivot": [
+     0.0,
+     -2.02,
+     6.7153
+    ]
+   },
+   "SideWindow_Glow": {
+    "triangles": 48,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "WindWheel": {
+    "triangles": 594,
+    "pivot": [
+     0.0,
+     -1.5,
+     8.8253
+    ]
+   }
+  },
+  "atlas": "OwlHouse",
+  "px_per_m": 74
+ },
+ "OwlHouseDressing": {
+  "triangles": 8719,
+  "children": {
+   "Face_Glow": {
+    "triangles": 223,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "Lamp_Glow": {
+    "triangles": 36,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Env",
+  "px_per_m": 143
+ },
+ "Bench": {
+  "triangles": 792,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 143
+ },
+ "CandyBowl": {
+  "triangles": 2745,
+  "children": {
+   "Face_Glow": {
+    "triangles": 29,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Env",
+  "px_per_m": 310
+ },
+ "FenceSection": {
+  "triangles": 628,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 107
+ },
+ "FenceGate": {
+  "triangles": 640,
+  "children": {
+   "Gate": {
+    "triangles": 456,
+    "pivot": [
+     -0.46,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Env",
+  "px_per_m": 119
+ },
+ "Hedge": {
+  "triangles": 4182,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 54
+ },
+ "StreetLamp": {
+  "triangles": 1030,
+  "children": {
+   "Lamp_Glow": {
+    "triangles": 36,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Env",
+  "px_per_m": 143
+ },
+ "PartyTable": {
+  "triangles": 2582,
+  "children": {
+   "Face_Glow": {
+    "triangles": 29,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Env",
+  "px_per_m": 179
+ },
+ "PaperBat": {
+  "triangles": 796,
+  "children": {
+   "PaperBat_Glow": {
+    "triangles": 400,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Env",
+  "px_per_m": 358
+ },
+ "Crate": {
+  "triangles": 1051,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 155
+ },
+ "Awning": {
+  "triangles": 713,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 83
+ },
+ "PlankBridge": {
+  "triangles": 1550,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 107
+ },
+ "Maple": {
+  "triangles": 4750,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 36
+ },
+ "TreehousePlatform": {
+  "triangles": 3400,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 95
+ },
+ "Pumpkin": {
+  "triangles": 400,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 238
+ },
+ "JackOLantern": {
+  "triangles": 531,
+  "children": {
+   "Face_Glow": {
+    "triangles": 29,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Env",
+  "px_per_m": 238
+ },
+ "Mailbox": {
+  "triangles": 526,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 179
+ },
+ "Kit_Floor": {
+  "triangles": 508,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 89
+ },
+ "Kit_Steps": {
+  "triangles": 518,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 89
+ },
+ "Kit_Post": {
+  "triangles": 406,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 89
+ },
+ "Kit_Rail": {
+  "triangles": 918,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 89
+ },
+ "Kit_Wall": {
+  "triangles": 230,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 89
+ },
+ "Kit_Window": {
+  "triangles": 857,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 89
+ },
+ "Kit_Door": {
+  "triangles": 2431,
+  "children": {
+   "FrontDoor": {
+    "triangles": 1862,
+    "pivot": [
+     -0.55,
+     -0.015,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Env",
+  "px_per_m": 89
+ },
+ "Kit_Roof": {
+  "triangles": 525,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 89
+ },
+ "Kit_Corner": {
+  "triangles": 188,
+  "children": {},
+  "atlas": "Env",
+  "px_per_m": 89
+ }
+}
