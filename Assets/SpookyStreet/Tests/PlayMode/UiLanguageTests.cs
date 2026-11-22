@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
 using SpookyStreet.App;
+using SpookyStreet.Case;
 using SpookyStreet.Controls;
 using SpookyStreet.Core.Art;
 using SpookyStreet.Core.Flow;
@@ -27,7 +28,11 @@ namespace SpookyStreet.Tests.PlayMode
         private const float MinHudControl = 44f * UiFactory.UnitsPerPoint;
 
         [SetUp]
-        public void SetUp() => Localizer.ResetForTests();
+        public void SetUp()
+        {
+            Localizer.ResetForTests();
+            CaseDirector.UseTemporarySaveDirectory(); // no save leaks between tests (S002)
+        }
 
         private static IEnumerator LoadGame()
         {

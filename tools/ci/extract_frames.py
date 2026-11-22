@@ -22,7 +22,8 @@ def log_lines(path):
         text = json.loads(text)["logs_content"]
     except (ValueError, KeyError, TypeError):
         pass
-    return [TIMESTAMP.sub("", line) for line in text.split("\n")]
+    # Strip a UTF-8 BOM some log lines carry before their timestamp (CI run 60 lost frame 12 to one).
+    return [TIMESTAMP.sub("", line.lstrip("\ufeff")) for line in text.split("\n")]
 
 
 def main(path, out_dir):

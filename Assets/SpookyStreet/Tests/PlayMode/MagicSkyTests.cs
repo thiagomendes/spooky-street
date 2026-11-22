@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
 using SpookyStreet.App;
+using SpookyStreet.Case;
 using SpookyStreet.Core.World;
 using SpookyStreet.Localization;
 using SpookyStreet.World;
@@ -28,6 +29,7 @@ namespace SpookyStreet.Tests.PlayMode
             base.Setup();
             InputSystem.AddDevice<Keyboard>();
             Localizer.ResetForTests();
+            CaseDirector.UseTemporarySaveDirectory(); // no save leaks between tests (S002)
             AmbientMotion.ReducedMotion = false;
         }
 

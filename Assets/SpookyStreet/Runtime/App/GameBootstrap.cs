@@ -1,4 +1,5 @@
 using SpookyStreet.CameraSystem;
+using SpookyStreet.Case;
 using SpookyStreet.Characters;
 using SpookyStreet.Core.Flow;
 using SpookyStreet.Controls;
@@ -60,6 +61,9 @@ namespace SpookyStreet.App
         /// <summary>Bea, her bicycle and Mr. Vale when their models are committed (ambient only until S002).</summary>
         public WitnessCast Witnesses { get; private set; }
 
+        /// <summary>Case 01 in the world (S002): state, saves, interactions, dialogue, captions and notebook.</summary>
+        public CaseDirector Director { get; private set; }
+
         private void Awake()
         {
             // Last loaded scene wins; a reload (tests, "back to title" later) replaces the previous instance.
@@ -116,6 +120,10 @@ namespace SpookyStreet.App
             }
 
             Flow.StateChanged += OnStateChanged;
+
+            // After this component's own StateChanged handler, so Continue can move Pip after the new-game spawn.
+            Director = CaseDirector.Create(this);
+            Adopt(Director.gameObject);
             ApplySuspension(Flow.State);
         }
 

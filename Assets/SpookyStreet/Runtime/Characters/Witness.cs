@@ -31,6 +31,12 @@ namespace SpookyStreet.Characters
         public WitnessReaction Reaction { get; } = new WitnessReaction();
         public WitnessClipSet Clips { get; private set; }
 
+        /// <summary>
+        /// Set by the case while Pip is in a conversation with this witness (S002): the engaged loop (Talk / SitTalk)
+        /// and the head turn override the ambient reaction until the conversation ends.
+        /// </summary>
+        public bool Conversing { get; set; }
+
         /// <summary>Horizontal distance to Pip at the last step (infinity without a target).</summary>
         public float DistanceToTarget { get; private set; } = float.PositiveInfinity;
 
@@ -70,8 +76,8 @@ namespace SpookyStreet.Characters
                 Avatar.PlayOneShot(Clips.Greeting);
             }
 
-            Avatar.PlayLoop(Reaction.WantsEngagedLoop ? Clips.Engaged : Clips.Rest);
-            _headWeight = Mathf.MoveTowards(_headWeight, Reaction.Attending && _target != null ? 1f : 0f,
+            Avatar.PlayLoop(Reaction.WantsEngagedLoop || Conversing ? Clips.Engaged : Clips.Rest);
+            _headWeight = Mathf.MoveTowards(_headWeight, (Reaction.Attending || Conversing) && _target != null ? 1f : 0f,
                 headTurnRate * dt);
             if (_target != null)
             {
