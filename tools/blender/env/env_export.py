@@ -794,7 +794,8 @@ def export_model(m, materials, out_dir):
     for part, src in m.parts.items():
         if part is None:
             continue
-        frame = shift @ m.pivots.get(part, Matrix.Identity(4))  # the child's pivot frame in model space
+        # the child's pivot frame in model space; glow parts without one share the model origin
+        frame = shift @ m.pivots[part] if part in m.pivots else Matrix.Identity(4)
         rest = Matrix.Translation(frame.translation)  # children are exported unrotated (gate closed)
         mat = materials["Glow"] if part.endswith(GLOW_SUFFIX) else materials[m.atlas]
         child = final_object(part, src, frame.inverted() @ shift, mat)
