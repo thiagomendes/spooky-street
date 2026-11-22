@@ -180,12 +180,18 @@ namespace SpookyStreet.Tests.PlayMode
                 yield return null;
             }
 
-            Assert.AreEqual(0.0, sky.Schedule.CloudClock, "the title screen runs at time scale 0: the sky has not moved");
+            // The frame in which the scene loads may still carry the previous scene's time step; after that the
+            // title screen runs at time scale 0.
+            double atTitle = sky.Schedule.CloudClock;
+            Assert.Less(atTitle, 0.5, "the sky has barely started on the title screen");
             Quaternion atStart = sky.CloudLayers[SkyModel.MoonLayer].localRotation;
+            yield return new WaitForSecondsRealtime(0.3f);
+            Assert.AreEqual(atTitle, sky.Schedule.CloudClock, "the title screen runs at time scale 0: the sky holds still");
+            Assert.AreEqual(atStart, sky.CloudLayers[SkyModel.MoonLayer].localRotation);
 
             GameBootstrap.Instance.Ui.NewGameButton.onClick.Invoke();
             yield return Wait(0.6f);
-            Assert.Greater(sky.Schedule.CloudClock, 0.3, "clouds drift in play");
+            Assert.Greater(sky.Schedule.CloudClock, atTitle + 0.3, "clouds drift in play");
             Assert.Greater(sky.Schedule.TwinkleClock, 0.3, "stars twinkle in play");
             Assert.Greater(Quaternion.Angle(atStart, sky.CloudLayers[SkyModel.MoonLayer].localRotation), 0.1f);
 
