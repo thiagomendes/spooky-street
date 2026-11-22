@@ -19,6 +19,12 @@ namespace SpookyStreet.Core.World
         public const float PaperBatEdge = 1.2f;
         public const float Default = 1.5f;
 
+        /// <summary>
+        /// Lit windows on the neighbour houses: lived-in but quiet, under the bloom threshold so the neighbours never
+        /// compete with the owl house (and far below the attic window).
+        /// </summary>
+        public const float NeighbourWindow = 0.9f;
+
         /// <summary>Unlit moon disc colour scale: under the bloom threshold so it never competes with the attic.</summary>
         public const float Moon = 0.92f;
 
@@ -41,6 +47,11 @@ namespace SpookyStreet.Core.World
             if (objectName.StartsWith("SideWindow", StringComparison.Ordinal))
             {
                 return SideWindow;
+            }
+
+            if (objectName.StartsWith("NeighbourWindow", StringComparison.Ordinal))
+            {
+                return NeighbourWindow;
             }
 
             if (objectName.StartsWith("Lamp", StringComparison.Ordinal))

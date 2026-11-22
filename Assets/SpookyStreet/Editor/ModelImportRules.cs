@@ -1,4 +1,5 @@
 using SpookyStreet.Core.Animation;
+using SpookyStreet.Core.World;
 using UnityEditor;
 using UnityEngine;
 
@@ -18,11 +19,25 @@ namespace SpookyStreet.EditorTools
         public const int MaxTextureSize = 2048;
         public const string IosPlatform = "iPhone";
 
-        public override uint GetVersion() => 4;
+        public override uint GetVersion() => 5;
 
         public static bool IsGameModelPath(string path) => path.StartsWith(ModelsRoot, System.StringComparison.Ordinal);
 
         public static bool IsCharacterPath(string path) => IsGameModelPath(path) && path.Contains("/Characters/");
+
+        /// <summary>
+        /// Street-set models (EnvironmentLayout.StreetSetModels) are combined at runtime with
+        /// <c>StaticBatchingUtility.Combine</c>, which needs readable meshes; every other model stays GPU-only.
+        /// </summary>
+        public static bool IsStaticBatchedPath(string path)
+        {
+            if (!IsGameModelPath(path) || !path.Contains("/Environment/"))
+            {
+                return false;
+            }
+
+            return System.Array.IndexOf(EnvironmentLayout.StreetSetModels, BaseName(path)) >= 0;
+        }
 
         /// <summary>Texture role from the baked file name: "_Normal" maps, linear masks, or colour.</summary>
         public static TextureImporterType TextureTypeFor(string path) =>
@@ -61,7 +76,7 @@ namespace SpookyStreet.EditorTools
             importer.importVisibility = false;
             importer.importBlendShapes = false;
             importer.bakeAxisConversion = true;
-            importer.isReadable = false;
+            importer.isReadable = IsStaticBatchedPath(assetPath);
             importer.addCollider = false;
             importer.meshCompression = ModelImporterMeshCompression.Off;
             importer.importNormals = ModelImporterNormals.Import;

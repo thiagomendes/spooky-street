@@ -12,6 +12,9 @@ namespace SpookyStreet.World
     /// that <see cref="EnvironmentDressing"/> replaces are not drawn: the owl house, the arrival porch's visuals,
     /// the candy bowl and porch lamp primitives, the plaza maple and the side-yard hedge block. The arrival porch
     /// and its steps keep invisible gameplay colliders matched to the porch kit; the dressing adds the rest.
+    /// With <see cref="UseStreetSet"/> (the S000.4 street models are committed too), the ground, path and boundary
+    /// hedges keep their colliders but are not drawn, the outer ground sits just under the lawn, and the skyline
+    /// boxes give way to the neighbour houses.
     /// </summary>
     public sealed class GreyboxBuilder
     {
@@ -41,6 +44,14 @@ namespace SpookyStreet.World
         /// <summary>True when the original environment models replace the greybox house, porch and props.</summary>
         public bool UseEnvironmentModels { get; set; }
 
+        /// <summary>
+        /// True when the street set (lawn, path stones, boundary hedges, neighbour houses) draws the ground, path,
+        /// block edges and skyline. Only honoured together with <see cref="UseEnvironmentModels"/>.
+        /// </summary>
+        public bool UseStreetSet { get; set; }
+
+        private bool StreetSet => UseStreetSet && UseEnvironmentModels;
+
         public Transform Build()
         {
             _root = new GameObject("Greybox_LanternLane").transform;
@@ -54,7 +65,11 @@ namespace SpookyStreet.World
             }
 
             BuildBoundary();
-            BuildSkyline();
+            if (!StreetSet)
+            {
+                BuildSkyline();
+            }
+
             BuildSkyCard();
 
             // Greybox never moves: batch it at runtime (editor static flags do not exist for runtime-built objects).
@@ -65,12 +80,33 @@ namespace SpookyStreet.World
         private void BuildGround()
         {
             // Playable block: 44 × 36 m, top surface at y = 0. The outer ground fills the view beyond the hedges.
-            Box("Ground", new Vector3(0f, -0.25f, 0f), new Vector3(44f, 0.5f, 36f), Palette.Ground, safe: true);
-            Decor(Box("OuterGround", new Vector3(0f, -0.45f, 0f), new Vector3(160f, 0.5f, 160f),
+            // Under the street set the lawn tiles draw the block, so the ground keeps only its collider and the
+            // outer ground rises to just under the lawn (no step shows where the lawn grid ends).
+            var ground = new Vector3(0f, -0.25f, 0f);
+            var groundSize = new Vector3(44f, 0.5f, 36f);
+            if (StreetSet)
+            {
+                ColliderBox("Ground", ground, groundSize, safe: true);
+            }
+            else
+            {
+                Box("Ground", ground, groundSize, Palette.Ground, safe: true);
+            }
+
+            Decor(Box("OuterGround", new Vector3(0f, StreetSet ? -0.27f : -0.45f, 0f), new Vector3(160f, 0.5f, 160f),
                 Color.Lerp(Palette.Ground, Palette.Ink, 0.35f), safe: false));
 
-            // Leading line from the arrival steps to the owl house door.
-            Box("Path", new Vector3(0f, 0.01f, -1.4f), new Vector3(1.6f, 0.02f, 21.6f), Palette.Path, safe: true);
+            // Leading line from the arrival steps to the owl house door (drawn by the path stones with the street set).
+            var path = new Vector3(0f, 0.01f, -1.4f);
+            var pathSize = new Vector3(1.6f, 0.02f, 21.6f);
+            if (StreetSet)
+            {
+                ColliderBox("Path", path, pathSize, safe: true);
+            }
+            else
+            {
+                Box("Path", path, pathSize, Palette.Path, safe: true);
+            }
         }
 
         private void BuildArrivalPorch()
@@ -187,13 +223,26 @@ namespace SpookyStreet.World
 
         private void BuildBoundary()
         {
-            Box("Hedge_North", new Vector3(0f, 0.7f, 17.5f), new Vector3(44f, 1.4f, 1f), Palette.Hedge, safe: false);
-            Box("Hedge_South", new Vector3(0f, 0.7f, -17.5f), new Vector3(44f, 1.4f, 1f), Palette.Hedge, safe: false);
-            Box("Hedge_West", new Vector3(-21.5f, 0.7f, 0f), new Vector3(1f, 1.4f, 36f), Palette.Hedge, safe: false);
-            Box("Hedge_East", new Vector3(21.5f, 0.7f, 0f), new Vector3(1f, 1.4f, 36f), Palette.Hedge, safe: false);
+            // Block edges. With the street set the boundary hedge models draw them and these stay as colliders.
+            BoundaryBox("Hedge_North", new Vector3(0f, 0.7f, 17.5f), new Vector3(44f, 1.4f, 1f));
+            BoundaryBox("Hedge_South", new Vector3(0f, 0.7f, -17.5f), new Vector3(44f, 1.4f, 1f));
+            BoundaryBox("Hedge_West", new Vector3(-21.5f, 0.7f, 0f), new Vector3(1f, 1.4f, 36f));
+            BoundaryBox("Hedge_East", new Vector3(21.5f, 0.7f, 0f), new Vector3(1f, 1.4f, 36f));
             if (!UseEnvironmentModels)
             {
                 Box("Hedge_SideYard", new Vector3(-6f, 0.8f, 7f), new Vector3(6f, 1.6f, 1f), Palette.Hedge, safe: false);
+            }
+        }
+
+        private void BoundaryBox(string name, Vector3 center, Vector3 size)
+        {
+            if (StreetSet)
+            {
+                ColliderBox(name, center, size, safe: false);
+            }
+            else
+            {
+                Box(name, center, size, Palette.Hedge, safe: false);
             }
         }
 

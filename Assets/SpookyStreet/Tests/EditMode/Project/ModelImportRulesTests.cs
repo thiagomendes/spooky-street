@@ -26,6 +26,18 @@ namespace SpookyStreet.Tests.Project
         }
 
         [Test]
+        public void OnlyStreetSetModelsImportReadableForStaticBatching()
+        {
+            string env = ModelImportRules.ModelsRoot + "Environment/";
+            Assert.IsTrue(ModelImportRules.IsStaticBatchedPath(env + "Lawn.fbx"));
+            Assert.IsTrue(ModelImportRules.IsStaticBatchedPath(env + "NeighbourHouseB.fbx"));
+            Assert.IsFalse(ModelImportRules.IsStaticBatchedPath(env + "OwlHouse.fbx"), "animated parts live in the owl house");
+            Assert.IsFalse(ModelImportRules.IsStaticBatchedPath(env + "PaperBat.fbx"));
+            Assert.IsFalse(ModelImportRules.IsStaticBatchedPath(PipFbx));
+            Assert.IsFalse(ModelImportRules.IsStaticBatchedPath("Assets/Other/Environment/Lawn.fbx"));
+        }
+
+        [Test]
         public void ClassifiesBakedTextures()
         {
             Assert.AreEqual(TextureImporterType.NormalMap, ModelImportRules.TextureTypeFor(PipFolder + "Pip_Normal.png"));

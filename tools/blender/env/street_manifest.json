@@ -1,0 +1,113 @@
+{
+ "Lawn": {
+  "triangles": 128,
+  "children": {},
+  "atlas": "Lawn",
+  "px_per_m": 256
+ },
+ "PathStones": {
+  "triangles": 585,
+  "children": {},
+  "atlas": "Street",
+  "px_per_m": 165
+ },
+ "Sidewalk": {
+  "triangles": 324,
+  "children": {},
+  "atlas": "Street",
+  "px_per_m": 146
+ },
+ "LeafScatterA": {
+  "triangles": 140,
+  "children": {},
+  "atlas": "Street",
+  "px_per_m": 183
+ },
+ "LeafScatterB": {
+  "triangles": 100,
+  "children": {},
+  "atlas": "Street",
+  "px_per_m": 183
+ },
+ "LeafScatterC": {
+  "triangles": 180,
+  "children": {},
+  "atlas": "Street",
+  "px_per_m": 183
+ },
+ "BoundaryHedgeLong": {
+  "triangles": 2288,
+  "children": {},
+  "atlas": "Street",
+  "px_per_m": 50
+ },
+ "NeighbourHouseA": {
+  "triangles": 5123,
+  "children": {
+   "Face_Glow": {
+    "triangles": 58,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "NeighbourWindow_Glow": {
+    "triangles": 6,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Street",
+  "px_per_m": 33
+ },
+ "NeighbourHouseB": {
+  "triangles": 5177,
+  "children": {
+   "Face_Glow": {
+    "triangles": 97,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "NeighbourWindow_Glow": {
+    "triangles": 6,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Street",
+  "px_per_m": 33
+ },
+ "NeighbourHouseC": {
+  "triangles": 4911,
+  "children": {
+   "Face_Glow": {
+    "triangles": 58,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "NeighbourWindow_Glow": {
+    "triangles": 6,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Street",
+  "px_per_m": 33
+ }
+}
