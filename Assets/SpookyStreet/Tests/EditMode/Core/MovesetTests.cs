@@ -157,6 +157,43 @@ namespace SpookyStreet.Tests.Core
         }
 
         [Test]
+        public void TappedChainKeepsItsTestFlight121Heights([Values(30f, 60f)] float fps)
+        {
+            // Tap on every landing frame (Jump held only on the press frame): 1.0, 1.25, 1.5 m.
+            var sim = new Sim(fps);
+            var run = new MotorInput { MoveX = 1f };
+            sim.Run(0.5f, run);
+            var apexes = new List<float>();
+            var stages = new List<int>();
+            bool press = true;
+            float apex = 0f;
+            for (int i = 0; i < 2000 && apexes.Count < 3; i++)
+            {
+                bool wasGrounded = sim.Grounded;
+                var step = sim.Frame(new MotorInput { MoveX = 1f, JumpPressed = press });
+                press = false;
+                if (step.Jumped)
+                {
+                    stages.Add(step.ChainStage);
+                    apex = 0f;
+                }
+
+                apex = Math.Max(apex, sim.Y);
+                if (!wasGrounded && sim.Grounded && stages.Count > apexes.Count)
+                {
+                    apexes.Add(apex);
+                    press = true;
+                }
+            }
+
+            float tolerance = fps < 45f ? 0.03f : 0.015f;
+            CollectionAssert.AreEqual(new[] { 1, 2, 3 }, stages);
+            Assert.That(apexes[0], Is.EqualTo(1.0f).Within(tolerance));
+            Assert.That(apexes[1], Is.EqualTo(1.25f).Within(tolerance));
+            Assert.That(apexes[2], Is.EqualTo(1.5f).Within(tolerance));
+        }
+
+        [Test]
         public void ChainResetsWhenPipLandsAndWaits()
         {
             var (stages, _) = Chain(1f, 2, waitAfterLanding: 0.5f);
@@ -175,9 +212,9 @@ namespace SpookyStreet.Tests.Core
         {
             var tuning = new MovementTuningData();
             // Released at take-off (no boost), plain gravity gives the tap apex times the chain scale.
-            float v = tuning.JumpVelocityFor(tuning.ChainHeightScale(3));
+            float v = tuning.JumpVelocityFor(tuning.ChainTapScale(3));
             float apex = v * v / (2f * tuning.Gravity);
-            Assert.That(apex, Is.EqualTo(tuning.JumpApexHeight * 4f / 3f).Within(1e-3f));
+            Assert.That(apex, Is.EqualTo(tuning.JumpApexHeight * 1.5f).Within(1e-3f), "tapped 3rd chain: 1.5 m as on 12.1");
             Assert.That(new Sim(60f).JumpApex(0f), Is.EqualTo(1f).Within(0.015f), "a plain tap still peaks at 1.0 m");
         }
 

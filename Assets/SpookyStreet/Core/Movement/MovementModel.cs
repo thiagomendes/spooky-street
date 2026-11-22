@@ -301,11 +301,11 @@ namespace SpookyStreet.Core.Movement
 
                 float scale = tuning.ChainHeightScale(stage);
                 state.ChainStage = stage;
-                state.VelocityY = tuning.JumpVelocityFor(scale);
+                state.VelocityY = tuning.JumpVelocityFor(tuning.ChainTapScale(stage));
                 state.InJump = true;
                 state.JumpReleased = false;
                 state.BoostDelayLeft = Math.Max(0f, tuning.JumpBoostDelay);
-                state.BoostTimeLeft = tuning.JumpBoostDurationFor(scale);
+                state.BoostTimeLeft = tuning.JumpBoostDurationForStage(stage);
                 state.BoostSpeed = tuning.JumpBoostSpeedFor(scale);
                 state.Boosted = false;
                 state.HangTimeLeft = Math.Max(0f, tuning.ApexHangTime);

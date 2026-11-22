@@ -40,6 +40,10 @@ namespace SpookyStreet.Player
         [Min(1f)] public float chainJumpSecondHeightScale = 8f / 7f;
         [Tooltip("Height scale of the 3rd chained jump (held 2.1 m to 2.8 m).")]
         [Min(1f)] public float chainJumpThirdHeightScale = 4f / 3f;
+        [Tooltip("Height scale of the 2nd chained jump when tapped (1.0 m to 1.25 m).")]
+        [Min(1f)] public float chainJumpSecondTapScale = 1.25f;
+        [Tooltip("Height scale of the 3rd chained jump when tapped (1.0 m to 1.5 m).")]
+        [Min(1f)] public float chainJumpThirdTapScale = 1.5f;
 
         [Header("Bat-cape glide (hold Jump while falling)")]
         [Min(0.5f)] public float glideFallSpeed = 1.75f;
@@ -107,6 +111,8 @@ namespace SpookyStreet.Player
             ChainJumpMinSpeedFraction = chainJumpMinSpeedFraction,
             ChainJumpSecondHeightScale = chainJumpSecondHeightScale,
             ChainJumpThirdHeightScale = chainJumpThirdHeightScale,
+            ChainJumpSecondTapScale = chainJumpSecondTapScale,
+            ChainJumpThirdTapScale = chainJumpThirdTapScale,
             GlideFallSpeed = glideFallSpeed,
             GlideBrakeDeceleration = glideBrakeDeceleration,
             GlideAirControl = glideAirControl,

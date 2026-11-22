@@ -47,9 +47,12 @@ namespace SpookyStreet.Tests.Project
             Assert.AreEqual(0.25f, tuning.apexHangGravityScale, 1e-4f);
             Assert.AreEqual(2.4f / 2.1f, tuning.chainJumpSecondHeightScale, 1e-4f);
             Assert.AreEqual(2.8f / 2.1f, tuning.chainJumpThirdHeightScale, 1e-4f);
+            Assert.AreEqual(1.25f, tuning.chainJumpSecondTapScale, 1e-4f, "tapped chain kept as on 12.1");
+            Assert.AreEqual(1.5f, tuning.chainJumpThirdTapScale, 1e-4f, "tapped chain kept as on 12.1");
             var data = tuning.ToData();
             Assert.AreEqual(tuning.jumpBoostSpeed, data.JumpBoostSpeed, 1e-6f, "ToData carries the boost");
             Assert.AreEqual(tuning.apexHangTime, data.ApexHangTime, 1e-6f, "ToData carries the apex hang");
+            Assert.AreEqual(tuning.chainJumpThirdTapScale, data.ChainJumpThirdTapScale, 1e-6f, "ToData carries tap scales");
             Assert.AreEqual(3.8f, tuning.cameraDistance, 1e-4f);
         }
 

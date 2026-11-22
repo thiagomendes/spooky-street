@@ -31,6 +31,8 @@ MonoBehaviour:
   chainJumpMinSpeedFraction: 0.25
   chainJumpSecondHeightScale: 1.1428572
   chainJumpThirdHeightScale: 1.3333334
+  chainJumpSecondTapScale: 1.25
+  chainJumpThirdTapScale: 1.5
   glideFallSpeed: 1.75
   glideBrakeDeceleration: 30
   glideAirControl: 0.8

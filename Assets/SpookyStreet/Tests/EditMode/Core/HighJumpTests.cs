@@ -257,8 +257,10 @@ namespace SpookyStreet.Tests.Core
             var t = new MovementTuningData();
             Assert.That(t.EffectiveHoldApexHeight * t.ChainHeightScale(2), Is.EqualTo(2.4f).Within(1e-3f));
             Assert.That(t.EffectiveHoldApexHeight * t.ChainHeightScale(3), Is.EqualTo(2.8f).Within(1e-3f));
-            Assert.Greater(t.JumpBoostDurationFor(t.ChainHeightScale(3)), t.JumpBoostDurationFor(1f),
-                "a higher stage boosts longer");
+            Assert.That(t.JumpApexHeight * t.ChainTapScale(2), Is.EqualTo(1.25f).Within(1e-3f), "tapped 2nd as on 12.1");
+            Assert.That(t.JumpApexHeight * t.ChainTapScale(3), Is.EqualTo(1.5f).Within(1e-3f), "tapped 3rd as on 12.1");
+            Assert.Greater(t.JumpBoostDurationForStage(3), t.JumpBoostDurationForStage(1), "a higher stage boosts longer");
+            Assert.Greater(t.JumpBoostDurationForStage(2), 0.1f);
             Assert.Greater(t.JumpBoostDurationFor(1f), 0.1f, "the boost is a sustained phase, not a kick");
         }
 

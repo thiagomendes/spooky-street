@@ -89,11 +89,20 @@ namespace SpookyStreet.Core.Movement
         /// </summary>
         public float ChainJumpMinSpeedFraction = 0.25f;
 
-        /// <summary>Height scale of the second chained jump (held: 2.1 m → 2.4 m; tapped: 1.0 → 1.14 m).</summary>
+        /// <summary>Held height scale of the second chained jump (2.1 m → 2.4 m).</summary>
         public float ChainJumpSecondHeightScale = 8f / 7f;
 
-        /// <summary>Height scale of the third chained jump (held: 2.1 m → 2.8 m with a flip; tapped: 1.33 m).</summary>
+        /// <summary>Held height scale of the third chained jump (2.1 m → 2.8 m, with a flip).</summary>
         public float ChainJumpThirdHeightScale = 4f / 3f;
+
+        /// <summary>
+        /// Tapped height scale of the second chained jump (1.0 m → 1.25 m). Kept as on TestFlight 12.1, where the
+        /// owner already chained with taps; separate from the held scale so the high jump does not weaken it.
+        /// </summary>
+        public float ChainJumpSecondTapScale = 1.25f;
+
+        /// <summary>Tapped height scale of the third chained jump (1.0 m → 1.5 m).</summary>
+        public float ChainJumpThirdTapScale = 1.5f;
 
         // --- Bat-cape glide ---------------------------------------------------------------------
 
@@ -155,12 +164,18 @@ namespace SpookyStreet.Core.Movement
         /// that a jump held through the rise peaks at exactly the held apex times <paramref name="heightScale"/>.
         /// Exact for constant acceleration; at least the ramp when the boost alone would overshoot.
         /// </summary>
-        public float JumpBoostDurationFor(float heightScale)
+        public float JumpBoostDurationFor(float heightScale) => JumpBoostDurationFor(heightScale, heightScale);
+
+        /// <summary>
+        /// Boost duration for a jump whose tapped apex is scaled by <paramref name="tapScale"/> (take-off speed) and
+        /// whose held apex is scaled by <paramref name="holdScale"/> (boost speed and target).
+        /// </summary>
+        public float JumpBoostDurationFor(float tapScale, float holdScale)
         {
-            float scale = Math.Max(0.01f, heightScale);
+            float scale = Math.Max(0.01f, holdScale);
             float g = Math.Max(0.01f, Gravity);
             float target = EffectiveHoldApexHeight * scale;
-            float v0 = JumpVelocityFor(scale);
+            float v0 = JumpVelocityFor(tapScale);
             float delay = Math.Max(0f, JumpBoostDelay);
             float vd = v0 - g * delay;
             float yd = v0 * delay - 0.5f * g * delay * delay;
@@ -175,6 +190,14 @@ namespace SpookyStreet.Core.Movement
         /// <summary>Height scale of chain stage 1, 2 or 3.</summary>
         public float ChainHeightScale(int stage) =>
             stage >= 3 ? ChainJumpThirdHeightScale : stage == 2 ? ChainJumpSecondHeightScale : 1f;
+
+        /// <summary>Tapped height scale of chain stage 1, 2 or 3 (sets the take-off speed).</summary>
+        public float ChainTapScale(int stage) =>
+            stage >= 3 ? ChainJumpThirdTapScale : stage == 2 ? ChainJumpSecondTapScale : 1f;
+
+        /// <summary>Hold-boost duration of chain stage 1, 2 or 3.</summary>
+        public float JumpBoostDurationForStage(int stage) =>
+            JumpBoostDurationFor(ChainTapScale(stage), ChainHeightScale(stage));
 
         public MovementTuningData Clone() => (MovementTuningData)MemberwiseClone();
     }
