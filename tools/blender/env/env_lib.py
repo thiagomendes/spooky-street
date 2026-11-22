@@ -183,7 +183,7 @@ class EnvCraft(craft_lib.Craft):
         """Lit paper or glass: emission only, so its value is the same from every angle."""
         def build():
             mat, nodes, links, bsdf = self._base(f"Glow_{rgb}_{strength}")
-            bsdf.inputs["Base Color"].default_value = lin(rgb)
+            bsdf.inputs["Base Color"].default_value = (0.0, 0.0, 0.0, 1.0)  # lamps inside must not add to it
             bsdf.inputs["Emission Color"].default_value = lin(rgb)
             bsdf.inputs["Emission Strength"].default_value = strength
             bsdf.inputs["Roughness"].default_value = 0.6

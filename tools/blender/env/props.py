@@ -153,7 +153,7 @@ def candy_heap(b, craft, radius, height, count, s=1.0, lollies=2):
         candy(b, craft, 1, m, V[("berry", "lime")[k % 2]], V[("bone", "candy")[k % 2]], s * 1.25)
 
 
-def candy_bowl(b, craft, r=0.3, M=None, spill=True, heap=46, glow=2.4):
+def candy_bowl(b, craft, r=0.3, M=None, spill=True, heap=58, glow=2.4):
     """The candy bowl: a big carved pumpkin with its top cut off, heaped with sweets."""
     cut = 0.42
     hz, prof, radial, surf = _pumpkin_shell(r, 0.8, 9, cut)
@@ -168,7 +168,7 @@ def candy_bowl(b, craft, r=0.3, M=None, spill=True, heap=46, glow=2.4):
                                                           (0.0, rim_z + 0.1 * k)], 18, tint=1.0)
             _carve(b, craft.glow(H(0xFFC64D), glow * JACK_GLOW), surf, r, hz, 3)
             with b.at(T(0, 0, rim_z - 0.01 * k)):
-                candy_heap(b, craft, rim_r - 0.05 * k, 0.13 * k, heap, 1.25 * k ** 0.5)
+                candy_heap(b, craft, rim_r - 0.05 * k, 0.15 * k, heap, 1.3 * k ** 0.5)
         if spill:
             paint = craft.paint()
             for x, y, kind, a, rz in ((0.36, -0.2, 0, "purple", 30), (-0.38, -0.12, 0, "lime", -50), (0.28, -0.33, 3, "berry", 0),
@@ -494,7 +494,7 @@ def build_street_lamp(craft, height=3.1):
         m = T(*p) @ R("Z", math.degrees(a) + 90) @ R("X", -50 + 25 * (k % 3)) @ S(1.5 + 0.4 * (k % 2))
         b.paper(paper, moth, m, lc(E["bone"]) if k % 3 else lc(E["candy"]), fold=0.5 + 0.3 * (k % 2), curl=0.2, cuts=0)
     b.finish("StreetLamp")
-    el.point_light("StreetLampGlow", lamp + Vector((0, 0, -0.3)), 60, (1.0, 0.74, 0.42), 0.12, shadow=True)
+    el.point_light("StreetLampGlow", lamp + Vector((0, 0, -0.8)), 60, (1.0, 0.74, 0.42), 0.12, shadow=True)
     return lamp
 
 
@@ -700,7 +700,7 @@ def build_bridge(craft, length=2.6, width=1.0):
     b.finish("Bridge")
 
 
-def foliage(b, craft, centre, radii, seed, cards=80):
+def foliage(b, craft, centre, radii, seed, cards=96):
     """One clump of maple crown: a smooth painted mass under layered paper maple leaves that hang tip-down and
     curl outward. Colour runs from rust underneath to warm amber on top (the `foliage` material)."""
     rng = b.rng
@@ -712,13 +712,13 @@ def foliage(b, craft, centre, radii, seed, cards=80):
         return 1 + 0.13 * noise.noise(Vector((math.cos(a) * 1.4, math.sin(a) * 1.4, i * 0.6 + seed * 3.1)))
     n = 9
     prof = [(math.sin(math.pi * i / n) if 0 < i < n else 0.0, -math.cos(math.pi * i / n) * (0.9 if i == 0 else 1.0)) for i in range(n + 1)]
-    b.lathe(fol, prof, 16, T(cx, cy, cz) @ S(*radii), radial=radial, tint=b.vary(0.6, 0.72))
+    b.lathe(fol, prof, 16, T(cx, cy, cz) @ S(*radii), radial=radial, tint=b.vary(0.42, 0.52))
     up = Vector((0, 0, 1))
     for _ in range(cards):
-        u, v = rng.uniform(0, 2 * math.pi), rng.uniform(-0.75, 1.0)
+        u, v = rng.uniform(0, 2 * math.pi), rng.uniform(-1.0, 1.0)
         nrm = Vector((math.cos(u) * math.sqrt(1 - v * v), math.sin(u) * math.sqrt(1 - v * v), v))
         p = Vector((cx + nrm.x * radii[0], cy + nrm.y * radii[1], cz + nrm.z * radii[2])) + nrm * rng.uniform(0.02, 0.16)
-        face = (nrm + up * 0.25).normalized()
+        face = (nrm + up * 0.25 + Vector((0.01, 0.0, 0.0))).normalized()
         tip = nrm * 0.3 - up * 0.8 + Vector((rng.uniform(-0.5, 0.5), rng.uniform(-0.5, 0.5), 0))
         zc = (tip - face * tip.dot(face)).normalized()
         yc = -face

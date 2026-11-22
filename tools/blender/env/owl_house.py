@@ -301,7 +301,7 @@ def dress_house(craft, P, lights=True):
                 T(0.12 * (-1) ** k, -3.25 - 0.72 * k, 0) @ R("Z", 37 * k) @ S(1.0, 0.8, 1.0), radial=lambda a, i: 1 + 0.08 * math.cos(3 * a + 1), tint=b.vary(0.8, 1.2))
     b.finish("House_Dressing")
     if lights:
-        el.point_light("PorchLamp", lamp, 55, (1.0, 0.7, 0.38), 0.12, shadow=True)
+        el.point_light("PorchLamp", lamp + Vector((0.0, -0.1, -0.42)), 55, (1.0, 0.7, 0.38), 0.12, shadow=True)
     return lamp
 
 

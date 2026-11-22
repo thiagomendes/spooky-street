@@ -153,7 +153,7 @@ def build_scene(craft, quality):
             b.box(P["orange"], (0.5, 0.5, 0.03), (0, 0, 0.785), bevel=0.01, tint=1.0)
             with b.at(T(-1.05, 0.25, 0) @ R("Z", -14)):
                 pk.rail(b, P, 1.9, rhythm=1)
-            pr.candy_bowl(b, craft, 0.3, T(0, 0, 0.845) @ R("Z", 122), spill=False, heap=54, glow=1.3)
+            pr.candy_bowl(b, craft, 0.3, T(0, 0, 0.845) @ R("Z", 122), spill=False, heap=64, glow=1.3)
             for x, y, kind, a, rz in ((0.22, -0.2, 0, "purple", 30), (0.26, 0.02, 3, "lime", 0)):
                 pr.candy(b, craft, kind, T(x, y, 0.845 + 0.03) @ R("Z", rz) @ (R("X", 90) if kind == 0 else T()), el.V[a], el.V["bone"], 1.3)
         b.finish("Foreground")
@@ -169,9 +169,11 @@ def build_scene(craft, quality):
     # a paper bat slipping sideways off the porch, and maple leaves drifting down
     def falling():
         b = Builder(205)
-        rng = random.Random(11)
+        rng = random.Random(5)
         for k in range(9):
-            p = bearing(YAW - 30 + 4.2 * k + rng.uniform(-1, 1), rng.uniform(3.2, 7.5), rng.uniform(0.5, 3.4))
+            if k in (7, 8):  # keep the air around Pip's head clear
+                continue
+            p = bearing(YAW - 31 + 3.1 * k + rng.uniform(-1, 1), rng.uniform(3.2, 6.0), rng.uniform(0.4, 2.3))
             pr.leaf(b, craft, T(*p) @ R("Z", rng.uniform(0, 360)) @ R("X", rng.uniform(20, 160)) @ R("Y", rng.uniform(0, 360)), rng.uniform(0.11, 0.16),
                     rng.choice((E["leaf_a"], E["leaf_b"], E["leaf_c"])), curl=0.5, low=True)
         pr.bat(b, craft.paper_white(), 0.34, T(2.55, -2.3, 2.0) @ R("Y", 62) @ R("X", 20), fold=0.3)
