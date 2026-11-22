@@ -28,6 +28,10 @@ namespace SpookyStreet.Core.Animation
     public static class CharacterClips
     {
         public const string Idle = PipClips.Idle;
+
+        /// <summary>The in-place walk loop of a character that walks an authored path (June, to the foyer). The same
+        /// name as Pip's, so <see cref="PipClips.Looping"/> already classifies it as looping.</summary>
+        public const string Walk = PipClips.Walk;
         public const string Talk = "Talk";
         public const string SitIdle = "SitIdle";
         public const string SitTalk = "SitTalk";

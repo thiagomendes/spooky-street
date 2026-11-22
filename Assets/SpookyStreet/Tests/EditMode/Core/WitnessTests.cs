@@ -11,12 +11,14 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void WitnessLoopsLoopAndTheWavePlaysOnce()
         {
-            foreach (var name in new[] { "Idle", "Talk", "SitIdle", "SitTalk", "KneeTap" })
+            foreach (var name in new[] { "Idle", "Talk", "SitIdle", "SitTalk", "KneeTap", CharacterClips.Walk })
             {
                 Assert.IsTrue(CharacterClips.IsLooping(name), name);
                 Assert.IsTrue(CharacterClips.IsLooping("Bea_Rig|" + name), "prefixed " + name);
             }
 
+            Assert.AreEqual("Walk", CharacterClips.Walk);
+            Assert.IsTrue(CharacterClips.IsLooping("June_Rig|Walk"));
             Assert.IsFalse(CharacterClips.IsLooping("Wave"));
             Assert.IsFalse(CharacterClips.IsLooping("June_Rig|Point"));
             Assert.IsFalse(CharacterClips.IsLooping("Kit_Rig|OpenBooth"));
