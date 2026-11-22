@@ -36,7 +36,7 @@ The mapping table (line key → vignette → what it shows) is in `docs/nonverba
   `PuppetParts.All` (v3 included), every part resolves, no overlaps, the retired art is gone.
   `NonverbalSettingsTests` — defaults, schema 2 round trip, **a schema 1 file from the reading-mode era still loads**
   (Helper kept, old fields dropped on save), crash safety, newer files kept aside, the retired strings are gone.
-  Local run: 396/396.
+  Local run: 396/396; Unity EditMode 420/420 in run 92.
 - **PlayMode `NonverbalUiTests`:** `EveryCaseLineShowsItsVignetteAndItsTextLine` plays every line of every speaker
   (Bea, Vale, June, Kit, Pip) and asserts the bubble plays the mapped vignette with puppets on stage **and** the text
   line is visible; every caption plays on the strip's mini stage with its words; a hint has no stage.
@@ -46,7 +46,29 @@ The mapping table (line key → vignette → what it shows) is in `docs/nonverba
 
 ## Evidence
 
-RESULTS_PLACEHOLDER
+**CI.**
+- Run 91 (commit `93655dd`, Unity 6000.3.28f1): static checks and engine-free core tests passed; EditMode 420/420,
+  PlayMode 66/66, Visual 6/6, all green on the first try. On review, frames 40 and 44 showed the wrong beat: a
+  capture takes about 1.8 s of unscaled batchmode time, so the 3 s loops had wrapped to their start (Pip missing).
+- **Run 92** (commit `a3cf016`): the capture freezes the stage for the shot. EditMode 420/420, PlayMode 66/66
+  (`NonverbalUiTests` 8/8), Visual 6/6 (`VignetteCaptureTests` 1/1), magenta 0 % in every frame. `main` had not
+  moved since the branch point, so this is the state to merge.
+
+**Frames** (run 92, reviewed against the `nonverbal_v2` mock sheets; each reads at phone size):
+
+| Frame | Line | Review |
+|---|---|---|
+| `docs/evidence/s002/40_vale_bubble_run92.jpg` | `vale.invite_sit` (outside, the hybrid bubble) | Bubble with its tail on Mr. Vale, his face disc, Pip seated on the big purple bench and the eye open above it; the words under the stage. One idea, big shapes, like `nv2_vale_vignette` frame 5. |
+| `docs/evidence/s002/41_june_attic_line_run92.jpg` | `june.greet` (June's attic line) | In the attic, tail on June: June's face, the waving bone hand mid-swing, then the house that will knock. Reads as "hello" at a glance. |
+| `docs/evidence/s002/42_pip_sill_line_run92.jpg` | `examine.sill` (Pip's observation) | The sill clue (round window base, wooden sill, silver tuft) inside the pulsing orange key ring, Pip's face disc. The clue itself, the only thing on the stage. |
+| `docs/evidence/s002/43_caption_stage_run92.jpg` | `caption.foyer_hum` | In the hall: the caption strip keeps its words; the mini stage above it shows the floor planks with a knock ring. Readable but small (see gaps). |
+| `docs/evidence/s002/44_kit_finale_line_run92.jpg` | `kit.first_show` (Kit's finale line) | Finale view, Kit's face disc: the owl booth with the show star, Pip landed on the porch (the best seat), the words under the stage. |
+
+**Contact sheet** of all 36 vignettes, three frames each (beat ends), rendered offline from the C# data:
+`docs/evidence/s002/vignettes_all_sheet.jpg`. Iterations before it: every subject scaled up 1.1–1.6× (the first
+pass read too small on the stage); the cape behind two hedges instead of floating above one; the "quiet" speaker
+(ink on night felt, unreadable) replaced by ⊘ on the door; June's closing knocks moved off her face onto a door; the
+latch hands centred under the bar; ring targets kept ≤ 1.3× so the key ring is not cut by the stage.
 
 ## Known gaps
 
@@ -54,5 +76,8 @@ RESULTS_PLACEHOLDER
   `feature/s002-hints-close`.
 - **Babble sync:** beats are timed for a 2–4 s line; there is still no babble voice to sync to.
 - **Reduced motion** uses the existing beat-hold rule for the new vignettes; not reviewed frame by frame.
-- **Mini caption stage** sits above the strip; with a raised strip over the bubble it covers part of the world for
-  the caption's 3.5 s.
+- **Mini caption stage** sits above the strip (108 units): its puppets are about half the bubble's size, so a
+  caption's picture reads less instantly than a bubble's (43 is readable but small). With a raised strip over the
+  bubble it also covers part of the world for the caption's 3.5 s. A larger stage is an easy follow-up if the owner
+  wants it.
+- **Visual review on a device** is not done: frames are from CI at 1278×590.
