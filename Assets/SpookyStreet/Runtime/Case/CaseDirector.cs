@@ -73,6 +73,9 @@ namespace SpookyStreet.Case
 
         public CaseState State { get; private set; } = CaseState.Empty;
 
+        /// <summary>The child's own right sticker sets per solved question (saved beside the facts; D26).</summary>
+        public CaseAnswers Answers { get; private set; } = CaseAnswers.Empty;
+
         /// <summary>What the boot load found.</summary>
         public CaseResume Resume { get; private set; }
 
@@ -215,6 +218,8 @@ namespace SpookyStreet.Case
             Dialogue.Finished += OnDialogueFinished;
             Notebook = NotebookView.Create(root);
             Notebook.State = () => State;
+            Notebook.Answers = () => Answers;
+            Notebook.Solve = SolveQuestion;
             Notebook.RequestHint = RequestHint;
             Notebook.ReplayRequested = ConfirmReplay;
             Notebook.Closed += () => SetModal(false);
@@ -274,6 +279,7 @@ namespace SpookyStreet.Case
 
             HasSave = Resume != null && Resume.CanContinue;
             State = HasSave ? Resume.State : CaseState.Empty;
+            Answers = HasSave ? Resume.Answers : CaseAnswers.Empty;
             AnchorId = HasSave ? Resume.AnchorId : CaseAnchors.Start;
             // Spec §7: restore props from facts before enabling controls (the title is up; play has not started).
             ApplyWorld();
@@ -311,7 +317,7 @@ namespace SpookyStreet.Case
             Vector3 safe = tracker != null && tracker.HasAnchor ? tracker.Anchor : _pip.transform.position;
             string anchor = CaseStage.NearestAnchor(safe.x, safe.y, safe.z);
             bool written = false;
-            TryStore(() => written = _store.Save(State, anchor));
+            TryStore(() => written = _store.Save(State, anchor, Answers));
             if (written)
             {
                 AnchorId = anchor;
@@ -375,8 +381,11 @@ namespace SpookyStreet.Case
         private void ResetCase()
         {
             State = CaseState.Empty;
+            Answers = CaseAnswers.Empty;
+            Notebook.Session.Reset();
             AnchorId = CaseAnchors.Start;
             _hints = new HintSession();
+            _askAfterDialogue = false;
             CloseModals();
             Captions.Clear();
             Bench.End();
@@ -589,6 +598,17 @@ namespace SpookyStreet.Case
             State = step.State;
             _view = CaseWorldView.From(State);
             LastStep = step;
+            if (action.Kind == CaseActionKind.Solve && step.Outcome == CaseOutcome.Progressed)
+            {
+                // The comic is drawn from the child's own set: keep it with the solved fact (case save schema 2).
+                Answers = Answers.With(action.Question, action.Stickers);
+            }
+
+            if (GainedNotebookNews(step))
+            {
+                _discWobble = NotebookDiscWobbleSeconds;
+            }
+
             if (step.ShouldAutosave)
             {
                 Autosave();
@@ -627,6 +647,12 @@ namespace SpookyStreet.Case
                     {
                         // She walks down to her mark once her lines are done.
                         _juneWalkPending = true;
+                    }
+
+                    foreach (var line in step.Lines)
+                    {
+                        // "So, detective, what happened here?": the notebook opens on the open question after the line.
+                        _askAfterDialogue |= line.Key == SpookyStreet.Core.Localization.LocalizationKeys.CaseLines.KitAsk;
                     }
 
                     break;
@@ -907,6 +933,15 @@ namespace SpookyStreet.Case
                 Cast?.WalkJuneToFoyer();
             }
 
+            if (_askAfterDialogue)
+            {
+                _askAfterDialogue = false;
+                if (!_finaleLines)
+                {
+                    OpenNotebook();
+                }
+            }
+
             if (_finaleLines)
             {
                 // The reopening lines are done: hold the restored view a beat, then the notebook's final card.
@@ -955,6 +990,36 @@ namespace SpookyStreet.Case
 
         // -------------------------------------------------------------------------------------------- notebook
 
+        /// <summary>The notebook disc wobbles this long when a sticker arrives or a question is raised (§5.7).</summary>
+        public const float NotebookDiscWobbleSeconds = 0.9f;
+
+        private float _discWobble;
+        private bool _askAfterDialogue;
+
+        /// <summary>The disc wobbled for this step: a new sticker or a newly raised question.</summary>
+        private static bool GainedNotebookNews(CaseStep step)
+        {
+            foreach (var fact in step.Gained)
+            {
+                if (CaseNotebook.StickerFor(fact) != null)
+                {
+                    return true;
+                }
+            }
+
+            return CaseNotebook.Raised(step.State).Count > CaseNotebook.Raised(step.Before).Count;
+        }
+
+        /// <summary>
+        /// The notebook's right set (D26): the reducer checks it again and records the solved fact; the set is saved
+        /// with it. Returns the step (null when nothing was recorded).
+        /// </summary>
+        public CaseStep SolveQuestion(string questionId, IReadOnlyList<string> stickers)
+        {
+            var step = Perform(CaseAction.Solve(questionId, stickers));
+            return step.Outcome == CaseOutcome.Progressed ? step : null;
+        }
+
         public void OpenNotebook()
         {
             if (_flow.State != GameState.Playing || _modal)
@@ -964,7 +1029,15 @@ namespace SpookyStreet.Case
 
             Bench.End();
             SetModal(true);
-            Notebook.Open();
+            if (State.Has(CaseFact.CaseClosed) && !State.Has(CaseFact.CaseStamped))
+            {
+                // After the show, Kit's "So, detective?": the notebook opens on the first open question.
+                Notebook.OpenOnFirstOpenQuestion();
+            }
+            else
+            {
+                Notebook.Open();
+            }
         }
 
         private void ConfirmReplay()
@@ -1057,6 +1130,13 @@ namespace SpookyStreet.Case
             }
 
             float dt = Time.deltaTime;
+            if (_discWobble > 0f && NotebookButton != null)
+            {
+                _discWobble = Mathf.Max(0f, _discWobble - dt);
+                float k = _discWobble / NotebookDiscWobbleSeconds;
+                NotebookButton.transform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(_discWobble * 28f) * 14f * k);
+            }
+
             if (_cooldown > 0f)
             {
                 _cooldown -= dt;
