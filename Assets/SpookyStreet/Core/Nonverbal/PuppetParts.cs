@@ -23,6 +23,12 @@ namespace SpookyStreet.Core.Nonverbal
         public const string EyeShut = "pg.eye_shut";
         public const string KeyRing = "pg.key_ring";
 
+        // v3 parts (every case 01 line gets a vignette, S002): baked after the v2 cells so earlier rects stay put.
+        public const string WaveHand = "pg.wave_hand";
+        public const string SillSnag = "pg.sill_snag";
+        public const string LatchBar = "pg.latch_bar";
+        public const string Sparkle = "pg.sparkle";
+
         /// <summary>v1 pictogram names, grouped as in the v1 parts sheet.</summary>
         private static readonly string[] V1 =
         {
@@ -48,7 +54,9 @@ namespace SpookyStreet.Core.Nonverbal
 
         private static readonly string[] V2 = { JuneRun, PipBody, BeaArm, Clock, ClockHand, Puff, Stage, EyeShut, KeyRing };
 
-        /// <summary>Every part ID, v1 then v2.</summary>
+        private static readonly string[] V3 = { WaveHand, SillSnag, LatchBar, Sparkle };
+
+        /// <summary>Every part ID: v1, then v2, then v3.</summary>
         public static readonly IReadOnlyList<string> All = Build();
 
         private static readonly HashSet<string> Set = new HashSet<string>(All, StringComparer.Ordinal);
@@ -60,13 +68,14 @@ namespace SpookyStreet.Core.Nonverbal
 
         private static string[] Build()
         {
-            var all = new string[V1.Length + V2.Length];
+            var all = new string[V1.Length + V2.Length + V3.Length];
             for (int i = 0; i < V1.Length; i++)
             {
                 all[i] = Prefix + V1[i];
             }
 
             Array.Copy(V2, 0, all, V1.Length, V2.Length);
+            Array.Copy(V3, 0, all, V1.Length + V2.Length, V3.Length);
             return all;
         }
     }

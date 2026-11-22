@@ -23,6 +23,7 @@ crashlytics-build.properties
 *.csproj
 *.sln
 !/tools/core-tests/*.csproj
+!/tools/vignette-dump/*.csproj
 *.suo
 *.user
 *.userprefs
@@ -33,6 +34,8 @@ Thumbs.db
 /tools/core-tests/bin/
 /tools/core-tests/obj/
 /tools/core-tests/TestResults/
+/tools/vignette-dump/bin/
+/tools/vignette-dump/obj/
 
 # CI scratch and secrets that must never be committed
 /ci-out/

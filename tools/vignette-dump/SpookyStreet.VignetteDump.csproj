@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Samples every case vignette (Core/Nonverbal/C01Vignettes) with the engine-free VignetteSampler and writes JSON,
+    so tools/ui_mock/vignette_sheet.py can render them offline with the baked PuppetAtlas for review.
+    Usage: dotnet run with project tools/vignette-dump and the output path as the only argument.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../core-lib/SpookyStreet.Core.csproj" />
+  </ItemGroup>
+</Project>
