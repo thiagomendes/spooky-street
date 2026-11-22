@@ -14,9 +14,9 @@ namespace SpookyStreet.Tests.Visual
 {
     /// <summary>
     /// TestFlight 23 ("right after entering through the window, I got stuck"): the attic right after a dormer arrival
-    /// with the gameplay lens (33_dormer_arrival); the owner's frame, Pip by the trunk with the lens up to the east
-    /// looking west, as it rendered before the fix with the sky dome drawn (34_tf23_sky_shown: the dome's sphere cuts
-    /// the attic as a flat purple wall) and as it renders now with the sky hidden indoors (35_tf23_sky_hidden).
+    /// with the gameplay lens (37_dormer_arrival); the owner's frame, Pip by the trunk with the lens up to the east
+    /// looking west, as it rendered before the fix with the sky dome drawn (38_tf23_sky_shown: the dome's sphere cuts
+    /// the attic as a flat purple wall) and as it renders now with the sky hidden indoors (39_tf23_sky_hidden).
     /// </summary>
     [Category("Visual")]
     public class DormerArrivalCaptureTests : InputTestFixture
@@ -78,7 +78,7 @@ namespace SpookyStreet.Tests.Visual
             director.Dialogue.Skip();
             yield return Wait(0.3f);
 
-            // 33: in by June's window, the first moment after the page has gone (gameplay lens).
+            // 37: in by June's window, the first moment after the page has gone (gameplay lens).
             var travel = director.Travel;
             int before = travel.Crossings;
             game.Pip.Teleport(new Vector3(-4.3f, 2.55f, CaseRouteLayout.ExteriorWindowZ));
@@ -92,7 +92,7 @@ namespace SpookyStreet.Tests.Visual
                 yield return null;
             }
 
-            Assert.AreEqual(before + 1, travel.Crossings, "33: in through June's window");
+            Assert.AreEqual(before + 1, travel.Crossings, "37: in through June's window");
             if (director.Dialogue.IsOpen)
             {
                 director.Dialogue.Skip();
@@ -100,12 +100,12 @@ namespace SpookyStreet.Tests.Visual
 
             yield return Wait(0.15f);
             Vector3 lens = game.CameraRig.OutputCamera.transform.position;
-            Debug.Log($"[DormerArrivalCaptureTests] 33_dormer_arrival: {director.Framing.Shot}, lens {lens:F2}, " +
+            Debug.Log($"[DormerArrivalCaptureTests] 37_dormer_arrival: {director.Framing.Shot}, lens {lens:F2}, " +
                       $"sky hidden {game.Sky != null && game.Sky.Hidden}");
-            Assert.IsTrue(InteriorSafety.InsideShell(lens.x, lens.y, lens.z), "33: the lens is inside the shell");
-            yield return Shot("33_dormer_arrival");
+            Assert.IsTrue(InteriorSafety.InsideShell(lens.x, lens.y, lens.z), "37: the lens is inside the shell");
+            yield return Shot("37_dormer_arrival");
 
-            // 34 / 35: the owner's frame. Pip by the trunk at the front wall; the lens up to the east, looking west,
+            // 38 / 39: the owner's frame. Pip by the trunk at the front wall; the lens up to the east, looking west,
             // inside the dome's sphere (the attic beyond depth ~1.4 is outside it).
             var pip = new Vector3(-1.5f, CaseRouteLayout.LoftY + 0.03f, Ifz + 1.15f);
             game.Pip.Teleport(pip);
@@ -123,11 +123,11 @@ namespace SpookyStreet.Tests.Visual
             if (game.Sky != null)
             {
                 game.Sky.Hidden = false;
-                yield return Shot("34_tf23_sky_shown");
+                yield return Shot("38_tf23_sky_shown");
                 game.Sky.Hidden = true;
             }
 
-            yield return Shot("35_tf23_sky_hidden");
+            yield return Shot("39_tf23_sky_hidden");
             director.enabled = true;
             brain.enabled = true;
             yield return Wait(0.3f);
