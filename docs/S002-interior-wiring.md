@@ -133,7 +133,7 @@ attic sill, attic, foyer and workshop.
   - **SAVE-01:** reload after the window entry, after the latch, and during the crank cutaway.
   - The cut-away and attic-hiding rules.
 - **Visual `InteriorCaptureTests`:** `18_treehouse_route`, `19_attic_june`, `20_workshop_cutaway`, `21_finale`,
-  plus `22_foyer_door`.
+  plus `23_foyer_door`.
 
 ## Evidence
 

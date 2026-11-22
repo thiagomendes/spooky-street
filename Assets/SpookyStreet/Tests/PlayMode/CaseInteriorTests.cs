@@ -204,7 +204,8 @@ namespace SpookyStreet.Tests.PlayMode
                 yield return Wait(0.6f);
                 Vector3 at = Game.Pip.transform.position;
                 Assert.IsTrue(Game.Pip.Grounded, point + " holds Pip");
-                Assert.AreEqual(point.Y, at.y, 0.15f, point + " height");
+                // On the awning slope the capsule rests a little above the surface under its centre.
+                Assert.AreEqual(point.Y, at.y, 0.2f, point + " height");
             }
         }
 

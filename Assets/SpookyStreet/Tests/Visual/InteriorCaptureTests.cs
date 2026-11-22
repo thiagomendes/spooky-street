@@ -15,7 +15,7 @@ namespace SpookyStreet.Tests.Visual
     /// <summary>
     /// S002 interior frames: the treehouse route from the side yard (18_treehouse_route), June in the attic from the
     /// closer shoulder view (19_attic_june), the crank cutaway with the owl inset (20_workshop_cutaway), the finale
-    /// from the arrival sightline (21_finale), and the open front door from the foyer (22_foyer_door).
+    /// from the arrival sightline (21_finale), and the open front door from the foyer (23_foyer_door).
     /// </summary>
     [Category("Visual")]
     public class InteriorCaptureTests : InputTestFixture
@@ -112,7 +112,7 @@ namespace SpookyStreet.Tests.Visual
             Assert.IsTrue(director.House.View.ShowInterior, "19: the interior shows");
             yield return Shot("19_attic_june");
 
-            // 22: the latch lifted and both leaves open, seen from the foyer toward the porch.
+            // 23: the latch lifted and both leaves open, seen from the foyer toward the porch.
             director.Perform(CaseAction.Talk(Speaker.June));
             director.Dialogue.Skip();
             game.Pip.Teleport(new Vector3(0.1f, 0.65f, 13.2f));
@@ -120,7 +120,7 @@ namespace SpookyStreet.Tests.Visual
             director.Dialogue.Skip();
             Face(new Vector3(0.1f, 0.65f, 13.2f), new Vector3(0.05f, 0.65f, 10f));
             yield return Wait(2.0f);
-            yield return Shot("22_foyer_door");
+            yield return Shot("23_foyer_door");
 
             // 20: the crank cutaway: cam, follower and linkage in the nook, the owl bowing in the inset.
             var crankStand = new Vector3(0.75f, 0.65f, 14.2f);
