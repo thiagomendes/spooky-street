@@ -108,6 +108,10 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(HintPresentation.TryTarget(CaseObjective.CheckView, out var bench, out _));
             Assert.Less(Vector3.Distance(guide.SparkleTarget, new Vector3(bench.X, bench.Y, bench.Z)), 0.01f,
                 "the sparkle sits on the bench");
+            Assert.IsNotNull(layer.HintBadge, "the hint line carries a picture");
+            Assert.IsTrue(layer.HintBadge.gameObject.activeInHierarchy, "the badge shows while the hint line is up");
+            Assert.AreEqual(SpookyStreet.Core.Art.UiSpriteCatalog.HintStar, layer.HintBadgePicture.sprite.name,
+                "tier 1's picture is the star");
             Assert.IsFalse(guide.Active, "tier 1 has no bat trail");
             Assert.IsFalse(layer.Demo.Active, "tier 1 has no ghost demo");
 

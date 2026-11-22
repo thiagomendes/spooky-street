@@ -14,7 +14,8 @@ namespace SpookyStreet.Tests.Visual
     /// <summary>
     /// Non-verbal UX v2 frames (D23, docs/nonverbal-ux.md, mocks in docs/evidence/s002/nonverbal_v2): the tier-2 bat
     /// trail from the arrival porch (27), Bea's vignette bubble mid-animation (24), her memory replay mid-ghost (25),
-    /// the notebook page with its comic playing (26) and the first-launch picture cards (28).
+    /// the notebook page with its comic playing (26). The first-launch picture cards (28) were retired with D23.1
+    /// (one hybrid reading mode).
     /// </summary>
     [Category("Visual")]
     public class NonverbalCaptureTests : InputTestFixture
@@ -49,16 +50,6 @@ namespace SpookyStreet.Tests.Visual
         {
             float until = Time.time + seconds;
             while (Time.time < until)
-            {
-                yield return null;
-            }
-        }
-
-        /// <summary>Real-time wait: the title and pause screens stop game time.</summary>
-        private static IEnumerator WaitReal(float seconds)
-        {
-            float until = Time.realtimeSinceStartup + seconds;
-            while (Time.realtimeSinceStartup < until)
             {
                 yield return null;
             }
@@ -230,17 +221,6 @@ namespace SpookyStreet.Tests.Visual
             yield return Shot("36_hint_key_glyph", game.Ui.GetComponentInParent<Canvas>());
             SpookyStreet.Controls.ControlSchemeTracker.Override = null;
             layer.Demo.Stop();
-        }
-
-        [UnityTest]
-        [Timeout(120000)]
-        public IEnumerator CaptureFirstLaunchCards()
-        {
-            yield return Load();
-            var layer = GameBootstrap.Instance.Director.Nonverbal;
-            Assert.IsTrue(layer.Menus.ChoiceOpen, "28_first_launch: the reading choice should be up on a first launch");
-            yield return WaitReal(0.3f);
-            yield return Shot("28_first_launch", layer.Menus.Canvas);
         }
     }
 }

@@ -22,8 +22,8 @@ namespace SpookyStreet.UI
     /// Non-verbal UX v2 (D23, docs/nonverbal-ux.md §3): a line with a vignette (<see cref="C01Vignettes.For"/>) shows
     /// the speech bubble instead: bone paper with its tail on the speaker in the world, the speaker's face disc on
     /// its left edge, a night-felt stage where the paper-puppet vignette loops (<see cref="VignettePlayer"/>) and the
-    /// small text line under it only while <see cref="ShowSpeechText"/> is on. Lines without a vignette yet keep the
-    /// v1 card (with the face disc), whose words always show. Gesture cues go to the director
+    /// small text line under it (always: one hybrid reading mode, D23.1). Every case 01 line has a vignette; the v1
+    /// card (with the face disc) is only the fallback when the puppet atlas is missing. Gesture cues go to the director
     /// (<see cref="GestureCue"/>); every line closed with next raises <see cref="LineDismissed"/> (memory replays).
     /// </summary>
     public sealed class DialogueView : MonoBehaviour
@@ -52,7 +52,6 @@ namespace SpookyStreet.UI
         private Image _tail;
         private Image _stagePanel;
         private Text _bubbleLine;
-        private bool _showSpeechText = true;
         private bool _reducedMotion;
 
         /// <summary>Bubble size and the stage inset (canvas units; the mock's 520×120 pt stage at @2x).</summary>
@@ -87,20 +86,6 @@ namespace SpookyStreet.UI
 
         /// <summary>The words of the current line are on screen (always on the v1 card).</summary>
         public bool TextLineVisible => IsOpen && (ShowsVignette ? _bubbleLine.gameObject.activeSelf : _card.gameObject.activeSelf);
-
-        /// <summary><see cref="NonverbalSettings.ShowSpeechText"/>: the small text line under the stage.</summary>
-        public bool ShowSpeechText
-        {
-            get => _showSpeechText;
-            set
-            {
-                _showSpeechText = value;
-                if (IsOpen && _lines.Count > 0)
-                {
-                    ApplyLayout();
-                }
-            }
-        }
 
         /// <summary>Reduced motion: still beats with cross-fades, no pulsing.</summary>
         public bool ReducedMotion
@@ -427,10 +412,8 @@ namespace SpookyStreet.UI
                 return;
             }
 
-            bool words = _showSpeechText;
-            float height = words ? BubbleSize.y : StageInset * 2f + StageHeight;
-            _bubble.sizeDelta = new Vector2(BubbleSize.x, height);
-            _bubbleLine.gameObject.SetActive(words);
+            _bubble.sizeDelta = BubbleSize;
+            _bubbleLine.gameObject.SetActive(true);
             portrait.anchoredPosition = new Vector2(-BubbleSize.x * 0.5f + 4f, BubbleBottom + 70f);
             portrait.sizeDelta = new Vector2(150f, 150f);
             _pipRow.SetParent(_bubble, false);

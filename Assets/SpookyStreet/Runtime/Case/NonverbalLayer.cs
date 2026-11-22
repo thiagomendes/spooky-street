@@ -18,10 +18,11 @@ namespace SpookyStreet.Case
     /// The animated non-verbal UX in the running case (docs/nonverbal-ux.md §12, D23), kept beside
     /// <see cref="CaseDirector"/> so the director only creates it and forwards hint requests and resets:
     /// settings (<see cref="NonverbalSettingsStore"/>) and the seen-replays set (<see cref="NonverbalProgressStore"/>)
-    /// beside the case save; the bubble's words setting, gesture cues to the speaking witness and the speaker tail;
+    /// beside the case save; gesture cues to the speaking witness and the speaker tail;
     /// the memory replay trigger (<see cref="MemoryReplayPolicy.OnLineDismissed"/>, seen marked before playing,
     /// played once the conversation closes); the notebook's strips and replay eyes; the radio's tier-2 bat trail and
-    /// the opt-in tier-3 helper; the first-launch reading choice and the parent-gated settings toggles.
+    /// the opt-in tier-3 helper; the parent-gated Helper toggle. One hybrid reading mode (D23.1): every line plays its
+    /// vignette with its text line, so there is no words setting and no first-launch choice.
     /// </summary>
     public sealed class NonverbalLayer : MonoBehaviour
     {
@@ -99,7 +100,6 @@ namespace SpookyStreet.Case
             var notebook = director.Notebook;
             notebook.SeenReplays = () => _progress.Seen;
             notebook.WatchReplay = WatchOnDemand;
-            notebook.ShowWords = () => Settings.ShowSpeechText;
             notebook.CanAnimate = () => _flow.State == GameState.Playing;
 
             BuildRadio();
@@ -110,10 +110,6 @@ namespace SpookyStreet.Case
             director.Stepped += OnStepped;
             _flow.StateChanged += OnStateChanged;
             _objective = CaseHints.ObjectiveFor(director.State);
-            if (_flow.State == GameState.Title)
-            {
-                OfferReadingChoice();
-            }
         }
 
         private static T Try<T>(Func<T> read, T fallback)
@@ -141,9 +137,9 @@ namespace SpookyStreet.Case
 
         private void ApplySettings()
         {
-            _director.Dialogue.ShowSpeechText = Settings.ShowSpeechText;
             _director.Dialogue.ReducedMotion = ReducedMotion;
             _director.Notebook.ReducedMotion = ReducedMotion;
+            _director.Captions.ReducedMotion = ReducedMotion;
         }
 
         private void SaveSettings(NonverbalSettings settings)
@@ -155,23 +151,6 @@ namespace SpookyStreet.Case
                 _settingsStore.Save(settings);
                 return true;
             }, false);
-        }
-
-        /// <summary>First launch (D23.1): two picture cards over the title; one tap chooses, Settings can change it.</summary>
-        private void OfferReadingChoice()
-        {
-            if (Settings.NeedsFirstLaunchChoice)
-            {
-                Menus.ShowReadingChoice(ChooseReadingMode);
-            }
-        }
-
-        /// <summary>The reading choice (true = Pictures only); saved at once.</summary>
-        public void ChooseReadingMode(bool picturesOnly)
-        {
-            Settings.ChooseReadingMode(picturesOnly);
-            Menus.HideReadingChoice();
-            SaveSettings(Settings);
         }
 
         private void BuildSettingsGear()
@@ -320,7 +299,9 @@ namespace SpookyStreet.Case
         /// <summary>The director tells the layer a hint of <paramref name="tier"/> was just given (HUD radio or notebook).</summary>
         public void OnHintGiven(HintTier tier, CaseState state)
         {
-            ShowHint(HintPresentation.For(HintTrigger.RadioPress, tier, Settings), CaseHints.ObjectiveFor(state));
+            var objective = CaseHints.ObjectiveFor(state);
+            ShowHint(HintPresentation.For(HintTrigger.RadioPress, tier, Settings), objective);
+            ShowHintBadge(tier, CaseHints.HintFor(objective, tier, state));
             _stall = 0f;
             RefreshPips();
         }
@@ -361,6 +342,68 @@ namespace SpookyStreet.Case
 
         /// <summary>Tests: advance the stall clock without waiting three minutes.</summary>
         public void AddStallForTests(float seconds) => _stall += seconds;
+
+        // A hint line in the caption strip carries its tier's picture on a small felt badge at the strip's corner (the
+        // star for "look", a paper bat for "where", the ghost hand for "show me"), so the line is not words only.
+        private Image _hintBadge;
+        private Image _hintBadgeArt;
+        private string _hintBadgeKey;
+
+        /// <summary>The picture badge on a hint line (tests): shown while that hint is the strip's line.</summary>
+        public Image HintBadge => _hintBadge;
+
+        /// <summary>The badge's picture (tests).</summary>
+        public Image HintBadgePicture => _hintBadgeArt;
+
+        private void ShowHintBadge(HintTier tier, string key)
+        {
+            if (_hintBadge == null)
+            {
+                var strip = _director.Captions.Strip;
+                _hintBadge = UiFactory.Sprite(strip, "HintBadge", UiFactory.Baked(UiSpriteCatalog.FeltDiscNight),
+                    Color.white, new Vector2(0f, 1f), new Vector2(6f, -4f), new Vector2(76f, 76f));
+                UiFactory.InkShadow(_hintBadge, new Vector2(2f, -3f), 0.45f);
+                UiFactory.Sprite(_hintBadge.transform, "Ring", UiFactory.Baked(UiSpriteCatalog.StitchRing),
+                    Palette.CandyCornYellow, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(76f, 76f));
+                _hintBadgeArt = UiFactory.Sprite(_hintBadge.transform, "Picture", null, Color.white,
+                    new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(50f, 50f));
+                _hintBadgeArt.preserveAspect = true;
+            }
+
+            switch (tier)
+            {
+                case HintTier.Observation:
+                    _hintBadgeArt.sprite = UiFactory.Baked(UiSpriteCatalog.HintStar);
+                    _hintBadgeArt.color = Palette.CandyCornYellow;
+                    break;
+                case HintTier.Location:
+                    _hintBadgeArt.sprite = UiFactory.Baked(UiSpriteCatalog.IconBat);
+                    _hintBadgeArt.color = Palette.WarmPaper;
+                    break;
+                default:
+                    _hintBadgeArt.sprite = UiFactory.Baked(UiSpriteCatalog.GhostHand);
+                    _hintBadgeArt.color = UiFactory.PlayPaper;
+                    break;
+            }
+
+            _hintBadgeKey = key;
+            _hintBadge.transform.SetAsLastSibling();
+            RefreshHintBadge();
+        }
+
+        private void RefreshHintBadge()
+        {
+            if (_hintBadge == null)
+            {
+                return;
+            }
+
+            bool show = _hintBadgeKey != null && _director.Captions.CurrentKey == _hintBadgeKey;
+            if (_hintBadge.gameObject.activeSelf != show)
+            {
+                _hintBadge.gameObject.SetActive(show);
+            }
+        }
 
         private void StopHintPictures()
         {
@@ -498,11 +541,6 @@ namespace SpookyStreet.Case
                 RestoreHud();
                 StopHintPictures();
                 Menus.CloseAll();
-                OfferReadingChoice();
-            }
-            else
-            {
-                Menus.HideReadingChoice();
             }
 
             if (current == GameState.Playing)
@@ -514,6 +552,8 @@ namespace SpookyStreet.Case
 
         private void Update()
         {
+            RefreshHintBadge();
+
             // Raised captions sit just above the speech bubble (it is taller than the v1 card).
             var dialogue = _director.Dialogue;
             var captions = _director.Captions;
@@ -538,8 +578,10 @@ namespace SpookyStreet.Case
             {
                 _autoShownFor = objective;
                 _stall = 0f;
-                _director.Captions.ShowNow(CaseHints.HintFor(objective, HintTier.Action, _director.State));
+                string key = CaseHints.HintFor(objective, HintTier.Action, _director.State);
+                _director.Captions.ShowNow(key);
                 ShowHint(visuals, objective);
+                ShowHintBadge(HintTier.Action, key);
             }
         }
     }

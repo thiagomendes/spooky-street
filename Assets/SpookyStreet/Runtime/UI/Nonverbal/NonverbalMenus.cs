@@ -10,11 +10,11 @@ using NvKeys = SpookyStreet.Core.Localization.LocalizationKeys.NonverbalUi;
 namespace SpookyStreet.UI.Nonverbal
 {
     /// <summary>
-    /// The non-verbal UX menus (docs/nonverbal-ux.md §2.6, §8; D23.1, D23.4, D23.5), on their own canvas above the
-    /// title, pause and notices: the first-launch reading choice (two big picture cards, no reading needed), the
-    /// parent gate (two marked felt spots held together for 3 s, a candy ring fills; a fresh <see cref="ParentGate"/>
-    /// per guarded action) and the settings card with the two toggles (<c>Words under pictures</c>, <c>Helper</c>),
-    /// which sits behind the gate. Everything runs on unscaled time, so it works on the pause screen.
+    /// The non-verbal UX menus (docs/nonverbal-ux.md §2.6, §8; D23.4, D23.5), on their own canvas above the title,
+    /// pause and notices: the parent gate (two marked felt spots held together for 3 s, a candy ring fills; a fresh
+    /// <see cref="ParentGate"/> per guarded action) and the settings card with the <c>Helper</c> toggle, which sits
+    /// behind the gate. One hybrid reading mode (D23.1): no first-launch choice and no words toggle. Everything runs
+    /// on unscaled time, so it works on the pause screen.
     /// </summary>
     public sealed class NonverbalMenus : MonoBehaviour
     {
@@ -23,7 +23,6 @@ namespace SpookyStreet.UI.Nonverbal
         private static readonly Color Graphite = new Color32(0x4A, 0x44, 0x58, 0xFF);
 
         private RectTransform _root;
-        private GameObject _choice;
         private GameObject _gatePanel;
         private RectTransform _gateArea;
         private Image[] _spots;
@@ -32,24 +31,18 @@ namespace SpookyStreet.UI.Nonverbal
         private ControlGlyphView[] _gateGlyphs;
         private ControlScheme? _gateScheme;
         private GameObject _settings;
-        private Image _wordsTick;
         private Image _helperTick;
         private Action _onGatePassed;
-        private Action<bool> _onChoice;
 
         public Canvas Canvas { get; private set; }
 
-        public Button WordsCard { get; private set; }
-        public Button PicturesCard { get; private set; }
         public Button GateCloseButton { get; private set; }
         public Button SettingsCloseButton { get; private set; }
-        public Button ShowSpeechTextToggle { get; private set; }
         public Button HelperToggle { get; private set; }
 
         /// <summary>The gate guarding the action in progress (null when no gate is up).</summary>
         public ParentGate Gate { get; private set; }
 
-        public bool ChoiceOpen => _choice.activeSelf;
         public bool GateOpen => _gatePanel.activeSelf;
         public bool SettingsOpen => _settings.activeSelf;
 
@@ -66,64 +59,9 @@ namespace SpookyStreet.UI.Nonverbal
             var menus = canvas.gameObject.AddComponent<NonverbalMenus>();
             menus.Canvas = canvas;
             menus._root = (RectTransform)canvas.transform;
-            menus.BuildChoice();
             menus.BuildGate();
             menus.BuildSettings();
             return menus;
-        }
-
-        // ------------------------------------------------------------------------------------- first launch
-
-        private void BuildChoice()
-        {
-            var scrim = UiFactory.Panel(_root, "ReadingChoice", UiFactory.WithAlpha(Palette.NightViolet, 0.9f));
-            _choice = scrim.gameObject;
-            var content = UiFactory.Stretch(UiFactory.Rect(scrim.transform, "Content"));
-            content.gameObject.AddComponent<SafeAreaFitter>();
-            WordsCard = PictureCard(content, "WordsCard", PuppetAtlasLayout.Book, NvKeys.ReadingChoiceWords, -250f, -1.5f,
-                () => Choose(false));
-            PicturesCard = PictureCard(content, "PicturesCard", PuppetAtlasLayout.Pictures, NvKeys.ReadingChoicePictures,
-                250f, 1.5f, () => Choose(true));
-            _choice.SetActive(false);
-        }
-
-        private static Button PictureCard(Transform parent, string name, string art, string key, float x, float angle,
-            UnityEngine.Events.UnityAction onClick)
-        {
-            var card = UiFactory.PaperCard(parent, name, new Vector2(0.5f, 0.5f), new Vector2(x, 10f),
-                new Vector2(420f, 470f), angle, Palette.JackOrange);
-            card.raycastTarget = true;
-            var pictureFrame = UiFactory.Sprite(card.transform, "Stage", PuppetAtlas.Get(PuppetParts.Stage), Color.white,
-                new Vector2(0.5f, 1f), new Vector2(0f, -36f), new Vector2(348f, 318f));
-            pictureFrame.rectTransform.pivot = new Vector2(0.5f, 1f);
-            var picture = UiFactory.Sprite(pictureFrame.transform, "Picture", PuppetAtlas.Get(art), Color.white,
-                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(300f, 300f));
-            picture.preserveAspect = true;
-            var label = UiFactory.Label(card.transform, "Label", key, 34, TextAnchor.MiddleCenter, UiFactory.Ink,
-                UiFactory.BoldFont);
-            UiFactory.Place(label.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 60f), new Vector2(360f, 64f));
-            var button = card.gameObject.AddComponent<Button>();
-            button.transition = Selectable.Transition.None;
-            button.onClick.AddListener(onClick);
-            card.gameObject.AddComponent<PressScale>();
-            return button;
-        }
-
-        /// <summary>Shows the two picture cards; <paramref name="onChoice"/> gets true for Pictures only.</summary>
-        public void ShowReadingChoice(Action<bool> onChoice)
-        {
-            _onChoice = onChoice;
-            _choice.SetActive(true);
-        }
-
-        public void HideReadingChoice() => _choice.SetActive(false);
-
-        private void Choose(bool picturesOnly)
-        {
-            _choice.SetActive(false);
-            var callback = _onChoice;
-            _onChoice = null;
-            callback?.Invoke(picturesOnly);
         }
 
         // ------------------------------------------------------------------------------------- parent gate
@@ -384,13 +322,11 @@ namespace SpookyStreet.UI.Nonverbal
             var content = UiFactory.Stretch(UiFactory.Rect(scrim.transform, "Content"));
             content.gameObject.AddComponent<SafeAreaFitter>();
             var card = UiFactory.PaperCard(content, "SettingsCard", new Vector2(0.5f, 0.5f), Vector2.zero,
-                new Vector2(720f, 420f), -0.8f);
+                new Vector2(720f, 300f), -0.8f);
             var gear = UiFactory.Sprite(card.transform, "Gear", UiFactory.Baked(UiSpriteCatalog.IconGear), UiFactory.Ink,
                 new Vector2(0.5f, 1f), new Vector2(0f, -66f), new Vector2(72f, 72f));
             gear.preserveAspect = true;
-            ShowSpeechTextToggle = Row(card.transform, "WordsRow", PuppetAtlasLayout.Book, NonverbalSettings.ShowSpeechTextLabelKey,
-                -170f, ToggleWords, out _wordsTick);
-            HelperToggle = Row(card.transform, "HelperRow", "pg.hands", NonverbalSettings.HelperLabelKey, -290f,
+            HelperToggle = Row(card.transform, "HelperRow", "pg.hands", NonverbalSettings.HelperLabelKey, -180f,
                 ToggleHelper, out _helperTick);
             var close = UiFactory.FeltDisc(card.transform, "CloseSettings", UiSpriteCatalog.FeltDiscNight, Palette.WarmPaper,
                 UiSpriteCatalog.IconClose, Palette.WarmPaper, null, UiFactory.SystemDiscDiameter, Vector2.one,
@@ -424,7 +360,7 @@ namespace SpookyStreet.UI.Nonverbal
             return button;
         }
 
-        /// <summary>The settings card with the two toggles (call from behind <see cref="RequireParent"/>).</summary>
+        /// <summary>The settings card with the Helper toggle (call from behind <see cref="RequireParent"/>).</summary>
         public void OpenSettings()
         {
             _settings.SetActive(true);
@@ -432,19 +368,6 @@ namespace SpookyStreet.UI.Nonverbal
         }
 
         public void CloseSettings() => _settings.SetActive(false);
-
-        private void ToggleWords()
-        {
-            if (Settings == null)
-            {
-                return;
-            }
-
-            Settings.ShowSpeechText = !Settings.ShowSpeechText;
-            Settings.FirstLaunchChoiceMade = true;
-            RefreshSettings();
-            SettingsChanged?.Invoke(Settings);
-        }
 
         private void ToggleHelper()
         {
@@ -460,7 +383,6 @@ namespace SpookyStreet.UI.Nonverbal
 
         private void RefreshSettings()
         {
-            _wordsTick.enabled = Settings != null && Settings.ShowSpeechText;
             _helperTick.enabled = Settings != null && Settings.HelperAutoHints;
         }
 
