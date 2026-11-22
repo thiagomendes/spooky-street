@@ -97,6 +97,10 @@ Benchmarks: `env_owl_house_v2.png`, `env_props_v2.png` and `env_keyframe_v2.png`
   - recognisable paper maple leaves;
   - trimmed hedges with a value gradient, not green boxes;
   - no faceted "low-poly" shards anywhere.
+- **Enterable spaces (D24):** every room, cabin or hideout the player can enter is a closed box (walls, ceiling and
+  floor with inner faces on every side) sized for the third-person camera: a boom of about 2 m behind Pip fits, and no
+  beams or dressing hang in the 1.6–2.6 m camera band over walkable paths. Rafters and garlands go higher. Never leave
+  an open side or a single-sided face that vanishes from inside. Enlarge modestly; keep proportions believable.
 - **Game budgets:**
   - house structure ≤ about 30k triangles, with dressing as a separate mesh;
   - props 0.5–5k triangles;
