@@ -21,6 +21,10 @@ namespace SpookyStreet.Case
         public const float StickerSize = 1.5f;
         public const float ArcHeight = 1.6f;
 
+        /// <summary>Far away a bat and the sticker grow to keep this share of the view height (read at phone size).</summary>
+        public const float BatMinViewFraction = 0.035f;
+        public const float StickerMinViewFraction = 0.075f;
+
         private readonly BatState[] _bats = new BatState[BatTrailSchedule.MaxConcurrentBats];
         private readonly SpriteRenderer[] _pool = new SpriteRenderer[BatTrailSchedule.MaxConcurrentBats];
         private Transform _pip;
@@ -207,7 +211,7 @@ namespace SpookyStreet.Case
                 renderer.gameObject.SetActive(true);
                 float flap = 0.75f + 0.25f * Mathf.Abs(Mathf.Sin(now * 14f + bat.Index));
                 renderer.transform.SetPositionAndRotation(at, face);
-                SetSize(renderer, BatSize, flap);
+                SetSize(renderer, Readable(BatSize, at, cam, BatMinViewFraction), flap);
                 renderer.color = new Color(1f, 1f, 1f, bat.Alpha);
             }
 
@@ -218,7 +222,7 @@ namespace SpookyStreet.Case
             {
                 float pulse = 1f + 0.08f * Mathf.Sin(now * 2f * Mathf.PI * 1.2f);
                 _sticker.transform.SetPositionAndRotation(_goal + Vector3.up * (1.1f + 0.08f * Mathf.Sin(now * 2.2f)), face);
-                SetSize(_sticker, StickerSize * pulse, 1f);
+                SetSize(_sticker, Readable(StickerSize, _sticker.transform.position, cam, StickerMinViewFraction) * pulse, 1f);
                 FitChild(_glyph, 0.8f);
                 FitChild(_ring, 1.25f);
             }
@@ -237,6 +241,19 @@ namespace SpookyStreet.Case
             t.localScale = Vector3.one * (k * parent / Mathf.Max(0.01f, child.sprite.bounds.size.y));
             t.localPosition = new Vector3(0f, 0f, -0.01f);
             t.localRotation = Quaternion.identity;
+        }
+
+        /// <summary>World height that keeps at least <paramref name="fraction"/> of the view height at this distance.</summary>
+        private static float Readable(float height, Vector3 at, Camera cam, float fraction)
+        {
+            if (cam == null)
+            {
+                return height;
+            }
+
+            float distance = Vector3.Distance(cam.transform.position, at);
+            float view = 2f * distance * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
+            return Mathf.Max(height, view * fraction);
         }
 
         private static void SetSize(SpriteRenderer renderer, float height, float squashY)

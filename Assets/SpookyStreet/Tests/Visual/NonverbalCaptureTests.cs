@@ -84,22 +84,19 @@ namespace SpookyStreet.Tests.Visual
             game.CameraRig.Orbit.RequestRecenter();
             yield return Wait(1.5f);
 
-            // 27: the radio at tier 2 from the arrival porch: paper bats fly toward the blue house, goal sticker up.
+            // 27: the knocks are heard, so the goal is Mr. Vale's bench (off to the right): the radio at tier 2 flies
+            // the paper-bat trail there from the arrival porch, mid-wave, with the goal sticker up.
+            director.Perform(CaseAction.Of(CaseActionKind.HearKnocks));
+            yield return Wait(0.2f);
+            director.Captions.Clear();
             layer.RadioButton.onClick.Invoke();
             layer.RadioButton.onClick.Invoke();
+            director.Captions.Clear();
             Assert.IsTrue(layer.Guide.Active, "27_bat_trail: tier 2 should start the trail");
-            yield return Wait(2.1f);
+            Assert.AreEqual(CaseObjective.CheckView, layer.Guide.Objective, "27_bat_trail: the bench is the goal");
+            yield return Wait(1.85f);
             Assert.Greater(layer.Guide.VisibleBats, 0, "27_bat_trail: bats should be flying");
-            foreach (var bat in layer.Guide.GetComponentsInChildren<SpriteRenderer>())
-            {
-                var cam = game.CameraRig.OutputCamera;
-                Debug.Log($"[NonverbalCapture] {bat.name} at {bat.transform.position} viewport " +
-                          $"{cam.WorldToViewportPoint(bat.transform.position)} scale {bat.transform.lossyScale} " +
-                          $"sprite {(bat.sprite != null ? bat.sprite.name : "null")} colour {bat.color} " +
-                          $"material {(bat.sharedMaterial != null ? bat.sharedMaterial.shader.name : "null")} " +
-                          $"layer {bat.gameObject.layer} mask {cam.cullingMask}");
-            }
-
+            Assert.IsTrue(layer.Guide.BeaconVisible, "27_bat_trail: the goal sticker should be up");
             yield return Shot("27_bat_trail");
             layer.Guide.Stop();
             director.Captions.Clear();

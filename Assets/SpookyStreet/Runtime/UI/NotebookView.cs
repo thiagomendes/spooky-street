@@ -140,9 +140,11 @@ namespace SpookyStreet.UI
 
             _prev = Disc(content, "PreviousPage", UiSpriteCatalog.IconArrow, new Vector2(0f, 0.5f), new Vector2(70f, 20f),
                 () => ShowPage(CurrentPage - 1));
-            _prev.transform.Find("Icon").localRotation = Quaternion.Euler(0f, 0f, 180f);
+            // The arrow glyph points up: turn it to point left and right.
+            _prev.transform.Find("Icon").localRotation = Quaternion.Euler(0f, 0f, 90f);
             _next = Disc(content, "NextPage", UiSpriteCatalog.IconArrow, new Vector2(1f, 0.5f), new Vector2(-70f, 20f),
                 () => ShowPage(CurrentPage + 1));
+            _next.transform.Find("Icon").localRotation = Quaternion.Euler(0f, 0f, -90f);
 
             CloseButton = Disc(content, "CloseButton", UiSpriteCatalog.IconClose, Vector2.one, new Vector2(-60f, -58f), Close);
             HintButton = UiFactory.PrimaryButton(content, "HintButton", HintKeys.HudHint, new Vector2(1f, 0f),
@@ -439,18 +441,18 @@ namespace SpookyStreet.UI
                     if (replays.Count > 0)
                     {
                         var replay = replays[0];
-                        var eye = UiFactory.FeltDisc(sticker.transform, "WatchAgain", UiSpriteCatalog.FeltDiscNight,
-                            Palette.CandyCornYellow, UiSpriteCatalog.IconExamine, Palette.WarmPaper, null,
-                            UiFactory.MinTouchTarget, new Vector2(1f, 1f), new Vector2(-6f, -6f), 1f);
-                        eye.rectTransform.localScale = Vector3.one * 0.42f;
-                        var eyeArt = eye.transform.Find("Icon").GetComponent<Image>();
-                        var eyeSprite = PuppetAtlas.Get("pg.eye");
-                        if (eyeSprite != null)
-                        {
-                            eyeArt.sprite = eyeSprite;
-                            eyeArt.color = Color.white;
-                            eyeArt.preserveAspect = true;
-                        }
+                        // A small night-felt badge with the eye; its clear hit area keeps the full touch size.
+                        var eye = UiFactory.Sprite(sticker.transform, "WatchAgain", null, new Color(0f, 0f, 0f, 0f),
+                            new Vector2(1f, 1f), new Vector2(-2f, -2f),
+                            new Vector2(UiFactory.MinTouchTarget, UiFactory.MinTouchTarget), raycast: true);
+                        var badge = UiFactory.Sprite(eye.transform, "Badge", UiFactory.Baked(UiSpriteCatalog.FeltDiscNight),
+                            Color.white, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(46f, 46f));
+                        UiFactory.InkShadow(badge, new Vector2(2f, -3f), 0.45f);
+                        UiFactory.Sprite(badge.transform, "Ring", UiFactory.Baked(UiSpriteCatalog.StitchRing),
+                            Palette.CandyCornYellow, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(46f, 46f));
+                        var eyeArt = UiFactory.Sprite(badge.transform, "Eye", PuppetAtlas.Get("pg.eye"), Color.white,
+                            new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(38f, 38f));
+                        eyeArt.preserveAspect = true;
 
                         var eyeButton = eye.gameObject.AddComponent<Button>();
                         eyeButton.targetGraphic = eye;
