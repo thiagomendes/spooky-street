@@ -17,14 +17,16 @@ namespace SpookyStreet.Player
         [Min(0.1f)] public float jumpHoldApexHeight = 1.6f;
         [Min(1f)] public float gravity = 25f;
         [Min(0f)] public float coyoteTime = 0.10f;
-        [Min(0f)] public float jumpBufferTime = 0.12f;
+        [Tooltip("A Jump press this long before landing still jumps (and chains).")]
+        [Min(0f)] public float jumpBufferTime = 0.15f;
         [Range(0f, 1f)] public float airControl = 0.6f;
         [Min(1f)] public float maxFallSpeed = 20f;
 
         [Header("Chain jump (jump again right after landing while running)")]
-        [Min(0f)] public float chainJumpWindow = 0.2f;
+        [Tooltip("Seconds after landing in which Jump continues the chain.")]
+        [Min(0f)] public float chainJumpWindow = 0.35f;
         [Tooltip("Fraction of max speed needed to keep the chain going.")]
-        [Range(0f, 1f)] public float chainJumpMinSpeedFraction = 0.5f;
+        [Range(0f, 1f)] public float chainJumpMinSpeedFraction = 0.25f;
         [Min(1f)] public float chainJumpSecondHeightScale = 1.25f;
         [Min(1f)] public float chainJumpThirdHeightScale = 1.5f;
 

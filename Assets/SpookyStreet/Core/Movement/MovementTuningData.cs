@@ -33,8 +33,13 @@ namespace SpookyStreet.Core.Movement
         /// <summary>Seconds after leaving ground during which a jump is still accepted.</summary>
         public float CoyoteTime = 0.10f;
 
-        /// <summary>Seconds a jump press is remembered before landing.</summary>
-        public float JumpBufferTime = 0.12f;
+        /// <summary>
+        /// Seconds a jump press is remembered before landing: a press this long before touchdown still jumps, and
+        /// continues an open chain (S000.6 feel pass: 0.12 → 0.15 s so a thumb that is a little early still chains).
+        /// A fresh press in the air spreads the cape only once it has been held longer than this, so an early chain
+        /// press never brakes the fall into a glide and misses the landing.
+        /// </summary>
+        public float JumpBufferTime = 0.15f;
 
         /// <summary>Fraction of ground acceleration available in the air.</summary>
         public float AirControl = 0.6f;
@@ -47,11 +52,14 @@ namespace SpookyStreet.Core.Movement
 
         // --- Chain jump -------------------------------------------------------------------------
 
-        /// <summary>Seconds after landing in which another jump continues the chain.</summary>
-        public float ChainJumpWindow = 0.2f;
+        /// <summary>Seconds after landing in which another jump continues the chain (feel pass: 0.2 → 0.35 s).</summary>
+        public float ChainJumpWindow = 0.35f;
 
-        /// <summary>Chain continues only at or above this fraction of MaxSpeed (running, not standing).</summary>
-        public float ChainJumpMinSpeedFraction = 0.5f;
+        /// <summary>
+        /// Chain continues only at or above this fraction of MaxSpeed (feel pass: 0.5 → 0.25, so a light jog chains;
+        /// standing still or creeping does not).
+        /// </summary>
+        public float ChainJumpMinSpeedFraction = 0.25f;
 
         /// <summary>Height scale of the second chained jump (held: 1.6 m → 2.0 m).</summary>
         public float ChainJumpSecondHeightScale = 1.25f;

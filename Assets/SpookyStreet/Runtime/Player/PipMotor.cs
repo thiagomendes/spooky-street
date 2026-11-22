@@ -40,6 +40,15 @@ namespace SpookyStreet.Player
         /// <summary>Stage (1–3) of the last jump of the open chain, 0 when none.</summary>
         public int ChainStage => _state.ChainStage;
 
+        /// <summary>A copy of the motor state after the last step (feedback, tips, tests).</summary>
+        public MotorState State => _state;
+
+        /// <summary>Rising with Jump held since take-off (the higher, held jump).</summary>
+        public bool HoldingJumpRise => _state.HoldingJumpRise;
+
+        /// <summary>Use would dive now (in the air, no dive yet this airtime).</summary>
+        public bool CanDive => _data != null && _state.CanDive(_data);
+
         /// <summary>The motor's tuning as plain data (read-only use: animation timing, tests).</summary>
         public MovementTuningData TuningData => _data;
 

@@ -44,6 +44,9 @@ namespace SpookyStreet.App
 
         public GameUi Ui { get; private set; }
 
+        /// <summary>Paper bursts, streaks and dust that make the moveset readable.</summary>
+        public MoveFeedback Feedback { get; private set; }
+
         public BuildInfo BuildInfo { get; private set; }
 
         public MaterialLibrary Materials { get; private set; }
@@ -90,11 +93,13 @@ namespace SpookyStreet.App
             CameraRig = CameraRig.Create(Pip, movementTuning, _input, Flow, obstacleLayers);
             Pip.Configure(movementTuning, _input, Flow, CameraRig.OutputCamera.transform);
 
+            Feedback = MoveFeedback.Create(Pip, Materials, CameraRig.OutputCamera.transform);
             Ui = GameUi.Create(Flow, _input, Pip, BuildInfo, leftHandedLayout);
 
             // Keep everything built at runtime in this scene so unloading it cleans up completely.
             Adopt(world.gameObject);
             Adopt(Pip.gameObject);
+            Adopt(Feedback.gameObject);
             Adopt(CameraRig.gameObject);
             Adopt(Ui.gameObject);
             if (EventSystem.current != null)

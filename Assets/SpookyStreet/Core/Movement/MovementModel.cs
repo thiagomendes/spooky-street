@@ -102,6 +102,16 @@ namespace SpookyStreet.Core.Movement
         public float HorizontalSpeed => (float)Math.Sqrt(VelocityX * VelocityX + VelocityZ * VelocityZ);
 
         public bool Rolling => RollTimeLeft > 0f;
+
+        /// <summary>
+        /// Rising with Jump still held since take-off: the held, higher jump (the avatar stretches while this is
+        /// true so the difference from a tap is visible).
+        /// </summary>
+        public bool HoldingJumpRise => InJump && !JumpReleased && !Diving && VelocityY > 0f;
+
+        /// <summary>Use would dive now (airborne past coyote time, no dive yet this airtime, not rolling).</summary>
+        public bool CanDive(MovementTuningData tuning) =>
+            !Grounded && TimeSinceGrounded > tuning.CoyoteTime && !Diving && !DiveUsed && !Rolling;
     }
 
     /// <summary>Displacement for this frame, to be passed to the character controller, plus what happened.</summary>
@@ -293,6 +303,12 @@ namespace SpookyStreet.Core.Movement
                         step.RollStarted = true;
                         break;
                     case UseAction.Dive:
+                        // Use while gliding folds the cape into the dive.
+                        if (state.Gliding)
+                        {
+                            step.GlideEnded = true;
+                        }
+
                         StartDive(ref state, input, tuning);
                         step.DiveStarted = true;
                         break;
@@ -300,8 +316,12 @@ namespace SpookyStreet.Core.Movement
             }
 
             // --- Bat-cape glide: Jump held while falling (after the apex) -------------------------
+            // A fresh press in the air is first a buffered jump: the cape waits until the buffer has run out, so a
+            // press just before touchdown (an early chain jump on touch, where every press is briefly a hold) never
+            // brakes the fall and misses the landing. A hold carried from take-off spreads the cape at the apex.
+            bool pressPending = state.TimeSinceJumpPressed <= tuning.JumpBufferTime;
             bool wantGlide = !state.Grounded && input.JumpHeld && state.VelocityY <= 0f && !state.Diving &&
-                             !state.Rolling;
+                             !state.Rolling && !pressPending;
             if (wantGlide && !state.Gliding)
             {
                 state.Gliding = true;

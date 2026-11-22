@@ -27,6 +27,15 @@ namespace SpookyStreet.Core.Localization
         /// <summary>Use disc verb while no interaction is in range (Use rolls, or dives in the air).</summary>
         public const string HudRoll = "ui.hud.roll";
 
+        /// <summary>Use disc verb while Pip is in the air and a dive is available.</summary>
+        public const string HudDive = "ui.hud.dive";
+
+        /// <summary>First-time moveset tips (each shown once ever, on a paper tag near the control).</summary>
+        public const string TipHoldJump = "tip.move.hold_jump";
+        public const string TipChainJump = "tip.move.chain_jump";
+        public const string TipGlide = "tip.move.glide";
+        public const string TipDive = "tip.move.dive";
+
         public const string PauseHeading = "ui.pause.heading";
         public const string PauseResume = "ui.pause.resume";
         public const string PauseBackToTitle = "ui.pause.back_to_title";
@@ -36,7 +45,8 @@ namespace SpookyStreet.Core.Localization
         {
             TitleGameName, TitleCaseName, TitleNewGame, TitleContinue, TitleLanguageToggle, TitleBuildLabel, TitleContinueDetail,
             PromptMoveTouch, PromptMoveKeyboard, PromptMoveGamepad,
-            HudPause, HudJump, HudUse, HudRoll,
+            HudPause, HudJump, HudUse, HudRoll, HudDive,
+            TipHoldJump, TipChainJump, TipGlide, TipDive,
             PauseHeading, PauseResume, PauseBackToTitle,
         };
     }
