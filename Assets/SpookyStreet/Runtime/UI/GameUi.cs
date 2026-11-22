@@ -1,4 +1,5 @@
 using SpookyStreet.App;
+using SpookyStreet.Core.Art;
 using SpookyStreet.Core.Flow;
 using SpookyStreet.Core.Localization;
 using SpookyStreet.Controls;
@@ -33,7 +34,15 @@ namespace SpookyStreet.UI
         private GameObject _pause;
         private GameObject _prompt;
         private Button _newGameButton;
+        private Button _continueButton;
         private Button _resumeButton;
+        private Button _pauseButton;
+        private GameObject _useButton;
+        private RectTransform _safeArea;
+        private Image _logo;
+        private Text _caseName;
+        private Vector2 _primarySlot;
+        private Vector2 _secondarySlot;
         private float _promptStartDistance;
 
         public GameObject TitleScreen => _title;
@@ -42,6 +51,20 @@ namespace SpookyStreet.UI
         public GameObject FirstPrompt => _prompt;
         public Button NewGameButton => _newGameButton;
         public Button ResumeButton => _resumeButton;
+        public Button ContinueButton => _continueButton;
+        public Button PauseButton => _pauseButton;
+
+        /// <summary>Contextual Use disc (hidden until something can be used).</summary>
+        public GameObject UseButton => _useButton;
+
+        /// <summary>The safe-area rect the HUD lives in.</summary>
+        public RectTransform SafeArea => _safeArea;
+
+        /// <summary>Baked logo image on the title (null only if the sprite is missing).</summary>
+        public Image Logo => _logo;
+
+        /// <summary>Localized case name under the logo.</summary>
+        public Text CaseName => _caseName;
 
         public static GameUi Create(GameFlow flow, GameInput input, PipMotor pip, BuildInfo buildInfo, bool leftHanded)
         {
@@ -55,6 +78,7 @@ namespace SpookyStreet.UI
 
             var safe = UiFactory.Stretch(UiFactory.Rect(canvas.transform, "SafeArea"));
             safe.gameObject.AddComponent<SafeAreaFitter>();
+            ui._safeArea = safe;
 
             ui.BuildHud(safe);
             ui.BuildTitle(canvas.transform, buildInfo);
@@ -109,7 +133,9 @@ namespace SpookyStreet.UI
             _title.SetActive(state == GameState.Title);
             _hud.SetActive(state == GameState.Playing);
             _pause.SetActive(state == GameState.Paused);
-            GameObject select = state == GameState.Title ? _newGameButton.gameObject
+            GameObject titleFocus = _continueButton.gameObject.activeSelf ? _continueButton.gameObject
+                : _newGameButton.gameObject;
+            GameObject select = state == GameState.Title ? titleFocus
                 : state == GameState.Paused ? _resumeButton.gameObject : null;
             if (EventSystem.current != null)
             {
@@ -142,6 +168,14 @@ namespace SpookyStreet.UI
 
         private Vector2 MirrorOffset(Vector2 offset) => _leftHanded ? new Vector2(-offset.x, offset.y) : offset;
 
+        /// <summary>Soft ink shade behind a HUD cluster (mock: radial 25–30 %), so bone icons read on any backdrop.</summary>
+        private static void ClusterShade(Transform parent, string name, Vector2 anchor, Vector2 position, float size,
+            float alpha)
+        {
+            UiFactory.Sprite(parent, name, IconFactory.RadialFade, UiFactory.WithAlpha(Palette.InkBlack, alpha), anchor,
+                position, new Vector2(size, size));
+        }
+
         private void BuildHud(RectTransform safe)
         {
             _hud = UiFactory.Stretch(UiFactory.Rect(safe, "Hud")).gameObject;
@@ -151,6 +185,55 @@ namespace SpookyStreet.UI
             var orbit = UiFactory.Panel(_hud.transform, "OrbitArea", new Color(0f, 0f, 0f, 0f));
             touch.OrbitArea = orbit.gameObject.AddComponent<OrbitDragArea>();
 
+            var bottomCorner = new Vector2(MirrorX(1f), 0f);
+            var topCorner = new Vector2(MirrorX(1f), 1f);
+            ClusterShade(_hud.transform, "ActionShade", bottomCorner, MirrorOffset(new Vector2(-220f, 120f)), 560f, 0.3f);
+            ClusterShade(_hud.transform, "SystemShade", topCorner, MirrorOffset(new Vector2(-60f, -60f)), 260f, 0.25f);
+
+            BuildStick(touch);
+
+            // Action cluster on the other thumb: icon + short verb (spec §5). Jump: night felt with a candy-corn
+            // stitch. Use: the orange disc with a paper verb tag; hidden until interactables exist (S001/S002).
+            var jump = UiFactory.FeltDisc(_hud.transform, "JumpButton", UiSpriteCatalog.FeltDiscNight,
+                Palette.CandyCornYellow, UiSpriteCatalog.IconJump, Palette.WarmPaper, LocalizationKeys.HudJump,
+                UiFactory.JumpDiameter, bottomCorner, MirrorOffset(new Vector2(-140f, 140f)), UiFactory.HudFeltAlpha);
+            touch.JumpButton = jump.gameObject.AddComponent<TouchButton>();
+
+            var use = UiFactory.FeltDisc(_hud.transform, "UseButton", UiSpriteCatalog.FeltDiscOrange,
+                Palette.CandyCornYellow, UiSpriteCatalog.IconExamine, Palette.InkBlack, null, UiFactory.UseDiameter,
+                bottomCorner, MirrorOffset(new Vector2(-330f, 118f)), 1f);
+            var verb = UiFactory.PaperTag(use.transform, "VerbTag", LocalizationKeys.HudUse, UiFactory.CaptionSize,
+                new Vector2(0.5f, 0f), new Vector2(0f, -10f), new Vector2(150f, 54f), -2f, UiFactory.PlayPaper);
+            verb.raycastTarget = false;
+            _useButton = use.gameObject;
+            _useButton.SetActive(false);
+
+            // System disc top-right: Pause. The notebook disc joins it when the notebook exists (S002); no bat
+            // counter until paper bats can be collected.
+            var pauseDisc = UiFactory.FeltDisc(_hud.transform, "PauseButton", UiSpriteCatalog.FeltDiscNight,
+                Palette.WarmPaper, UiSpriteCatalog.IconPause, Palette.WarmPaper, null, UiFactory.SystemDiscDiameter,
+                topCorner, MirrorOffset(new Vector2(-60f, -60f)), UiFactory.HudFeltAlpha);
+            var pause = pauseDisc.gameObject.AddComponent<Button>();
+            pause.targetGraphic = pauseDisc;
+            pause.transition = Selectable.Transition.None;
+            pause.onClick.AddListener(() => _flow.Pause());
+            _pauseButton = pause;
+
+            // First prompt: a paper tag just above the stick ghost, so "here" is unambiguous and the centre stays clear.
+            var corner = new Vector2(_leftHanded ? 1f : 0f, 0f);
+            var tag = UiFactory.PaperTag(_hud.transform, "FirstPrompt", LocalizationKeys.PromptMoveTouch,
+                UiFactory.BodySize, corner,
+                new Vector2(_leftHanded ? -(StickRest.x + 70f) : StickRest.x + 70f, StickRest.y + 170f),
+                new Vector2(460f, 92f), _leftHanded ? 1.5f : -1.5f, UiFactory.PlayPaper);
+            _prompt = tag.gameObject;
+            _prompt.SetActive(false);
+
+            _input.Touch = touch;
+        }
+
+        /// <summary>Floating stick ghost: a translucent night felt ring with a bone stitch and stitched chevrons.</summary>
+        private void BuildStick(TouchControls touch)
+        {
             // Floating stick zone: the lower ~75 % of the movement-thumb side. Pivot in the outer bottom corner so
             // the ghost's rest position is measured from that corner.
             float side = _leftHanded ? 1f : 0f;
@@ -168,92 +251,104 @@ namespace SpookyStreet.UI
             group.blocksRaycasts = false;
             group.interactable = false;
             var corner = new Vector2(side, 0f);
-            var stickBase = UiFactory.Sprite(visuals, "StickBase", IconFactory.Disc, UiFactory.WithAlpha(Palette.Ink, 0.45f),
-                corner, Vector2.zero, new Vector2(220f, 220f)).rectTransform;
-            UiFactory.Sprite(stickBase, "Ring", IconFactory.Ring(0.05f), Palette.WarmPaper, new Vector2(0.5f, 0.5f),
-                Vector2.zero, new Vector2(220f, 220f));
+            var baseSize = new Vector2(220f, 220f);
+            var stickBase = UiFactory.Sprite(visuals, "StickBase", null, Color.white, corner, Vector2.zero, baseSize);
+            UiFactory.ApplySurface(stickBase, UiSpriteCatalog.FeltDiscNight, Palette.NightViolet,
+                UiFactory.WithAlpha(Color.white, 0.6f));
+            UiFactory.Sprite(stickBase.transform, "Ring", UiFactory.Baked(UiSpriteCatalog.StitchRing),
+                UiFactory.WithAlpha(Palette.WarmPaper, 0.8f), new Vector2(0.5f, 0.5f), Vector2.zero, baseSize * 0.94f);
             for (int i = 0; i < 4; i++)
             {
                 float angle = i * 90f;
                 Vector2 dir = Quaternion.Euler(0f, 0f, angle) * Vector2.up;
-                var arrow = UiFactory.Sprite(stickBase, "Arrow", IconFactory.StickArrow, Palette.WarmPaper,
-                    new Vector2(0.5f, 0.5f), dir * 82f, new Vector2(40f, 40f));
+                var arrow = UiFactory.Sprite(stickBase.transform, "Arrow", UiFactory.Baked(UiSpriteCatalog.StickChevron),
+                    UiFactory.WithAlpha(Palette.WarmPaper, 0.85f), new Vector2(0.5f, 0.5f), dir * 76f,
+                    new Vector2(42f, 42f));
                 arrow.rectTransform.localRotation = Quaternion.Euler(0f, 0f, angle);
             }
 
-            var knob = UiFactory.Sprite(visuals, "StickKnob", IconFactory.Disc, Palette.WarmPaper, corner, Vector2.zero,
+            var knob = UiFactory.Sprite(visuals, "StickKnob", null, Color.white, corner, Vector2.zero,
                 new Vector2(96f, 96f));
-            UiFactory.InkShadow(knob, 4f, 0.6f);
+            UiFactory.ApplySurface(knob, UiSpriteCatalog.FeltDiscBone, Palette.WarmPaper, new Color(0.9f, 0.9f, 0.9f, 0.9f));
+            UiFactory.InkShadow(knob, new Vector2(3f, -4f), 0.5f);
+            UiFactory.Sprite(knob.transform, "Ring", UiFactory.Baked(UiSpriteCatalog.StitchRing),
+                UiFactory.WithAlpha(Palette.HauntedPurple, 0.8f), new Vector2(0.5f, 0.5f), Vector2.zero,
+                new Vector2(80f, 80f));
+
             var stick = stickZone.gameObject.AddComponent<FloatingStick>();
-            stick.BaseVisual = stickBase;
+            stick.BaseVisual = stickBase.rectTransform;
             stick.KnobVisual = knob.rectTransform;
             stick.Visuals = group;
             stick.RestPosition = new Vector2(_leftHanded ? -StickRest.x : StickRest.x, StickRest.y);
             touch.Stick = stick;
-
-            // Action cluster on the other thumb: icon + short verb (spec §5). Use stays hidden until interactables
-            // exist (S001/S002).
-            var jump = UiFactory.InkDisc(_hud.transform, "JumpButton", IconFactory.ChevronUp, LocalizationKeys.HudJump, 150f,
-                new Vector2(MirrorX(1f), 0f), MirrorOffset(new Vector2(-140f, 140f)));
-            touch.JumpButton = jump.gameObject.AddComponent<TouchButton>();
-            var use = UiFactory.InkDisc(_hud.transform, "UseButton", IconFactory.Disc, LocalizationKeys.HudUse, 120f,
-                new Vector2(MirrorX(1f), 0f), MirrorOffset(new Vector2(-320f, 110f)));
-            use.gameObject.SetActive(false);
-
-            var pauseDisc = UiFactory.InkDisc(_hud.transform, "PauseButton", IconFactory.PauseBars, null, 96f,
-                new Vector2(MirrorX(1f), 1f), MirrorOffset(new Vector2(-78f, -66f)));
-            var pause = pauseDisc.gameObject.AddComponent<Button>();
-            pause.targetGraphic = pauseDisc;
-            pause.onClick.AddListener(() => _flow.Pause());
-
-            // First prompt: a paper tag just above the stick ghost, so "here" is unambiguous and the centre stays clear.
-            var tag = UiFactory.PaperCard(_hud.transform, "FirstPrompt", Palette.WarmPaper, corner,
-                new Vector2(_leftHanded ? -(StickRest.x + 80f) : StickRest.x + 80f, StickRest.y + 175f),
-                new Vector2(460f, 92f), _leftHanded ? 1.5f : -1.5f);
-            var promptText = UiFactory.Label(tag.transform, "Text", LocalizationKeys.PromptMoveTouch, UiFactory.BodySize,
-                TextAnchor.MiddleCenter, Palette.Ink, UiFactory.BoldFont);
-            UiFactory.Stretch(promptText.rectTransform);
-            promptText.rectTransform.offsetMin = new Vector2(22f, 6f);
-            promptText.rectTransform.offsetMax = new Vector2(-22f, -6f);
-            _prompt = tag.gameObject;
-            _prompt.SetActive(false);
-
-            _input.Touch = touch;
         }
 
         private void BuildTitle(Transform canvas, BuildInfo buildInfo)
         {
-            // No full-screen scrim: the lit street is the title art (spec §1). A soft ink fade behind the left column
-            // keeps the text readable.
+            // No full-screen scrim: the lit street is the title art (spec §1). A soft night-violet fade behind the
+            // left column keeps the logo and buttons readable.
             var root = UiFactory.Stretch(UiFactory.Rect(canvas, "TitleScreen"));
             root.SetSiblingIndex(0);
             _title = root.gameObject;
-            var fade = UiFactory.Panel(root, "ReadingFade", UiFactory.WithAlpha(Palette.Ink, 0.7f), raycast: false);
+            var fade = UiFactory.Panel(root, "ReadingFade", UiFactory.WithAlpha(Palette.NightViolet, 0.82f), raycast: false);
             fade.sprite = IconFactory.HorizontalFade;
             fade.rectTransform.anchorMax = new Vector2(0.62f, 1f);
 
             var content = UiFactory.Stretch(UiFactory.Rect(root, "Content"));
             content.gameObject.AddComponent<SafeAreaFitter>();
-            var left = new Vector2(0f, 0.5f);
+            var topLeft = new Vector2(0f, 1f);
 
-            var gameName = UiFactory.Label(content, "GameName", LocalizationKeys.TitleGameName, 104, TextAnchor.MiddleLeft,
-                Palette.WarmPaper, UiFactory.DisplayFont);
-            UiFactory.Place(gameName.rectTransform, new Vector2(0.08f, 0.68f), Vector2.zero, new Vector2(760f, 140f), left);
-            UiFactory.InkShadow(gameName, 5f);
-            var caseName = UiFactory.Label(content, "CaseName", LocalizationKeys.TitleCaseName, 40, TextAnchor.MiddleLeft,
-                UiFactory.WithAlpha(Palette.WarmPaper, 0.85f), UiFactory.BoldFont);
-            UiFactory.Place(caseName.rectTransform, new Vector2(0.08f, 0.55f), Vector2.zero, new Vector2(760f, 60f), left);
-            UiFactory.InkShadow(caseName, 3f, 0.8f);
+            // Baked stitched logo: the product name as art, not localized (docs/ui-language.md). If the PNG is ever
+            // missing the Sniglet label keeps the title readable.
+            var logoSprite = UiSprites.TryLoad(UiSpriteCatalog.Logo);
+            var logoSize = new Vector2(600f, 600f / 2.116f);
+            if (logoSprite != null)
+            {
+                logoSize.y = logoSize.x * logoSprite.rect.height / logoSprite.rect.width;
+                _logo = UiFactory.Sprite(content, "Logo", logoSprite, Color.white, topLeft, new Vector2(30f, -26f), logoSize);
+                _logo.rectTransform.pivot = topLeft;
+                _logo.rectTransform.anchoredPosition = new Vector2(30f, -26f);
+                _logo.preserveAspect = true;
+                _logo.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 1.5f);
+                UiFactory.InkShadow(_logo, new Vector2(5f, -8f), 0.45f);
+            }
+            else
+            {
+                UiSprites.Get(UiSpriteCatalog.Logo); // records the missing sprite for tests
+                var gameName = UiFactory.Label(content, "GameName", LocalizationKeys.TitleGameName, 104,
+                    TextAnchor.MiddleLeft, Palette.WarmPaper, UiFactory.DisplayFont);
+                UiFactory.Place(gameName.rectTransform, topLeft, new Vector2(40f, -26f), logoSize, topLeft);
+                UiFactory.InkShadow(gameName, 5f);
+            }
 
-            // Continue appears in S002 once saves exist; New game never needs confirmation without a save.
-            var buttonSize = new Vector2(440f, 112f);
-            var buttonOffset = new Vector2(buttonSize.x * 0.5f, 0f);
-            var continueButton = UiFactory.PrimaryButton(content, "ContinueButton", LocalizationKeys.TitleContinue,
-                new Vector2(0.08f, 0.36f), buttonOffset + new Vector2(0f, 64f), buttonSize, null);
-            continueButton.gameObject.SetActive(false);
-            _newGameButton = UiFactory.PrimaryButton(content, "NewGameButton", LocalizationKeys.TitleNewGame,
-                new Vector2(0.08f, 0.36f), buttonOffset, buttonSize, () => _flow.StartNewGame());
-            _newGameButton.transform.localRotation = Quaternion.Euler(0f, 0f, 1.5f);
+            // Case-name strip: a paper strip with a plum stitch under the logo.
+            float stripTop = -(26f + logoSize.y + 14f);
+            var strip = UiFactory.PaperCard(content, "CaseNameStrip", topLeft, new Vector2(60f, stripTop),
+                new Vector2(580f, 72f), -1.5f, Palette.Plum);
+            strip.rectTransform.pivot = topLeft;
+            strip.rectTransform.anchoredPosition = new Vector2(60f, stripTop);
+            var caseName = UiFactory.Label(strip.transform, "CaseName", LocalizationKeys.TitleCaseName, 34,
+                TextAnchor.MiddleCenter, UiFactory.Ink, UiFactory.BoldFont);
+            UiFactory.Stretch(caseName.rectTransform);
+            caseName.rectTransform.offsetMin = new Vector2(26f, 8f);
+            caseName.rectTransform.offsetMax = new Vector2(-26f, -8f);
+            _caseName = caseName;
+
+            // Continue (orange, with a sub-label hook for the save summary) appears in S002 once saves exist. Until
+            // then New game is the screen's only action, so it takes the orange primary style and Continue's slot.
+            float slotTop = stripTop - 72f - 34f;
+            _primarySlot = new Vector2(50f, slotTop);
+            _secondarySlot = new Vector2(64f, slotTop - 112f - 22f);
+            _continueButton = UiFactory.PrimaryButton(content, "ContinueButton", LocalizationKeys.TitleContinue, topLeft,
+                _primarySlot, new Vector2(440f, 112f), null, UiSpriteCatalog.IconPlay);
+            _continueButton.GetComponent<RectTransform>().pivot = topLeft;
+            _continueButton.GetComponent<RectTransform>().anchoredPosition = _primarySlot;
+            _continueButton.transform.localRotation = Quaternion.Euler(0f, 0f, 1f);
+            _newGameButton = UiFactory.SecondaryButton(content, "NewGameButton", LocalizationKeys.TitleNewGame, topLeft,
+                _secondarySlot, new Vector2(360f, 96f), () => _flow.StartNewGame());
+            _newGameButton.GetComponent<RectTransform>().pivot = topLeft;
+            _newGameButton.transform.localRotation = Quaternion.Euler(0f, 0f, -1.2f);
+            SetHasSave(false);
 
             if (buildInfo.Identifier != "editor")
             {
@@ -265,52 +360,60 @@ namespace SpookyStreet.UI
                     () => new object[] { Application.version, buildInfo.Identifier });
             }
 
+            // No settings disc yet: there is no settings screen to open (no dead buttons).
             if (Debug.isDebugBuild)
             {
                 BuildLanguagePill(content);
             }
         }
 
+        /// <summary>
+        /// Title button hook for saves (S002): with a save, Continue is the orange primary and New game turns paper;
+        /// without one, Continue is hidden and New game is the only, orange, action in Continue's slot.
+        /// </summary>
+        public void SetHasSave(bool hasSave)
+        {
+            _continueButton.gameObject.SetActive(hasSave);
+            var craft = _newGameButton.GetComponent<CraftButton>();
+            craft.SetStyle(hasSave ? CraftButtonStyle.Secondary : CraftButtonStyle.Primary);
+            var rect = (RectTransform)_newGameButton.transform;
+            rect.anchoredPosition = hasSave ? _secondarySlot : _primarySlot;
+            rect.sizeDelta = hasSave ? new Vector2(360f, 96f) : new Vector2(440f, 112f);
+        }
+
         /// <summary>Development-only pseudo-locale switch: a small paper pill with a globe, bottom-right.</summary>
         private static void BuildLanguagePill(Transform parent)
         {
-            var size = new Vector2(330f, 96f);
-            var pill = UiFactory.Sprite(parent, "LanguageToggleDev", IconFactory.RoundedRect,
-                UiFactory.WithAlpha(Palette.WarmPaper, 0.92f), Vector2.right, new Vector2(-size.x * 0.5f - 36f, 72f), size,
-                raycast: true);
-            UiFactory.InkShadow(pill, 4f, 0.7f);
-            var button = pill.gameObject.AddComponent<Button>();
-            button.targetGraphic = pill;
-            button.onClick.AddListener(Localizer.TogglePseudo);
-            pill.gameObject.AddComponent<PressScale>();
-            UiFactory.Sprite(pill.transform, "Globe", IconFactory.Globe, Palette.Ink, new Vector2(0f, 0.5f),
-                new Vector2(46f, 0f), new Vector2(44f, 44f));
-            var label = UiFactory.Label(pill.transform, "Label", null, 26, TextAnchor.MiddleLeft, Palette.Ink,
-                UiFactory.BoldFont);
-            UiFactory.Stretch(label.rectTransform);
-            label.rectTransform.offsetMin = new Vector2(80f, 6f);
-            label.rectTransform.offsetMax = new Vector2(-18f, -6f);
+            var size = new Vector2(380f, 96f);
+            var pill = UiFactory.SecondaryButton(parent, "LanguageToggleDev", null, Vector2.right,
+                new Vector2(-size.x * 0.5f - 36f, 72f), size, Localizer.TogglePseudo, UiSpriteCatalog.IconGlobe);
+            pill.transform.localRotation = Quaternion.Euler(0f, 0f, -1f);
+            var label = pill.GetComponent<CraftButton>().Label;
+            label.fontSize = 28;
+            label.resizeTextMaxSize = 28;
+            label.alignment = TextAnchor.MiddleLeft;
             label.gameObject.AddComponent<LocalizedText>().SetKey(LocalizationKeys.TitleLanguageToggle,
                 () => new object[] { Localizer.Catalog.Active.NativeName });
         }
 
         private void BuildPause(Transform canvas)
         {
-            var backdrop = UiFactory.Panel(canvas, "PauseBackdrop", UiFactory.WithAlpha(Palette.Ink, 0.7f));
+            // Modal: a night-violet scrim dims the world first, then a stitched paper card with the existing actions.
+            var backdrop = UiFactory.Panel(canvas, "PauseBackdrop", UiFactory.WithAlpha(Palette.NightViolet, 0.8f));
             _pause = backdrop.gameObject;
             var content = UiFactory.Stretch(UiFactory.Rect(_pause.transform, "Content"));
             content.gameObject.AddComponent<SafeAreaFitter>();
 
-            var card = UiFactory.PaperCard(content, "PauseCard", Palette.WarmPaper, new Vector2(0.5f, 0.5f), Vector2.zero,
-                new Vector2(560f, 460f), -1f);
+            var card = UiFactory.PaperCard(content, "PauseCard", new Vector2(0.5f, 0.5f), Vector2.zero,
+                new Vector2(560f, 440f), -1f);
             var top = new Vector2(0.5f, 1f);
             var heading = UiFactory.Label(card.transform, "Heading", LocalizationKeys.PauseHeading, 64,
-                TextAnchor.MiddleCenter, Palette.Ink, UiFactory.DisplayFont);
-            UiFactory.Place(heading.rectTransform, top, new Vector2(0f, -88f), new Vector2(480f, 96f));
+                TextAnchor.MiddleCenter, UiFactory.Ink, UiFactory.DisplayFont);
+            UiFactory.Place(heading.rectTransform, top, new Vector2(0f, -80f), new Vector2(480f, 96f));
             _resumeButton = UiFactory.PrimaryButton(card.transform, "ResumeButton", LocalizationKeys.PauseResume, top,
-                new Vector2(0f, -230f), new Vector2(400f, 108f), () => _flow.Resume());
+                new Vector2(0f, -200f), new Vector2(440f, 112f), () => _flow.Resume(), UiSpriteCatalog.IconPlay);
             UiFactory.SecondaryButton(card.transform, "BackToTitleButton", LocalizationKeys.PauseBackToTitle, top,
-                new Vector2(0f, -360f), new Vector2(400f, 96f), () => _flow.QuitToTitle());
+                new Vector2(0f, -340f), new Vector2(400f, 96f), () => _flow.QuitToTitle());
         }
     }
 }

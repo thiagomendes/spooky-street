@@ -74,6 +74,32 @@ namespace SpookyStreet.UI
             return Sprite.Create(texture, new Rect(0, 0, width, 4), new Vector2(0.5f, 0.5f), 100f);
         });
 
+        /// <summary>Soft radial falloff (opaque centre, transparent edge): a quiet shade behind HUD clusters.</summary>
+        public static Sprite RadialFade => Get("RadialFade", () =>
+        {
+            const int size = 64;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                name = "RadialFade",
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+            };
+            var pixels = new Color32[size * size];
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float d = Mathf.Clamp01(Length(x + 0.5f - size * 0.5f, y + 0.5f - size * 0.5f) / (size * 0.5f));
+                    float a = Mathf.Pow(1f - d, 1.6f);
+                    pixels[y * size + x] = new Color32(255, 255, 255, (byte)(a * 255f));
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply(false, true);
+            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        });
+
         private static Sprite Get(string key, Func<Sprite> create)
         {
             if (!Cache.TryGetValue(key, out var sprite) || sprite == null)

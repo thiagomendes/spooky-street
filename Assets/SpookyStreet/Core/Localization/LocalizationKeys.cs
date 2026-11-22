@@ -13,6 +13,9 @@ namespace SpookyStreet.Core.Localization
         public const string TitleLanguageToggle = "ui.title.language_toggle_dev";
         public const string TitleBuildLabel = "ui.title.build_label";
 
+        /// <summary>Second line on Continue once saves exist (S002): chapter and paper bats found.</summary>
+        public const string TitleContinueDetail = "ui.title.continue_detail";
+
         public const string PromptMoveTouch = "prompt.first.move_touch";
         public const string PromptMoveKeyboard = "prompt.first.move_keyboard";
         public const string PromptMoveGamepad = "prompt.first.move_gamepad";
@@ -28,7 +31,7 @@ namespace SpookyStreet.Core.Localization
         /// <summary>All keys referenced from code, for validation.</summary>
         public static readonly string[] All =
         {
-            TitleGameName, TitleCaseName, TitleNewGame, TitleContinue, TitleLanguageToggle, TitleBuildLabel,
+            TitleGameName, TitleCaseName, TitleNewGame, TitleContinue, TitleLanguageToggle, TitleBuildLabel, TitleContinueDetail,
             PromptMoveTouch, PromptMoveKeyboard, PromptMoveGamepad,
             HudPause, HudJump, HudUse,
             PauseHeading, PauseResume, PauseBackToTitle,
