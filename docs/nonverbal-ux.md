@@ -1,238 +1,174 @@
-# Non-verbal UX (design sketch, for owner review)
+# Non-verbal UX v2: animated sequences (design, for owner review)
 
 Owner request (2026-11-22): "besides the text dialogues we need a NON-VERBAL UX too, thinking of younger children."
-Goal: pre-readers (about 4–7) can understand and finish *Three Knocks on Lantern Lane*; readers keep every word.
-This is a sketch, not an implementation. Mocks: `docs/evidence/s002/nonverbal/` (`nv_dialogue_bea.jpg`,
-`nv_dialogue_vale.jpg`, `nv_notebook.jpg`, `nv_hint.jpg`, `nv_onboarding.jpg`, `nv_icons.png`), drawn by
-`tools/ui_mock/nonverbal_mock.py` over the S002 CI frames. Yellow sticky notes in the mocks are design notes, not UI.
+Owner feedback on v1: "we could have ANIMATED SEQUENCES instead of static images that are too cluttered to understand."
+v1 rows of 3–4 pictogram chips (eye → cape → house) are retired as the *carrier*. v2 shows **one idea at a time,
+moving**, so pre-readers (about 4–7) can read each beat at a glance. Readers keep every word. This is a design, not an
+implementation.
 
-## 1. Principles
-1. **Show, don't tell.** Every essential beat (spec §3) reads with text off: knocks → two witnesses disagree →
-   hedge hides the side → treehouse route → June → latch → cam → crank → owl bows. Spec §2 already promises "the
-   explanation is visible even with all text skipped"; this pass extends that to dialogue, notebook, hints and tips.
-2. **Text is a layer, not the carrier.** A `Reading` preference: **Pictures** (no text in play, notebook or hints;
-   menus keep icon + word) and **Pictures + Words** (pictogram strip first, one small Andika line below). Readers
-   can choose a third, **Words**, which is today's UI with the strip shrunk to a 64 pt row. Default: Pictures + Words.
-3. **Babble + emote + gesture + pictograms = one line.** Characters speak in synthesised babble (D20). Each line
-   pairs a 2–4 icon *pictogram sentence* with an emote balloon and a body gesture that points at the world.
-4. **The world answers, not the HUD.** Glow, sparkle, look-lines, paper-bat trails and sound rings guide; the HUD
-   only confirms.
-5. **Same grammar everywhere.** Arrow = "goes to / causes", `=` = "same as", orange ring = key clue, ⊘ = "not",
-   pencil thought-cloud = "earlier" (past tense), dots on an orange badge = order (1, 2, 3 without digits).
-6. **Never by colour alone** (spec §6): every state also changes shape, icon, motion or position.
+Mocks (animated GIFs at 1266×585, 15 fps, plus a 6-frame `_sheet.jpg` contact sheet each), in
+`docs/evidence/s002/nonverbal_v2/`, drawn by `tools/ui_mock/nonverbal_v2_mock.py` over the CI frames:
+`nv2_bea_vignette.gif` · `nv2_vale_vignette.gif` · `nv2_memory_replay.gif` · `nv2_notebook.gif` · `nv2_hint.gif`.
+The v1 stills stay in `docs/evidence/s002/nonverbal/` for reference; `nv_icons.png` is now the parts library.
 
-## 2. Pictogram speech
-**Card.** Same stitched paper card as today. The portrait becomes the character's pictogram face in a felt ring
-(speaker colour: Bea orange, Vale purple, June violet, Kit plum, Pip night). Chips are 64–72 pt die-cut paper
-stickers; connectors are purple felt strokes. The name tab, "Tap to continue" and "Skip" text disappear in
-Pictures mode (next disc, skip disc and line pips stay). A clue word underline becomes an orange stitched ring on its chip.
-**Speaking animation.** Chips flutter in one by one on the babble syllables (120 ms apart, ease-out-back; reduced
-motion: cross-fade). While the babble plays the portrait mouth swaps between 3 shapes, three candy arcs pulse
-beside it, and the speaker in the world plays Talk with a head nod on each chip. The gesture fires on the chip that
-names a place and points the arm at the real object. The emote balloon pops above the head for 1.2 s at line start.
-Lines play until tapped. Gestures marked (new) need clips; existing clips: Bea Talk/Wave, Vale SitTalk/Wave,
-June Talk/KneeTap/Wave/Point, Kit Talk/OpenBooth/Wave.
+## 1. Owner decisions (recorded 2026-11-22)
+| Topic | Decision |
+|---|---|
+| Stuck helper | Opt-in **Helper** setting, **OFF** by default. Tier-3 help plays only when the radio is pressed; nothing auto-plays after a stall. |
+| Parent gate | **Press and hold two marked spots for 3 s.** No reading, no maths. |
+| Gestures | Make **only Bea's Point** now. Vale bench-pat, June high five and other new gestures wait for the "more character actions" work; those lines use existing clips. |
+| Reading mode | **Pending owner confirmation** (proposal in §2). |
 
-| Key (`c01.…`) | Pictogram sentence | Emote · expression · gesture |
-|---|---|---|
-| `caption.arrival_knocks` | [knock3] [house] + direction arrow | sound ring travels from the attic window |
-| `caption.foyer_hum` | [ear] [floor_hum] | floor planks shiver three times |
-| `caption.grille` | [grille] → [cam×3] [owl] | follower lifts three times behind the bars |
-| `caption.arm_linked` | [arm] [connect] | click sparkle on the joint |
-| `caption.crank_gap` | [crank] → [gap] | ? · one tap, the empty socket blinks |
-| `caption.owl_bows` | [knock3] = [owl_bow×3] | sound ring outside, owl bows in sync |
-| `examine.streamer` (Pip) | [streamer] ≠ [cloth] | huh · head tilt, rubs foil |
-| `examine.cloth` (Pip) | [cloth!] + sparkle | wow · lean in, crouch (sketch) |
-| `examine.sill` (Pip) | [window] [cloth] = [cloth] | wow · points from snag to cloth sticker |
-| `examine.door_stuck` (Pip) | [stuck] (door wiggle + lock) | huh · tug twice, shrug |
-| `examine.bowl` (Pip) | [bowl] | love · peek |
-| `examine.bowl_sweet` (Pip) | [sweet] → [pip] | love · hug the helmet |
-| `line.bea.saw_cape` | [eye] [cape!] → [house_side] | wow · wide eyes · **Point (new)** at the side window |
-| `line.bea.repeat` | [hedge_cape] · [feet] ⊘ | think · hand flat at hedge height |
-| `line.bea.door_open` | memory( [cape] → [house_side] ) · [door_open] | proud · Point (new), then nod |
-| `line.bea.closed` | [owl_bow×3] → [bike] [heart] | love · Wave, spins wheel |
-| `line.vale.door_shut` | [bench] → [eye] [door_shut!] | think · SitTalk, arm toward the door; dotted look-line bench → door |
-| `line.vale.invite_sit` | [pip] → [bench] [eye] | love · pats the bench (new, or SitTalk) |
-| `line.vale.repeat` | [moon] [door_shut] [quiet] | think · arms folded |
-| `line.vale.was_shut` | memory( [bench] [eye] [door_shut] ) | huh · scratches bandage |
-| `line.vale.open_now` | [door_open] | wow · bandage slips over the eye |
-| `line.vale.closed` | [bench] [eye] [owl_bow×3] | wow · Wave |
-| `line.vale.saved_sweet` | [sweet] → [pip] | love · holds out the helmet |
-| `line.june.greet` | [pip] → [window] · memory( [knock3] → [june_window] ) | wow · Wave, then KneeTap rhythm |
-| `line.june.greet_shortcut` | [pip] → [window] [star] · memory( [knock3] ) | proud · claps, Wave |
-| `line.june.door_sticks` | [stuck] [hands] ? | huh · Point down the stairs |
-| `line.june.door_already_open` | [door_open] [pip] [star] | wow · hands on cheeks |
-| `line.june.latch_reminder` | [latch] → [door_shut] [hands] | huh · Point at the latch |
-| `line.june.latch_thanks` | [hands] → [door_open] [check] | proud · high five (new) |
-| `line.june.listen_floor` | [ear] [knock3] → [floor_hum] | think · kneels, KneeTap |
-| `line.june.go_outside` | [june] [pip] → [porch] [eye] | love · Point to the door, walks |
-| `line.june.resolve` | [knock3] = [owl_bow×3] | tune · KneeTap ×3 in sync |
-| `line.june.closed` | [knock3] [moon] | tune · KneeTap loop |
-| `line.kit.first_show` | [booth] [star] → [porch] | proud · OpenBooth |
-| `line.kit.thanks` | [owl_bow] [heart] → [pip] [june] | love · Wave |
+## 2. Principles
+1. **One idea per beat.** A vignette has 1–3 beats; each beat has one subject, a clean background, big shapes and at
+   most **two moving parts** at once. Nothing reads as a row of symbols.
+2. **The world is the picture.** For the key testimony the camera *looks at the real place* and a memory ghost
+   re-enacts it there (§4). Pre-readers link the clue to the place, not to an icon.
+3. **Motion carries grammar.** Travelling = "goes to"; popping into a window = "goes in"; ticking clock + still door
+   = "for a long time, nothing"; a ⊘ stamp that thumps and settles = "never"; an orange stitched ring pulsing =
+   "this matters" (key clue). Same meaning everywhere (dialogue, notebook, hints).
+4. **Never by colour alone** (spec §6): the key ring is a stitched shape that pulses; ⊘ is a shape; found = sticker
+   + stamp; unfound = dashed outline.
+5. **Never blocks play.** Every vignette loops until tapped, every replay is skippable, hints never stop movement.
+6. **Reading mode (proposal, pending owner confirmation).** Animations always play, in every mode. A small optional
+   text line under the stage is **on by default** (Andika 14 pt, `nv2_bea_vignette`). At first launch one tap
+   chooses **Pictures only** (two big cards: child + book / child + pictures; no reading needed); Pictures only
+   hides the text line and the bubble shrinks to the stage (`nv2_vale_vignette`). Settings can change it later.
+   `PreferencesData.ShowLineText` (bool, default true) replaces v1's three-way `ReadingMode`.
 
-`memory( … )` = chips inside a pencil thought-cloud on darker paper: the past-tense variants (`vale.was_shut`,
-`bea.door_open`) stay truthful without grammar. Lines with two groups show them on one row with a 24 pt gap.
+## 3. Animated speech (`nv2_bea_vignette.gif`, `nv2_vale_vignette.gif`)
+**Bubble.** When a character speaks (babble voice, D20) a bone-paper speech bubble opens with its tail on the speaker
+in the world. Inside is a **stage**: a lifted night-felt panel (about 520×120 pt) where a 2–4 s paper-puppet
+vignette loops. The speaker's face medallion sits on the bubble's left edge and the three candy babble arcs pulse
+beside it while the voice plays. Chrome stays icon-only: next disc (bottom right), skip disc (top right). The
+speaker in the world plays Talk and, on the beat that names a place, the gesture (Bea: Point).
+**Loop.** The vignette plays once with the babble, then loops quietly (no voice) until the player taps next. Beats
+start on babble syllables, so the voice and picture feel like one sentence. Reduced motion: each beat becomes a
+cross-fade between 2–3 still poses, rings stop pulsing.
 
-## 3. World cues instead of instructions
-- **Next useful thing:** the active point of interest keeps the brightest value (art bible §3) and gains a slow
-  candy sparkle (2–3 felt stars, 0.6 Hz). Only one thing sparkles at a time: the current objective's target.
-- **Characters point:** a witness who mentions a place turns head and arm to it; a dotted candy *look-line* draws
-  from their eyes to the object for 2 s (Vale's bench → front door; Bea → side window). Bea's line sits behind the
-  camera in the plaza, so an edge arrow at the screen rim shows where her arm points.
-- **Soft path:** paper bats (or Pip-sized felt footprints indoors) appear one by one from Pip toward the goal, fade
-  after ~8 s, and never block movement. Used by hint tier 2 and the first-visit arrival (plaza → blue house).
-- **The knock:** three amber pulses at the attic window (already wired) + a candy *sound ring* travelling along the
-  street at audio speed, rhythm short-short-pause-last, plus haptic taps in the same rhythm (toggle). Indoors the
-  floor planks shiver and dust hops on each knock.
-- **Stuck door:** Use on the porch → the door wiggles twice (anticipation, two failed tugs), a felt padlock
-  pictogram pops above the handle and Pip shrugs. Shut-but-free doors never wiggle: Vale's "shut" ≠ "stuck".
-- **Gap before the arm:** the crank taps once, the empty socket blinks orange and a ghost arm outline shows where
-  the piece goes.
-- **Clue pickup:** the found thing lifts, spins once and flies as a sticker into the notebook disc, which bumps.
+**Bea, `line.bea.saw_cape` → vignette `vg.bea.saw_cape` (3.6 s).**
+1. 0.2–1.7 s: a tiny paper June (violet hat, silver cape with its tear notch) scurries from the treehouse across
+   the plank bridge. One moving part.
+2. 1.7–2.0 s: she hops and *pops* into the round-topped window (paper puff); the window lights with June inside.
+3. 2.2–3.6 s: Bea's pointing hand slides in and taps toward the window; an orange stitched ring pulses on it.
+   In the world Bea plays Point toward the side of the house at the same moment.
 
-## 4. Picture notebook (`nv_notebook.jpg`)
-- **Questions as drawings:** Q1 [june] [?] [house]; Q2 [knock3] [?] [house_cut]; Q3 [knock3] → [?]. Order shows
-  as 1/2/3 dots on an orange badge (no digits). The heading and case name are drawn, not written.
-- **Answers as comics:** Q1 [treehouse] → [bridge] → [june_window]; Q2 [wind] → [cam] under [floor_hum];
-  Q3 [cam] → [owl_bow×3]. Panels fill one by one when the proof lands (fact-driven, so save/restore rebuilds them),
-  then the green check stamp thumps down with the closure motif. Unknown answers show the pencil "?" silhouette
-  in a dashed frame with empty panel slots.
-- **Clue stickers:** each annotation is a sticker of 1–2 glyphs: knocks [knock3 house], Bea [bea cape], Vale
-  [vale door_shut], bench [bench hedge], streamer [streamer ⊘], cloth [cloth], sill [window cloth], June
-  [june treehouse], sweet [sweet]. Unfound = dashed outline with "?"; found = it flies in and sticks with a peel
-  sound. Tapping a sticker replays its moment: the speaker's pictogram line with babble, or a 2 s camera vignette
-  of the clue spot. Tapping is never required.
-- **Paper bats:** 10 bat outlines per page fill in black paper; a full row unlocks a sketch page or cape colour.
-- **Final card:** a comic page of the player's actual discoveries in order, the owl bowing, two icon buttons:
-  home-street (back) and a circular arrow for replay with a pictogram confirm (notebook pages flying away + ✓/✕).
+**Vale, `line.vale.door_shut` → `vg.vale.door_shut` (3.6 s).**
+1. 0–2.5 s: one still subject, the front door (plum, no wiggle: shut ≠ stuck). A clock hand ticks once every 0.5 s;
+   Vale's eye (looking at the door) blinks once. Two moving parts.
+2. 2.6–3.4 s: a ⊘ stamp thumps onto the door and wiggles to a stop: "never opened".
 
-## 5. Hints for pre-readers (`nv_hint.jpg`)
-The radio stays the hint button (icon only). Each press advances a tier; three candy pips show the tier.
-Tier 1 **look**: radio bubble with [eye]/[ear] + the subject + ?; the subject sparkles. Tier 2 **where**: route
-pictograms + the ghost path + a floating beacon sticker over the goal (seen through walls, fades on arrival).
-Tier 3 **show me**: the ghost hand appears over the HUD and demonstrates the exact action (walk there, then press
-Use; on the target the hand taps the Use disc showing the right verb glyph).
+**Other lines (one vignette ID per `CaseScript` key; same beat rules).**
+| Line key (`c01.…`) | Vignette beats |
+|---|---|
+| `line.bea.repeat` | hedge; the cape tip glides along its top · feet below stay empty, ⊘ thumps on the feet slot |
+| `line.bea.door_open` | memory frame (pencil-cloud border) replays `vg.bea.saw_cape` beats 1–2 · Bea nods |
+| `line.vale.invite_sit` | the bench; Pip hops onto it · an eye opens above it |
+| `line.vale.repeat` / `was_shut` | moon slides across · door stays still (was_shut inside the memory frame) |
+| `line.june.greet` | three knocks ring out of the window · June waves from inside |
+| `line.june.latch_reminder` | the latch bar; a hand lifts it · the door swings open |
+| `line.june.listen_floor` | floor planks shiver three times · an ear pops up beside them |
+| `line.june.resolve` | knock, knock, … knock · the owl bows in the same rhythm |
+| examine lines (Pip) | one object + one reaction (sparkle, shrug, wiggle), never more |
+Captions (`caption.*`) stay as the v1 direction strip but with one moving glyph (knock rings travel toward the
+arrow), since they must not hide the world.
 
-| Objective | Tier 1 look | Tier 2 where (+ ghost path to) | Tier 3 show me |
-|---|---|---|---|
-| arrival | [ear] [knock3] ? | [pip] → [house] (plaza) | hand drags the stick forward |
-| check_view | [bench] [eye] [hedge] ? | [pip] → [bench] | hand walks to bench, taps Use (Sit) |
-| find_way_in | [hedge_cape] ? | [pip] → [treehouse] → [window] | hand walks the ramp, taps Jump at gaps |
-| meet_june | [lamp] [window] ? | [pip] → [june_window] | hand taps Use (Talk) on June |
-| open_door | [stuck] ? | [pip] → [latch] (foyer) | hand taps Use (Lift) |
-| find_source | [ear] [floor_hum] ? | [pip] → [grille] | hand taps Use (Look) |
-| link_arm | [gap] ? | [pip] → [arm] | hand taps Use (Connect) |
-| turn_crank | [connect] → ? | [pip] → [crank] | hand taps Use (Turn) |
-| return_to_porch | [ear] [owl_bow] ? | [pip] → [porch] | hand walks out the front door |
-| free_roam | [star] [bike] [bench] [treehouse] | ghost path to the nearest missing clue | crank → [owl_bow] |
+## 4. In-world memory replay (`nv2_memory_replay.gif`)
+For the **key evidence lines only**: `line.bea.saw_cape`, `line.bea.door_open`, `line.vale.door_shut`,
+`line.vale.was_shut`. It plays **once per line per save** (the first time), then only from the notebook (§5).
+- **Trigger:** after the bubble's vignette has played once and the player taps next (never mid-line).
+- **Camera:** a `MemoryReplay` Cinemachine camera (same pattern as `BenchView`) takes over: 0.35 s ease blend to a
+  framing of the place (Bea: treehouse balcony → side window, from the plaza side; Vale: front door from the bench),
+  **hold 1.5–2 s**, 0.35 s blend back. Total ≤ 2.7 s. FOV 45, no roll, no shake.
+- **Memory look:** thin ink letterbox bars slide in, the world takes a lilac pencil-paper tint with a soft vignette.
+- **Ghost:** a translucent paper cut-out re-enacts the moment in the real 3D place. Bea: June's silhouette runs off
+  the treehouse balcony, across the bridge and into the side window, which then gets the pulsing orange ring. Vale:
+  the front door stays shut while the moon moves a hand's width, ⊘ thumps onto the door.
+- **Skip:** tap anywhere, or the skip disc (top right) with a candy progress ring. Skipping blends back at once and
+  still records the clue. Input is buffered, not lost.
+- The mock approximates the glance in 2D over a CI frame, so the ghost ends at the front-left window there.
+- **Never blocks play:** time-scale stays 1, physics keeps running, Pip is in a dialogue state already (no input
+  to lose). If the trigger arrives while Pip is airborne or in a hazard, the replay is dropped (the notebook can
+  play it). Reduced motion: cut instead of blend, ghost appears at its end pose and fades.
 
-## 6. Onboarding by demonstration (`nv_onboarding.jpg`)
-Text tips (`prompt.first.*`, `tip.move.*`) become **ghost-hand demos**: a translucent bone felt hand over the
-real control, looping twice, plus a small paper card that shows cause → effect. Shown once per move; repeated only if
-the move goes unused for the scheduler's cooldown (`TipScheduler` rules unchanged). Performing the move dismisses it.
+## 5. Animated notebook (`nv2_notebook.gif`)
+- **One question per page**, in a carousel (swipe or edge arrows; 3 dot pips under the page, neighbours peek at
+  the sides). The page has only: the order badge (dots, no digits), the question as three big chips
+  (June ? house), the answer strip (three panels) and the found clue stickers. Empty space is intentional.
+- **Answer = tiny comic.** Unknown: dashed panels with a pencil "?". Known: the panels are drawn; **tap the strip
+  and it animates**: June runs panel to panel (the active panel gets the orange stitch), the window lights with her
+  inside, then the green check stamp thumps down. It loops twice and stops (no constant motion on the page).
+- **Clue stickers wiggle into place.** When a clue is found, its sticker (Bea + cape) flies in from the notebook
+  disc and wiggles to a stop in its dashed slot with a peel sound. Tapping a sticker replays its vignette; for the
+  four key lines it offers the memory replay (an eye icon).
+- Panels stay fact-driven (`CaseNotebookTags`), so save/restore rebuilds them without stored display text.
 
-| Tip | Ghost hand | Card picture |
-|---|---|---|
-| `prompt.first.move_*` | drags the stick knob in a slow circle | [tip_walk]: stick with a drag arrow |
-| `tip.move.hold_jump` | presses and **holds** Jump; candy ring fills | [tip_jump] small arc vs [tip_hold] tall arc |
-| `tip.move.chain_jump` | taps Jump on each landing (three beats) | [tip_chain] three rising arcs |
-| `tip.move.glide` | taps Jump, then holds while Pip falls | [tip_glide] cape open, slow dotted fall |
-| `tip.move.dive` | in the air, taps Use (roll glyph) | [tip_dive] arc then forward streak |
-| first Use target | taps Use when the marker bobs | verb glyph on the Use disc |
+## 6. Animated hints (`nv2_hint.gif`)
+The radio (orange disc, top bar) is the hint button; three candy pips show the tier. Each press advances a tier.
+- **Tier 1, look:** the target object sparkles (2–3 felt stars, 0.6 Hz) and the nearest character turns its head
+  to look at it. Nothing on the HUD but the pips.
+- **Tier 2, where:** a **paper-bat trail** launches from Pip one bat at a time (every 0.22 s), flies the route and
+  fades at the goal; a floating sticker of the goal (orange ring) pulses over it. The trail repeats every 4 s for
+  ~8 s, then fades; never collides, never blocks the camera.
+- **Tier 3, show me:** a translucent bone **ghost hand** appears over the real controls and demonstrates the exact
+  action (drag the stick toward the goal, then tap Use with the right verb glyph). Only on radio press (Helper
+  setting OFF by default; when ON, tier 3 may also appear after a 3 min stall).
 
-## 7. Feedback without text
-- **Success:** green check stamp (shape + colour), a shower of felt confetti and paper bats (reduced motion: a
-  single star burst), the rising three-note wood motif, a short haptic, and the nearest character cheers (Wave / emote).
-- **Fact gained:** sticker flies to the notebook disc, disc bumps, a candy "new" dot appears on it (no text badge).
-- **Not yet / wrong:** never a buzzer or red cross. A soft wooden *tok*, the object wiggles, Pip shrugs and a "?"
-  emote shows; if it is a known blocker (door, gap) the cue from §3 plays. Repeats stay identical, never louder.
-- **Case closed:** the arrival composition, owl bows ×3, Kit's OpenBooth, the notebook stamp on the comic page.
+## 7. Onboarding
+Ghost-hand demos stay as in v1 (already animated): the hand loops twice over the real control, performing the move
+dismisses it, `TipScheduler` rules unchanged. Simplified: the cause→effect paper card is replaced by **Pip doing the
+move in a tiny looping stage** above the hand (hold Jump → a tall arc; tap in the air → glide). One stage, one hand.
 
-## 8. Menus
-- **Title:** baked logo (product name stays, it is art), case strip as a drawing of the blue house; big orange
-  play disc (Continue shows Pip's face + the bat count as bat silhouettes), a smaller "new" disc (blank page +
-  sparkle), gear disc. Targets ≥ 65 pt for primary, ≥ 50 pt for others; spacing ≥ 12 pt.
-- **Pause:** resume (play), notebook, settings (gear), home (back to title, behind a hold-to-confirm ring).
-- **Settings:** each row = icon + toggle with a picture of its effect: Reading mode (three cards: picture / picture +
-  line / lines), captions size (small/large "Aa" also drawn as two bubble sizes), caption backing, reduced motion,
-  vibration, left-handed (mirrored hands), volumes as three sliders with speaker/music/voice icons.
-- **Parent gate:** language downloads, credits links and any future external link sit behind a gate that a
-  pre-reader cannot pass by chance and a parent passes in seconds: *press and hold two marked spots for 3 s*
-  (no reading, no maths in English). Destructive actions (New game, Replay) use a pictogram confirm, no gate.
+## 8. Feedback, menus, parent gate (kept from v1, simplified)
+- Success: green stamp + felt confetti + three-note motif + haptic; the nearest character cheers. Not yet: soft
+  wooden *tok*, object wiggles, Pip shrugs; never a buzzer. Fact gained: sticker flies to the notebook disc.
+- Menus: icon + picture toggles; settings rows gain **Helper** (off) and **Words under pictures** (on).
+- Parent gate (decided): two marked felt spots; hold both 3 s, a candy ring fills; release resets. Guards language
+  downloads, credits links and any external link. Destructive actions use a pictogram confirm, no gate.
 
-## 9. Accessibility interplay
-- **Colour-blind safe:** every pictogram has a distinct silhouette; key clue = orange **stitched ring** (shape),
-  found = stamp + check (shape), unfound = dashed outline (pattern). The silver cape is told by its tear notch.
-- **Reduced motion:** chips cross-fade, no flutter; ghost path shows all bats at once and fades; ghost hand
-  becomes a static hand with a pulsing ring; sound ring becomes a single expanding outline; confetti → one burst.
-- **Deaf / muted (A11Y-01):** captions stay. In Pictures mode the caption strip shows pictograms ([knock3] [house])
-  with the direction arrow; in Pictures + Words the bracketed text follows. Babble always has its strip. Haptic
-  knock rhythm is optional extra.
-- **Screen readers / VoiceOver:** each pictogram ID has an accessibility label key (`pg.<id>.label`), so a strip
-  reads as a sentence; the existing text key is read for the whole line.
-- **Motor:** larger targets in Pictures mode (Use 72 pt), hints can play tier 3 automatically if the player stalls
-  for 3 min (optional "helper" toggle, default off).
+## 9. Parts library (from v1, `nv_icons.png`)
+Puppets are assembled from the v1 pictograms, now used as **parts**, not as sentences. IDs `pg.<id>`:
+characters `pip bea vale june kit` · places `house house_side window june_window door_shut door_open stuck lock
+latch hedge hedge_cape bench treehouse bridge porch bike lamp pin` · clues `cape cloth streamer feet sweet bowl
+candy` · machine `knock3 knock_ring floor_hum grille cam arm connect gap crank wind owl owl_bow booth` · senses and
+logic `eye ear hands pointer question check not heart moon star bat memory quiet` · moves `tip_*` · emotes `emo_*`.
+New v2 parts: full-body puppets (June running, Pip, Bea arm), clock + hand, puff, stage panel, ghost material.
 
-## 10. Icon inventory (see `nv_icons.png`)
-All are die-cut bone-paper stickers, felt-cut fills, 1 ink outline weight; IDs are `pg.<id>`.
-- **Characters:** `pip` vampire-bat child, felt ears with berry lining, tiny fangs · `bea` pumpkin bike helmet,
-  rust hair, leaf collar · `vale` mummy wraps, bandage over one eye, grey moustache · `june` violet witch hat with
-  candy band and orange star, silver collar · `kit` orange headscarf, gold hoops, magenta shawl.
-- **Places:** `house` indigo gable, glowing round attic window · `house_side` same, side window ringed orange ·
-  `house_open` door lit warm · `house_cut` floor line with "?" · `window` round-topped lit window on indigo ·
-  `june_window` June inside it · `door_shut` plum panelled door · `door_open` swung door, warm inside ·
-  `stuck` door + wiggle marks + padlock · `lock` felt padlock · `latch` wooden bar in brackets, lift arrow ·
-  `hedge` bumpy green felt · `hedge_cape` cape tip above hedge · `bench` purple slatted bench · `treehouse`
-  maple canopy, purple hut, ladder · `bridge` plank bridge · `porch` steps, rails, star · `bike` violet bicycle ·
-  `lamp` amber attic lantern · `pin` orange place pin.
-- **Clues:** `cape` silver cape with triangular tear and stars · `cloth` silver scrap on a splinter · `streamer`
-  lavender foil ribbon (never cape silver) · `feet` striped stockings and shoes · `sweet` candy in tiny knight
-  helmet · `bowl` candy cauldron · `candy` wrapped sweet.
-- **Machine:** `knock3` short-short-pause-last dots with impact ticks · `knock_ring` travelling sound rings ·
-  `floor_hum` planks with three hum squiggles · `grille` bars with the cam behind · `cam` three-lobed wooden cam ·
-  `arm` orange/purple striped arm · `connect` arm + peg + check · `gap` arm, peg, dashed gap, "?" · `crank` wheel,
-  handle, turn arrow · `wind` blue gusts + rooftop pinwheel · `owl` indigo owl with window eyes · `owl_bow`
-  tilted owl with bow arrow · `booth` striped awning, curtains, owl.
-- **Senses, logic, feelings:** `eye` · `ear` with sound arcs · `hands` two hands helping · `pointer` bone glove
-  hand (also the ghost hand) · `question` · `check` witch-green tick · `not` orange ⊘ · `heart` · `moon` · `star` ·
-  `bat` paper bat · `memory` pencil thought-cloud (past) · `quiet` sound off. Connectors (not stickers): →, =, ≠, +.
-- **Moves:** `tip_walk` stick + hand · `tip_jump` small arc · `tip_hold` tall arc with the small one ghosted ·
-  `tip_chain` three rising arcs · `tip_glide` cape spread, slow dots · `tip_dive` arc + forward streak.
-- **Emotes (balloons):** `emo_wow` ! · `emo_huh` ? · `emo_love` heart · `emo_tune` note · `emo_think` … ·
-  `emo_proud` star.
-Existing UI line icons (jump, examine, talk, radio, gear, close, skip, next, home…) stay for chrome.
+## 10. Implementation mapping
+- **Vignettes as data (`Core`, engine-free):** `Core/Vignettes/Vignette { string Id; float Length; Track[] Tracks }`,
+  `Track { string Part; Key[] Keys }`, `Key { float T; float X, Y, Rot, Scale, Alpha; string Pose; Ease Ease }`,
+  plus `Cue` events (`Ring`, `Stamp`, `Puff`, `Gesture`, `BabbleSync`). One table `C01Vignettes` maps **the line's
+  localization key → vignette ID** (`c01.line.bea.saw_cape` → `vg.bea.saw_cape`), so `ScriptLine` and `CaseScript`
+  keep one source of truth. Authored as JSON in `Content/Resources/Vignettes/` and loaded by a pure parser.
+- **Tests (`Tests/EditMode/Core`):** every `CaseScript` line key has a vignette; every part exists in the atlas;
+  ≤ 3 beats, ≤ 2 tracks moving at any time, length 2–4 s; key lines have a `MemoryReplay` entry; parser round-trip.
+- **Runtime:** `VignettePlayer` (UI) samples tracks and moves `Image` puppets inside a masked stage `RectTransform`;
+  parts come from one `PuppetAtlas` sprite sheet (2048², to be baked from the same procedural parts, as
+  `ui_mock.py --export` does for the UI). **No video files.**
+- **`DialogueView`:** the text card becomes the bubble: stage + optional text line + medallion; `Show(index)` calls
+  `VignettePlayer.Play(C01Vignettes.For(line.Key))`; `Advance()` is unchanged; raises `GestureCue` for `Witness`.
+- **`MemoryReplay` (Runtime/Case):** a Cinemachine camera per key place (pose data in `CaseUseTargets`), blend and
+  hold like `BenchView` (`HoldSeconds` 1.8, `BlendSeconds` 0.35), skip on any tap. Ghost: the **real character
+  mesh** (June, posed with existing clips; no new clip) with a translucent unlit paper shader (bone tint, 55% alpha, candy rim, depth
+  write off) moved along a spline; fallback a flat billboard cut-out for low-tier devices.
+- **`NotebookView`:** page carousel; each page = question chips + answer `VignettePlayer` (plays on tap) + sticker
+  slots; sticker arrival uses the same wiggle curve.
+- **`HintSession`:** tiers unchanged; `CaseHints` gains a world target and route per objective; a `HintGuide`
+  component plays sparkle/look (1), the bat trail and beacon (2), the ghost-hand demo (3).
+- **Budget (iPhone, 60 fps target):** one vignette alive at a time; ≤ 12 puppet images, one atlas, one draw call
+  batch; no per-frame allocations; memory replay ≤ 1 extra transparent character draw + 2 UI bars; bat trail ≤ 12
+  billboard quads sharing one material; total ≤ 0.3 ms CPU, ≤ 4 MB textures.
+- **Art pipeline:** parts stay procedural (Python now, baked sprites at @3x, reviewed by rendering), ghost shader in
+  URP Shader Graph; Bea Point goes to the Blender character scripts now.
 
-## 11. Implementation notes (maps onto the current code)
-- **Data, engine-free (`Core`):** new `Core/Pictograms/PictogramSequence` = `{ string Id; PicToken[] Tokens;
-  Emote Emote; Gesture Gesture; int GestureToken }` with `PicToken` = glyph ID + flags (`KeyClue`, `Times3`,
-  `Memory`) or a connector. One table `C01Pictures` keyed by the **same localization key** as the line
-  (`c01.line.bea.saw_cape` → sequence), so `ScriptLine` needs no new field: `CaseScript` stays the single source and
-  the picture lookup is `PictureFor(line.Key)`. Glyph IDs (`pg.cape`) are language-neutral and never translated;
-  accessibility labels are new keys `pg.<id>.label` with translator context in `en.json`.
-- **Tests (`Tests/EditMode/Core`):** every `CaseScript` line key, caption key, hint key, notebook question/note and
-  move tip has a sequence; every token is a known glyph; 2–4 chips per group; memory only on past-tense lines.
-- **`DialogueView`:** add an icon strip row (chips from a `PictogramAtlas` sprite sheet baked by
-  `nonverbal_mock.py --export`, like `ui_mock.py --export`); the text label becomes optional by mode; portrait
-  uses the face glyph; emote balloon and gesture are raised as events for `Witness` to play.
-- **`CaptionStrip`:** pictogram variant keeps the direction cue; `LargeText` hook unchanged.
-- **`NotebookView`:** picture mode swaps question labels for strips, answer text for comic panels, slip labels for
-  stickers; facts drive panels exactly as today (`CaseNotebookTags` gains glyph pairs).
-- **`HintSession`:** unchanged tiers; `CaseHints` gains a picture row per objective plus a world target ID, and a
-  new `HintGuide` runtime component draws the ghost path/beacon and the tier-3 ghost hand.
-- **`MoveTips` / `MoveTipView`:** each `MoveTip` maps to a demo (control + gesture + card glyph); `TipScheduler`
-  timing stays.
-- **Settings:** `PreferencesData.ReadingMode { Pictures, PicturesAndWords, Words }` (schema 1 → 2 migration with
-  default PicturesAndWords). Saved progress never stores display text or glyph IDs, only facts (unchanged).
-- **Art pipeline:** glyphs stay procedural (Python now; final sprites baked at 256 px @3x, reviewed by rendering, as
-  for the UI). Gestures marked (new) go to the Blender character scripts.
-
-## 12. Open questions (recommendation first)
-1. **Default reading mode?** Recommend *Pictures + Words* for everyone, with a first-launch picture choice
-   (child face with book / child face with pictures) so a parent can set *Pictures* in one tap.
-2. **New gesture clips** (Bea Point, Vale bench-pat, June high five): recommend Bea Point now (her line depends on
-   it); the other two can fall back to existing clips.
-3. **Tier-3 auto-help after a stall:** recommend an opt-in "helper" toggle, default off, so play stays unhurried.
-4. **Parent gate style:** recommend hold-two-spots for 3 s over a written question, since a written gate excludes
-   non-English parents too.
-5. **Notebook sticker replay** (camera vignette vs. line replay only): recommend line replay first (cheap), vignette in S004.
+## 11. Open questions (recommendation first)
+1. **Reading mode:** confirm "animations always + small text line on by default + one-tap Pictures only at first
+   launch" (§2.6). Recommended.
+2. **Memory replay frequency:** once per key line per save, then on demand from the notebook. Recommended over every
+   time (repeats would slow replays of the same conversation).
+3. **Ghost style:** reuse the June mesh with the paper ghost shader (reads as "June, earlier") vs. a flat cut-out
+   (cheaper, more "storybook"). Recommend the mesh for June, flat cut-out as the low-tier fallback.
+4. **Vignettes for every line or key lines only first:** recommend the 4 key lines + June's resolve in S003, the rest
+   in S004, keeping the v1 chip strip as an interim fallback for lines without a vignette.
+5. **Bat-trail loop length:** 4 s repeat for ~8 s, then silence until the next press. Recommended; longer could feel
+   like nagging.
