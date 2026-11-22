@@ -71,6 +71,9 @@ namespace SpookyStreet.Case
         /// <summary>Times the interior safety net set Pip down on a safe anchor (tests, diagnostics).</summary>
         public int Rescues { get; private set; }
 
+        /// <summary>The interior safety net's state (tests, diagnostics).</summary>
+        public InteriorRescue Rescue => _rescue;
+
         /// <summary>Why the safety net last moved Pip.</summary>
         public RescueReason LastRescue { get; private set; }
 

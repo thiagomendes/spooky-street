@@ -39,7 +39,8 @@ namespace SpookyStreet.Case
         /// <summary>This frame's probe limit on the boom (0 while outside).</summary>
         public float Limit { get; private set; }
 
-        /// <summary>The longest boom this frame that keeps the lens inside the closed shell (<see cref="InteriorSafety.ShellReach"/>).</summary>
+        /// <summary>The longest boom this frame that keeps the lens inside the owl house's closed shell
+        /// (<see cref="InteriorSafety.ShellReach"/>; the treehouse cabin keeps its own air and solids).</summary>
         public float ShellLimit { get; private set; }
 
         /// <summary>Even against the shell the lens keeps this much boom (it then sits in Pip's shoulder, never outside).</summary>
@@ -85,8 +86,11 @@ namespace SpookyStreet.Case
                 _rig.EffectivePitch, reach, pip.x, pip.y, pip.z, doorOpen));
             // The last word: the lens never leaves the closed shell, whatever the probe's shortest boom allows
             // (beyond the single-sided walls it would see the void).
-            ShellLimit = InteriorSafety.ShellReach(pip.x, handY, pip.z, _rig.EffectiveYaw, _rig.EffectivePitch, reach);
-            Limit = Mathf.Min(Limit, Mathf.Max(MinimumBoom, ShellLimit));
+            if (Shot.Room != InteriorRoom.Cabin)
+            {
+                ShellLimit = InteriorSafety.ShellReach(pip.x, handY, pip.z, _rig.EffectiveYaw, _rig.EffectivePitch, reach);
+                Limit = Mathf.Min(Limit, Mathf.Max(MinimumBoom, ShellLimit));
+            }
             _rig.DistanceLimit = Limit;
         }
 
@@ -116,9 +120,12 @@ namespace SpookyStreet.Case
             _rig.RiseOverride = Shot.Rise;
             _rig.YawOffsetTarget = Shot.YawOffset;
             Limit = Mathf.Max(ShortestBoom, Shot.Distance);
-            ShellLimit = InteriorSafety.ShellReach(pip.x, pip.y + _rig.PivotHeight + Shot.Rise, pip.z,
-                _rig.Orbit.Yaw + Shot.YawOffset, Shot.Pitch, InteriorCamera.ProfileFor(Shot.Room).Distance);
-            Limit = Mathf.Min(Limit, Mathf.Max(MinimumBoom, ShellLimit));
+            if (Shot.Room != InteriorRoom.Cabin)
+            {
+                ShellLimit = InteriorSafety.ShellReach(pip.x, pip.y + _rig.PivotHeight + Shot.Rise, pip.z,
+                    _rig.Orbit.Yaw + Shot.YawOffset, Shot.Pitch, InteriorCamera.ProfileFor(Shot.Room).Distance);
+                Limit = Mathf.Min(Limit, Mathf.Max(MinimumBoom, ShellLimit));
+            }
             _rig.DistanceLimit = Limit;
         }
 

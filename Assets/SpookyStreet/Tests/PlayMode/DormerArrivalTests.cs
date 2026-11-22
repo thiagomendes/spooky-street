@@ -192,7 +192,8 @@ namespace SpookyStreet.Tests.PlayMode
                 yield return null;
             }
 
-            Assert.IsTrue(Director.Travel.Active, $"{approach}: the page turns at June's window");
+            Assert.IsTrue(Director.Travel.Active,
+                $"{approach}: the page turns at June's window (Pip at {Game.Pip.transform.position:F2})");
             if (approach == Approach.Glide)
             {
                 Assert.IsTrue(Game.Pip.Gliding || !Game.Pip.Grounded, "the glide carried Pip in");
@@ -343,6 +344,9 @@ namespace SpookyStreet.Tests.PlayMode
 
             yield return Wait(0.3f);
             AssertLensInShell("after the rescue");
+            // Setting Pip down in the attic's entry can replay its arrival beat: let any lines finish first.
+            yield return SkipModals();
+            Assert.IsFalse(Director.ModalOpen, "no conversation holds Pip");
 
             // Out of the shell (beside the interior, in its band): Pip falls with nothing below; the safety net sets
             // Pip down inside before the street's fall return would.
@@ -354,7 +358,9 @@ namespace SpookyStreet.Tests.PlayMode
                 yield return null;
             }
 
-            Assert.AreEqual(2, Director.Rescues, "out of the shell: the safety net moves Pip");
+            Assert.AreEqual(2, Director.Rescues, $"out of the shell: the safety net moves Pip (Pip at " +
+                $"{Game.Pip.transform.position:F2}, off for {Director.Rescue.OffTime:F2} s, input " +
+                $"{Game.Controls.GameplayEnabled}, modal {Director.ModalOpen}, safe returns {Game.Pip.SafeReturns})");
             Assert.AreEqual(RescueReason.OffWalkable, Director.LastRescue);
             pip = Game.Pip.transform.position;
             Assert.IsTrue(CaseRouteLayout.Inside(pip.x, pip.z), "set down inside the interior");
