@@ -68,8 +68,9 @@ opacity, no stitch. Selected/new: small candy tag ("New note").
 ## Icons
 One stroke weight (≈ 7 % of the icon box), round caps and joins, no fills except pause bars, play/next and the
 paper bat. Bone on felt, ink on paper. Set: jump, examine, talk, pause, notebook, bat, radio, gear, globe, star,
-close, play, skip, next, home, arrow, knock, captions, motion, vibrate, hand, sound, check. Use always shows
-icon + verb tag ("Examine", "Talk", "Sit", "Turn").
+close, play, skip, next, home, arrow, knock, captions, motion, vibrate, hand, sound, check, roll. Use always shows
+icon + verb tag ("Examine", "Talk", "Sit", "Turn"); with no interaction in range it is the moveset button and shows
+the roll glyph + "Roll" (roll on the ground, dive in the air; S000.6).
 
 ## Captions and accessibility
 - Captions: bracketed sound text on opaque night felt (backing toggle on by default), bone Andika Bold 17 pt, large 22 pt.

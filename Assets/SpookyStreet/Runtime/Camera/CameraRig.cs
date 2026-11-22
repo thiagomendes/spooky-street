@@ -10,7 +10,9 @@ namespace SpookyStreet.CameraSystem
     /// <summary>
     /// Third-person camera (spec §5): Cinemachine Third Person Follow behind Pip at ~3.8 m, pivot near the
     /// upper torso, boom shortened against solid walls and eased back out. Orbit input drives the pivot;
-    /// manual orbit always wins over auto-recenter.
+    /// manual orbit always wins over auto-recenter. The pivot's height follows Pip through
+    /// <see cref="CameraHeightFollow"/>: in the air it only moves once Pip leaves a small band, so jump arcs and
+    /// the bat-cape glide do not bob the camera; on the ground it eases back onto Pip.
     /// Runs before Cinemachine's LateUpdate so the camera sees this frame's pivot.
     /// </summary>
     [DefaultExecutionOrder(-200)]
@@ -22,12 +24,16 @@ namespace SpookyStreet.CameraSystem
         private GameFlow _flow;
         private CameraOrbitModel _orbit;
         private Transform _pivot;
+        private readonly CameraHeightFollow _height = new CameraHeightFollow();
 
         public Camera OutputCamera { get; private set; }
 
         public CinemachineCamera VirtualCamera { get; private set; }
 
         public CameraOrbitModel Orbit => _orbit;
+
+        /// <summary>The camera pivot (Pip's upper torso, with the vertical tolerance applied).</summary>
+        public Transform Pivot => _pivot;
 
         public static CameraRig Create(PipMotor pip, PipMovementTuning tuning, GameInput input, GameFlow flow,
             LayerMask obstacleLayers)
@@ -42,6 +48,7 @@ namespace SpookyStreet.CameraSystem
 
             rig._pivot = new GameObject("PipCameraPivot").transform;
             rig._pivot.SetParent(root.transform, false);
+            rig._height.Reset(pip.transform.position.y);
             rig.SnapPivot();
 
             var cameraObject = new GameObject("Main Camera") { tag = "MainCamera" };
@@ -113,6 +120,7 @@ namespace SpookyStreet.CameraSystem
                 }
 
                 _orbit.Tick(dt, _pip.HorizontalSpeed, _pip.HeadingYaw);
+                _height.Step(_pip.transform.position.y, _pip.Grounded, dt);
             }
             else if (_input.Touch != null)
             {
@@ -124,7 +132,10 @@ namespace SpookyStreet.CameraSystem
 
         private void SnapPivot()
         {
-            _pivot.SetPositionAndRotation(_pip.transform.position + Vector3.up * _tuning.pivotHeight,
+            Vector3 pip = _pip.transform.position;
+            // A teleport (new game, safe-ground return) snaps straight away, even before the next simulated step.
+            float height = Mathf.Abs(pip.y - _height.Height) > _height.SnapDistance ? pip.y : _height.Height;
+            _pivot.SetPositionAndRotation(new Vector3(pip.x, height + _tuning.pivotHeight, pip.z),
                 Quaternion.Euler(_orbit.Pitch, _orbit.Yaw, 0f));
         }
     }

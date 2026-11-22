@@ -38,6 +38,9 @@ namespace SpookyStreet.UI
         private Button _resumeButton;
         private Button _pauseButton;
         private GameObject _useButton;
+        private LocalizedText _useVerb;
+        private Image _useIcon;
+        private string _useIconName;
         private RectTransform _safeArea;
         private Image _logo;
         private Text _caseName;
@@ -54,8 +57,14 @@ namespace SpookyStreet.UI
         public Button ContinueButton => _continueButton;
         public Button PauseButton => _pauseButton;
 
-        /// <summary>Contextual Use disc (hidden until something can be used).</summary>
+        /// <summary>
+        /// Contextual Use disc, shown in play: the interaction's verb when one is in range, otherwise "Roll" with the
+        /// roll glyph (Use rolls on the ground and dives in the air, spec §5 v1.2).
+        /// </summary>
         public GameObject UseButton => _useButton;
+
+        /// <summary>Localization key currently on the Use disc's verb tag.</summary>
+        public string UseVerbKey => _useVerb != null ? _useVerb.Key : null;
 
         /// <summary>The safe-area rect the HUD lives in.</summary>
         public RectTransform SafeArea => _safeArea;
@@ -111,6 +120,7 @@ namespace SpookyStreet.UI
 
         private void Update()
         {
+            RefreshUse();
             if (_flow.State == GameState.Playing && _prompt.activeSelf &&
                 _pip.DistanceWalked - _promptStartDistance >= PromptDismissDistance)
             {
@@ -140,6 +150,30 @@ namespace SpookyStreet.UI
             if (EventSystem.current != null)
             {
                 EventSystem.current.SetSelectedGameObject(select);
+            }
+        }
+
+        /// <summary>Interaction wins over the moveset on the Use disc, exactly as it does in the motor.</summary>
+        private void RefreshUse()
+        {
+            if (_useVerb == null)
+            {
+                return;
+            }
+
+            var targets = _pip != null ? _pip.UseTargets : null;
+            bool interact = targets != null && targets.HasTarget;
+            string key = interact ? targets.VerbKey ?? LocalizationKeys.HudUse : LocalizationKeys.HudRoll;
+            string icon = interact ? targets.IconName ?? UiSpriteCatalog.IconExamine : UiSpriteCatalog.IconRoll;
+            if (_useVerb.Key != key)
+            {
+                _useVerb.SetKey(key);
+            }
+
+            if (_useIcon != null && _useIconName != icon)
+            {
+                _useIconName = icon;
+                _useIcon.sprite = UiFactory.Baked(icon);
             }
         }
 
@@ -193,20 +227,25 @@ namespace SpookyStreet.UI
             BuildStick(touch);
 
             // Action cluster on the other thumb: icon + short verb (spec §5). Jump: night felt with a candy-corn
-            // stitch. Use: the orange disc with a paper verb tag; hidden until interactables exist (S001/S002).
+            // stitch. Use: the orange disc with a paper verb tag. With no interaction in range it reads "Roll" with
+            // the roll glyph (roll on the ground, dive in the air); an interaction swaps in its own verb and glyph.
             var jump = UiFactory.FeltDisc(_hud.transform, "JumpButton", UiSpriteCatalog.FeltDiscNight,
                 Palette.CandyCornYellow, UiSpriteCatalog.IconJump, Palette.WarmPaper, LocalizationKeys.HudJump,
                 UiFactory.JumpDiameter, bottomCorner, MirrorOffset(new Vector2(-140f, 140f)), UiFactory.HudFeltAlpha);
             touch.JumpButton = jump.gameObject.AddComponent<TouchButton>();
 
             var use = UiFactory.FeltDisc(_hud.transform, "UseButton", UiSpriteCatalog.FeltDiscOrange,
-                Palette.CandyCornYellow, UiSpriteCatalog.IconExamine, Palette.InkBlack, null, UiFactory.UseDiameter,
+                Palette.CandyCornYellow, UiSpriteCatalog.IconRoll, Palette.InkBlack, null, UiFactory.UseDiameter,
                 bottomCorner, MirrorOffset(new Vector2(-330f, 118f)), 1f);
-            var verb = UiFactory.PaperTag(use.transform, "VerbTag", LocalizationKeys.HudUse, UiFactory.CaptionSize,
+            var verb = UiFactory.PaperTag(use.transform, "VerbTag", LocalizationKeys.HudRoll, UiFactory.CaptionSize,
                 new Vector2(0.5f, 0f), new Vector2(0f, -10f), new Vector2(150f, 54f), -2f, UiFactory.PlayPaper);
             verb.raycastTarget = false;
+            _useVerb = verb.GetComponentInChildren<LocalizedText>(true);
+            var useIcon = use.transform.Find("Icon");
+            _useIcon = useIcon != null ? useIcon.GetComponent<Image>() : null;
+            _useIconName = UiSpriteCatalog.IconRoll;
+            touch.UseButton = use.gameObject.AddComponent<TouchButton>();
             _useButton = use.gameObject;
-            _useButton.SetActive(false);
 
             // System disc top-right: Pause. The notebook disc joins it when the notebook exists (S002); no bat
             // counter until paper bats can be collected.

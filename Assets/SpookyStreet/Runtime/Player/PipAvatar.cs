@@ -1,4 +1,5 @@
 using SpookyStreet.Core.Animation;
+using SpookyStreet.Core.Movement;
 using SpookyStreet.World;
 using UnityEngine;
 
@@ -38,6 +39,12 @@ namespace SpookyStreet.Player
         [SerializeField] private float stepRollDegrees = 3f;
         [SerializeField] private float antennaSwayDegrees = 6f;
 
+        [Header("Moveset squash (volume-preserving, eased out)")]
+        [Tooltip("Wide-and-flat kick when the bat cape spreads.")]
+        [SerializeField] private float glideSquash = 0.05f;
+        [Tooltip("Tuck kick when a roll starts.")]
+        [SerializeField] private float rollSquash = 0.04f;
+
         private Transform _body;
         private Transform[] _antennae;
         private Quaternion[] _antennaRest;
@@ -45,6 +52,7 @@ namespace SpookyStreet.Player
         private float _maxSpeed = 4f;
         private float _gait;
         private float _phase;
+        private readonly SquashPulse _squash = new SquashPulse();
 
         public Transform Body => _body;
 
@@ -60,6 +68,12 @@ namespace SpookyStreet.Player
         public void Build(MaterialLibrary materials, PipMovementTuning tuning)
         {
             _motor = GetComponent<PipMotor>();
+            if (_motor != null)
+            {
+                _motor.Stepped -= OnMotorStep;
+                _motor.Stepped += OnMotorStep;
+            }
+
             _maxSpeed = Mathf.Max(0.1f, tuning.maxSpeed);
             float s = tuning.height / 1.15f;
 
@@ -245,10 +259,39 @@ namespace SpookyStreet.Player
             return go.transform;
         }
 
+        private void OnMotorStep(MotorStep step)
+        {
+            if (step.GlideStarted)
+            {
+                _squash.Kick(glideSquash);
+            }
+            else if (step.RollStarted)
+            {
+                _squash.Kick(rollSquash);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (_motor != null)
+            {
+                _motor.Stepped -= OnMotorStep;
+            }
+        }
+
         private void LateUpdate()
         {
+            if (_body == null)
+            {
+                return;
+            }
+
+            // Squash from the feet (the body's origin), so the cape spreads without lifting Pip off the ground.
+            SquashPulse.ToScale(_squash.Step(Time.deltaTime), out float wide, out float tall);
+            _body.localScale = new Vector3(wide, tall, wide);
+
             // The imported model's clips carry breathing, gait and antenna motion.
-            if (_body == null || UsesModel)
+            if (UsesModel)
             {
                 return;
             }

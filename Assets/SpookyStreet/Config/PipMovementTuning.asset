@@ -16,11 +16,27 @@ MonoBehaviour:
   accelerationTime: 0.15
   decelerationTime: 0.12
   jumpApexHeight: 1
+  jumpHoldApexHeight: 1.6
   gravity: 25
   coyoteTime: 0.1
   jumpBufferTime: 0.12
   airControl: 0.6
   maxFallSpeed: 20
+  chainJumpWindow: 0.2
+  chainJumpMinSpeedFraction: 0.5
+  chainJumpSecondHeightScale: 1.25
+  chainJumpThirdHeightScale: 1.5
+  glideFallSpeed: 1.75
+  glideBrakeDeceleration: 30
+  glideAirControl: 0.8
+  rollDuration: 0.5
+  rollSpeedBoost: 1.5
+  rollCooldown: 0.25
+  rollMinSpeedFraction: 0.6
+  rollTurnRateDegrees: 120
+  diveSpeed: 5.5
+  diveHopVelocity: 3
+  diveTurnRateDegrees: 90
   height: 1.1
   radius: 0.28
   stepOffset: 0.2

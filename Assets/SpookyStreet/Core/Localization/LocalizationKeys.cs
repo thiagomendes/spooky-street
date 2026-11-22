@@ -24,6 +24,9 @@ namespace SpookyStreet.Core.Localization
         public const string HudJump = "ui.hud.jump";
         public const string HudUse = "ui.hud.use";
 
+        /// <summary>Use disc verb while no interaction is in range (Use rolls, or dives in the air).</summary>
+        public const string HudRoll = "ui.hud.roll";
+
         public const string PauseHeading = "ui.pause.heading";
         public const string PauseResume = "ui.pause.resume";
         public const string PauseBackToTitle = "ui.pause.back_to_title";
@@ -33,7 +36,7 @@ namespace SpookyStreet.Core.Localization
         {
             TitleGameName, TitleCaseName, TitleNewGame, TitleContinue, TitleLanguageToggle, TitleBuildLabel, TitleContinueDetail,
             PromptMoveTouch, PromptMoveKeyboard, PromptMoveGamepad,
-            HudPause, HudJump, HudUse,
+            HudPause, HudJump, HudUse, HudRoll,
             PauseHeading, PauseResume, PauseBackToTitle,
         };
     }

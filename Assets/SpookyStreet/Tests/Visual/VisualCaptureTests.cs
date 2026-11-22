@@ -134,6 +134,38 @@ namespace SpookyStreet.Tests.Visual
                 yield return Shot("09_vale");
             }
 
+            // Bat-cape glide (moveset, spec §5 v1.2): Pip dropped into open sky above the plaza, Jump held so the
+            // cape spreads, then frozen mid-glide (time scale 0) and seen from behind-left toward the owl house.
+            Vector3 parkedAt = pip.position;
+            Quaternion parkedRotation = pip.rotation;
+            game.Pip.Teleport(new Vector3(0f, 5.5f, -0.5f));
+            pip.rotation = Quaternion.identity;
+            until = Time.time + 0.25f;
+            while (Time.time < until)
+            {
+                yield return null;
+            }
+
+            Press(_keyboard.spaceKey, queueEventOnly: true);
+            until = Time.time + 0.5f;
+            while (Time.time < until)
+            {
+                yield return null;
+            }
+
+            Assert.IsTrue(game.Pip.Gliding, "10_glide: Pip should be gliding");
+            Time.timeScale = 0f;
+            Vector3 body = pip.position + Vector3.up * 0.6f;
+            camera.fieldOfView = 45f;
+            camera.transform.position = body - pip.forward * 2.6f - pip.right * 1.5f - Vector3.up * 0.35f;
+            camera.transform.LookAt(body + pip.forward * 0.4f);
+            yield return Shot("10_glide");
+            Time.timeScale = 1f;
+            Release(_keyboard.spaceKey, queueEventOnly: true);
+            yield return null;
+            game.Pip.Teleport(parkedAt);
+            pip.rotation = parkedRotation;
+
             camera.fieldOfView = fieldOfView;
             game.Ui.Hud.SetActive(true);
             if (brain != null)
