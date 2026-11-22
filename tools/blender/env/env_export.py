@@ -187,7 +187,7 @@ def _door_game(inner):
         bm = bmesh.new()
         bmesh.ops.create_cube(bm, size=1.0)
         for v in bm.verts:
-            v.co = Vector((v.co.x * (width + 0.04), v.co.y * 0.7 + 0.41, (v.co.z + 0.5) * (height + 0.02)))
+            v.co = Vector((v.co.x * (width + 0.04), v.co.y * 1.2 + 0.66, (v.co.z + 0.5) * (height + 0.02)))
         bm.normal_update()
         bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.normal.y < -0.9], context="FACES")
         bmesh.ops.reverse_faces(bm, faces=bm.faces[:])
@@ -212,7 +212,7 @@ def _wheel_game(inner):
 
 
 GAME_LEAF = [(0.0, -0.55), (0.05, -0.2), (0.42, -0.3), (0.6, 0.1), (0.37, 0.19), (0.44, 0.47), (0.0, 0.8)]  # crown leaf
-CROWN_CARDS, CROWN_LEAF_SCALE = 50, 1.3  # the review crown has 96 smaller leaves per clump
+CROWN_CARDS, CROWN_LEAF_SCALE = 68, 1.25  # the review crown has 96 smaller leaves per clump
 HEAP_SCALE = 1.0
 
 
