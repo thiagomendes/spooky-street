@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
-    Compiles the engine-free SpookyStreet.Core sources and their NUnit tests outside Unity, so cloud
+    Compiles the NUnit tests for the engine-free SpookyStreet.Core (built by ../core-lib) outside Unity, so cloud
     sessions and CI can run them without a Unity licence. Unity compiles the same files through the
     SpookyStreet.Core and SpookyStreet.Tests.EditMode assemblies.
     LangVersion 9.0 matches Unity 6's C# compiler; keep Core free of newer syntax.
@@ -16,8 +16,11 @@
     <RootNamespace>SpookyStreet.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="../../Assets/SpookyStreet/Core/**/*.cs" />
     <Compile Include="../../Assets/SpookyStreet/Tests/EditMode/Core/**/*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Core is a separate assembly, as in Unity: tests only see its public surface. -->
+    <ProjectReference Include="../core-lib/SpookyStreet.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />

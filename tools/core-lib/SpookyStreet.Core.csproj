@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The engine-free SpookyStreet.Core sources as their own assembly, exactly as Unity builds them, so tests in
+    tools/core-tests cannot reach `internal` members that Unity's separate test assembly cannot see (CI run 41).
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>SpookyStreet.Core</AssemblyName>
+    <RootNamespace>SpookyStreet</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Assets/SpookyStreet/Core/**/*.cs" />
+  </ItemGroup>
+</Project>
