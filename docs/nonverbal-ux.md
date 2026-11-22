@@ -235,3 +235,7 @@ needed.
    with the two felt spots drawn at `ZoneA`/`ZoneB` and the `ParentGateHint` line; proceed only on `Passed`.
 9. **Art.** Bake the `PuppetAtlas` with exactly the `PuppetParts.All` names (a test can then compare the atlas to the
    list), render-review it, and add the June paper-ghost material (flat cut-out fallback on low tier).
+
+**Evidence.** CI run 67 (commit `c7842e0`, `feature/nonverbal-core`): static checks and engine-free core tests passed;
+Unity 6000.3.28f1 EditMode 359/359, PlayMode 46/46, Visual 3/3. New fixtures: `VignetteTests` 22, `MemoryReplayTests`
+19, `ParentGateTests` 9, `NonverbalSettingsTests` 8, `BatTrailScheduleTests` 6 (64 tests, all passing).
