@@ -26,6 +26,16 @@ namespace SpookyStreet.Characters
         private bool _hasApplied;
         private Quaternion _baseLocal;
         private Quaternion _appliedLocal;
+        private string _gesture;
+        private float _gestureYaw;
+        private float _restYaw;
+        private bool _returning;
+
+        /// <summary>Bea's pointing gesture (D23.6); played over the talk loop when a vignette cues it.</summary>
+        public const string PointClip = "Point";
+
+        /// <summary>Body turn speed toward a gesture's aim and back, degrees per second.</summary>
+        public const float GestureTurnRate = 240f;
 
         public NpcAvatar Avatar { get; private set; }
         public WitnessReaction Reaction { get; } = new WitnessReaction();
@@ -56,6 +66,63 @@ namespace SpookyStreet.Characters
 
         public void SetTarget(Transform target) => _target = target;
 
+        /// <summary>True while a gesture one-shot plays (the head turn toward Pip is off so the head follows the arm).</summary>
+        public bool Gesturing => _gesture != null && Avatar != null && Avatar.OneShot == _gesture;
+
+        /// <summary>
+        /// Plays <paramref name="clip"/> once over the loop and, while it plays, turns the body toward
+        /// <paramref name="aimAt"/> (the clip's own aim is accepted; no IK), then turns back. Returns false and does
+        /// nothing, without logging, when the model has no such clip yet.
+        /// </summary>
+        public bool PlayGesture(string clip, Vector3? aimAt)
+        {
+            if (Avatar == null || !Avatar.HasClip(clip) || !Avatar.PlayOneShot(clip))
+            {
+                return false;
+            }
+
+            if (_gesture == null && !_returning)
+            {
+                _restYaw = transform.eulerAngles.y;
+            }
+
+            _gesture = clip;
+            _returning = false;
+            _gestureYaw = _restYaw;
+            if (aimAt.HasValue)
+            {
+                Vector3 to = aimAt.Value - transform.position;
+                if (new Vector2(to.x, to.z).sqrMagnitude > 0.01f)
+                {
+                    _gestureYaw = WitnessReaction.YawOf(to.x, to.z);
+                }
+            }
+
+            return true;
+        }
+
+        private void StepGesture(float dt)
+        {
+            if (_gesture == null && !_returning)
+            {
+                return;
+            }
+
+            if (_gesture != null && !Gesturing)
+            {
+                _gesture = null;
+                _returning = true;
+            }
+
+            float want = _gesture != null ? _gestureYaw : _restYaw;
+            float yaw = Mathf.MoveTowardsAngle(transform.eulerAngles.y, want, GestureTurnRate * dt);
+            transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+            if (_returning && Mathf.Abs(Mathf.DeltaAngle(yaw, _restYaw)) < 0.1f)
+            {
+                _returning = false;
+            }
+        }
+
         private void Update()
         {
             if (Avatar == null || !Avatar.IsAnimated)
@@ -77,8 +144,9 @@ namespace SpookyStreet.Characters
             }
 
             Avatar.PlayLoop(Reaction.WantsEngagedLoop || Conversing ? Clips.Engaged : Clips.Rest);
-            _headWeight = Mathf.MoveTowards(_headWeight, (Reaction.Attending || Conversing) && _target != null ? 1f : 0f,
-                headTurnRate * dt);
+            StepGesture(dt);
+            bool look = (Reaction.Attending || Conversing) && _target != null && !Gesturing;
+            _headWeight = Mathf.MoveTowards(_headWeight, look ? 1f : 0f, (Gesturing ? 8f : headTurnRate) * dt);
             if (_target != null)
             {
                 Vector3 to = _target.position - transform.position;

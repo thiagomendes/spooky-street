@@ -43,5 +43,21 @@ namespace SpookyStreet.Tests.Project
                     spec.Name + " runtime border");
             }
         }
+
+        [Test]
+        public void PuppetAtlasImportsAsAFullSize2DSprite()
+        {
+            string path = UiSpriteCatalog.AssetFolder + UiSpriteImportRules.PuppetAtlasName + ".png";
+            Assert.IsTrue(UiSpriteImportRules.IsPuppetAtlasPath(path));
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            Assert.IsNotNull(importer, path + " has no texture importer");
+            Assert.AreEqual(TextureImporterType.Sprite, importer.textureType);
+            Assert.AreEqual(TextureImporterShape.Texture2D, importer.textureShape);
+            Assert.AreEqual(UiSpriteImportRules.PuppetAtlasMaxSize, importer.maxTextureSize, "the atlas keeps its 2048 px");
+            Assert.AreEqual(UiSpriteImportRules.PuppetAtlasMaxSize, UiSpriteImportRules.MaxSizeFor(path));
+            var texture = Resources.Load<Texture2D>(SpookyStreet.Core.Nonverbal.PuppetAtlasLayout.ResourcePath);
+            Assert.IsNotNull(texture, "Resources/" + SpookyStreet.Core.Nonverbal.PuppetAtlasLayout.ResourcePath);
+            Assert.AreEqual(SpookyStreet.Core.Nonverbal.PuppetAtlasLayout.AtlasSize, texture.width);
+        }
     }
 }

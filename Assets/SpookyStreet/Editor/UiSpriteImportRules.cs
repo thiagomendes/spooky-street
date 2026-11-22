@@ -16,7 +16,17 @@ namespace SpookyStreet.EditorTools
         public const string IosPlatform = "iPhone";
         public const int MaxTextureSize = 1024;
 
-        public override uint GetVersion() => 1;
+        /// <summary>The puppet atlas (tools/ui_mock/puppet_atlas.py) is one 2048² sheet cut into parts at runtime.</summary>
+        public const string PuppetAtlasName = "puppet_atlas";
+        public const int PuppetAtlasMaxSize = 2048;
+
+        public override uint GetVersion() => 2;
+
+        public static bool IsPuppetAtlasPath(string path) =>
+            string.Equals(UiSpriteCatalog.NameFromAssetPath(path), PuppetAtlasName, System.StringComparison.Ordinal);
+
+        /// <summary>Largest import size for a texture in the UI folder.</summary>
+        public static int MaxSizeFor(string path) => IsPuppetAtlasPath(path) ? PuppetAtlasMaxSize : MaxTextureSize;
 
         public static bool IsUiSpritePath(string path) => UiSpriteCatalog.NameFromAssetPath(path) != null;
 
@@ -40,7 +50,8 @@ namespace SpookyStreet.EditorTools
                 return;
             }
 
-            if (!UiSpriteCatalog.TryFind(name, out _))
+            bool atlas = name == PuppetAtlasName;
+            if (!atlas && !UiSpriteCatalog.TryFind(name, out _))
             {
                 Debug.LogWarning($"[UiSpriteImportRules] {assetPath} is not in UiSpriteCatalog; importing without borders.");
             }
@@ -68,13 +79,14 @@ namespace SpookyStreet.EditorTools
             settings.aniso = 1;
             importer.SetTextureSettings(settings);
 
-            importer.maxTextureSize = MaxTextureSize;
+            int maxSize = atlas ? PuppetAtlasMaxSize : MaxTextureSize;
+            importer.maxTextureSize = maxSize;
             importer.textureCompression = TextureImporterCompression.CompressedHQ;
             importer.SetPlatformTextureSettings(new TextureImporterPlatformSettings
             {
                 name = IosPlatform,
                 overridden = true,
-                maxTextureSize = MaxTextureSize,
+                maxTextureSize = maxSize,
                 format = TextureImporterFormat.ASTC_4x4,
                 compressionQuality = (int)TextureCompressionQuality.Normal,
             });
