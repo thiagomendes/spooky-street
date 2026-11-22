@@ -208,8 +208,9 @@ class Vale:
     @staticmethod
     def prepare(P, sources):
         """Fit the bandage turns to the body: the builder lathes them as flat tilted ellipses, which stand off
-        the back and shoulders by centimetres (and would hang there like hoops when he sits). Every turn is
-        pulled in to between 7 and 13 mm from the surface it wraps (its 5 mm thickness grows inward)."""
+        the back and shoulders by centimetres (and would hang there like hoops when he sits) and cut through
+        each other wherever two cross. Every turn is laid at a fixed height over the surface it wraps (its 5 mm
+        thickness grows inward), and turns that cross lie in different layers, 6 mm apart."""
         body = next(o for o in sources if o.name == "Vale_Body")
         me = body.data
         verts = [v.co.copy() for v in me.vertices]
@@ -224,11 +225,14 @@ class Vale:
         for S, s in (("L", 1), ("R", -1)):
             trees["arm" + S] = tree(lambda c, s=s: arm(c, s))
             trees["leg" + S] = tree(lambda c, s=s: c.x * s > 0 and c.z < z["hip"] + 0.03 and not arm(c, s))
-        near, far = 0.007, 0.013
         for o in sources:
-            m = re.match(r"Vale_(ArmWrap|LegWrap|WrapSash|Wrap)", o.name)
+            m = re.match(r"Vale_(ArmWrap|LegWrap|WrapSash|Wrap)(?:\.(\d+))?$", o.name)
             if not m:
                 continue
+            index = int(m.group(2) or 0)
+            layer = {"WrapSash": 3, "Wrap": index % 3}.get(m.group(1), (index % 7) % 2)
+            near = 0.007 + 0.006 * layer
+            far = near + 0.002
             M = o.matrix_world.copy()
             Mi = M.inverted()
             side = "L" if (M @ Vector((0, 0, 0))).x > 0 else "R"

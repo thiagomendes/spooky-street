@@ -23,8 +23,7 @@ import sys
 import bmesh
 import bpy
 import numpy as np
-from mathutils import Matrix, Vector
-from mathutils.bvhtree import BVHTree
+from mathutils import Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TOOLS = os.path.dirname(HERE)
@@ -34,7 +33,7 @@ for sub in ("style", "pip", "chars", "export"):
 
 import char_export as ce  # noqa: E402
 import pip_anims as anims  # noqa: E402
-from char_export import SkinSource, activate, set_weights, smooth, tri_count  # noqa: E402
+from char_export import SkinSource, set_weights, smooth, tri_count  # noqa: E402
 
 DEFAULT_OUT = os.path.join(REPO, "Assets", "SpookyStreet", "Content", "Resources", "Models", "Characters", "Pip")
 RIG_NAME = "Pip_Rig"
