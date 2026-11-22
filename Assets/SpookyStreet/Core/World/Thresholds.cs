@@ -88,9 +88,11 @@ namespace SpookyStreet.Core.World
         private const float Ifz = CaseRouteLayout.InteriorFrontZ;
 
         /// <summary>On the street: Pip at the bridge's end and on the sill, against the window plane (the body stops
-        /// Pip's capsule at x −3.33, its skin a few centimetres before).</summary>
+        /// Pip's capsule at x −3.33, its skin a few centimetres before). The window opens above the body's top
+        /// (2.8 m), so a glide or jump can carry Pip over the sill onto that top until the low roof step stops it
+        /// (x −2.78): the zone reaches that far, so such an entry still crosses (TestFlight 23 approaches).</summary>
         public static readonly ThresholdEnd DormerOutside = new ThresholdEnd(ThresholdId.Dormer, false,
-            -3.55f, -2.9f, CaseRouteLayout.ExteriorSillY - 0.3f, CaseRouteLayout.ExteriorSillY + 0.9f,
+            -3.55f, -2.6f, CaseRouteLayout.ExteriorSillY - 0.3f, CaseRouteLayout.ExteriorSillY + 0.9f,
             CaseRouteLayout.ExteriorWindowZ - 0.45f, CaseRouteLayout.ExteriorWindowZ + 0.45f,
             -4.1f, 2.47f, CaseRouteLayout.ExteriorWindowZ, -90f);
 
