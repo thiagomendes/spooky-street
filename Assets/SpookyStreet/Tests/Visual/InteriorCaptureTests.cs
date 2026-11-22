@@ -193,7 +193,7 @@ namespace SpookyStreet.Tests.Visual
             yield return Wait(1.2f);
             game.Pip.Teleport(new Vector3(0f, 0.65f, Ifz + 0.05f));
             float until = Time.time + 2f;
-            while (!(travel.Active && travel.Wipe.Phase == WipePhase.Covering && travel.Wipe.Coverage >= 0.45f) &&
+            while (!(travel.Active && travel.Wipe.Phase == WipePhase.Covering && travel.Wipe.Coverage >= 0.3f) &&
                    Time.time < until)
             {
                 yield return null;

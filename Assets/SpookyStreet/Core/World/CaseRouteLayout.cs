@@ -436,7 +436,7 @@ namespace SpookyStreet.Core.World
                 new RoutePoint("entry corner", -2.85f, FloorY, InteriorFrontZ + 2.6f),
                 new RoutePoint("hall", -1.2f, FloorY, InteriorFrontZ + 1.6f),
                 new RoutePoint("before the door", 0f, FloorY, InteriorFrontZ + 0.6f),
-                new RoutePoint("in the doorway", 0f, FloorY, InteriorFrontZ + 0.2f)),
+                new RoutePoint("in the doorway", 0f, FloorY, InteriorFrontZ + 0.05f)),
             new RouteLeg("porch", ThresholdId.None,
                 new RoutePoint("door arrival", 0f, FloorY, FrontZ - 1.55f),
                 new RoutePoint("porch front", 0.05f, FloorY, FrontZ - 1.8f)),
