@@ -47,18 +47,15 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(game.Ui.TitleScreen.activeInHierarchy);
             Assert.IsFalse(game.Ui.Hud.activeInHierarchy);
 
-            var labels = game.Ui.TitleScreen.GetComponentsInChildren<LocalizedText>(true);
-            bool foundTitle = false;
-            foreach (var label in labels)
-            {
-                if (label.Key == LocalizationKeys.TitleGameName)
-                {
-                    Assert.AreEqual("Spooky Street", label.GetComponent<Text>().text);
-                    foundTitle = true;
-                }
-            }
-
-            Assert.IsTrue(foundTitle, "title text must be bound to a localization key");
+            // The game name is the baked stitched logo (product name, not localized, docs/ui-language.md); the case
+            // name under it is the localized title text.
+            Assert.IsNotNull(game.Ui.Logo, "baked logo sprite missing from Resources/UI");
+            Assert.IsNotNull(game.Ui.Logo.sprite);
+            Assert.IsTrue(game.Ui.Logo.gameObject.activeInHierarchy);
+            var caseName = game.Ui.CaseName.GetComponent<LocalizedText>();
+            Assert.IsNotNull(caseName, "case name must be bound to a localization key");
+            Assert.AreEqual(LocalizationKeys.TitleCaseName, caseName.Key);
+            Assert.AreEqual("Three Knocks on Lantern Lane", game.Ui.CaseName.text);
             Assert.AreEqual(0f, Time.timeScale, "simulation is suspended on the title screen");
         }
 
@@ -200,19 +197,11 @@ namespace SpookyStreet.Tests.PlayMode
             var game = GameBootstrap.Instance;
             Localizer.TogglePseudo();
             yield return null;
-            Text title = null;
-            foreach (var label in game.Ui.TitleScreen.GetComponentsInChildren<LocalizedText>(true))
-            {
-                if (label.Key == LocalizationKeys.TitleGameName)
-                {
-                    title = label.GetComponent<Text>();
-                }
-            }
-
+            Text title = game.Ui.CaseName;
             Assert.IsNotNull(title);
             StringAssert.StartsWith("[", title.text);
             Localizer.TogglePseudo();
-            Assert.AreEqual("Spooky Street", title.text);
+            Assert.AreEqual("Three Knocks on Lantern Lane", title.text);
         }
 
         /// <summary>

@@ -7,6 +7,7 @@ approved opening key frame at iPhone landscape resolution (2532 x 1170 px, @3x, 
 Everything is drawn here with Pillow + numpy; the only inputs are the repo's approved renders and OFL fonts.
 
     python3 tools/ui_mock/ui_mock.py [--out DIR] [--guides]
+    python3 tools/ui_mock/ui_mock.py --export [DIR] [--export-sheet SHEET.jpg]   # baked game sprites
 
 Units: final pixels unless noted. PT = 3 px (device @3x). Unity reference units (1334 x 750 canvas matched by
 height) are ~2 per pt, so 96 ref = 48 pt = 144 px.
@@ -1215,12 +1216,318 @@ def mock_sheet(mocks, out_dir):
     return sheet
 
 
+# --------------------------------------------------------------------------------------------------- Unity export
+
+# Baked UI sprites for the game (art bible v2 §6): written to Assets/SpookyStreet/Content/Resources/UI and imported by
+# Editor/UiSpriteImportRules.cs. Sizes are sprite pixels at 2 px per Unity reference unit (4 px per pt), matching the
+# importer's 200 pixels per unit, so 9-slice borders below are in the same pixels as UiSpriteCatalog.cs. Keep names,
+# sizes and borders in step with Assets/SpookyStreet/Core/Art/UiSpriteCatalog.cs (a Core test checks the PNGs).
+UNITY_UI = os.path.join(ROOT, "Assets", "SpookyStreet", "Content", "Resources", "UI")
+WHITE = (255, 255, 255, 255)
+EXPORT_ICONS = ["jump", "examine", "pause", "notebook", "bat", "gear", "globe", "play", "close"]
+STITCH_TILE, STITCH_BORDER, STITCH_INSET, STITCH_R = 144, 48, 18, 20
+STITCH_DASH, STITCH_PERIOD, STITCH_W = 13.0, 24.0, 4.2
+
+
+def _flat(sp):
+    return sp.render()
+
+
+def export_felt_disc(fill, seed):
+    """256 px felt disc: fuzzy edge, nap noise, ink outline. No stitch (stitch_ring is a separate, tinted layer)."""
+    sp = Sprite(240, 240, 8)
+    pts = deckle(circle_path(120, 120, 120, 3), 1.6, seed, 0.2, 0.6)
+    sp.fill(pts, fill[:3] + (255,), "felt", seed, fuzz=True)
+    # soft cushion: darker lower rim so the disc reads as a padded cut-out, not a flat circle
+    rim = Image.new("L", sp.img.size, 0)
+    ImageDraw.Draw(rim).ellipse(sp.S(14, 26) + sp.S(226, 238), fill=255)
+    rim = ImageChops.subtract(sp.mask(pts), rim.filter(ImageFilter.GaussianBlur(8 * SS)))
+    shade = Image.new("RGBA", sp.img.size, (10, 6, 20, 0))
+    shade.putalpha(rim.point(lambda v: v * 0.28))
+    sp.comp(shade)
+    sp.line(pts, INK, 4.0, closed=True)
+    return sp.render()
+
+
+def export_stitch_ring():
+    """White running stitch on a circle with hole shadows; tinted candy (Jump), bone (system) or ink at use."""
+    sp = Sprite(240, 240, 8)
+    sp.stitches(circle_path(120, 120, 120 - 17, 2), WHITE, 12, 9, 4.4)
+    return sp.render()
+
+
+def export_paper(w, h, pad, radius, deck, ow, seed):
+    sp = paper_card(w, h, seed, BONE, INK, None, radius, deck, ow, 0, pad=pad)
+    return sp.render()
+
+
+def export_felt_button(seed=31):
+    """Orange felt slab with a cushion lip at the bottom; stitches come from the tiled stitch_rect layer."""
+    w, h, pad = 176, 128, 8
+    sp = paper_card(w, h, seed, ORANGE, INK, None, 34, 1.8, 4.0, 0, pad=pad, kind="felt", fuzz=True)
+    lip = Sprite(w, h, pad)
+    lip.poly(rrect_path(8, h - 20, w - 8, h - 4, 12, 3), (0, 0, 0, 70))
+    lay = lip.img.filter(ImageFilter.GaussianBlur(3 * SS))
+    lay.putalpha(ImageChops.multiply(lay.split()[3], sp.img.split()[3]))
+    sp.comp(lay)
+    sp.line(sp.outline_pts, INK, 4.0, closed=True)
+    return sp.render()
+
+
+def dense_open(pts, step):
+    """Like dense() but for an open polyline (no closing segment back to the start)."""
+    out = []
+    for a, b in zip(pts, pts[1:]):
+        k = max(1, int(math.dist(a, b) / step))
+        out += [(a[0] + (b[0] - a[0]) * j / k, a[1] + (b[1] - a[1]) * j / k) for j in range(k)]
+    return out + [pts[-1]]
+
+
+def _dash_run(sp, pts, period, dash):
+    """Dashes along an open polyline whose length is an exact number of periods, half a gap at each end."""
+    total = path_len(pts, closed=False)
+    k = max(1, round(total / period))
+    per = total / k
+    d = dash * per / period
+    half_gap = (per - d) / 2
+    marks = []
+    for i in range(k):
+        marks.append((i * per + half_gap, i * per + half_gap + d))
+    segs = []
+    cum = [0.0]
+    for i in range(len(pts) - 1):
+        cum.append(cum[-1] + math.dist(pts[i], pts[i + 1]))
+
+    def at(t):
+        for i in range(len(pts) - 1):
+            if cum[i + 1] >= t:
+                a, b = pts[i], pts[i + 1]
+                u = (t - cum[i]) / max(1e-6, cum[i + 1] - cum[i])
+                return (a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u)
+        return pts[-1]
+
+    for t0, t1 in marks:
+        n = max(2, int((t1 - t0) / 1.5))
+        segs.append([at(t0 + (t1 - t0) * j / (n - 1)) for j in range(n)])
+    return segs
+
+
+def export_stitch_rect():
+    """Tileable running stitch for 9-slice cards (Image.Type.Tiled): exact periods on the straight edges and
+    mirrored corners, so tiles join with no doubled gap or stretched dash."""
+    S, B, I, R = STITCH_TILE, STITCH_BORDER, STITCH_INSET, STITCH_R
+    sp = Sprite(S, S, 0)
+    # top-left corner run from the top junction (B, I) round the corner to the left junction (I, B)
+    corner = [(B, I), (I + R, I)]
+    for j in range(1, 16):
+        a = math.radians(270 - 90 * j / 16)
+        corner.append((I + R + R * math.cos(a), I + R + R * math.sin(a)))
+    corner += [(I, I + R), (I, B)]
+    segs = _dash_run(sp, dense_open(corner, 1.0), STITCH_PERIOD, STITCH_DASH)
+    runs = []
+    for seg in segs:
+        for fx in (False, True):
+            for fy in (False, True):
+                runs.append([((S - x) if fx else x, (S - y) if fy else y) for x, y in seg])
+    # straight edges: one dash centred in each period between the junctions
+    gap = (STITCH_PERIOD - STITCH_DASH) / 2
+    x = B
+    while x + STITCH_PERIOD <= S - B + 0.01:
+        for y in (I, S - I):
+            runs.append([(x + gap, y), (x + gap + STITCH_DASH, y)])
+            runs.append([(y, x + gap), (y, x + gap + STITCH_DASH)])
+        x += STITCH_PERIOD
+    lay = sp.layer()
+    dr = ImageDraw.Draw(lay)
+    wpx = int(STITCH_W * SS)
+    for col, off in (((0, 0, 0, 90), (0.8, 1.2)), (WHITE, (0, 0))):
+        for s in runs:
+            q = [(px + off[0] * SS, py + off[1] * SS) for px, py in sp.Sp(s)]
+            dr.line(q, fill=col, width=wpx)
+            for px, py in (q[0], q[-1]):
+                r = wpx / 2
+                dr.ellipse((px - r, py - r, px + r, py + r), fill=col)
+    sp.comp(lay)
+    return sp.render()
+
+
+def export_icon(name, size=128):
+    sp = Sprite(size, size, 0)
+    s = size * 0.92
+    if name == "bat":
+        s = size * 1.05
+    icon_draw(sp, name, size / 2, size / 2, s, WHITE, size * 0.068)
+    return sp.render()
+
+
+def export_stick_chevron(size=128):
+    """Stitched chevron (points up): two running-stitch arms with hole shadows, tinted bone at use."""
+    sp = Sprite(size, size, 0)
+    c = size / 2
+    apex = (c, c - 24)
+    for end in ((c - 42, c + 18), (c + 42, c + 18)):
+        # two thread dashes per arm, the first starting just off the apex so the tip reads as a stitched point
+        for t0, t1 in ((0.1, 0.4), (0.64, 0.96)):
+            a = (apex[0] + (end[0] - apex[0]) * t0, apex[1] + (end[1] - apex[1]) * t0)
+            b = (apex[0] + (end[0] - apex[0]) * t1, apex[1] + (end[1] - apex[1]) * t1)
+            sp.line([(a[0] + 1.2, a[1] + 1.8), (b[0] + 1.2, b[1] + 1.8)], (0, 0, 0, 90), 10)
+            sp.line([a, b], WHITE, 10)
+    return sp.render()
+
+
+def export_logo(width=1024):
+    im = logo_sprite().render()
+    x0, y0, x1, y1 = im.split()[3].point(lambda v: 255 if v > 8 else 0).getbbox()
+    m = 10  # keep the soft fuzz; the layout's empty top band is trimmed so the sprite rect is the visible logo
+    im = im.crop((max(0, x0 - m), max(0, y0 - m), min(im.size[0], x1 + m), min(im.size[1], y1 + m)))
+    h = int(round(im.size[1] * width / im.size[0] / 4) * 4)
+    return im.resize((width, h), Image.LANCZOS)
+
+
+def export_unity(out_dir):
+    """Write every baked UI sprite; returns {name: image} in catalog order."""
+    os.makedirs(out_dir, exist_ok=True)
+    sprites = {
+        "felt_disc_night": export_felt_disc(NIGHT, 61),
+        "felt_disc_orange": export_felt_disc(ORANGE, 62),
+        "felt_disc_bone": export_felt_disc(BONE, 52),
+        "stitch_ring": export_stitch_ring(),
+        "paper_card": export_paper(176, 176, 8, 34, 4.0, 4.0, 301),
+        "paper_tag": export_paper(112, 80, 8, 22, 2.2, 3.6, 63),
+        "felt_button_orange": export_felt_button(),
+        "stitch_rect": export_stitch_rect(),
+        "stick_chevron": export_stick_chevron(),
+        "logo": export_logo(),
+    }
+    for name in EXPORT_ICONS:
+        sprites["icon_" + name] = export_icon(name)
+    for name, im in sprites.items():
+        assert im.size[0] % 4 == 0 and im.size[1] % 4 == 0, (name, im.size)
+        im.save(os.path.join(out_dir, name + ".png"), optimize=True)
+        print("exported", name, im.size)
+    return sprites
+
+
+def export_sheet(sprites, path):
+    """Contact sheet of the exported sprites: raw (on a checker) and as composed in game (tinted, 9-sliced)."""
+    cell, cols = 300, 6
+    names = [n for n in sprites if n != "logo"]
+    rows = (len(names) + cols - 1) // cols
+    SWd, SHd = cols * cell + 40, 160 + rows * (cell + 40) + 760
+    sheet = texture(SWd, SHd, NIGHT, "felt", 77)
+    d = ImageDraw.Draw(sheet)
+    d.text((30, 30), "Spooky Street · baked UI sprites (Resources/UI)", font=font(F_DISPLAY, 56), fill=BONE)
+    d.text((32, 100), "raw PNG on a checker (white layers are tinted in game)", font=font(F_BOLD, 28),
+           fill=BONE[:3] + (200,))
+    for i, n in enumerate(names):
+        r, k = divmod(i, cols)
+        x, y = 20 + k * cell, 160 + r * (cell + 40)
+        chk = Image.new("RGBA", (cell - 20, cell - 20), (120, 120, 130, 255))
+        cd = ImageDraw.Draw(chk)
+        for yy in range(0, cell, 20):
+            for xx in range(0, cell, 20):
+                if (xx // 20 + yy // 20) % 2:
+                    cd.rectangle((xx, yy, xx + 19, yy + 19), fill=(90, 90, 100, 255))
+        im = sprites[n]
+        sc = min((cell - 40) / im.size[0], (cell - 40) / im.size[1], 1.0)
+        t = im.resize((max(1, int(im.size[0] * sc)), max(1, int(im.size[1] * sc))), Image.LANCZOS)
+        chk.alpha_composite(t, ((chk.size[0] - t.size[0]) // 2, (chk.size[1] - t.size[1]) // 2))
+        sheet.alpha_composite(chk, (x, y))
+        d.text((x + (cell - 20) / 2, y + cell - 6), f"{n} {im.size[0]}×{im.size[1]}", font=font(F_BOLD, 22),
+               fill=BONE, anchor="mm")
+    y0 = 160 + rows * (cell + 40) + 20
+    d.text((30, y0), "composed (tinted / 9-sliced, as GameUi builds them)", font=font(F_DISPLAY, 40), fill=BONE)
+    logo = sprites["logo"]
+    lg = logo.resize((560, int(560 * logo.size[1] / logo.size[0])), Image.LANCZOS)
+    sheet.alpha_composite(lg, (30, y0 + 70))
+
+    def tint(im, col, alpha=1.0):
+        arr = np.asarray(im, np.float32)
+        arr[..., :3] *= np.array(col[:3], np.float32) / 255
+        arr[..., 3] *= alpha
+        return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGBA")
+
+    def nine(im, w, h, b):
+        """Plain 9-slice stretch (for the preview; Unity tiles stitch_rect instead of stretching)."""
+        out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        W0, H0 = im.size
+        xs = [(0, b, 0, b), (b, W0 - b, b, w - b), (W0 - b, W0, w - b, w)]
+        ys = [(0, b, 0, b), (b, H0 - b, b, h - b), (H0 - b, H0, h - b, h)]
+        for sx0, sx1, dx0, dx1 in xs:
+            for sy0, sy1, dy0, dy1 in ys:
+                if dx1 > dx0 and dy1 > dy0:
+                    out.paste(im.crop((sx0, sy0, sx1, sy1)).resize((dx1 - dx0, dy1 - dy0), Image.BICUBIC),
+                              (dx0, dy0))
+        return out
+
+    def tiled(im, w, h, b):
+        out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        W0, H0 = im.size
+        m = W0 - 2 * b
+        for x in range(b, w - b, m):
+            cw = min(m, w - b - x)
+            out.paste(im.crop((b, 0, b + cw, b)), (x, 0))
+            out.paste(im.crop((b, H0 - b, b + cw, H0)), (x, h - b))
+        for y in range(b, h - b, m):
+            ch = min(m, h - b - y)
+            out.paste(im.crop((0, b, b, b + ch)), (0, y))
+            out.paste(im.crop((W0 - b, b, W0, b + ch)), (w - b, y))
+        for sx, dx in ((0, 0), (W0 - b, w - b)):
+            for sy, dy in ((0, 0), (H0 - b, h - b)):
+                out.paste(im.crop((sx, sy, sx + b, sy + b)), (dx, dy))
+        return out
+
+    x = 640
+    card = nine(sprites["paper_card"], 520, 380, 44)
+    card.alpha_composite(tint(tiled(sprites["stitch_rect"], 520, 380, 48), PURPLE))
+    btn = nine(sprites["felt_button_orange"], 440, 140, 48)
+    btn.alpha_composite(tint(tiled(sprites["stitch_rect"], 440, 140, 48), CANDY))
+    pl = tint(sprites["icon_play"], INK).resize((64, 64), Image.LANCZOS)
+    btn.alpha_composite(pl, (50, 38))
+    ImageDraw.Draw(btn).text((250, 68), "Resume", font=font(F_BOLD, 56), fill=INK, anchor="mm")
+    card.alpha_composite(btn, (40, 120))
+    ImageDraw.Draw(card).text((260, 70), "Paused", font=font(F_DISPLAY, 70), fill=INK, anchor="mm")
+    sheet.alpha_composite(card, (x, y0 + 70))
+    x += 560
+    for i, (disc, ring, icon, ic) in enumerate([("felt_disc_night", CANDY, "icon_jump", BONE),
+                                                ("felt_disc_orange", CANDY, "icon_examine", INK),
+                                                ("felt_disc_night", BONE, "icon_pause", BONE)]):
+        dd = tint(sprites[disc], (255, 255, 255), 0.92 if "night" in disc else 1.0)
+        dd.alpha_composite(tint(sprites["stitch_ring"], ring))
+        ic_im = tint(sprites[icon], ic).resize((120, 120), Image.LANCZOS)
+        dd.alpha_composite(ic_im, (68, 60 if i == 0 else 68))
+        dd = dd.resize((180, 180), Image.LANCZOS)
+        sheet.alpha_composite(dd, (x + (i % 2) * 200, y0 + 80 + (i // 2) * 200))
+    tag = nine(sprites["paper_tag"], 300, 84, 34)
+    ImageDraw.Draw(tag).text((150, 42), "Drag here to walk.", font=font(F_BOLD, 34), fill=INK, anchor="mm")
+    sheet.alpha_composite(tag, (x, y0 + 500))
+    stick = tint(sprites["felt_disc_night"], (255, 255, 255), 0.55)
+    stick.alpha_composite(tint(sprites["stitch_ring"], BONE, 0.8))
+    for k in range(4):
+        ch = tint(sprites["stick_chevron"], BONE, 0.85).resize((48, 48), Image.LANCZOS).rotate(-90 * k)
+        cx, cy = 128 + [0, 92, 0, -92][k], 128 + [-92, 0, 92, 0][k]
+        stick.alpha_composite(ch, (cx - 24, cy - 24))
+    kn = sprites["felt_disc_bone"].resize((100, 100), Image.LANCZOS)
+    stick.alpha_composite(tint(kn, (255, 255, 255), 0.9), (78, 78))
+    sheet.alpha_composite(stick.resize((220, 220), Image.LANCZOS), (x + 420, y0 + 80))
+    sheet.convert("RGB").save(path, quality=92)
+    print("wrote", path)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=os.path.join(os.environ.get("UI_MOCK_OUT", "/tmp/ui_mock")))
     ap.add_argument("--guides", action="store_true", help="draw iPhone safe-area guides")
     ap.add_argument("--only", default=None)
+    ap.add_argument("--export", nargs="?", const=UNITY_UI, default=None,
+                    help="write the baked Unity UI sprites (default Assets/SpookyStreet/Content/Resources/UI)")
+    ap.add_argument("--export-sheet", default=None, help="with --export: also write a contact sheet to this path")
     a = ap.parse_args()
+    if a.export:
+        sprites = export_unity(a.export)
+        if a.export_sheet:
+            export_sheet(sprites, a.export_sheet)
+        return
     os.makedirs(a.out, exist_ok=True)
     builders = [("ui_title", mock_title), ("ui_hud", lambda: mock_hud(a.guides)), ("ui_dialogue", mock_dialogue),
                 ("ui_notebook", mock_notebook), ("ui_pause", mock_pause)]

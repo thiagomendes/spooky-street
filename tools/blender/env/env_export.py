@@ -33,6 +33,7 @@ import bpy
 import numpy as np
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
+from mathutils.geometry import tessellate_polygon
 
 import env_lib as el
 import owl_house as oh
@@ -91,11 +92,12 @@ class GameBuilder(el.Builder):
 
     def __init__(self, seed=0):
         super().__init__(seed)
-        self.parts, self.cards = [], []
+        self.parts, self.cards, self.sheets = [], [], []
         self.part = None  # child object the current pieces belong to (None = the model's main mesh)
         self.part_fn = None  # optional: world points -> part name / None / SKIP
         self.glow_tag = None
         self.card, self.solid = False, False
+        self.sheet = False  # the current pieces are thin paper (cards and `solid` paper alike)
 
     def box(self, mat, size, centre=(0, 0, 0), bevel=0.012, rot=None, tint=None, M=None, drop=()):
         if bevel < CTX.min_bevel:
@@ -108,14 +110,14 @@ class GameBuilder(el.Builder):
         super().prism(mat, outline, depth, M, tint, bevel, smooth)
 
     def paper(self, *a, **k):
-        prev, self.card = self.card, not self.solid
+        prev, self.card, self.sheet = (self.card, self.sheet), not self.solid, True
         super().paper(*a, **k)
-        self.card = prev
+        self.card, self.sheet = prev
 
     def poly(self, *a, **k):
-        prev, self.card = self.card, not self.solid
+        prev, self.card, self.sheet = (self.card, self.sheet), not self.solid, True
         super().poly(*a, **k)
-        self.card = prev
+        self.card, self.sheet = prev
 
     def add_bm(self, bm, mat, M=None, tint=None, smooth=True):
         tint = self.vary() if tint is None else tint  # same rng draw as the review builder, even if skipped
@@ -143,6 +145,7 @@ class GameBuilder(el.Builder):
         n = len(self.faces) - n0
         self.parts.extend([part] * n)
         self.cards.extend([self.card] * n)
+        self.sheets.extend([self.sheet] * n)
 
     def finish(self, name, sharp=75.0):
         if name not in CTX.skip_finish:
@@ -376,47 +379,77 @@ DIRS = _sphere_dirs(128)
 EYE_MIN = 0.3  # the camera never goes lower than this above the ground
 
 
-def visible(verts, faces, cards, occluder=None, ground=True):
-    """Per face: can any outside viewpoint see it? A face is hidden when every ray from it (several sample
+SAMPLE_STEP, SAMPLE_MIN, SAMPLE_MAX = 0.1, 3, 6  # visibility samples: about one per 10 cm, 3 to 6 rows per triangle
+
+
+def _tri_grid(a, b2, c2):
+    """Evenly spread points on a triangle (barycentric grid). A big face that is half buried in its neighbour
+    (the overlapping clumps of the maple crown) is still seen through the part that sticks out, and a handful
+    of fixed sample points can all lie in the buried part."""
+    k = min(SAMPLE_MAX, max(SAMPLE_MIN, math.ceil(max((b2 - a).length, (c2 - b2).length, (a - c2).length) / SAMPLE_STEP)))
+    mid = (a + b2 + c2) / 3
+    out = [mid] + [mid.lerp(p, 0.85) for p in (a, b2, c2)]  # a face in a crack often shows only near its corners
+    for i in range(k):
+        for j in range(k - i):
+            for third in (1, 2)[:2 if i + j < k - 1 else 1]:  # upright and inverted cells
+                out.append(a + (b2 - a) * ((i + third / 3) / k) + (c2 - a) * ((j + third / 3) / k))
+    return out
+
+
+def _triangles(verts, face):
+    if len(face) == 3:
+        return [tuple(face)]
+    return [tuple(face[i] for i in t) for t in tessellate_polygon([[Vector(verts[i]) for i in face]])]
+
+
+def visible(verts, faces, cards, occluder=None, ground=True, sheets=None):
+    """Per face: can any outside viewpoint see it? A face is hidden when every ray from it (a grid of sample
     points, the whole hemisphere) is blocked by the static geometry or would only reach an eye below
     `EYE_MIN`. Hidden faces (backing slabs behind boards, undersides on the ground, buried ends) are not
-    exported, which saves triangles and, more importantly, atlas texels."""
-    all_v, all_f = list(verts), list(faces)
+    exported, which saves triangles and, more importantly, atlas texels.
+
+    Dropping a face that can be seen leaves a hole right through the model (the far side is back-face culled
+    in game), so the test must not err that way:
+    - Faces are split into triangles here, and the same triangles are the blockers and carry the sample
+      points. A bent quad (the noisy lathe of a maple clump) is otherwise sampled on its flat average, which
+      lies under the ridge of the blocker's own triangulation: the face then hides itself.
+    - Paper `sheets` never count as blockers: they are loose scatter with gaps between them (crown leaves)."""
+    blockers = [t for f, sheet in zip(faces, sheets or [False] * len(faces)) if not sheet for t in _triangles(verts, f)]
+    all_v = list(verts)
     if occluder:
         base = len(all_v)
         all_v += occluder[0]
-        all_f += [[base + i for i in f] for f in occluder[1]]
-    bvh = BVHTree.FromPolygons(all_v, all_f, all_triangles=False, epsilon=0.0)
+        blockers += [tuple(base + i for i in t) for f in occluder[1] for t in _triangles(occluder[0], f)]
+    bvh = BVHTree.FromPolygons(all_v, blockers, all_triangles=True, epsilon=0.0)
     keep = []
     for f, card in zip(faces, cards):
         if card:
             keep.append(True)
             continue
-        P = [Vector(verts[i]) for i in f]
-        c = sum(P, Vector()) / len(P)
-        n = Vector()
-        for a, b2 in zip(P, P[1:] + P[:1]):
-            n += a.cross(b2)
-        if n.length < 1e-10:
-            keep.append(True)
-            continue
-        n.normalize()
-        samples = [c + n * 0.003] + [c.lerp(p, 0.75) + n * 0.003 for p in P[::max(1, len(P) // 4)]]
         seen = False
-        for d in DIRS:
-            if d.dot(n) < 0.08:
-                continue
-            for o in samples:
-                reach = 1e4
-                if ground:
-                    if o.z < 0.0:
-                        continue
-                    if d.z < 0.0:
-                        reach = (o.z - EYE_MIN) / -d.z
-                        if reach < 0.5:
+        for tri in _triangles(verts, f):
+            a, b2, c2 = (Vector(verts[i]) for i in tri)
+            n = (b2 - a).cross(c2 - a)
+            if n.length < 1e-10:
+                continue  # sliver: says nothing either way
+            n.normalize()
+            samples = [p + n * 0.003 for p in _tri_grid(a, b2, c2)]
+            for d in DIRS:
+                if d.dot(n) < 0.08:
+                    continue
+                for o in samples:
+                    reach = 1e4
+                    if ground:
+                        if o.z < 0.0:
                             continue
-                if bvh.ray_cast(o, d, reach)[0] is None:
-                    seen = True
+                        if d.z < 0.0:
+                            reach = (o.z - EYE_MIN) / -d.z
+                            if reach < 0.5:
+                                continue
+                    if bvh.ray_cast(o, d, reach)[0] is None:
+                        seen = True
+                        break
+                if seen:
                     break
             if seen:
                 break
@@ -430,14 +463,14 @@ OCCLUDERS = {}  # model name -> (verts, faces) of its static mesh, for models dr
 def mesh_from_builders(name, builders, part, model=None):
     """One working mesh for `part` out of every builder of a model: the approved materials on their own slots,
     the "tint" corner colour, and a "card" face flag."""
-    verts, faces, cols, mat_ids, smooth, cards, mats = [], [], [], [], [], [], []
+    verts, faces, cols, mat_ids, smooth, cards, sheets, mats = [], [], [], [], [], [], [], []
     for b in builders:
         remap, local = {}, {}
         for i, m in enumerate(b.mats):
             if m not in mats:
                 mats.append(m)
             remap[i] = mats.index(m)
-        for f, c, mi, sm, p, cd in zip(b.faces, b.cols, b.mat_ids, b.smooth, b.parts, b.cards):
+        for f, c, mi, sm, p, cd, sh in zip(b.faces, b.cols, b.mat_ids, b.smooth, b.parts, b.cards, b.sheets):
             if p != part:
                 continue
             idx = []
@@ -451,11 +484,12 @@ def mesh_from_builders(name, builders, part, model=None):
             mat_ids.append(remap[mi])
             smooth.append(sm)
             cards.append(cd)
+            sheets.append(sh)
     if not faces:
         return None
     if part is None and model is not None:
-        OCCLUDERS[model] = (verts, faces)
-        keep = visible(verts, faces, cards, OCCLUDERS.get(CTX.behind), CTX.ground)
+        OCCLUDERS[model] = (verts, [f for f, sh in zip(faces, sheets) if not sh])
+        keep = visible(verts, faces, cards, OCCLUDERS.get(CTX.behind), CTX.ground, sheets)
         faces, cols, mat_ids, smooth, cards = ([x for x, k in zip(seq, keep) if k] for seq in (faces, cols, mat_ids, smooth, cards))
         used = sorted({i for f in faces for i in f})
         index = {v: i for i, v in enumerate(used)}

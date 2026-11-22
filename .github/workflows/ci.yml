@@ -164,7 +164,9 @@ jobs:
           shopt -s nullglob
           for frame in ci-out/captures/*.jpg; do
             echo "-----BEGIN FRAME $(basename "$frame")-----"
-            base64 -w 76 "$frame"
+            # One line per frame: cloud sessions read only the last 5000 log lines.
+            base64 -w 0 "$frame"
+            echo
             echo "-----END FRAME $(basename "$frame")-----"
           done
       - name: Capture files Unity normalised (packages-lock, settings)
@@ -179,7 +181,8 @@ jobs:
             echo "::group::Normalized files (tar.gz, base64)"
             echo "-----BEGIN UNITY NORMALIZED-----"
             # shellcheck disable=SC2086 # file list is git paths without spaces
-            tar -czf - $files | base64 -w 76
+            tar -czf - $files | base64 -w 0
+            echo
             echo "-----END UNITY NORMALIZED-----"
             echo "::endgroup::"
             echo "::warning title=Commit Unity-normalised files::${files//$'\n'/ }"
