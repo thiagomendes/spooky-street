@@ -51,3 +51,6 @@ __pycache__/
 /Assets/SpookyStreet/Content/Resources/BuildInfo.json*
 /Assets/SpookyStreet/Content/Generated/
 /Assets/SpookyStreet/Content/Generated.meta
+
+# Agent worktrees created by Claude Code sessions (local only).
+.claude/worktrees/
