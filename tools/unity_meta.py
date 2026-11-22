@@ -34,6 +34,8 @@ TEMPLATES = {
     ".asset": "NativeFormatImporter:\n  externalObjects: {}\n  mainObjectFileID: 11400000\n" + COMMON_TAIL,
     ".mat": "NativeFormatImporter:\n  externalObjects: {}\n  mainObjectFileID: 2100000\n" + COMMON_TAIL,
     ".unity": "DefaultImporter:\n  externalObjects: {}\n" + COMMON_TAIL,
+    ".shader": "ShaderImporter:\n  externalObjects: {}\n  defaultTextures: []\n  nonModifiableTextures: []\n"
+               "  preprocessorOverride: 0\n" + COMMON_TAIL,
     # Importer settings for models and baked textures are applied by Editor/ModelImportRules.cs, so Unity fills
     # the remaining defaults on first import.
     ".fbx": "ModelImporter:\n  externalObjects: {}\n" + COMMON_TAIL,

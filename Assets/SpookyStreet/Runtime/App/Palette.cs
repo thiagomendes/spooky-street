@@ -29,6 +29,16 @@ namespace SpookyStreet
         public static readonly Color MoonDisc = Hex(0xEDE3BF);
         public static readonly Color MoonCrater = Hex(0xC9BE98);
         public static readonly Color StarLight = Hex(0xFFF2C8);
+
+        // Handcrafted sky (docs/art-bible.md §3): cut-paper clouds in the night-violet family, pale moonlit edges.
+        public static readonly Color CloudShade = Hex(0x2B2454);
+        public static readonly Color CloudBody = Hex(0x463873);
+        public static readonly Color CloudBackShade = Hex(0x3B2F69);
+        public static readonly Color CloudBack = Hex(0x5A4990);
+        public static readonly Color CloudHaze = Hex(0x6A4F92);
+        public static readonly Color MoonRim = Hex(0xCFC7E8);
+        public static readonly Color MoonHalo = Hex(0xC3C8F0);
+        public static readonly Color MoonSkyGlow = Hex(0x37386E);
         public static readonly Color SkylineWall = Hex(0x231E44);
         public static readonly Color SkylineRoof = Hex(0x33255A);
 

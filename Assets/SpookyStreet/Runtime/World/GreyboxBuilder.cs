@@ -278,59 +278,26 @@ namespace SpookyStreet.World
 
         private void BuildSkyCard()
         {
-            // Halloween night (spec v1.3 palette): haunted-purple glow at the horizon rising into night violet and a
-            // deeper violet overhead, with a scatter of small stars in the upper sky. Painted once at load.
-            const int width = 512;
-            const int height = 256;
-            var sky = new Texture2D(width, height, TextureFormat.RGB24, false)
-            {
-                name = "NightSky",
-                wrapModeU = TextureWrapMode.Repeat,
-                wrapModeV = TextureWrapMode.Clamp,
-                filterMode = FilterMode.Bilinear,
-            };
-            var pixels = new Color32[width * height];
-            for (int y = 0; y < height; y++)
-            {
-                float t = y / (height - 1f);
-                Color c = Color.Lerp(Palette.HauntedPurple, Palette.NightViolet, Mathf.SmoothStep(0f, 1f, t / 0.42f));
-                c = Color.Lerp(c, Palette.NightZenith, Mathf.SmoothStep(0f, 1f, (t - 0.42f) / 0.58f));
-                Color32 row = c;
-                for (int x = 0; x < width; x++)
-                {
-                    pixels[y * width + x] = row;
-                }
-            }
-
-            var random = new System.Random(7);
-            for (int i = 0; i < 160; i++)
-            {
-                int x = random.Next(width);
-                int y = (int)(height * (0.28f + 0.72f * (float)random.NextDouble()));
-                y = Mathf.Min(y, height - 1);
-                float brightness = 0.55f + 0.45f * (float)random.NextDouble();
-                pixels[y * width + x] = Color.Lerp(pixels[y * width + x], Palette.StarLight, brightness);
-            }
-
-            sky.SetPixels32(pixels);
-            sky.Apply(false, true);
-
             // A closed dome instead of a single card: the night sky surrounds the block from every camera angle
             // (owner feedback: the card left the sky unfinished when looking sideways or up while gliding).
-            var dome = new GameObject("SkyDome", typeof(MeshFilter), typeof(MeshRenderer));
+            // The paint (spec v1.3 Halloween night: horizon mist rising into night violet and a deep violet zenith,
+            // paper-cut cloud strips, twinkling stars) comes from MagicSky, which also animates it.
+            var dome = new GameObject(SkyDomeName, typeof(MeshFilter), typeof(MeshRenderer));
             dome.transform.SetParent(_root, false);
             dome.transform.localPosition = SkyDomeCentre;
             dome.GetComponent<MeshFilter>().sharedMesh = BuildSkyDomeMesh(SkyDomeRadius);
             var renderer = dome.GetComponent<MeshRenderer>();
-            renderer.sharedMaterial = _materials.Unlit(sky);
+            renderer.sharedMaterial = MagicSky.CreateDomeMaterial(_materials);
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             renderer.receiveShadows = false;
         }
 
+        public const string SkyDomeName = "SkyDome";
+
         /// <summary>Sky dome centre: under the middle of the lawn ring so every neighbour house sits inside it.</summary>
         public static readonly Vector3 SkyDomeCentre = new Vector3(0f, -3f, 8f);
 
-        /// <summary>Inside the fog's soft range, outside the block, the neighbours and the moon.</summary>
+        /// <summary>Outside the block, the neighbours, the paper clouds and the moon; inside the camera's far plane.</summary>
         public const float SkyDomeRadius = 52f;
 
         /// <summary>

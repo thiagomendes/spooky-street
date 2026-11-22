@@ -1,4 +1,3 @@
-using SpookyStreet.Core.World;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -25,16 +24,23 @@ namespace SpookyStreet.World
 
     /// <summary>
     /// Light story for the arrival view (docs/art-bible.md, spec v1.3 Halloween night): a violet night sky with a
-    /// pale moon, cool moonlight from behind the street rim-lighting the silhouettes, warm amber practicals (attic
-    /// window, street lamp, porch lamp) carrying the eye, shadows staying blue-violet. Mobile-cheap: one shadowed
-    /// directional light, three unshadowed point lights, trilight ambient, linear fog. Also owns the global
-    /// post-processing Volume (bloom picks up the emissive glow parts); the camera must have post-processing on.
+    /// paper moon (the handcrafted sky, <see cref="MagicSky"/>), cool moonlight from behind the street rim-lighting
+    /// the silhouettes, warm amber practicals (attic window, street lamp, porch lamp) carrying the eye, shadows
+    /// staying blue-violet. Mobile-cheap: one shadowed directional light, three unshadowed point lights, trilight
+    /// ambient, linear fog. Also owns the global post-processing Volume (bloom picks up the emissive glow parts);
+    /// the camera must have post-processing on.
     /// </summary>
     public static class Atmosphere
     {
-        /// <summary>Moon disc centre: up and left of the owl house from the arrival porch, in front of the sky card.</summary>
-        public static readonly Vector3 MoonPosition = new Vector3(-8f, 13f, 33f);
-        public const float MoonDiameter = 4.2f;
+        /// <summary>
+        /// Moon centre: upper left of the arrival view, over the west neighbour's roof and clear of the plaza maple,
+        /// just inside the sky dome (so the paper clouds and bats can pass in front of it).
+        /// </summary>
+        public static readonly Vector3 MoonPosition = new Vector3(-30.4f, 19.2f, 34.9f);
+        public const float MoonDiameter = 8.4f;
+
+        /// <summary>The moon disc faces this point: between the dome's centre and the arrival porch.</summary>
+        public static readonly Vector3 MoonFacing = new Vector3(0f, -0.65f, -2.5f);
 
         public static Transform Build(Transform parent, MaterialLibrary materials, AtmosphereAnchors anchors)
         {
@@ -73,42 +79,14 @@ namespace SpookyStreet.World
 
             if (materials != null)
             {
-                BuildMoon(root, materials);
+                // Paper moon, halo, cloud rings, bats and shooting star (all under the bloom threshold, so the
+                // attic window keeps the brightest value on screen).
+                Transform dome = parent != null ? parent.Find(GreyboxBuilder.SkyDomeName) : null;
+                MagicSky.Build(root, materials, dome != null ? dome.GetComponent<Renderer>() : null);
             }
 
             BuildVolume(root);
             return root;
-        }
-
-        /// <summary>
-        /// A flat paper moon with three soft craters (key frame), unlit and below the bloom threshold so the attic
-        /// window keeps the brightest value on screen.
-        /// </summary>
-        private static void BuildMoon(Transform parent, MaterialLibrary materials)
-        {
-            var moon = new GameObject("Moon").transform;
-            moon.SetParent(parent, false);
-            moon.position = MoonPosition;
-            Disc(moon, "MoonDisc", Vector3.zero, MoonDiameter, materials.Glow(Palette.MoonDisc, GlowLevels.Moon));
-            var crater = materials.Glow(Palette.MoonCrater, GlowLevels.Moon);
-            Disc(moon, "MoonCrater", new Vector3(-0.85f, 0.7f, -0.05f), 1.0f, crater);
-            Disc(moon, "MoonCrater", new Vector3(0.9f, -0.25f, -0.05f), 0.75f, crater);
-            Disc(moon, "MoonCrater", new Vector3(-0.25f, -1.1f, -0.05f), 0.85f, crater);
-        }
-
-        private static void Disc(Transform parent, string name, Vector3 localPosition, float diameter, Material material)
-        {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            go.name = name;
-            Object.Destroy(go.GetComponent<Collider>());
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = localPosition;
-            go.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            go.transform.localScale = new Vector3(diameter, 0.02f, diameter);
-            var renderer = go.GetComponent<Renderer>();
-            renderer.sharedMaterial = material;
-            renderer.shadowCastingMode = ShadowCastingMode.Off;
-            renderer.receiveShadows = false;
         }
 
         /// <summary>Turns on HDR and post-processing for a script-created camera (both default off).</summary>

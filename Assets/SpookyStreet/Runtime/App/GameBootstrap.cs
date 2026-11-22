@@ -54,6 +54,9 @@ namespace SpookyStreet.App
         /// <summary>The original environment models (owl house, porch kit, props) when committed.</summary>
         public EnvironmentDressing Environment { get; private set; }
 
+        /// <summary>The handcrafted sky: paper moon, drifting clouds, twinkling stars, shooting stars and bats.</summary>
+        public MagicSky Sky { get; private set; }
+
         /// <summary>Bea, her bicycle and Mr. Vale when their models are committed (ambient only until S002).</summary>
         public WitnessCast Witnesses { get; private set; }
 
@@ -85,13 +88,18 @@ namespace SpookyStreet.App
                 UseStreetSet = Environment.StreetSetAvailable,
             }.Build();
             Environment.Build(world);
-            Atmosphere.Build(world, Materials, Environment.Anchors);
+            Sky = Atmosphere.Build(world, Materials, Environment.Anchors).GetComponentInChildren<MagicSky>();
             Pip = CreatePip(movementTuning, Materials);
             Witnesses = WitnessCast.Build(world, Materials, Pip.transform, Environment.UsesModels);
 
             int obstacleLayers = Physics.DefaultRaycastLayers & ~(1 << Pip.gameObject.layer);
             CameraRig = CameraRig.Create(Pip, movementTuning, _input, Flow, obstacleLayers);
             Pip.Configure(movementTuning, _input, Flow, CameraRig.OutputCamera.transform);
+
+            if (Sky != null)
+            {
+                Sky.View = CameraRig.OutputCamera.transform; // shooting stars fall where the player is looking
+            }
 
             Feedback = MoveFeedback.Create(Pip, Materials, CameraRig.OutputCamera.transform);
             Ui = GameUi.Create(Flow, _input, Pip, BuildInfo, leftHandedLayout);
