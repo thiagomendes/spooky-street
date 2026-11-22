@@ -129,7 +129,7 @@ namespace SpookyStreet.Tests.PlayMode
             var game = GameBootstrap.Instance;
             var pip = game.Pip;
             Vector3 safe = pip.transform.position;
-            pip.Teleport(new Vector3(30f, 2f, 30f)); // outside the floor
+            pip.Teleport(new Vector3(40f, 2f, 40f)); // outside the walls and the lawn ring: no ground
             yield return Wait(0.2f); // past coyote time
 
             // Hold the on-screen Jump disc (touch path).

@@ -276,6 +276,13 @@ namespace SpookyStreet.World
             }
 
             SpawnedCount++;
+            // The collision audit (CollisionRules) decides first; models without a recipe keep their placement's kind.
+            if (CollisionRules.TryGet(placement.Model, out var recipe))
+            {
+                ModelColliders.Apply(instance, recipe, placement.Yaw + ModelYawCorrection);
+                return instance.transform;
+            }
+
             switch (placement.Collider)
             {
                 case PlacementCollider.Bounds:
