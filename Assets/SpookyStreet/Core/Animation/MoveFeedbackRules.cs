@@ -20,21 +20,37 @@ namespace SpookyStreet.Core.Animation
 
         /// <summary>A dive touching down into its roll: a dust puff.</summary>
         DiveDust = 8,
+
+        /// <summary>
+        /// The hold boost of a high jump engages: a small upward puff of paper stars and confetti under Pip's feet
+        /// and a brief vertical speed line.
+        /// </summary>
+        BoostPuff = 16,
     }
 
     /// <summary>
     /// Readability rules for the moveset (S000.6 feel pass): which paper effect each move plays and how much
     /// squash-and-stretch it gets. Negative squash values stretch Pip tall and thin, positive ones squash wide and
-    /// flat (<see cref="SquashPulse.ToScale"/>). Chained jumps stretch more at each stage, and a held jump keeps a
-    /// small extra stretch while it rises so the hold reads differently from a tap.
+    /// flat (<see cref="SquashPulse.ToScale"/>). Chained jumps stretch more at each stage, and a held jump keeps an
+    /// extra stretch while it rises and kicks a cape flare when its boost engages, so the hold reads differently from
+    /// a tap (TestFlight 12.1: "holding or tapping, the jump is the same").
     /// </summary>
     public static class MoveFeedbackRules
     {
         /// <summary>Extra stretch held while Pip rises with Jump still held (eased in and out by the avatar).</summary>
-        public const float HeldJumpStretch = -0.07f;
+        public const float HeldJumpStretch = -0.1f;
 
         /// <summary>How fast the held stretch eases in and out (units of squash per second).</summary>
-        public const float HeldJumpStretchRate = 0.6f;
+        public const float HeldJumpStretchRate = 0.9f;
+
+        /// <summary>Stretch kick when the hold boost engages: the cape flares up as Pip shoots up.</summary>
+        public const float BoostFlareStretch = -0.12f;
+
+        /// <summary>Most stretch kicks and the held stretch may add up to (tall about 1.42x: a stretch, not a distortion).</summary>
+        public const float MaxStretch = -0.16f;
+
+        /// <summary>A kick plus the held stretch, never stretched past <see cref="MaxStretch"/>.</summary>
+        public static float CombinedSquash(float pulse, float held) => Math.Max(MaxStretch, pulse + held);
 
         /// <summary>Stretch kick when a dive starts (the cape snaps back).</summary>
         public const float DiveSnapStretch = -0.08f;
@@ -76,6 +92,11 @@ namespace SpookyStreet.Core.Animation
                 bursts |= MoveBursts.DiveDust;
             }
 
+            if (step.BoostStarted)
+            {
+                bursts |= MoveBursts.BoostPuff;
+            }
+
             return bursts;
         }
 
@@ -88,6 +109,7 @@ namespace SpookyStreet.Core.Animation
                 case MoveBursts.ChainThird: return 16;
                 case MoveBursts.DiveStreak: return 4;
                 case MoveBursts.DiveDust: return 7;
+                case MoveBursts.BoostPuff: return 8;
                 default: return 0;
             }
         }

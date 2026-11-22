@@ -85,23 +85,24 @@ namespace SpookyStreet.Tests.Core
             float tap = new Sim(fps).JumpApex(0f);
             float hold = new Sim(fps).JumpApex(-1f);
             Assert.That(tap, Is.EqualTo(1f).Within(tolerance), "tapped jump apex ≈ 1 m");
-            Assert.That(hold, Is.EqualTo(1.6f).Within(tolerance), "held jump apex ≈ 1.6 m");
+            Assert.That(hold, Is.EqualTo(2.1f).Within(tolerance), "held jump apex ≈ 2.1 m");
         }
 
         [Test]
         public void ReleasingEarlyCutsTheRise()
         {
             float tap = new Sim(60f).JumpApex(0f);
-            float early = new Sim(60f).JumpApex(0.1f);
+            float early = new Sim(60f).JumpApex(0.2f);
             float hold = new Sim(60f).JumpApex(-1f);
-            Assert.Greater(early, tap + 0.1f, "holding for 0.1 s rises above a tap");
-            Assert.Less(early, hold - 0.1f, "releasing at 0.1 s cuts the rise below a full hold");
+            Assert.Greater(early, tap + 0.1f, "holding for 0.2 s rises above a tap");
+            Assert.Less(early, hold - 0.1f, "releasing at 0.2 s cuts the boost short of a full hold");
         }
 
         [Test]
         public void HeldJumpApexMatchesAcrossFrameRates()
         {
-            Assert.That(new Sim(30f).JumpApex(0.15f), Is.EqualTo(new Sim(60f).JumpApex(0.15f)).Within(0.05f));
+            // Released at 0.2 s on both (the first frame at or past 0.19 s lets go).
+            Assert.That(new Sim(30f).JumpApex(0.19f), Is.EqualTo(new Sim(60f).JumpApex(0.19f)).Within(0.05f));
         }
 
         // --- Chain jump ---------------------------------------------------------------------------
@@ -149,10 +150,10 @@ namespace SpookyStreet.Tests.Core
         {
             var (stages, apexes) = Chain(1f, 4);
             CollectionAssert.AreEqual(new[] { 1, 2, 3, 1 }, stages);
-            Assert.That(apexes[0], Is.EqualTo(1.6f).Within(0.02f));
-            Assert.That(apexes[1], Is.EqualTo(2.0f).Within(0.02f));
-            Assert.That(apexes[2], Is.EqualTo(2.4f).Within(0.02f));
-            Assert.That(apexes[3], Is.EqualTo(1.6f).Within(0.02f));
+            Assert.That(apexes[0], Is.EqualTo(2.1f).Within(0.02f));
+            Assert.That(apexes[1], Is.EqualTo(2.4f).Within(0.02f));
+            Assert.That(apexes[2], Is.EqualTo(2.8f).Within(0.02f));
+            Assert.That(apexes[3], Is.EqualTo(2.1f).Within(0.02f));
         }
 
         [Test]
@@ -173,10 +174,11 @@ namespace SpookyStreet.Tests.Core
         public void TappedChainJumpsScaleTheTapHeight()
         {
             var tuning = new MovementTuningData();
-            // Released at take-off, the cut gravity gives the tap apex times the chain scale.
+            // Released at take-off (no boost), plain gravity gives the tap apex times the chain scale.
             float v = tuning.JumpVelocityFor(tuning.ChainHeightScale(3));
-            float apex = v * v / (2f * tuning.Gravity * tuning.JumpCutGravityMultiplier);
-            Assert.That(apex, Is.EqualTo(tuning.JumpApexHeight * 1.5f).Within(1e-3f));
+            float apex = v * v / (2f * tuning.Gravity);
+            Assert.That(apex, Is.EqualTo(tuning.JumpApexHeight * 4f / 3f).Within(1e-3f));
+            Assert.That(new Sim(60f).JumpApex(0f), Is.EqualTo(1f).Within(0.015f), "a plain tap still peaks at 1.0 m");
         }
 
         // --- Bat-cape glide -----------------------------------------------------------------------
@@ -235,10 +237,10 @@ namespace SpookyStreet.Tests.Core
                 return float.PositiveInfinity;
             }
 
-            float plain = LandingTime(t => t < 0.36f); // released at the apex: ordinary fall
+            float plain = LandingTime(t => t < 0.48f); // released at the apex: ordinary fall
             float glide = LandingTime(_ => true);
-            float partial = LandingTime(t => t < 0.7f); // let go half-way down
-            // 1.6 m at 1.75 m/s ≈ 0.9 s of descent instead of ≈ 0.36 s falling freely.
+            float partial = LandingTime(t => t < 1.0f); // let go half-way down
+            // 2.1 m at 1.75 m/s ≈ 1.2 s of descent instead of ≈ 0.41 s falling freely.
             Assert.Greater(glide, plain + 0.4f);
             Assert.Less(partial, glide - 0.1f, "releasing Jump ends the glide");
             Assert.Greater(partial, plain);
