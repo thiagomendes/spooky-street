@@ -63,6 +63,20 @@ namespace SpookyStreet.Core.Movement
             AutoRecentering = false;
         }
 
+        /// <summary>
+        /// A cut (a threshold crossing): the orbit jumps straight behind <paramref name="yaw"/> at the default pitch,
+        /// with no recenter left pending and no manual-orbit grace carried over.
+        /// </summary>
+        public void Snap(float yaw)
+        {
+            Yaw = NormalizeAngle(yaw);
+            Pitch = _tuning.DefaultPitch;
+            _recenterRequested = false;
+            _timeSinceManual = float.PositiveInfinity;
+            _timeMovingSteadily = 0f;
+            AutoRecentering = false;
+        }
+
         /// <summary>Explicit recenter (button). Turns behind the character at ManualRecenterSpeed.</summary>
         public void RequestRecenter() => _recenterRequested = true;
 

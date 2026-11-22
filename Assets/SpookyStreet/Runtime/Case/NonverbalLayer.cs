@@ -80,6 +80,7 @@ namespace SpookyStreet.Case
             MemoryReplay = MemoryReplayView.Create(director.transform, game.Controls, game.CameraRig.OutputCamera, root);
             MemoryReplay.Ended += RestoreHud;
             Guide = HintGuide.Create(director.transform, game.Pip.transform);
+            Guide.DoorOpen = () => director.House != null && director.House.DoorOpen;
             Menus = NonverbalMenus.Create(director.transform);
             Menus.Settings = Settings;
             Menus.SettingsChanged = SaveSettings;

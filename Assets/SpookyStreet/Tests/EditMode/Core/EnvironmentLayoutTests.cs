@@ -134,6 +134,10 @@ namespace SpookyStreet.Tests.Core
             }
 
             Assert.Less(GlowLevels.Moon, 1f, "the moon stays under the bloom threshold");
+            Assert.AreEqual(GlowLevels.RoomCard, GlowLevels.IntensityFor("RoomCard_Glow"));
+            Assert.AreEqual(GlowLevels.StreetView, GlowLevels.IntensityFor("StreetView_Glow"));
+            Assert.Less(GlowLevels.RoomCard, GlowLevels.AtticWindow * 0.5f, "the lit window cards stay far under the attic window");
+            Assert.Less(GlowLevels.StreetView, 1f, "the painted night views never bloom");
         }
 
         [Test]

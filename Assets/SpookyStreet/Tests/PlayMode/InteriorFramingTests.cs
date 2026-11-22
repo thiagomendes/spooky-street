@@ -17,11 +17,12 @@ using UnityEngine.TestTools;
 namespace SpookyStreet.Tests.PlayMode
 {
     /// <summary>
-    /// The indoor camera in the real house (S002 interior polish): at sample places in the hall, the attic and on the
-    /// stair, nothing solid lies between the lens and Pip's head and chest. "Solid" is every collider in the scene and
-    /// every drawn mesh of the interior and the workshop mechanism (given temporary mesh colliders for the check, so the
-    /// joists, rails and dressing that have no collider count too). Pip fills a reasonable share of the frame, and the
-    /// character Pip is about to talk to stays in clear view as well.
+    /// The indoor camera in the real rooms (S002 interior polish, house v3): at sample places in the hall, the attic,
+    /// the alcove and on the stair of the separate interior, and in the treehouse cabin, nothing solid lies between the
+    /// lens and Pip's head and chest. "Solid" is every collider in the scene and every drawn mesh of the interior, the
+    /// workshop mechanism and the cabin (given temporary mesh colliders for the check, so the beams, rails and dressing
+    /// that have no collider count too). Pip fills a reasonable share of the frame, the character Pip is about to talk
+    /// to stays in clear view as well, and the lens never leaves the room (so no frame shows the void).
     /// </summary>
     public class InteriorFramingTests : InputTestFixture
     {
@@ -86,7 +87,16 @@ namespace SpookyStreet.Tests.PlayMode
         private void AddMeshProbes()
         {
             var house = Game.Director.House;
-            foreach (var root in new[] { house.Interior, house.Mechanism })
+            Transform cabin = null;
+            foreach (Transform child in house.transform)
+            {
+                if (child.name == CaseRouteLayout.TreehouseCabin)
+                {
+                    cabin = child;
+                }
+            }
+
+            foreach (var root in new[] { house.Interior, house.Mechanism, cabin })
             {
                 if (root == null)
                 {
@@ -179,8 +189,32 @@ namespace SpookyStreet.Tests.PlayMode
         private static float YawToward(Vector3 from, Vector3 to) =>
             Mathf.Atan2(to.x - from.x, to.z - from.z) * Mathf.Rad2Deg;
 
-        private static Vector3 OnStair(float x) =>
-            new Vector3(x, InteriorCamera.StairSurface(x), (CaseRouteLayout.StairMinZ + CaseRouteLayout.StairMaxZ) * 0.5f);
+        private const float Ifz = CaseRouteLayout.InteriorFrontZ;
+
+        private static Vector3 Hall(float x, float depth) => new Vector3(x, CaseRouteLayout.FloorY, Ifz + depth);
+
+        private static Vector3 Attic(float x, float depth) => new Vector3(x, CaseRouteLayout.LoftY, Ifz + depth);
+
+        private static Vector3 OnLowerFlight(float depth) =>
+            new Vector3(-2.85f, CaseRouteLayout.LowerFlightAt(Ifz + depth), Ifz + depth);
+
+        private static Vector3 OnUpperFlight(float x) =>
+            new Vector3(x, CaseRouteLayout.UpperFlightAt(x), CaseRouteLayout.UpperFlightZ);
+
+        private static Vector3 InCabin(float cx, float cy)
+        {
+            CaseRouteLayout.CabinToWorld(CaseRouteLayout.CabinPlatX + cx, CaseRouteLayout.CabinPlatY + cy, out float x,
+                out float z);
+            return new Vector3(x, CaseRouteLayout.TreehouseY, z);
+        }
+
+        /// <summary>The cabin's door faces the shed roof: world yaw of the cabin frame's +x and +y.</summary>
+        private static float CabinYaw(float cx, float cy)
+        {
+            Vector3 a = InCabin(0f, 0f);
+            Vector3 b = InCabin(cx, cy);
+            return YawToward(a, b);
+        }
 
         [UnityTest]
         [Timeout(300000)]
@@ -189,25 +223,30 @@ namespace SpookyStreet.Tests.PlayMode
             yield return StartGame();
             var director = Game.Director;
             const float floor = CaseRouteLayout.FloorY;
-            const float loft = CaseRouteLayout.LoftY;
             var june = new Vector3(CaseStage.JuneAttic.Position.X, CaseStage.JuneAttic.Position.Y, CaseStage.JuneAttic.Position.Z);
             var samples = new List<(string Name, Vector3 At, float Yaw)>
             {
-                ("hall, facing the front door (23_foyer_door)", new Vector3(0.1f, floor, 13.2f), 180f),
-                ("hall, by the bench facing the workshop", new Vector3(-2.0f, floor, 13.6f), 90f),
-                ("hall, at the crank", new Vector3(0.75f, floor, 14.2f), 90f),
-                ("hall, just inside the door facing in", new Vector3(0.05f, floor, 11.7f), 0f),
-                ("hall, under the loft facing the stair", new Vector3(-0.6f, floor, 14.6f), 0f),
-                ("attic, by June (19_attic_june)", new Vector3(-2.35f, loft, 13.85f),
-                    YawToward(new Vector3(-2.35f, loft, 13.85f), june + new Vector3(1.1f, 0f, -0.45f))),
-                ("attic, middle facing the window", new Vector3(0.2f, loft, 14.3f), 270f),
-                ("attic, at the loft rail facing the hall", new Vector3(-0.4f, loft, 12.95f), 180f),
-                ("attic, at the stairwell", new Vector3(-0.6f, loft, 15.3f), 90f),
-                ("attic, in the alcove facing in", new Vector3(-2.5f, loft, CaseRouteLayout.WindowZ), 90f),
-                ("stair, bottom going up", OnStair(-1.4f), 90f),
-                ("stair, middle going up", OnStair(-0.5f), 90f),
-                ("stair, top going up", OnStair(0.45f), 90f),
-                ("stair, middle going down", OnStair(-0.2f), 270f),
+                ("hall, facing the front door (hall and door)", Hall(0f, 2.4f), 180f),
+                ("hall, by the blanket chest facing the workshop", Hall(-2.4f, 1.6f), 90f),
+                ("hall, at the crank", new Vector3(CaseRouteLayout.NookX - 0.7f, floor, CaseRouteLayout.MechanismZ + 0.1f), 90f),
+                ("hall, at the door arrival facing in", Hall(Thresholds.DoorInside.ArriveX, 2.0f), 0f),
+                ("hall, facing the stair foot", Hall(-1.2f, 2.0f), 315f),
+                ("hall, coat alcove", Hall(1.2f, 6.0f), 0f),
+                ("attic, by June (attic with June)", Attic(-0.4f, 2.4f),
+                    YawToward(Attic(-0.4f, 2.4f), june)),
+                ("attic, the dormer arrival facing in", Attic(-1.7f, 1.5f), 90f),
+                ("attic, middle facing the window", Attic(0.6f, 3.2f), 270f),
+                ("attic, at the stair rail", Attic(-1.2f, 4.4f), 270f),
+                ("attic, at the stair top", Attic(0.6f, 6.3f), 180f),
+                ("attic, in the alcove facing in", Attic(-3.0f, 1.5f), 90f),
+                ("stair, lower flight going up", OnLowerFlight(3.8f), 0f),
+                ("stair, lower flight going down", OnLowerFlight(4.8f), 180f),
+                ("stair, landing", new Vector3(-2.85f, CaseRouteLayout.LandingY, Ifz + 6.3f), 90f),
+                ("stair, upper flight going up", OnUpperFlight(-1.2f), 90f),
+                ("stair, upper flight going down", OnUpperFlight(-0.6f), 270f),
+                ("cabin, by the door", InCabin(-0.75f, -0.57f), CabinYaw(1f, 0f)),
+                ("cabin, in the bay", InCabin(0f, 1.35f), CabinYaw(0f, 1f)),
+                ("cabin, behind the trunk", InCabin(0.6f, -0.6f), CabinYaw(-1f, 0f)),
             };
 
             AddMeshProbes();
@@ -223,6 +262,12 @@ namespace SpookyStreet.Tests.PlayMode
                     string where = $"{sample.Name}: lens {lens:F2}, {director.Framing.Shot}";
                     Debug.Log("[InteriorFramingTests] " + where);
                     Assert.IsTrue(director.Framing.Active, $"{sample.Name}: the interior camera is in charge");
+                    bool cabin = sample.Name.StartsWith("cabin", System.StringComparison.Ordinal);
+                    if (!InteriorCamera.InAir(lens.x, lens.y, lens.z))
+                    {
+                        failures.Add($"{where}: the lens is outside the room's air ({(cabin ? "cabin" : "interior")})");
+                    }
+
                     foreach (float h in new[] { InteriorCamera.HeadHeight, InteriorCamera.ChestHeight })
                     {
                         var hits = Between(lens, pip + Vector3.up * h, null);
@@ -239,7 +284,9 @@ namespace SpookyStreet.Tests.PlayMode
                     }
 
                     float share = ScreenShare(camera, out bool headInFrame);
-                    if (!headInFrame || share < MinScreenShare || share > MaxScreenShare)
+                    // In the child-sized cabin the 1.0–1.2 m boom frames Pip nearly full height; the head stays in frame.
+                    float most = cabin ? 1.01f : MaxScreenShare;
+                    if (!headInFrame || share < MinScreenShare || share > most)
                     {
                         failures.Add($"{where}: Pip fills {share:P0} of the frame height (head in frame: {headInFrame})");
                     }
@@ -272,12 +319,12 @@ namespace SpookyStreet.Tests.PlayMode
             {
                 var camera = Game.CameraRig.OutputCamera;
                 Vector3 june = cast.June.transform.position;
-                foreach (var stand in new[] { new Vector3(-2.35f, CaseRouteLayout.LoftY, 13.85f), new Vector3(-1.6f, CaseRouteLayout.LoftY, 14.2f), new Vector3(-0.9f, CaseRouteLayout.LoftY, 14.6f) })
+                foreach (var stand in new[] { Attic(-0.4f, 2.4f), Attic(-0.4f, 3.4f), Attic(-1.7f, 1.6f) })
                 {
                     yield return StandAt(stand, YawToward(stand, june));
                     if (!director.Targets.HasTarget || director.Targets.Current.Id != CaseStage.PointJuneAttic)
                     {
-                        // From the alcove the sill snag can be the nearer target; then June is not the focus.
+                        // From near the window the sill snag can be the nearer target; then June is not the focus.
                         Debug.Log($"[InteriorFramingTests] June not offered from {stand}: {director.Targets.Current?.Id}");
                         continue;
                     }
@@ -310,7 +357,7 @@ namespace SpookyStreet.Tests.PlayMode
         public IEnumerator OutsideTheHouseTheCameraIsHandedBack()
         {
             yield return StartGame();
-            yield return StandAt(new Vector3(0.1f, CaseRouteLayout.FloorY, 13.2f), 180f);
+            yield return StandAt(Hall(0f, 2.4f), 180f);
             Assert.IsTrue(Game.Director.Framing.Active);
             Assert.IsTrue(Game.CameraRig.Indoors);
             Game.Pip.Teleport(new Vector3(0f, 0.7f, -6f));

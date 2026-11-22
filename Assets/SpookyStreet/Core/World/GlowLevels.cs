@@ -25,6 +25,18 @@ namespace SpookyStreet.Core.World
         /// </summary>
         public const float NeighbourWindow = 0.9f;
 
+        /// <summary>
+        /// The owl house's lit window cards outside (house v3: painted rooms behind the ground-floor windows and the
+        /// open thresholds): warm and lived-in, under the attic window by far so it stays the brightest point outside.
+        /// </summary>
+        public const float RoomCard = 1.2f;
+
+        /// <summary>
+        /// The painted night views behind the interior's windows and its two thresholds: a night street, so they glow
+        /// only softly (under the bloom threshold) and never outshine the rooms' lamps.
+        /// </summary>
+        public const float StreetView = 0.85f;
+
         /// <summary>Unlit moon disc colour scale: under the bloom threshold so it never competes with the attic.</summary>
         public const float Moon = 0.92f;
 
@@ -54,6 +66,16 @@ namespace SpookyStreet.Core.World
                 return NeighbourWindow;
             }
 
+            if (objectName.StartsWith("RoomCard", StringComparison.Ordinal))
+            {
+                return RoomCard;
+            }
+
+            if (objectName.StartsWith("StreetView", StringComparison.Ordinal))
+            {
+                return StreetView;
+            }
+
             if (objectName.StartsWith("Lamp", StringComparison.Ordinal))
             {
                 return Lamp;
@@ -74,6 +96,7 @@ namespace SpookyStreet.Core.World
 
         /// <summary>The brightest level any non-attic glow part can get (for the value-hierarchy check).</summary>
         public static float BrightestPractical =>
-            Math.Max(Math.Max(Math.Max(SideWindow, Lamp), Math.Max(JackFace, PaperBatEdge)), Math.Max(Default, Moon));
+            Math.Max(Math.Max(Math.Max(SideWindow, Lamp), Math.Max(JackFace, PaperBatEdge)),
+                Math.Max(Math.Max(Default, Moon), Math.Max(RoomCard, StreetView)));
     }
 }

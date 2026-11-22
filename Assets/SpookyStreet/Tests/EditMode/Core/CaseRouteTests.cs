@@ -7,9 +7,11 @@ using SpookyStreet.Core.World;
 namespace SpookyStreet.Tests.Core
 {
     /// <summary>
-    /// S002 interior wiring, engine-free: the authored route colliders make the mandatory loop walkable without a jump
-    /// (spec §4: ramp 1:5 and ≥ 1.6 m wide, no precision), the skilled ascent fits the tap jump, the interior targets,
-    /// marks and anchors stand on walkable floors, and the cut-away and mechanism rules hold (MAP-01, CASE-01/02).
+    /// S002 interior wiring (house v3), engine-free: the authored colliders make every leg of the mandatory loop
+    /// walkable without a jump and each leg ends in its threshold's exit zone (spec §4: ramp 1:5 and ≥ 1.6 m wide, no
+    /// precision), the skilled ascent fits the tap jump, the interior stands apart from the street (D24.1), its
+    /// targets, marks and anchors stand on walkable floors, the cabin is closed, and the mechanism rules hold
+    /// (MAP-01, CASE-01/02).
     /// </summary>
     public class CaseRouteTests
     {
@@ -116,16 +118,53 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void MandatoryRouteIsWalkableWithoutAJump()
         {
-            AssertWalkable(CaseRouteLayout.MandatoryRoute, doorOpen: true);
+            var legs = CaseRouteLayout.MandatoryLegs;
+            Assert.AreEqual(3, legs.Length, "street, interior, porch");
+            for (int i = 0; i < legs.Length; i++)
+            {
+                var leg = legs[i];
+                AssertWalkable(leg.Points, doorOpen: true);
+                if (leg.Exit == ThresholdId.None)
+                {
+                    Assert.AreEqual(legs.Length - 1, i, "only the last leg ends nowhere");
+                    continue;
+                }
+
+                // The leg ends in its threshold's exit zone on its own side; the next leg starts where the pair arrives.
+                var first = leg.Points[0];
+                var last = leg.Points[leg.Points.Length - 1];
+                bool inside = CaseRouteLayout.Inside(first.X, first.Z);
+                var exit = Thresholds.End(leg.Exit, inside);
+                Assert.IsTrue(exit.Contains(last.X, last.Y, last.Z), $"{leg.Name} ends in {exit}'s exit zone");
+                Assert.AreSame(exit, Thresholds.ExitAt(last.X, last.Y, last.Z, doorOpen: true));
+                var arrive = Thresholds.Pair(exit);
+                var next = legs[i + 1].Points[0];
+                Assert.AreEqual(arrive.ArriveX, next.X, 0.05f, legs[i + 1].Name + " starts at the arrival point");
+                Assert.AreEqual(arrive.ArriveZ, next.Z, 0.05f, legs[i + 1].Name + " starts at the arrival point");
+                Assert.AreEqual(arrive.ArriveY, next.Y, 0.05f, legs[i + 1].Name + " starts at the arrival point");
+            }
+
+            // Once the latch is lifted the door works both ways: from the porch back into the hall.
+            var back = CaseRouteLayout.PorchToDoor;
+            AssertWalkable(back.Points, doorOpen: true);
+            var end = back.Points[back.Points.Length - 1];
+            Assert.AreSame(Thresholds.DoorOutside, Thresholds.ExitAt(end.X, end.Y, end.Z, doorOpen: true));
+            Assert.IsNull(Thresholds.ExitAt(end.X, end.Y, end.Z, doorOpen: false), "the outside door is stuck while latched");
         }
 
         [Test]
         public void TheLatchedDoorStopsTheWayOut()
         {
-            var doorway = Array.Find(CaseRouteLayout.MandatoryRoute, p => p.Name == "doorway");
-            float z = CaseRouteLayout.FrontZ;
-            Assert.AreEqual(CaseRouteLayout.DoorBlockerName, Obstacle(doorway.X, CaseRouteLayout.FloorY, z, doorOpen: false));
-            Assert.IsNull(Obstacle(doorway.X, CaseRouteLayout.FloorY, z, doorOpen: true));
+            // Inside, the latched leaf keeps Pip out of the doorway (and so out of the door's exit zone).
+            float z = CaseRouteLayout.InteriorFrontZ + 0.25f;
+            Assert.AreEqual(CaseRouteLayout.DoorBlockerName, Obstacle(0f, CaseRouteLayout.FloorY, z, doorOpen: false));
+            Assert.IsNull(Obstacle(0f, CaseRouteLayout.FloorY, z, doorOpen: true));
+            float closest = CaseRouteLayout.InteriorFrontZ + 0.14f + CaseRouteLayout.PipRadius;
+            Assert.IsFalse(Thresholds.DoorInside.Contains(0f, CaseRouteLayout.FloorY, closest), "the zone is beyond the leaf");
+            // Outside, the solid body stops Pip at the door: the porch side of the door is TryFrontDoor until it opens.
+            Assert.AreEqual("House_Body", Obstacle(0.05f, CaseRouteLayout.FloorY, CaseRouteLayout.FrontZ - 0.2f, false));
+            var door = CaseStage.Find(CaseStage.PointFrontDoor);
+            Assert.AreEqual(PointSide.Outside, door.Side);
         }
 
         [Test]
@@ -146,12 +185,22 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void WindowLetsPipThroughWithoutAJump()
         {
-            // Between the jambs with room for the capsule, under the arch's shoulders and head.
+            // Between the jambs with room for the capsule, under the arch's shoulders, on both sides of the wall.
             Assert.Greater(CaseRouteLayout.WindowHalfWidth, CaseRouteLayout.PipRadius + 0.15f);
             Assert.Greater(CaseRouteLayout.WindowSpring + 0.37f, CaseRouteLayout.PipHeight + 0.1f);
             Assert.AreEqual(1.45f, CaseRouteLayout.WindowSpring + CaseRouteLayout.WindowHalfWidth, 1e-3f, "1.45 m apex");
             var bridge = CaseRouteLayout.Find("Bridge");
-            Assert.AreEqual(CaseRouteLayout.SillY, bridge.EndY, 1e-3f, "the bridge arrives at sill height");
+            Assert.AreEqual(CaseRouteLayout.ExteriorSillY, bridge.EndY, 1e-3f, "the bridge arrives at sill height");
+            // Outside: Pip reaches the window plane on the sill (the body stops Pip there, in the exit zone).
+            Assert.IsNull(Obstacle(-3.36f, CaseRouteLayout.ExteriorSillY, CaseRouteLayout.ExteriorWindowZ, false));
+            Assert.AreEqual("House_Body", Obstacle(-3.25f, CaseRouteLayout.ExteriorSillY, CaseRouteLayout.ExteriorWindowZ, false));
+            // Inside: Pip walks into the reveal (the attic floor runs out to the view box's stop) and its exit zone.
+            float x = -3.45f;
+            Assert.IsNull(Obstacle(x, CaseRouteLayout.LoftY, CaseRouteLayout.InnerWindowZ, false), "into the reveal");
+            Assert.AreEqual(CaseRouteLayout.LoftY, Ground(x, CaseRouteLayout.InnerWindowZ, CaseRouteLayout.LoftY), 1e-3f);
+            Assert.IsTrue(Thresholds.DormerInside.Contains(x, CaseRouteLayout.LoftY, CaseRouteLayout.InnerWindowZ));
+            Assert.IsNotNull(Obstacle(-3.6f, CaseRouteLayout.LoftY, CaseRouteLayout.InnerWindowZ, false),
+                "the view box stays out of reach");
         }
 
         [Test]
@@ -176,7 +225,7 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void BothAscentsReachTheSameRoof()
         {
-            var mandatory = Array.Find(CaseRouteLayout.MandatoryRoute, p => p.Name == "shed roof");
+            var mandatory = Array.Find(CaseRouteLayout.MandatoryLegs[0].Points, p => p.Name == "shed roof");
             var skilled = CaseRouteLayout.SkilledAscent[CaseRouteLayout.SkilledAscent.Length - 1];
             // Walk from where the awning lands to the bridge head: the two routes join before the evidence.
             AssertWalkable(new[]
@@ -213,6 +262,18 @@ namespace SpookyStreet.Tests.Core
             CollectionAssert.AreEquivalent(new[] { Speaker.June, Speaker.Kit }, speakers);
             Assert.AreEqual(PointSide.Inside, CaseStage.Find(CaseStage.PointLatch).Side);
             Assert.AreEqual(PointSide.Outside, CaseStage.Find(CaseStage.PointFrontDoor).Side);
+            Assert.AreEqual(PointSide.Inside, CaseStage.Find(CaseStage.PointSill).Side, "the snag is on the inner jamb");
+            foreach (var point in CaseStage.InteriorPoints)
+            {
+                if (point.Side == PointSide.Any)
+                {
+                    continue;
+                }
+
+                var p = point.Position;
+                Assert.AreEqual(point.Side == PointSide.Inside, CaseRouteLayout.Inside(p.X, p.Z),
+                    point.Id + " stands on its side of the walls");
+            }
         }
 
         [Test]
@@ -258,6 +319,7 @@ namespace SpookyStreet.Tests.Core
             {
                 var p = spot.Position;
                 Assert.AreEqual(p.Y, CaseRouteLayout.GroundAt(p.X, p.Z, p.Y + 0.05f), 0.05f, p.ToString());
+                Assert.IsTrue(CaseRouteLayout.Inside(p.X, p.Z), p + " is in the interior");
             }
 
             foreach (string id in new[]
@@ -272,6 +334,8 @@ namespace SpookyStreet.Tests.Core
                 Assert.IsNull(Obstacle(a.X, ground, a.Z, false), id + " is clear");
                 Assert.AreEqual(CaseAnchors.IsInside(id), CaseRouteLayout.Inside(a.X, a.Z), id + " side");
                 Assert.AreEqual(id, CaseStage.NearestAnchor(a.X, a.Y, a.Z), id + " is its own nearest anchor");
+                Assert.IsFalse(Thresholds.NearAnyZone(a.X, ground, a.Z, ThresholdTracker.Hysteresis),
+                    id + " is clear of every exit zone, so a resume never crosses a threshold");
             }
 
             var walk = CaseStage.JuneWalk;
@@ -279,47 +343,141 @@ namespace SpookyStreet.Tests.Core
             {
                 var p = walk[i];
                 Assert.AreEqual(p.Y, CaseRouteLayout.GroundAt(p.X, p.Z, p.Y + 0.05f), 0.25f, "June's walk point " + i);
+                Assert.IsTrue(CaseRouteLayout.Inside(p.X, p.Z), "June walks inside the interior " + i);
             }
 
-            Assert.Less(CaseStage.PathLength(walk) / CaseStage.JuneWalkSpeed, 12f, "a short authored walk");
+            Assert.Less(CaseStage.PathLength(walk) / CaseStage.JuneWalkSpeed, 15f, "a short authored walk");
             var end = CaseStage.Along(walk, 1000f, out _, out _);
             Assert.AreEqual(CaseStage.JuneFoyer.Position.Z, end.Z, 1e-3f);
         }
 
         [Test]
-        public void AtticAndFoyerSavesNeverMix()
+        public void AtticAndHallSavesNeverMixAndInteriorSavesRestoreInside()
         {
-            Assert.AreEqual(CaseAnchors.Attic, CaseStage.NearestAnchor(-0.5f, 2.5f, 14.5f));
-            Assert.AreEqual(CaseAnchors.Foyer, CaseStage.NearestAnchor(-0.5f, 0.6f, 12.5f));
+            float ifz = CaseRouteLayout.InteriorFrontZ;
+            Assert.AreEqual(CaseAnchors.Attic, CaseStage.NearestAnchor(0.5f, CaseRouteLayout.LoftY, ifz + 2.5f));
+            Assert.AreEqual(CaseAnchors.Foyer, CaseStage.NearestAnchor(-0.5f, CaseRouteLayout.FloorY, ifz + 2.5f));
+            Assert.AreEqual(CaseAnchors.Workshop, CaseStage.NearestAnchor(1.6f, CaseRouteLayout.FloorY, ifz + 4.8f));
             Assert.AreEqual(CaseAnchors.BluePorch, CaseStage.NearestAnchor(0f, 0.6f, 10.4f), "outside the door");
             Assert.AreEqual(CaseAnchors.AtticSill, CaseStage.NearestAnchor(-4.4f, 2.45f, 14f));
+            Assert.AreEqual(CaseAnchors.AtticSill, CaseStage.NearestAnchor(-3.36f, 2.5f, 14f), "on the outer sill");
             var inside = CaseState.FromFacts(new[] { CaseFact.EnteredByWindow });
-            CaseStage.RestorePoint(CaseAnchors.Workshop, inside, out string id);
-            Assert.AreEqual(CaseAnchors.Workshop, id, "the workshop is staged now");
+            foreach (string id in new[] { CaseAnchors.Attic, CaseAnchors.Foyer, CaseAnchors.Workshop })
+            {
+                var p = CaseStage.RestorePoint(id, inside, out string resolved);
+                Assert.AreEqual(id, resolved, id + " is staged");
+                Assert.IsTrue(CaseRouteLayout.Inside(p.X, p.Z), id + " restores in the interior");
+            }
         }
 
         [Test]
         public void EnteringZonesMatchTheOpenings()
         {
-            Assert.IsTrue(CaseStage.InAtticEntry(-2.8f, CaseRouteLayout.SillY, CaseRouteLayout.WindowZ));
-            Assert.IsFalse(CaseStage.InAtticEntry(-4.0f, CaseRouteLayout.SillY, CaseRouteLayout.WindowZ), "still on the bridge");
-            Assert.IsFalse(CaseStage.InAtticEntry(-2.8f, 0.6f, CaseRouteLayout.WindowZ), "foyer below");
-            Assert.IsTrue(CaseStage.InFoyer(-0.6f, 0.6f, 12.4f));
-            Assert.IsFalse(CaseStage.InFoyer(-0.6f, 2.5f, 14f), "attic");
+            float ifz = CaseRouteLayout.InteriorFrontZ;
+            var arrive = Thresholds.DormerInside;
+            Assert.IsTrue(CaseStage.InAtticEntry(arrive.ArriveX, arrive.ArriveY, arrive.ArriveZ), "the dormer arrival");
+            Assert.IsFalse(CaseStage.InAtticEntry(-4.0f, CaseRouteLayout.ExteriorSillY, CaseRouteLayout.ExteriorWindowZ),
+                "still on the bridge");
+            Assert.IsFalse(CaseStage.InAtticEntry(-2.8f, CaseRouteLayout.FloorY, ifz + 1.5f), "hall below");
+            Assert.IsTrue(CaseStage.InFoyer(-0.6f, CaseRouteLayout.FloorY, ifz + 1.6f));
+            Assert.IsTrue(CaseStage.InFoyer(Thresholds.DoorInside.ArriveX, CaseRouteLayout.FloorY, Thresholds.DoorInside.ArriveZ),
+                "the door arrival is in the hall");
+            Assert.IsFalse(CaseStage.InFoyer(-0.6f, CaseRouteLayout.LoftY, ifz + 2.5f), "attic");
             Assert.IsFalse(CaseStage.InFoyer(0f, 0.6f, 10.3f), "porch");
         }
 
         [Test]
-        public void CutAwayShowsTheInteriorOnlyNearAWayIn()
+        public void TheInteriorStandsApartFromTheStreet()
         {
-            Assert.IsFalse(InteriorVisibility.Decide(0f, 0f, 0f, 1.6f, true, true).ShowInterior, "plaza");
-            Assert.IsTrue(InteriorVisibility.Decide(-0.6f, 0.6f, 12.4f, 1.6f, false, true).ShowInterior, "foyer");
-            Assert.IsFalse(InteriorVisibility.Decide(0.05f, 0.6f, 10.4f, 1.6f, false, true).ShowInterior, "porch, latched");
-            Assert.IsTrue(InteriorVisibility.Decide(0.05f, 0.6f, 10.4f, 1.6f, true, true).ShowInterior, "porch, door open");
-            Assert.IsTrue(InteriorVisibility.Decide(-3.4f, 2.5f, 14f, 3.4f, false, true).ShowInterior, "at the window");
-            Assert.IsFalse(InteriorVisibility.Decide(-5.6f, 2.4f, 14f, 3.4f, false, true).ShowInterior, "bridge head");
-            Assert.IsTrue(InteriorVisibility.Decide(-0.6f, 0.6f, 12.4f, 3.0f, false, true).HideAttic, "high camera");
-            Assert.IsFalse(InteriorVisibility.Decide(-0.6f, 2.5f, 14f, 3.6f, false, true).HideAttic, "Pip upstairs");
+            // D24.1: the rooms are a separate space beyond the boundary walls, so the street never sees them.
+            Assert.Greater(CaseRouteLayout.InteriorFrontZ - 1.5f, CollisionRules.WallInnerHalfZ + CollisionRules.WallThickness);
+            foreach (var p in EnvironmentLayout.Street)
+            {
+                Assert.IsFalse(CaseRouteLayout.Inside(p.X, p.Z), p.Model + " is on the street");
+            }
+
+            foreach (var p in CaseRouteLayout.Models)
+            {
+                bool interior = p.Model == CaseRouteLayout.OwlHouseInterior || p.Model == CaseRouteLayout.WorkshopMechanism;
+                Assert.AreEqual(interior, CaseRouteLayout.Inside(p.X, p.Z), p.Model);
+            }
+
+            for (float x = -22f; x <= 22f; x += 1f)
+            {
+                for (float z = -18f; z <= 18f; z += 1f)
+                {
+                    Assert.IsFalse(CaseRouteLayout.Inside(x, z), $"({x}, {z}) inside the block is not the interior");
+                }
+            }
+
+            foreach (var slab in CaseRouteLayout.Slabs)
+            {
+                bool inside = CaseRouteLayout.Inside((slab.StartX + slab.EndX) * 0.5f, (slab.StartZ + slab.EndZ) * 0.5f);
+                Assert.AreEqual(slab.Group == SlabGroup.Interior, inside, slab.Name + " stands with its group");
+            }
+        }
+
+        [Test]
+        public void TheInteriorCollidersFollowTheHouseV3Anchors()
+        {
+            foreach (string name in new[]
+                     {
+                         "Hall_BenchAndRack", "Hall_Console", "Hall_BlanketChest", "Hall_Clock", "Hall_Crate",
+                         "Hall_UmbrellaStand", "Attic_CraftTable", "Attic_TrunkEast", "Attic_TrunkBack",
+                         "Attic_TrunkAndHatBoxes", "Attic_Crates", "Attic_Pumpkin", "Attic_JuneStool", "Attic_Bookshelf",
+                         "Stair_Lower", "Stair_Landing", "Stair_Upper", "Loft_RailWest", "Loft_RailSouth", "Loft_RailNorth",
+                         "Workshop_Partition", "Stair_Wall", "Stair_EndWall",
+                     })
+            {
+                Assert.AreEqual(SlabGroup.Interior, CaseRouteLayout.Find(name).Group, name);
+            }
+
+            // Both flights rise 0.1889 m per 0.28 m tread (34°), from the hall to the landing to the attic.
+            var lower = CaseRouteLayout.Find("Stair_Lower");
+            var upper = CaseRouteLayout.Find("Stair_Upper");
+            Assert.AreEqual(0.1889f / 0.28f, lower.Gradient, 0.01f);
+            Assert.AreEqual(0.1889f / 0.28f, upper.Gradient, 0.01f);
+            Assert.AreEqual(CaseRouteLayout.LandingY, lower.EndY, 1e-3f);
+            Assert.AreEqual(CaseRouteLayout.LoftY, upper.EndY, 0.02f);
+            // The hall is 3.26 m clear; the attic is 4.2 m under the ridge with 1.2 m knee walls.
+            Assert.AreEqual(3.26f, CaseRouteLayout.LoftUnderside - CaseRouteLayout.FloorY, 1e-3f);
+            Assert.AreEqual(1.2f, CaseRouteLayout.KneeY - CaseRouteLayout.LoftY, 1e-3f);
+        }
+
+        [Test]
+        public void TheCabinIsClosedWithAWalkableBay()
+        {
+            Assert.Throws<ArgumentException>(() => CaseRouteLayout.Find("Cabin_Parapet"), "the old parapet is gone");
+            foreach (string name in new[] { "Cabin_North", "Cabin_West", "Cabin_EastSouth", "Cabin_BayOuter", "Cabin_RoofNorth" })
+            {
+                Assert.AreEqual(SlabGroup.Route, CaseRouteLayout.Find(name).Group, name);
+            }
+
+            // Pip walks in through the door (east wall, cabin y −1.02…−0.12) and out onto the bay boards.
+            float deck = CaseRouteLayout.TreehouseY;
+            var path = new[] { (-1.7f, -0.57f), (-0.75f, -0.57f), (-0.75f, 0.6f), (0f, 1.4f), (0.6f, 1.4f) };
+            for (int i = 1; i < path.Length; i++)
+            {
+                for (float t = 0f; t <= 1f; t += 0.05f)
+                {
+                    float cx = path[i - 1].Item1 + (path[i].Item1 - path[i - 1].Item1) * t;
+                    float cy = path[i - 1].Item2 + (path[i].Item2 - path[i - 1].Item2) * t;
+                    CaseRouteLayout.CabinToWorld(CaseRouteLayout.CabinPlatX + cx, CaseRouteLayout.CabinPlatY + cy,
+                        out float x, out float z);
+                    Assert.IsNull(Obstacle(x, deck, z, false), $"cabin ({cx:F2}, {cy:F2})");
+                }
+            }
+
+            CaseRouteLayout.CabinToWorld(CaseRouteLayout.CabinPlatX, CaseRouteLayout.CabinPlatY + 1.6f, out float bx,
+                out float bz);
+            Assert.AreEqual(deck, CaseRouteLayout.GroundAt(bx, bz, deck + 0.1f), 1e-3f, "the bay's boards are floor");
+            CaseRouteLayout.CabinToWorld(CaseRouteLayout.CabinPlatX, CaseRouteLayout.CabinPlatY + 1.9f, out float ox,
+                out float oz);
+            Assert.IsNotNull(Obstacle(ox, deck, oz, false), "the bay's outer wall closes it");
+            // A jump inside bumps the roof; nothing opens to the sky.
+            CaseRouteLayout.CabinToWorld(CaseRouteLayout.CabinPlatX + 0.6f, CaseRouteLayout.CabinPlatY - 0.9f, out float jx,
+                out float jz);
+            Assert.IsNotNull(Obstacle(jx, deck + CaseRouteLayout.TapJumpApex, jz, false), "the roof over the low side");
         }
 
         [Test]

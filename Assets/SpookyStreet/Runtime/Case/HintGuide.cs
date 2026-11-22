@@ -1,5 +1,6 @@
 using SpookyStreet.Core.Art;
 using SpookyStreet.Core.Case;
+using SpookyStreet.Core.World;
 using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.UI;
 using SpookyStreet.UI.Nonverbal;
@@ -49,6 +50,9 @@ namespace SpookyStreet.Case
 
         public Vector3 Goal => _goal;
 
+        /// <summary>Whether the owl house's front door is open (hints then lead through it; June's window before).</summary>
+        public System.Func<bool> DoorOpen { get; set; }
+
         public static HintGuide Create(Transform parent, Transform pip)
         {
             var go = new GameObject("HintGuide");
@@ -81,7 +85,31 @@ namespace SpookyStreet.Case
             return renderer;
         }
 
-        /// <summary>The world goal and the sticker's part for an objective; false when there is none (free roam).</summary>
+        /// <summary>
+        /// The world goal and the sticker's part for an objective, seen from where Pip is (D24.1): a goal on the other
+        /// side of the owl house walls leads to the threshold on Pip's side instead (the open front door, or June's
+        /// window while the door is latched). False when there is no goal (free roam).
+        /// </summary>
+        public static bool TryGoal(CaseObjective objective, Vector3 pip, bool doorOpen, out Vector3 goal, out string part)
+        {
+            if (!TryGoal(objective, out goal, out part))
+            {
+                return false;
+            }
+
+            bool pipInside = CaseRouteLayout.Inside(pip.x, pip.z);
+            bool goalInside = CaseRouteLayout.Inside(goal.x, goal.z);
+            var via = Thresholds.WayTo(pipInside, goalInside, doorOpen);
+            if (via != null)
+            {
+                goal = new Vector3(via.CentreX, via.FloorY + 1.2f, via.CentreZ);
+                part = via.Id == ThresholdId.FrontDoor ? "pg.door_open" : "pg.june_window";
+            }
+
+            return true;
+        }
+
+        /// <summary>The world goal and the sticker's part for an objective, wherever Pip is; false in free roam.</summary>
         public static bool TryGoal(CaseObjective objective, out Vector3 goal, out string part)
         {
             string anchor = null;
@@ -158,7 +186,8 @@ namespace SpookyStreet.Case
         /// <summary>A tier-2 radio press: (re)starts the trail toward <paramref name="objective"/>'s goal.</summary>
         public bool StartTrail(CaseObjective objective)
         {
-            if (!TryGoal(objective, out var goal, out string part))
+            Vector3 pip = _pip != null ? _pip.position : Vector3.zero;
+            if (!TryGoal(objective, pip, DoorOpen != null && DoorOpen(), out var goal, out string part))
             {
                 Stop();
                 return false;

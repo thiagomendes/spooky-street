@@ -110,12 +110,12 @@ namespace SpookyStreet.Case
         {
             new Vector3(-6.6f, CaseRouteLayout.TreehouseY + 0.05f, 13.4f),
             new Vector3(CaseRouteLayout.BridgeStartX, CaseRouteLayout.TreehouseY + 0.05f, CaseRouteLayout.BridgeZ),
-            new Vector3(CaseRouteLayout.BridgeEndX, CaseRouteLayout.SillY, CaseRouteLayout.BridgeZ),
-            new Vector3(CaseRouteLayout.WindowX - 0.15f, CaseRouteLayout.SillY + 0.35f, CaseRouteLayout.WindowZ),
+            new Vector3(CaseRouteLayout.BridgeEndX, CaseRouteLayout.ExteriorSillY, CaseRouteLayout.BridgeZ),
+            new Vector3(CaseRouteLayout.ExteriorWindowX - 0.15f, CaseRouteLayout.ExteriorSillY + 0.35f, CaseRouteLayout.ExteriorWindowZ),
         };
 
         public static Vector3 SideWindowCentre =>
-            new Vector3(CaseRouteLayout.WindowX - 0.06f, CaseRouteLayout.SillY + 0.85f, CaseRouteLayout.WindowZ);
+            new Vector3(CaseRouteLayout.ExteriorWindowX - 0.06f, CaseRouteLayout.ExteriorSillY + 0.85f, CaseRouteLayout.ExteriorWindowZ);
 
         public static Vector3 FrontDoorCentre =>
             new Vector3(CaseStage.FrontDoor.X, CaseStage.FrontDoor.Y + 1.05f, CaseStage.FrontDoor.Z - 0.12f);

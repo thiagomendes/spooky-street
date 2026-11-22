@@ -19,9 +19,10 @@ namespace SpookyStreet.Core.Case
     }
 
     /// <summary>
-    /// The interior half of case 01 on the stage (S002 interior wiring): the Use targets in the treehouse route, the
-    /// attic, the foyer and the workshop; when each is offered; the trigger zones (window entry, foyer); June's and
-    /// Aunt Kit's marks; and the finale sightline. Positions come from <see cref="CaseRouteLayout"/>.
+    /// The interior half of case 01 on the stage (S002 interior wiring, house v3): the Use targets in the treehouse
+    /// route, the attic, the hall and the workshop; when each is offered; the trigger zones (attic entry, hall); June's
+    /// and Aunt Kit's marks; and the finale sightline. Positions come from <see cref="CaseRouteLayout"/>: inside
+    /// targets stand in the separate interior (D24.1), outside ones on the street.
     /// </summary>
     public static partial class CaseStage
     {
@@ -37,11 +38,13 @@ namespace SpookyStreet.Core.Case
         public const string PointLinkArm = "link_arm";
         public const string PointCrank = "crank";
 
-        /// <summary>June on her stool by the window, tapping the rhythm on her knee (seat 0.30 m).</summary>
-        public static readonly CastSpot JuneAttic = new CastSpot(-1.75f, CaseRouteLayout.LoftY, CaseRouteLayout.FrontZ + 4.05f, -133f);
+        private const float Ifz = CaseRouteLayout.InteriorFrontZ;
 
-        /// <summary>June's foyer mark: by the door but 1.5 m clear of the latch, so their markers never overlap.</summary>
-        public static readonly CastSpot JuneFoyer = new CastSpot(-1.35f, CaseRouteLayout.FloorY, CaseRouteLayout.FrontZ + 1.2f, 150f);
+        /// <summary>June on her stool in the attic, turned toward the stair top (seat 0.30 m; house v3 §3.5).</summary>
+        public static readonly CastSpot JuneAttic = new CastSpot(-1.1f, CaseRouteLayout.LoftY, Ifz + 2.75f, 35f);
+
+        /// <summary>June's hall mark: by the door but 1.5 m clear of the latch, so their markers never overlap.</summary>
+        public static readonly CastSpot JuneFoyer = new CastSpot(-1.35f, CaseRouteLayout.FloorY, Ifz + 1.2f, 150f);
 
         /// <summary>On the porch for the reopening, west of the door, facing the street.</summary>
         public static readonly CastSpot JunePorch = new CastSpot(-1.35f, CaseRouteLayout.FloorY, CaseRouteLayout.FrontZ - 0.85f, 175f);
@@ -54,18 +57,22 @@ namespace SpookyStreet.Core.Case
         public static readonly StagePoint FinaleLookAt = new StagePoint(0f, 4.0f, CaseRouteLayout.FrontZ - 0.6f);
 
         /// <summary>
-        /// June's walk from her stool down the stair to her foyer mark (presentation only; only the mark persists).
-        /// Round the stairwell rail, down the stair (it rises east), then across the foyer.
+        /// June's walk from her stool down to her hall mark (presentation only; only the mark persists): round the
+        /// stairwell rail to the stair top, down the upper flight to the landing, down the lower flight along the west
+        /// wall, then across the hall (house v3 §3.5).
         /// </summary>
         public static readonly StagePoint[] JuneWalk =
         {
             JuneAttic.Position,
-            new StagePoint(-0.6f, CaseRouteLayout.LoftY, 15.3f),
-            new StagePoint(1.3f, CaseRouteLayout.LoftY, 15.45f),
-            new StagePoint(1.3f, CaseRouteLayout.LoftY, 16.36f),
-            new StagePoint(0.85f, CaseRouteLayout.LoftY, 16.36f),
-            new StagePoint(-2.15f, CaseRouteLayout.FloorY, 16.36f),
-            new StagePoint(-2.35f, CaseRouteLayout.FloorY, 15.3f),
+            new StagePoint(-0.3f, CaseRouteLayout.LoftY, Ifz + 4.6f),
+            new StagePoint(0.55f, CaseRouteLayout.LoftY, Ifz + 5.3f),
+            new StagePoint(0.6f, CaseRouteLayout.LoftY, Ifz + 6.3f),
+            new StagePoint(0.14f, CaseRouteLayout.LoftY, Ifz + 6.3f),
+            new StagePoint(-2.1f, CaseRouteLayout.LandingY, Ifz + 6.3f),
+            new StagePoint(-2.85f, CaseRouteLayout.LandingY, Ifz + 6.3f),
+            new StagePoint(-2.85f, CaseRouteLayout.LandingY, Ifz + 5.5f),
+            new StagePoint(-2.85f, CaseRouteLayout.FloorY, Ifz + 3.26f),
+            new StagePoint(-2.85f, CaseRouteLayout.FloorY, Ifz + 2.6f),
             JuneFoyer.Position,
         };
 
@@ -165,15 +172,16 @@ namespace SpookyStreet.Core.Case
             _allPoints ?? (_allPoints = Concat(ExteriorPoints, InteriorPoints));
 
         /// <summary>
-        /// Window-entry zone: Pip's feet inside the dormer opening, past the outer wall. Entering it reports
-        /// <see cref="CaseActionKind.EnterAttic"/> (the reducer ignores repeats).
+        /// Attic entry zone: Pip's feet in the dormer alcove just inside June's window (where the dormer threshold puts
+        /// Pip). Entering it reports <see cref="CaseActionKind.EnterAttic"/> (the reducer ignores repeats), so a resume
+        /// or any other way into the alcove records the entry too.
         /// </summary>
         public static bool InAtticEntry(float x, float y, float z) =>
-            x > CaseRouteLayout.WindowX - 0.05f && x < CaseRouteLayout.InnerMinX + 0.9f &&
-            Math.Abs(z - CaseRouteLayout.WindowZ) < CaseRouteLayout.WindowHalfWidth + 0.2f &&
-            y > CaseRouteLayout.SillY - 0.3f && y < CaseRouteLayout.SillY + 1.0f;
+            CaseRouteLayout.Inside(x, z) && x > CaseRouteLayout.InnerWindowX - 0.05f && x < -1.45f &&
+            Math.Abs(z - CaseRouteLayout.InnerWindowZ) < 0.75f &&
+            y > CaseRouteLayout.LoftY - 0.3f && y < CaseRouteLayout.LoftY + 1.0f;
 
-        /// <summary>Foyer zone: inside the shell at ground-floor height.</summary>
+        /// <summary>Hall zone: inside the interior at ground-floor height.</summary>
         public static bool InFoyer(float x, float y, float z) =>
             CaseRouteLayout.Inside(x, z) && y < CaseRouteLayout.FloorY + 0.9f && x < CaseRouteLayout.NookX;
 
@@ -220,7 +228,6 @@ namespace SpookyStreet.Core.Case
 
         private static InteractionPoint[] BuildInteriorPoints()
         {
-            float front = CaseRouteLayout.FrontZ;
             float roof = CaseRouteLayout.TreehouseY;
             float floor = CaseRouteLayout.FloorY;
             float workX = CaseRouteLayout.NookX - 0.05f;
@@ -230,9 +237,9 @@ namespace SpookyStreet.Core.Case
                 new InteractionPoint(PointCloth, CaseAction.Of(CaseActionKind.ExamineCloth),
                     new StagePoint(CaseRouteLayout.ClothX - 0.15f, roof, CaseRouteLayout.ClothZ), DefaultReach,
                     CaseRouteLayout.ClothY - roof),
-                // The matching snag on the window's north jamb (SillSnag pivot), seen from the bridge or the attic.
+                // The matching snag on the window's north jamb (SillSnag pivot −3.57, 1.97, 4.42), seen from the alcove.
                 new InteractionPoint(PointSill, CaseAction.Of(CaseActionKind.ExamineSill),
-                    new StagePoint(-2.83f, CaseRouteLayout.SillY, front + 3.47f), 1.3f, 0.55f),
+                    new StagePoint(-3.4f, CaseRouteLayout.SillY, Ifz + 1.97f), 1.3f, 0.42f, PointSide.Inside),
                 new InteractionPoint(PointJuneAttic, CaseAction.Talk(Speaker.June), JuneAttic.Position, 1.9f, 1.15f,
                     PointSide.Inside),
                 new InteractionPoint(PointJuneFoyer, CaseAction.Talk(Speaker.June), JuneFoyer.Position, 1.8f, 1.55f,
@@ -243,7 +250,7 @@ namespace SpookyStreet.Core.Case
                     PointSide.Outside),
                 // The wooden latch on the inside of the door (DoorLatch pivot at x 0.12; the bar runs east).
                 new InteractionPoint(PointLatch, CaseAction.Of(CaseActionKind.LiftLatch),
-                    new StagePoint(0.35f, floor, front + 0.3f), DefaultReach, 1.0f, PointSide.Inside),
+                    new StagePoint(0.35f, floor, Ifz + 0.3f), DefaultReach, 1.0f, PointSide.Inside),
                 // Workshop, through the partition: the low grille, the child-height service panel, then the arm and
                 // crank behind it. Each sits at its own part of the partition so the markers stay apart.
                 new InteractionPoint(PointGrille, CaseAction.Of(CaseActionKind.ExamineGrille),
@@ -267,7 +274,6 @@ namespace SpookyStreet.Core.Case
             return all;
         }
 
-        /// <summary>Length of a polyline (June's walk).</summary>
         /// <summary>Length of <paramref name="path"/> over the floor plan (x and z only).</summary>
         public static float PlanLength(IReadOnlyList<StagePoint> path)
         {
@@ -380,55 +386,6 @@ namespace SpookyStreet.Core.Case
         {
             float dx = b.X - a.X, dy = b.Y - a.Y, dz = b.Z - a.Z;
             return (float)Math.Sqrt(dx * dx + dy * dy + dz * dz);
-        }
-    }
-
-    /// <summary>What of the owl house to draw this frame.</summary>
-    public readonly struct InteriorView
-    {
-        public InteriorView(bool showInterior, bool hideAttic)
-        {
-            ShowInterior = showInterior;
-            HideAttic = hideAttic;
-        }
-
-        /// <summary>Hide OwlHouseBody and DoorRecessCard, keep the porch, show OwlHouseInterior.</summary>
-        public bool ShowInterior { get; }
-
-        /// <summary>The attic floor and roof would hide Pip on the ground floor from a high camera.</summary>
-        public bool HideAttic { get; }
-    }
-
-    /// <summary>
-    /// The cut-away rule (spec §5): the interior shows when Pip is inside the shell, or at an open way in (the open
-    /// front door, June's window) within <see cref="NearOpening"/>; then the exterior body and the door's dark recess
-    /// card hide, so the camera looks in through the culled near walls. On the ground floor with the camera above
-    /// the loft, the attic hides too. Pure.
-    /// </summary>
-    public static class InteriorVisibility
-    {
-        public const float NearOpening = 1.1f;
-
-        /// <summary>Camera above this height (with Pip downstairs) hides the attic.</summary>
-        public const float HighCamera = 2.3f;
-
-        /// <summary>Pip's feet below this are on the ground floor.</summary>
-        public const float GroundFloorTop = 1.7f;
-
-        public static InteriorView Decide(float pipX, float pipY, float pipZ, float cameraY, bool doorOpen, bool windowOpen)
-        {
-            bool inside = CaseRouteLayout.Inside(pipX, pipZ);
-            bool atDoor = doorOpen && Math.Abs(pipX - 0.06f) < 0.6f + NearOpening &&
-                          pipZ > CaseRouteLayout.FrontZ - NearOpening && pipZ <= CaseRouteLayout.FrontZ + 0.2f &&
-                          pipY < CaseRouteLayout.FloorY + 1f;
-            float wx = pipX - CaseRouteLayout.WindowX;
-            float wz = pipZ - CaseRouteLayout.WindowZ;
-            bool atWindow = windowOpen && wx > -NearOpening && wx < 0.3f &&
-                            Math.Abs(wz) < CaseRouteLayout.WindowHalfWidth + 0.6f &&
-                            pipY > CaseRouteLayout.SillY - 0.5f;
-            bool show = inside || atDoor || atWindow;
-            bool hideAttic = show && inside && pipY < GroundFloorTop && cameraY > HighCamera;
-            return new InteriorView(show, hideAttic);
         }
     }
 

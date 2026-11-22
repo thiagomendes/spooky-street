@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using NUnit.Framework;
 using SpookyStreet.App;
 using SpookyStreet.Case;
@@ -7,7 +6,7 @@ using SpookyStreet.Core.Case;
 using SpookyStreet.Core.Flow;
 using SpookyStreet.Core.World;
 using SpookyStreet.Localization;
-using SpookyStreet.Player;
+using SpookyStreet.World;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
@@ -18,14 +17,17 @@ using Lines = SpookyStreet.Core.Localization.LocalizationKeys.CaseLines;
 namespace SpookyStreet.Tests.PlayMode
 {
     /// <summary>
-    /// S002 interior wiring in the scene: the treehouse route and the house are walkable with real colliders
-    /// (MAP-01), the canonical playthrough closes the case with the right evidence through Use on each target
-    /// (CASE-01), the curious-child order works (CASE-02), and saves after the window entry, the latch and the crank
-    /// rebuild the door, June, the mechanism and the owl (SAVE-01). Every test runs against a fresh save folder.
+    /// S002 interior wiring with house v3 in the scene: the treehouse route and the house are walkable with real
+    /// colliders (MAP-01) and each leg ends in a threshold that carries Pip, under the paper page-turn, into the
+    /// separate interior and back out (D24.1); the canonical playthrough closes the case through both thresholds with the
+    /// right evidence (CASE-01); the curious-child order works (CASE-02); saves after the window entry, the latch and
+    /// the crank reload inside the interior and rebuild the door, June, the mechanism and the owl (SAVE-01); a round
+    /// trip through both thresholds never double-triggers. Every test runs against a fresh save folder.
     /// </summary>
     public class CaseInteriorTests : InputTestFixture
     {
         private const string SceneName = "LanternLane";
+        private const float Ifz = CaseRouteLayout.InteriorFrontZ;
 
         private Keyboard _keyboard;
 
@@ -35,6 +37,13 @@ namespace SpookyStreet.Tests.PlayMode
             _keyboard = InputSystem.AddDevice<Keyboard>();
             Localizer.ResetForTests();
             CaseDirector.UseTemporarySaveDirectory();
+            AmbientMotion.ReducedMotion = false;
+        }
+
+        public override void TearDown()
+        {
+            AmbientMotion.ReducedMotion = false;
+            base.TearDown();
         }
 
         private static GameBootstrap Game => GameBootstrap.Instance;
@@ -57,6 +66,7 @@ namespace SpookyStreet.Tests.PlayMode
             }
 
             Assert.IsNotNull(Director.House, "the interior stage is built with the models");
+            Assert.IsNotNull(Director.Travel, "the thresholds are wired with the models");
             Game.Ui.NewGameButton.onClick.Invoke();
             yield return Frames(10);
             Assert.AreEqual(GameState.Playing, Game.Flow.State);
@@ -89,6 +99,10 @@ namespace SpookyStreet.Tests.PlayMode
         }
 
         private static Vector3 At(StagePoint p) => new Vector3(p.X, p.Y, p.Z);
+
+        private static Vector3 Arrival(ThresholdEnd end) => new Vector3(end.ArriveX, end.ArriveY, end.ArriveZ);
+
+        private static bool PipInside => CaseRouteLayout.Inside(Game.Pip.transform.position.x, Game.Pip.transform.position.z);
 
         /// <summary>Puts Pip at <paramref name="stand"/>, facing the target, camera behind; asserts the selected target.</summary>
         private static IEnumerator StandFor(string pointId, Vector3 stand)
@@ -124,74 +138,160 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Wait(0.4f);
         }
 
+        /// <summary>
+        /// Stands Pip just clear of <paramref name="exit"/>'s zone (so the tracker is armed), steps into it and waits for
+        /// the page-turn to finish. Asserts one crossing, input held during it, and Pip at the paired arrival point.
+        /// </summary>
+        private static IEnumerator Cross(ThresholdEnd exit, Vector3 approach, Vector3 inZone)
+        {
+            var travel = Director.Travel;
+            int before = travel.Crossings;
+            Game.Pip.Teleport(approach + Vector3.up * 0.05f);
+            yield return Wait(0.8f);
+            Assert.IsTrue(travel.Tracker.Armed, $"armed before {exit}");
+            Game.Pip.Teleport(inZone + Vector3.up * 0.05f);
+            float until = Time.time + 1f;
+            while (!travel.Active && Time.time < until)
+            {
+                yield return null;
+            }
+
+            Assert.IsTrue(travel.Active, $"the page turns at {exit}");
+            yield return null;
+            Assert.IsFalse(Game.Controls.GameplayEnabled, "input is ignored during the page-turn");
+            until = Time.time + 2f;
+            while (travel.Active && Time.time < until)
+            {
+                yield return null;
+            }
+
+            Assert.IsFalse(travel.Active, "the page-turn ends");
+            yield return Frames(3);
+            Assert.AreEqual(before + 1, travel.Crossings, $"exactly one crossing at {exit}");
+            Assert.IsTrue(Game.Controls.GameplayEnabled || Director.ModalOpen, "control is back after the page-turn");
+            var arrive = Thresholds.Pair(exit);
+            Vector3 pip = Game.Pip.transform.position;
+            Assert.Less(new Vector2(pip.x - arrive.ArriveX, pip.z - arrive.ArriveZ).magnitude, 0.3f,
+                $"Pip arrives at {arrive} ({pip})");
+            Assert.AreEqual(arrive.Inside, PipInside, "on the arrival's side of the walls");
+        }
+
+        /// <summary>From the bridge end in by June's window (the crossing reports EnterAttic on arrival).</summary>
         private static IEnumerator EnterByWindow()
         {
-            // From the bridge end (safe ground) into the dormer: the entry zone reports EnterAttic.
-            Game.Pip.Teleport(new Vector3(-3.6f, 2.55f, CaseRouteLayout.BridgeZ));
-            yield return Wait(0.5f);
-            Game.Pip.Teleport(new Vector3(-2.6f, 2.55f, CaseRouteLayout.BridgeZ));
-            yield return Wait(0.4f);
+            yield return Cross(Thresholds.DormerOutside,
+                new Vector3(-3.95f, 2.5f, CaseRouteLayout.ExteriorWindowZ),
+                new Vector3(-3.36f, 2.5f, CaseRouteLayout.ExteriorWindowZ));
+            yield return Frames(3);
+        }
+
+        private static IEnumerator OutByTheDoor()
+        {
+            yield return Cross(Thresholds.DoorInside, new Vector3(0f, CaseRouteLayout.FloorY, Ifz + 1.0f),
+                new Vector3(0f, CaseRouteLayout.FloorY, Ifz + 0.05f));
         }
 
         private static IEnumerator WaitForJune()
         {
-            float until = Time.time + 15f;
+            float until = Time.time + 22f;
             while (Director.Cast.JuneWalking && Time.time < until)
             {
                 yield return null;
             }
 
-            Assert.IsFalse(Director.Cast.JuneWalking, "June reached her foyer mark");
+            Assert.IsFalse(Director.Cast.JuneWalking, "June reached her hall mark");
         }
+
+        private static Vector3 Workshop(float alongFromMechanism) =>
+            new Vector3(CaseRouteLayout.NookX - 0.7f, CaseRouteLayout.FloorY, CaseRouteLayout.MechanismZ + alongFromMechanism);
+
+        private static Vector3 LatchStand => new Vector3(0.35f, CaseRouteLayout.FloorY, Ifz + 1.0f);
+
+        private static Vector3 JuneAtticStand => new Vector3(-0.4f, CaseRouteLayout.LoftY, Ifz + 2.4f);
+
+        private static Vector3 SillStand => new Vector3(-2.6f, CaseRouteLayout.LoftY, Ifz + 1.75f);
 
         // ---------------------------------------------------------------------------------------------- MAP-01
 
         /// <summary>
-        /// Drives Pip's CharacterController (motor off) along the mandatory route with gravity, as a walk at a steady
-        /// pace with no jump: every waypoint must be reached, at its height, within the time a walk takes.
+        /// Drives Pip's CharacterController (motor off) along each leg of the mandatory route with gravity, as a walk at
+        /// a steady pace with no jump: every waypoint is reached at its height, and each leg's end crosses its threshold
+        /// to the next leg's start.
         /// </summary>
         [UnityTest]
-        [Timeout(120000)]
+        [Timeout(150000)]
         public IEnumerator MandatoryRouteIsWalkableWithTheAuthoredColliders()
         {
             yield return StartGame();
+            // The arrival cue first, so no conversation holds the thresholds while Pip walks.
+            Director.Perform(CaseAction.Of(CaseActionKind.HearKnocks));
+            yield return SkipDialogue();
             Director.House.SetDoor(true);
             var pip = Game.Pip;
             var controller = pip.GetComponent<CharacterController>();
-            var route = CaseRouteLayout.MandatoryRoute;
-            pip.Teleport(new Vector3(route[0].X, route[0].Y + 0.05f, route[0].Z));
+            var legs = CaseRouteLayout.MandatoryLegs;
+            var first = legs[0].Points[0];
+            pip.Teleport(new Vector3(first.X, first.Y + 0.05f, first.Z));
             pip.enabled = false;
-            yield return null;
+            yield return Wait(0.6f);
             float vy = 0f;
-            for (int i = 1; i < route.Length; i++)
+            int crossings = Director.Travel.Crossings;
+            foreach (var leg in legs)
             {
-                var goal = new Vector3(route[i].X, route[i].Y, route[i].Z);
-                float limit = Time.time + 6f;
-                while (Time.time < limit)
+                var route = leg.Points;
+                Vector3 start = pip.transform.position;
+                Assert.Less(new Vector2(start.x - route[0].X, start.z - route[0].Z).magnitude, 0.3f,
+                    $"{leg.Name} starts at {route[0]} (Pip at {start})");
+                for (int i = 1; i < route.Length; i++)
                 {
-                    float dt = Mathf.Min(Time.deltaTime, 0.05f);
-                    Vector3 to = goal - pip.transform.position;
-                    to.y = 0f;
-                    if (to.magnitude < 0.12f)
+                    var goal = new Vector3(route[i].X, route[i].Y, route[i].Z);
+                    float limit = Time.time + 8f;
+                    while (Time.time < limit && !Director.Travel.Active)
                     {
+                        float dt = Mathf.Min(Time.deltaTime, 0.05f);
+                        Vector3 to = goal - pip.transform.position;
+                        to.y = 0f;
+                        if (to.magnitude < 0.12f)
+                        {
+                            break;
+                        }
+
+                        vy = controller.isGrounded ? -2f : vy - 9.8f * dt;
+                        Vector3 step = to.normalized * Mathf.Min(to.magnitude, 3f * dt);
+                        controller.Move(new Vector3(step.x, vy * dt, step.z));
+                        yield return null;
+                    }
+
+                    if (Director.Travel.Active)
+                    {
+                        Assert.AreEqual(route.Length - 1, i, $"{leg.Name}: crossed early, before {route[i]}");
                         break;
                     }
 
-                    vy = controller.isGrounded ? -2f : vy - 9.8f * dt;
-                    Vector3 step = to.normalized * Mathf.Min(to.magnitude, 4f * dt);
-                    controller.Move(new Vector3(step.x, vy * dt, step.z));
+                    Vector3 at = pip.transform.position;
+                    Assert.Less(new Vector2(at.x - goal.x, at.z - goal.z).magnitude, 0.3f, $"stuck before {route[i]} at {at}");
+                    Assert.AreEqual(goal.y, at.y, 0.3f, $"wrong height at {route[i]}");
+                }
+
+                if (leg.Exit == ThresholdId.None)
+                {
+                    continue;
+                }
+
+                float until = Time.time + 3f;
+                while ((Director.Travel.Active || Director.Travel.Crossings == crossings) && Time.time < until)
+                {
                     yield return null;
                 }
 
-                Vector3 at = pip.transform.position;
-                Assert.Less(new Vector2(at.x - goal.x, at.z - goal.z).magnitude, 0.3f,
-                    $"stuck before {route[i]} at {at}");
-                Assert.AreEqual(goal.y, at.y, 0.3f, $"wrong height at {route[i]}");
+                Assert.AreEqual(crossings + 1, Director.Travel.Crossings, $"{leg.Name} ends through {leg.Exit}");
+                crossings = Director.Travel.Crossings;
+                vy = 0f;
+                yield return Wait(0.3f);
             }
 
             pip.enabled = true;
-            Assert.IsTrue(Director.House.View.ShowInterior || !CaseRouteLayout.Inside(pip.transform.position.x,
-                pip.transform.position.z));
+            Assert.IsFalse(PipInside, "the route ends on the porch");
         }
 
         [UnityTest]
@@ -212,7 +312,7 @@ namespace SpookyStreet.Tests.PlayMode
         // ---------------------------------------------------------------------------------------------- CASE-01
 
         [UnityTest]
-        [Timeout(180000)]
+        [Timeout(200000)]
         public IEnumerator CanonicalPlaythroughClosesTheCaseWithTheRightEvidence()
         {
             yield return StartGame();
@@ -220,7 +320,7 @@ namespace SpookyStreet.Tests.PlayMode
             var house = director.House;
             var workshop = director.Workshop;
             var cast = director.Cast;
-            Assert.IsFalse(house.View.ShowInterior, "the house is closed from the arrival porch");
+            Assert.IsFalse(house.InteriorShown, "the rooms are not drawn from the arrival porch");
             Assert.IsTrue(house.Body.gameObject.activeSelf);
 
             // Both witnesses, the bench (exterior wiring, covered by CaseWiringTests).
@@ -238,21 +338,23 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(Lines.ExamineCloth, director.Dialogue.CurrentLine.Key);
             yield return SkipDialogue();
 
-            // In by June's window.
+            // In by June's window: the page turns, Pip arrives in the attic.
             yield return EnterByWindow();
             Assert.IsTrue(director.State.Has(CaseFact.EnteredByWindow), "the window entry is recorded");
             Assert.IsFalse(director.State.Has(CaseFact.AtticFirst), "the witnesses spoke first");
-            Assert.IsTrue(house.View.ShowInterior, "inside: the interior shows");
-            Assert.IsFalse(house.Body.gameObject.activeSelf, "inside: the exterior body hides");
-            Assert.IsTrue(house.Interior.gameObject.activeSelf);
-            Assert.Less(Game.CameraRig.Distance, 3.5f, "the attic blends to a closer shoulder view");
+            Assert.IsTrue(house.InteriorShown, "inside: the interior is drawn");
+            Assert.IsTrue(house.Body.gameObject.activeSelf, "the exterior is never cut away");
+            Assert.IsTrue(house.Attic.gameObject.activeSelf, "the attic is always drawn");
+            Assert.IsTrue(director.Framing.Active, "the interior camera has the room");
+            Vector3 lens = Game.CameraRig.OutputCamera.transform.position;
+            Assert.IsTrue(CaseRouteLayout.Inside(lens.x, lens.z), $"the lens cut into the attic ({lens})");
 
-            yield return Use(CaseStage.PointSill, new Vector3(-2.45f, CaseRouteLayout.LoftY, 14.35f));
+            yield return Use(CaseStage.PointSill, SillStand);
             Assert.IsTrue(director.State.Has(CaseFact.ExaminedSill));
             yield return SkipDialogue();
 
             Assert.AreEqual(CharacterClipsKneeTap, cast.June.Avatar.Loop, "June taps the rhythm on her stool");
-            yield return Use(CaseStage.PointJuneAttic, new Vector3(-1.6f, CaseRouteLayout.LoftY, 14.2f));
+            yield return Use(CaseStage.PointJuneAttic, JuneAtticStand);
             Assert.IsTrue(director.State.Has(CaseFact.FoundJune));
             Assert.AreEqual(Lines.JuneGreet, director.Dialogue.CurrentLine.Key);
             yield return SkipDialogue();
@@ -265,27 +367,27 @@ namespace SpookyStreet.Tests.PlayMode
                 Assert.AreEqual(1f, cast.June.Avatar.ClipSpeed(CaseCast.WalkClip), 0.25f,
                     "the walk plays at its authored pace while she cruises at 1.1 m/s over the floor plan");
             }
+
             yield return WaitForJune();
             Vector3 june = cast.June.transform.position;
-            Assert.Less(Vector3.Distance(june, At(CaseStage.JuneFoyer.Position)), 0.2f, "June at her foyer mark");
+            Assert.Less(Vector3.Distance(june, At(CaseStage.JuneFoyer.Position)), 0.2f, "June at her hall mark");
 
-            // Foyer: the hum, then the latch opens both leaves together.
+            // Hall: the hum, then the latch opens both leaves.
             CaseStage.TryGetAnchor(CaseAnchors.Foyer, out var foyer);
             Game.Pip.Teleport(At(foyer));
             yield return Wait(0.4f);
-            Assert.AreEqual(Lines.CaptionFoyerHum, director.Captions.CurrentKey, "the foyer hums");
-            Assert.IsTrue(director.LastStep != null);
-            yield return Use(CaseStage.PointLatch, new Vector3(0.35f, CaseRouteLayout.FloorY, 12.0f));
+            Assert.AreEqual(Lines.CaptionFoyerHum, director.Captions.CurrentKey, "the hall hums");
+            yield return Use(CaseStage.PointLatch, LatchStand);
             Assert.IsTrue(director.State.Has(CaseFact.FrontOpen));
             yield return SkipDialogue();
             yield return Wait(1.4f);
-            Assert.AreEqual(OwlHouseStage.DoorOpenDegrees, house.DoorAngle, 1f, "door open");
-            Assert.AreEqual(Quaternion.Angle(house.FrontDoor.rotation, house.InnerDoor.rotation), 0f, 1f,
-                "both leaves swing together");
+            Assert.AreEqual(OwlHouseStage.DoorOpenDegrees, house.DoorAngle, 1f, "the exterior leaf opens 90°");
+            Assert.AreEqual(OwlHouseStage.InnerDoorOpenDegrees, house.InnerDoorAngle, 1f, "the inner leaf opens 100°");
+            Assert.LessOrEqual(OwlHouseStage.DoorOpenDegrees, 90f, "art note: the exterior leaf never passes 90°");
             Assert.IsTrue(house.LatchLifted);
 
             // Workshop: grille (sawCam, the panel swings open), arm, crank and the cutaway.
-            yield return Use(CaseStage.PointGrille, new Vector3(0.7f, CaseRouteLayout.FloorY, 14.9f));
+            yield return Use(CaseStage.PointGrille, Workshop(0.8f));
             Assert.IsTrue(director.State.Has(CaseFact.SawCam));
             Assert.IsTrue(house.NookWallHidden, "the follower is shown lifting");
             yield return Wait(MechanismMotionCycle + 0.2f);
@@ -294,17 +396,21 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(0, workshop.BowsThisCycle, "no bow while the arm has slipped");
             Assert.IsTrue(workshop.PanelOpen);
 
-            yield return Use(CaseStage.PointLinkArm, new Vector3(0.75f, CaseRouteLayout.FloorY, 13.3f));
+            yield return Use(CaseStage.PointLinkArm, Workshop(-0.8f));
             Assert.IsTrue(director.State.Has(CaseFact.LinkedArm));
             Assert.IsTrue(workshop.ArmSeated.gameObject.activeSelf);
             Assert.IsFalse(workshop.ArmSlipped.gameObject.activeSelf);
             Assert.IsFalse(director.Captions.HasDirectionCue, "what Pip sees in the workshop takes no direction cue");
 
-            yield return Use(CaseStage.PointCrank, new Vector3(0.75f, CaseRouteLayout.FloorY, 14.2f));
+            yield return Use(CaseStage.PointCrank, Workshop(0.1f));
             Assert.IsTrue(director.State.Has(CaseFact.TestedOwl));
             Assert.IsTrue(director.LastStep.PlayCutaway);
             Assert.IsTrue(director.Cutaway.Active, "the cutaway plays");
             Assert.IsTrue(director.ModalOpen, "gameplay waits during the cutaway");
+            Vector3 eye = director.Cutaway.CameraTransform.position;
+            Assert.IsTrue(CaseRouteLayout.Inside(eye.x, eye.z), "the cutaway looks into the nook in the interior");
+            Assert.IsFalse(CaseRouteLayout.Inside(director.Cutaway.InsetCamera.transform.position.x,
+                director.Cutaway.InsetCamera.transform.position.z), "its inset still looks at the rooftop owl on the street");
             yield return Wait(MechanismMotionCycle + 0.1f);
             Assert.AreEqual(3, workshop.BowsThisCycle, "the owl bows three times with the three knocks");
             float until = Time.time + 2f;
@@ -318,9 +424,9 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Frames(3);
             Assert.IsFalse(director.ModalOpen);
 
-            // Out through the open door and back to the arrival porch.
-            Game.Pip.Teleport(new Vector3(0.05f, CaseRouteLayout.FloorY + 0.05f, CaseRouteLayout.FrontZ - 0.7f));
-            yield return Wait(0.3f);
+            // Out through the open front door: the page turns, Pip arrives on the porch. Then the arrival porch.
+            yield return OutByTheDoor();
+            Assert.IsFalse(house.InteriorShown, "back on the street, the rooms are not drawn");
             Game.Pip.Teleport(new Vector3(0f, 0.7f, -13.4f));
             yield return Frames(3);
             Assert.IsTrue(director.State.Has(CaseFact.CaseClosed), "closure on the arrival porch");
@@ -374,7 +480,7 @@ namespace SpookyStreet.Tests.PlayMode
         // ---------------------------------------------------------------------------------------------- CASE-02
 
         [UnityTest]
-        [Timeout(150000)]
+        [Timeout(170000)]
         public IEnumerator AtticFirstAndAnEarlyCrankStillReachTheSameTruth()
         {
             yield return StartGame();
@@ -385,7 +491,7 @@ namespace SpookyStreet.Tests.PlayMode
             director.Perform(CaseAction.Of(CaseActionKind.HearKnocks));
             yield return EnterByWindow();
             Assert.IsTrue(director.State.Has(CaseFact.AtticFirst), "route proof before any interview");
-            yield return Use(CaseStage.PointJuneAttic, new Vector3(-1.6f, CaseRouteLayout.LoftY, 14.2f));
+            yield return Use(CaseStage.PointJuneAttic, JuneAtticStand);
             Assert.AreEqual(Lines.JuneGreetShortcut, director.Dialogue.CurrentLine.Key, "June acknowledges the shortcut");
             yield return SkipDialogue();
             yield return WaitForJune();
@@ -394,7 +500,7 @@ namespace SpookyStreet.Tests.PlayMode
             CaseStage.TryGetAnchor(CaseAnchors.Workshop, out var workshopAnchor);
             Game.Pip.Teleport(At(workshopAnchor));
             yield return Wait(0.3f);
-            yield return Use(CaseStage.PointServicePanel, new Vector3(0.75f, CaseRouteLayout.FloorY, 13.75f));
+            yield return Use(CaseStage.PointServicePanel, Workshop(-0.35f));
             Assert.IsTrue(director.State.Has(CaseFact.SawCam), "looking through the open panel shows the cam");
             yield return Wait(0.9f);
             Assert.IsTrue(workshop.PanelOpen);
@@ -402,7 +508,7 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Wait(MechanismMotionCycle);
 
             int facts = director.State.Count;
-            yield return Use(CaseStage.PointCrank, new Vector3(0.75f, CaseRouteLayout.FloorY, 14.2f));
+            yield return Use(CaseStage.PointCrank, Workshop(0.1f));
             Assert.AreEqual(CaseOutcome.CrankGap, director.LastStep.Outcome);
             Assert.AreEqual(facts, director.State.Count, "no fact from the early crank");
             CollectionAssert.Contains(director.LastStep.Lines, new ScriptLine(Speaker.Caption, Lines.CaptionCrankGap));
@@ -413,22 +519,26 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(workshop.ArmSlipped.gameObject.activeSelf, "the visible gap where the arm should connect");
 
             // Repeat a talk: nothing gained twice.
-            yield return Use(CaseStage.PointJuneFoyer, new Vector3(-1.35f, CaseRouteLayout.FloorY, 12.9f));
+            yield return Use(CaseStage.PointJuneFoyer, new Vector3(-1.35f, CaseRouteLayout.FloorY, Ifz + 1.9f));
             Assert.AreEqual(Lines.JuneLatchReminder, director.Dialogue.CurrentLine.Key);
             Assert.AreEqual(0, director.LastStep.Gained.Count);
             yield return SkipDialogue();
 
-            yield return Use(CaseStage.PointLinkArm, new Vector3(0.75f, CaseRouteLayout.FloorY, 13.3f));
-            yield return Use(CaseStage.PointCrank, new Vector3(0.75f, CaseRouteLayout.FloorY, 14.2f));
+            // The front door is still stuck: no way out through it yet.
+            Assert.IsNull(Thresholds.ExitAt(0f, CaseRouteLayout.FloorY, Ifz + 0.05f, Director.House.DoorOpen));
+
+            yield return Use(CaseStage.PointLinkArm, Workshop(-0.8f));
+            yield return Use(CaseStage.PointCrank, Workshop(0.1f));
             Assert.IsTrue(director.State.Has(CaseFact.TestedOwl));
             director.Cutaway.Skip();
             Assert.IsFalse(director.Cutaway.Active, "the cutaway is skippable");
             yield return Frames(3);
 
-            yield return Use(CaseStage.PointLatch, new Vector3(0.35f, CaseRouteLayout.FloorY, 12.0f));
+            yield return Use(CaseStage.PointLatch, LatchStand);
             Assert.AreEqual(Lines.JuneLatchThanks, director.Dialogue.CurrentLine.Key);
             yield return SkipDialogue();
 
+            yield return OutByTheDoor();
             Game.Pip.Teleport(new Vector3(0f, 0.7f, -13.4f));
             yield return Frames(3);
             Assert.IsTrue(director.State.Has(CaseFact.CaseClosed));
@@ -460,10 +570,23 @@ namespace SpookyStreet.Tests.PlayMode
             Vector3 pip = Game.Pip.transform.position;
             Assert.Less(new Vector2(pip.x - anchor.X, pip.z - anchor.Z).magnitude, 0.6f, "Pip resumes at " + expected);
             Assert.AreEqual(anchor.Y, pip.y, 0.4f, "on the anchor's floor");
+            Assert.AreEqual(CaseAnchors.IsInside(expected), PipInside, expected + ": restored on its side of the walls");
+        }
+
+        /// <summary>A resume inside the interior shows it, with the camera in the room from the first frames.</summary>
+        private static IEnumerator AssertResumedIndoors()
+        {
+            yield return Frames(3);
+            Assert.IsTrue(PipInside, "the save reloads inside the interior");
+            Assert.IsTrue(Director.House.InteriorShown, "the interior is drawn");
+            Assert.IsTrue(Director.Framing.Active, "the interior camera has the room");
+            Vector3 lens = Game.CameraRig.OutputCamera.transform.position;
+            Assert.IsTrue(CaseRouteLayout.Inside(lens.x, lens.z), $"the lens is in the interior ({lens})");
+            Assert.IsFalse(Director.Travel.Active, "a resume never crosses a threshold");
         }
 
         [UnityTest]
-        [Timeout(150000)]
+        [Timeout(170000)]
         public IEnumerator ReloadAfterWindowEntryLatchAndCrankRebuildsTheWorld()
         {
             yield return StartGame();
@@ -472,31 +595,32 @@ namespace SpookyStreet.Tests.PlayMode
             // 1. Interrupted right after the window entry.
             yield return EnterByWindow();
             Assert.IsTrue(Director.State.Has(CaseFact.EnteredByWindow));
+            yield return Wait(0.5f);
+            Director.Autosave();
             yield return ReloadAndContinue();
             Assert.IsTrue(Director.State.Has(CaseFact.EnteredByWindow));
             Assert.IsTrue(Director.State.Has(CaseFact.AtticFirst));
-            // The last safe ground was the bridge end or, once Pip landed inside, the attic floor.
-            Assert.That(Director.AnchorId, Is.EqualTo(CaseAnchors.AtticSill).Or.EqualTo(CaseAnchors.Attic));
-            AssertPipAtAnchor(Director.AnchorId);
+            Assert.AreEqual(CaseAnchors.Attic, Director.AnchorId, "the attic save restores in the attic");
+            AssertPipAtAnchor(CaseAnchors.Attic);
+            yield return AssertResumedIndoors();
             Assert.AreEqual(0f, Director.House.DoorAngle, 0.1f, "door still latched");
             Assert.AreEqual(JunePlacement.Attic, Director.Cast.JuneMark, "June still in the attic");
             Assert.IsFalse(Director.Workshop.ArmLinked);
 
             // 2. Interrupted right after the latch (June found first).
-            yield return Use(CaseStage.PointSill, new Vector3(-2.45f, CaseRouteLayout.LoftY, 14.35f));
+            yield return Use(CaseStage.PointSill, SillStand);
             yield return SkipDialogue();
-            Game.Pip.Teleport(new Vector3(-2.2f, 2.55f, 14.0f));
-            yield return Wait(0.4f);
-            yield return Use(CaseStage.PointJuneAttic, new Vector3(-1.6f, CaseRouteLayout.LoftY, 14.2f));
+            yield return Use(CaseStage.PointJuneAttic, JuneAtticStand);
             yield return SkipDialogue();
             CaseStage.TryGetAnchor(CaseAnchors.Foyer, out var foyer);
             Game.Pip.Teleport(At(foyer));
             yield return Wait(0.5f);
-            yield return Use(CaseStage.PointLatch, new Vector3(0.35f, CaseRouteLayout.FloorY, 12.0f));
+            yield return Use(CaseStage.PointLatch, LatchStand);
             Assert.IsTrue(Director.State.Has(CaseFact.FrontOpen));
             yield return ReloadAndContinue();
             Assert.IsTrue(Director.State.Has(CaseFact.FrontOpen));
             AssertPipAtAnchor(CaseAnchors.Foyer);
+            yield return AssertResumedIndoors();
             Assert.AreEqual(OwlHouseStage.DoorOpenDegrees, Director.House.DoorAngle, 0.5f, "the door is rebuilt open");
             Assert.AreEqual(JunePlacement.Foyer, Director.Cast.JuneMark, "June is never stranded upstairs");
             Assert.Less(Vector3.Distance(Director.Cast.June.transform.position, At(CaseStage.JuneFoyer.Position)), 0.1f);
@@ -507,11 +631,12 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Wait(0.5f);
             Director.Perform(CaseAction.Of(CaseActionKind.ExamineGrille));
             Director.Perform(CaseAction.Of(CaseActionKind.LinkArm));
-            yield return Use(CaseStage.PointCrank, new Vector3(0.75f, CaseRouteLayout.FloorY, 14.2f));
+            yield return Use(CaseStage.PointCrank, Workshop(0.1f));
             Assert.IsTrue(Director.Cutaway.Active);
             yield return ReloadAndContinue();
             Assert.IsTrue(Director.State.Has(CaseFact.TestedOwl));
             AssertPipAtAnchor(CaseAnchors.Workshop);
+            yield return AssertResumedIndoors();
             Assert.IsFalse(Director.Cutaway.Active, "a reset during the reveal rebuilds, it does not replay");
             Assert.IsTrue(Director.Workshop.PanelOpen, "panel open");
             Assert.IsTrue(Director.Workshop.ArmLinked, "arm linked");
@@ -522,28 +647,63 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(Game.Controls.GameplayEnabled);
         }
 
+        // ------------------------------------------------------------------------------------------- thresholds
+
         [UnityTest]
-        public IEnumerator InsideTheShellTheCameraLooksInAndTheAtticHidesFromAbove()
+        [Timeout(120000)]
+        public IEnumerator ThresholdRoundTripNeverDoubleTriggers()
         {
             yield return StartGame();
+            var travel = Director.Travel;
             var house = Director.House;
             Director.Perform(CaseAction.Of(CaseActionKind.HearKnocks));
+
+            // In by the window, then stand still at the arrival point: nothing more happens.
             yield return EnterByWindow();
-            CaseStage.TryGetAnchor(CaseAnchors.Foyer, out var foyer);
-            Game.Pip.Teleport(At(foyer));
-            yield return Wait(0.5f);
-            Assert.IsTrue(house.View.ShowInterior);
-            Assert.IsFalse(house.RecessCard.gameObject.activeSelf, "the dark recess card hides with the interior shown");
+            Assert.AreEqual(1, travel.Crossings);
+            Assert.IsTrue(Director.State.Has(CaseFact.EnteredByWindow), "enteredByWindow fires on the dormer entry");
+            Assert.IsTrue(Director.State.Has(CaseFact.AtticFirst), "and atticFirst, as before");
+            yield return Wait(1.5f);
+            Assert.AreEqual(1, travel.Crossings, "no bounce back from the arrival point");
+            Assert.IsTrue(house.InteriorShown);
+
+            // Back out by the window: Pip arrives on the bridge, the rooms stop drawing.
+            yield return Cross(Thresholds.DormerInside, Arrival(Thresholds.DormerInside),
+                new Vector3(-3.45f, CaseRouteLayout.LoftY, CaseRouteLayout.InnerWindowZ));
+            Assert.AreEqual(2, travel.Crossings);
+            yield return Frames(3);
+            Assert.IsFalse(house.InteriorShown, "on the bridge the rooms are not drawn");
             Vector3 lens = Game.CameraRig.OutputCamera.transform.position;
-            bool lensInside = CaseRouteLayout.Inside(lens.x, lens.z);
-            bool high = lens.y > InteriorVisibility.HighCamera;
-            // D24: with the lens inside the house nothing is cut away; only a high lens outside hides the attic.
-            Assert.AreEqual(high && !lensInside, !house.Attic.gameObject.activeSelf, "attic hides only from a high lens outside");
-            Game.Pip.Teleport(new Vector3(0f, 0.1f, 0f));
+            Assert.IsFalse(CaseRouteLayout.Inside(lens.x, lens.z), "the lens cut back out to the street");
+
+            // The latched front door is stuck from the porch: standing in its doorway crosses nothing.
+            Game.Pip.Teleport(new Vector3(0f, 0.65f, CaseRouteLayout.FrontZ - 1.4f));
+            yield return Wait(0.8f);
+            Game.Pip.Teleport(new Vector3(0.05f, 0.65f, CaseRouteLayout.FrontZ - 0.3f));
+            yield return Wait(0.8f);
+            Assert.AreEqual(2, travel.Crossings, "the outside door is stuck while latched");
+            Assert.IsFalse(travel.Active);
+
+            // Once open, the door works both ways (step back first, so the open doorway is walked into).
+            Game.Pip.Teleport(new Vector3(0f, 0.65f, CaseRouteLayout.FrontZ - 1.4f));
             yield return Wait(0.3f);
-            Assert.IsFalse(house.View.ShowInterior, "back on the plaza");
-            Assert.IsTrue(house.Body.gameObject.activeSelf);
-            Assert.IsTrue(house.Attic.gameObject.activeSelf || !house.Interior.gameObject.activeSelf);
+            house.SetDoor(true);
+            yield return Cross(Thresholds.DoorOutside, new Vector3(0f, 0.6f, CaseRouteLayout.FrontZ - 1.4f),
+                new Vector3(0.05f, 0.6f, CaseRouteLayout.FrontZ - 0.3f));
+            Assert.AreEqual(3, travel.Crossings);
+            Assert.IsTrue(house.InteriorShown);
+            yield return OutByTheDoor();
+            Assert.AreEqual(4, travel.Crossings);
+
+            // Reduced motion: the same crossing as a quick fade.
+            AmbientMotion.ReducedMotion = true;
+            float started = Time.time;
+            yield return Cross(Thresholds.DoorOutside, new Vector3(0f, 0.6f, CaseRouteLayout.FrontZ - 1.4f),
+                new Vector3(0.05f, 0.6f, CaseRouteLayout.FrontZ - 0.3f));
+            Assert.IsTrue(travel.Wipe.ReducedMotion, "reduced motion fades instead of turning the page");
+            Assert.AreEqual(5, travel.Crossings);
+            AmbientMotion.ReducedMotion = false;
+            Assert.Greater(Time.time - started, 0f);
         }
     }
 }

@@ -96,6 +96,33 @@ namespace SpookyStreet.Case
             return witness;
         }
 
+        /// <summary>
+        /// June is drawn only where she can be seen: in the interior (a separate place up the lane, D24.1) only while
+        /// the interior itself is drawn, so she never floats in the distance beyond the street.
+        /// </summary>
+        public void ShowJuneIndoors(bool interiorShown)
+        {
+            if (June == null)
+            {
+                return;
+            }
+
+            Vector3 at = June.transform.position;
+            bool show = interiorShown || !CaseRouteLayout.Inside(at.x, at.z);
+            if (show == _juneShown)
+            {
+                return;
+            }
+
+            _juneShown = show;
+            foreach (var renderer in June.GetComponentsInChildren<Renderer>(true))
+            {
+                renderer.enabled = show;
+            }
+        }
+
+        private bool _juneShown = true;
+
         /// <summary>Instantly places everyone for <paramref name="view"/> (resume, new game, replay).</summary>
         public void Apply(CaseWorldView view)
         {

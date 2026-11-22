@@ -19,15 +19,12 @@ namespace SpookyStreet.Core.World
         /// <summary>Treehouse routes: ramp, shed, bridge, cabin, awning.</summary>
         Route,
 
-        /// <summary>The owl house shell: outer walls, roof plates, door blocker. The camera passes through these
-        /// while Pip is inside, so it can look in through the culled near walls.</summary>
-        Shell,
-
-        /// <summary>Inside the house: foyer floor, stair, loft, rails, partition, furniture.</summary>
+        /// <summary>The owl house interior (D24.1: its own closed space away from the street): walls, floors, stair,
+        /// loft, rails, partition, roof plates and furniture.</summary>
         Interior,
 
-        /// <summary>Built elsewhere (the porch deck; the awning from its CollisionRules recipe): listed so the route
-        /// checks see it; not built by the case.</summary>
+        /// <summary>Built elsewhere (the porch deck and the owl house's solid body by EnvironmentDressing; the awning
+        /// from its CollisionRules recipe): listed so the route checks see it; not built by the case.</summary>
         Reference,
     }
 
@@ -159,15 +156,38 @@ namespace SpookyStreet.Core.World
         public override string ToString() => $"{Name} ({X:F2}, {Y:F2}, {Z:F2})";
     }
 
+
+    /// <summary>One stretch of the mandatory route between thresholds: walked without a jump, it ends in the exit zone
+    /// of <see cref="Exit"/> (or nowhere for the last leg); the next leg starts at that threshold's arrival point.</summary>
+    public readonly struct RouteLeg
+    {
+        public RouteLeg(string name, ThresholdId exit, params RoutePoint[] points)
+        {
+            Name = name;
+            Exit = exit;
+            Points = points;
+        }
+
+        public string Name { get; }
+        public ThresholdId Exit { get; }
+        public RoutePoint[] Points { get; }
+
+        public override string ToString() => Name;
+    }
+
     /// <summary>
-    /// The interior half of case 01 (S002 interior wiring): where the treehouse-route models, the owl house interior
-    /// and the workshop mechanism stand, and every authored collider of the mandatory route (side yard → shed ramp →
-    /// shed roof → bridge → June's sill → attic → stair → foyer → front door) and of the skilled ascent (crate →
-    /// awning → shed roof). Model frames and heights come from the Blender scripts
-    /// (<c>tools/blender/env/routes.py</c>, <c>interior.py</c>; suggested placements in
-    /// <c>env_interior_review.py</c>): the owl house builder space maps to world as x = bx, z = 11 + by, y = bz;
-    /// the ramp frame as x = rx − 9.5, z = ry + 12. Pure data so EditMode tests prove the ramp is 1:5 and ≥ 1.6 m
-    /// wide, the route is continuous without jumps and the skilled steps fit the 1.0 m tap jump (spec §4, MAP-01).
+    /// The interior half of case 01 (S002 interior wiring, house v3): where the treehouse-route models, the owl house
+    /// interior and the workshop mechanism stand, and every authored collider of the mandatory route (side yard → shed
+    /// ramp → shed roof → bridge → June's window | attic → stair → hall → front door | porch) and of the skilled ascent
+    /// (crate → awning → shed roof).
+    /// <para>D24.1: the owl house is "bigger on the inside". The exterior keeps street scale and stays solid (its body
+    /// boxes are EnvironmentDressing's); the rooms are a separate, closed model up the lane at
+    /// <see cref="InteriorOriginZ"/>, outside the boundary walls, reached through the two thresholds
+    /// (<see cref="Thresholds"/>). Interior builder space (interior.py: x across, y depth from the front wall, z up)
+    /// maps to world as x = bx, y = bz, z = <see cref="InteriorFrontZ"/> + by. The ramp frame maps as x = rx − 9.5,
+    /// z = ry + 12.</para>
+    /// Pure data so EditMode tests prove the ramp is 1:5 and ≥ 1.6 m wide, every leg is continuous without jumps, the
+    /// skilled steps fit the 1.0 m tap jump and the camera has room (spec §4, MAP-01, D24).
     /// </summary>
     public static class CaseRouteLayout
     {
@@ -193,6 +213,8 @@ namespace SpookyStreet.Core.World
         public const string InnerDoor = "InnerDoor";
         public const string DoorLatch = "DoorLatch";
         public const string SillSnag = "SillSnag";
+        public const string StreetViewGlow = "StreetView_Glow";
+        public const string RoomCardGlow = "RoomCard_Glow";
         public const string Cam = "Cam";
         public const string Follower = "Follower";
         public const string LinkArmSeated = "LinkArm_Seated";
@@ -200,61 +222,92 @@ namespace SpookyStreet.Core.World
         public const string ServicePanel = "ServicePanel";
         public const string Crank = "Crank";
 
-        // --- The owl house (builder space: body x -3..3, y 0..6, front wall at y = 0) ---------------------------
+        // --- The owl house exterior on the street (unchanged by house v3; solid) --------------------------------
 
-        /// <summary>World z of the house front wall (builder y = 0).</summary>
+        /// <summary>World z of the exterior front wall (builder y = 0).</summary>
         public const float FrontZ = EnvironmentLayout.HouseZ - 2f;
 
-        public const float FloorY = 0.6f;
-        public const float LoftY = 2.5f;
-        public const float LoftUnderside = 2.34f;
-        public const float InnerMinX = -2.86f;
-        public const float InnerMaxX = 2.86f;
-        public const float InnerMinZ = FrontZ + 0.14f;
-        public const float InnerMaxZ = FrontZ + 5.86f;
         public const float OuterX = 3.1f;
         public const float BackZ = FrontZ + 6f;
 
-        /// <summary>The loft starts here (builder y 1.5); the entry bay in front of it is open to the roof.</summary>
-        public const float LoftFrontZ = FrontZ + 1.5f;
+        /// <summary>The exterior's solid body box (EnvironmentDressing): x ±3.05, z 11…17, 2.8 m high.</summary>
+        public const float BodyHalfX = 3.05f;
+        public const float BodyTopY = 2.8f;
 
-        /// <summary>Roof knee and apex (the ceiling slope, builder KNEE/APEX).</summary>
-        public const float KneeY = 2.86f;
-        public const float ApexY = 6.27f;
+        /// <summary>Porch deck and hall floor height (the same on both sides of the door).</summary>
+        public const float FloorY = 0.6f;
 
-        // Stair along the back wall, rising east: bottom tread at x -1.72 on the floor, loft lip at x 0.8.
-        public const float StairBottomX = -1.72f;
-        public const float StairTopX = 0.8f;
-        public const float StairMinZ = FrontZ + 4.86f;
-        public const float StairMaxZ = InnerMaxZ;
-        public const float StairHoleMinX = -1.44f;
-
-        // June's window: 1.0 m wide, sill 2.5 m, spring line 0.95 m above the sill, 1.45 m apex.
-        public const float WindowX = -3.045f;
-        public const float WindowZ = FrontZ + 3f;
+        /// <summary>June's window on the exterior west wall: 1.0 m wide, sill 2.5 m, 1.45 m apex.</summary>
+        public const float ExteriorWindowX = -3.045f;
+        public const float ExteriorWindowZ = FrontZ + 3f;
+        public const float ExteriorSillY = 2.5f;
         public const float WindowHalfWidth = 0.5f;
-        public const float SillY = 2.5f;
         public const float WindowSpring = 0.95f;
         public const float WindowApex = 1.45f;
 
-        /// <summary>Dormer alcove behind the window (builder ALC_Y0..ALC_Y1).</summary>
-        public const float AlcoveMinZ = FrontZ + 2.3f;
-        public const float AlcoveMaxZ = FrontZ + 3.7f;
-        public const float AlcoveEaveY = 3.9f;
-
-        // Front door: hinge at x -0.55; opening to x 0.68, head at 2.62.
+        /// <summary>The front door opening (both sides): x ±0.57, head 2.62 m; the leaves hinge at x −0.55.</summary>
+        public const float DoorHalfWidth = 0.57f;
         public const float DoorHingeX = -0.55f;
-        public const float DoorMaxX = 0.68f;
         public const float DoorTopY = 2.62f;
 
-        // Workshop nook east of the partition, its floor 0.5 m below the foyer.
-        public const float NookX = 1.45f;
-        public const float NookMinZ = FrontZ + 1.65f;
+        // --- The owl house interior (D24.1: away from the street; interior.py frame) ----------------------------
+
+        /// <summary>Where the interior model's origin stands: up the lane, 42 m beyond the north boundary wall (z 18),
+        /// so the street never includes it and it never includes the street.</summary>
+        public const float InteriorOriginX = 0f;
+
+        public const float InteriorOriginZ = 60f;
+
+        /// <summary>World z of the interior's builder y = 0 (the FBX origin sits at builder y = 2).</summary>
+        public const float InteriorFrontZ = InteriorOriginZ - 2f;
+
+        public const float LoftY = 4.0f;
+        public const float LoftUnderside = 3.86f;
+        public const float InnerMinX = -3.6f;
+        public const float InnerMaxX = 3.6f;
+        public const float InnerMinZ = InteriorFrontZ + 0.14f;
+        public const float InnerMaxZ = InteriorFrontZ + 7.0f;
+
+        /// <summary>Attic knee walls and ridge (ceiling line), and the roof's rise per metre toward the centre (40°).</summary>
+        public const float KneeY = 5.2f;
+        public const float ApexY = 8.224f;
+        public const float RoofSlope = 0.84f;
+
+        // Stair: lower flight north along the west wall, a corner landing, upper flight east to the middle of the attic.
+        public const float StairBayX = -2.1f;
+        public const float StairFootZ = InteriorFrontZ + 2.98f;
+        public const float LandingZ = InteriorFrontZ + 5.5f;
+        public const float LandingY = 2.3f;
+        public const float UpperFlightMinZ = InteriorFrontZ + 5.6f;
+        public const float UpperFlightZ = InteriorFrontZ + 6.3f;
+        public const float UpperFlightStartX = -2.38f;
+        public const float StairTopX = 0.14f;
+
+        /// <summary>Rise per metre of both flights (0.1889 m risers on 0.28 m treads, 34°).</summary>
+        public const float StairGradient = (LandingY - FloorY) / (LandingZ - StairFootZ);
+
+        /// <summary>The stairwell in the loft: over the west bay from here north, and over the upper flight.</summary>
+        public const float StairwellMinZ = InteriorFrontZ + 3.10f;
+
+        // June's window in the attic's west wall: the sill is the attic floor; the reveal runs out to x −3.76.
+        public const float InnerWindowX = InnerMinX;
+        public const float InnerWindowZ = InteriorFrontZ + 1.5f;
+        public const float SillY = LoftY;
+
+        /// <summary>Dormer alcove behind the window (builder ALC_Y0..ALC_Y1), its eave and ridge.</summary>
+        public const float AlcoveMinZ = InteriorFrontZ + 0.75f;
+        public const float AlcoveMaxZ = InteriorFrontZ + 2.25f;
+        public const float AlcoveEaveY = 5.8f;
+        public const float AlcoveRidgeY = 6.4f;
+
+        // Workshop nook east of the partition, its floor 0.5 m below the hall.
+        public const float NookX = 2.2f;
+        public const float NookMinZ = InteriorFrontZ + 2.4f;
         public const float NookFloorY = 0.1f;
 
-        /// <summary>Mechanism frame origin (builder MECH) and yaw: its front (-Y) faces the foyer (-X).</summary>
+        /// <summary>Mechanism frame origin (builder MECH) and yaw: its front (-Y) faces the hall (-X).</summary>
         public const float MechanismX = NookX;
-        public const float MechanismZ = FrontZ + 3.1f;
+        public const float MechanismZ = InteriorFrontZ + 4.6f;
         public const float MechanismYaw = 90f;
 
         // --- The treehouse routes (ramp frame: x = world X + 9.5, y = world Z - 12) ------------------------------
@@ -264,7 +317,7 @@ namespace SpookyStreet.Core.World
 
         /// <summary>Treehouse deck and the shed roof height; the low-shed landing (1:5 from the ground).</summary>
         public const float TreehouseY = 2.4f;
-        public const float LandingY = 1.52f;
+        public const float RampLandingY = 1.52f;
 
         // Leg 1 runs north along the west side, leg 2 east onto the tall shed roof.
         public const float Leg1MinX = RampOriginX - 3.9f;
@@ -308,10 +361,15 @@ namespace SpookyStreet.Core.World
         /// <summary>The tap jump's apex (spec §5) that every skilled-ascent step must fit under.</summary>
         public const float TapJumpApex = 1.0f;
 
-        /// <summary>The new models, each at its suggested placement (yaw is model yaw, as every placement).</summary>
+        /// <summary>The cloth on the bridge-head post (child eye level from the shed roof).</summary>
+        public const float ClothX = RoofMaxX - 0.12f;
+        public const float ClothY = TreehouseY + 0.98f;
+        public const float ClothZ = BridgeZ + BridgeWidth * 0.5f + 0.1f;
+
+        /// <summary>The new models, each at its placement (yaw is model yaw, as every placement).</summary>
         public static readonly Placement[] Models =
         {
-            new Placement(OwlHouseInterior, EnvironmentLayout.HouseX, 0f, EnvironmentLayout.HouseZ, EnvironmentLayout.HouseYaw, detail: false),
+            new Placement(OwlHouseInterior, InteriorOriginX, 0f, InteriorOriginZ, 0f, detail: false),
             new Placement(WorkshopMechanism, MechanismX, NookFloorY, MechanismZ, MechanismYaw, detail: false),
             new Placement(ShedRamp, RampOriginX, 0f, RampOriginZ, 0f, detail: false),
             new Placement(SillBridge, BridgeStartX + 1.2f, 0f, BridgeZ, 0f, detail: false),
@@ -322,43 +380,72 @@ namespace SpookyStreet.Core.World
                 halfX: 0.38f, halfZ: 0.38f, detail: false),
         };
 
-        /// <summary>The cloth on the bridge-head post (child eye level from the shed roof).</summary>
-        public const float ClothX = RoofMaxX - 0.12f;
-        public const float ClothY = TreehouseY + 0.98f;
-        public const float ClothZ = BridgeZ + BridgeWidth * 0.5f + 0.1f;
+        // --- The treehouse cabin (routes.py build_cabin; cabin frame: +y the yard side, -x the door side) ------------
 
         /// <summary>The treehouse cabin's frame: the platform centre in the maple frame, turned by the maple's yaw.</summary>
         public const float CabinYaw = 200f;
         public const float CabinHalf = 1.12f;
 
+        /// <summary>The lookout bay's outer wall (cabin y).</summary>
+        public const float CabinBayY = 1.75f;
+
+        /// <summary>Main eave (wall top) and the closed ridge above the deck; the bay's low eave.</summary>
+        public const float CabinEave = 1.7f;
+        public const float CabinRidge = 2.33f;
+        public const float CabinBayEave = 1.36f;
+
+        /// <summary>Roof pitch of the cabin (33°) as rise per metre.</summary>
+        public const float CabinRoofSlope = 0.6494f;
+
+        /// <summary>Platform centre in the maple frame (trunk lean, routes.py PLAT); the trunk stands here too.</summary>
+        public const float CabinPlatX = 0.2064f;
+        public const float CabinPlatY = -0.048f;
+
         public static readonly StageSlab[] Slabs = BuildSlabs();
 
-        /// <summary>The mandatory route, plaza to the open front door (spec §4 "main accessible loop").</summary>
-        public static readonly RoutePoint[] MandatoryRoute =
+        /// <summary>
+        /// The mandatory route in legs (spec §4 "main accessible loop"): plaza → June's window (outside), the attic →
+        /// down the stair → the open front door (inside), then the porch. Each leg ends in its threshold's exit zone.
+        /// </summary>
+        public static readonly RouteLeg[] MandatoryLegs =
         {
-            new RoutePoint("plaza", 0f, 0f, -0.5f),
-            new RoutePoint("plaza west", -3f, 0f, -0.2f),
-            new RoutePoint("sidewalk west", -3.2f, 0.045f, 3.9f),
-            new RoutePoint("side yard", -11.2f, 0.045f, 3.9f),
-            new RoutePoint("ramp foot", -12.45f, 0f, 6.9f),
-            new RoutePoint("ramp start", -12.45f, 0f, 7.5f),
-            new RoutePoint("landing", -12.45f, LandingY, 15.85f),
-            new RoutePoint("leg 2 foot", -11.3f, LandingY, 15.85f),
-            new RoutePoint("leg 2 top", -7.0f, TreehouseY, 15.85f),
-            new RoutePoint("shed roof", -6.5f, TreehouseY, 14.0f),
-            new RoutePoint("bridge head", -5.6f, TreehouseY, BridgeZ),
-            new RoutePoint("bridge end", -3.45f, 2.5f, BridgeZ),
-            new RoutePoint("sill", -2.95f, SillY, BridgeZ),
-            new RoutePoint("attic", -2.2f, LoftY, 14.0f),
-            new RoutePoint("loft east", 1.35f, LoftY, 14.4f),
-            new RoutePoint("loft back", 1.35f, LoftY, 16.36f),
-            new RoutePoint("stair top", 0.95f, LoftY, 16.36f),
-            new RoutePoint("stair bottom", -2.15f, FloorY, 16.36f),
-            new RoutePoint("foyer back", -2.35f, FloorY, 15.3f),
-            new RoutePoint("foyer", -0.6f, FloorY, 12.4f),
-            new RoutePoint("doorway", 0.05f, FloorY, 11.4f),
-            new RoutePoint("porch", 0.05f, FloorY, 10.3f),
+            new RouteLeg("street to June's window", ThresholdId.Dormer,
+                new RoutePoint("plaza", 0f, 0f, -0.5f),
+                new RoutePoint("plaza west", -3f, 0f, -0.2f),
+                new RoutePoint("sidewalk west", -3.2f, 0.045f, 3.9f),
+                new RoutePoint("side yard", -11.2f, 0.045f, 3.9f),
+                new RoutePoint("ramp foot", -12.45f, 0f, 6.9f),
+                new RoutePoint("ramp start", -12.45f, 0f, 7.5f),
+                new RoutePoint("landing", -12.45f, RampLandingY, 15.85f),
+                new RoutePoint("leg 2 foot", -11.3f, RampLandingY, 15.85f),
+                new RoutePoint("leg 2 top", -7.0f, TreehouseY, 15.85f),
+                new RoutePoint("shed roof", -6.5f, TreehouseY, 14.0f),
+                new RoutePoint("bridge head", -5.6f, TreehouseY, BridgeZ),
+                new RoutePoint("bridge end", -3.45f, ExteriorSillY, BridgeZ),
+                new RoutePoint("at the window", -3.36f, ExteriorSillY, BridgeZ)),
+            new RouteLeg("attic, stair and hall", ThresholdId.FrontDoor,
+                new RoutePoint("dormer arrival", -1.7f, LoftY, InteriorFrontZ + 1.5f),
+                new RoutePoint("attic front", -0.6f, LoftY, InteriorFrontZ + 1.6f),
+                new RoutePoint("attic middle", 0.6f, LoftY, InteriorFrontZ + 4.5f),
+                new RoutePoint("by the stairwell", 0.6f, LoftY, UpperFlightZ),
+                new RoutePoint("stair top", 0.4f, LoftY, UpperFlightZ),
+                new RoutePoint("upper flight foot", -2.1f, LandingY + 0.19f, UpperFlightZ),
+                new RoutePoint("landing", -2.85f, LandingY, UpperFlightZ),
+                new RoutePoint("landing south", -2.85f, LandingY, LandingZ),
+                new RoutePoint("stair foot", -2.85f, FloorY, StairFootZ),
+                new RoutePoint("entry corner", -2.85f, FloorY, InteriorFrontZ + 2.6f),
+                new RoutePoint("hall", -1.2f, FloorY, InteriorFrontZ + 1.6f),
+                new RoutePoint("before the door", 0f, FloorY, InteriorFrontZ + 0.6f),
+                new RoutePoint("in the doorway", 0f, FloorY, InteriorFrontZ + 0.2f)),
+            new RouteLeg("porch", ThresholdId.None,
+                new RoutePoint("door arrival", 0f, FloorY, FrontZ - 1.55f),
+                new RoutePoint("porch front", 0.05f, FloorY, FrontZ - 1.8f)),
         };
+
+        /// <summary>From the porch back in through the open front door (the door works both ways once it is open).</summary>
+        public static readonly RouteLeg PorchToDoor = new RouteLeg("porch to the door", ThresholdId.FrontDoor,
+            new RoutePoint("porch", 0.05f, FloorY, FrontZ - 0.7f),
+            new RoutePoint("at the door", 0.05f, FloorY, FrontZ - 0.3f));
 
         /// <summary>The skilled ascent: crate (0.6) → awning (1.35 → 2.1) → over the awning wall onto the shed roof.</summary>
         public static readonly RoutePoint[] SkilledAscent =
@@ -370,9 +457,18 @@ namespace SpookyStreet.Core.World
             new RoutePoint("shed roof", AwningX, TreehouseY, RoofMinZ + 0.4f),
         };
 
-        /// <summary>Pip is inside the house shell (x, z only).</summary>
+        /// <summary>The point (x, z) is in the owl house interior (its plan, with the doorway and the window reveal).
+        /// Nothing else stands up the lane, so the plan alone decides.</summary>
         public static bool Inside(float x, float z) =>
-            x > -OuterX + 0.15f && x < OuterX - 0.15f && z > FrontZ + 0.08f && z < BackZ - 0.05f;
+            x > InnerMinX - 0.45f && x < InnerMaxX + 0.3f && z > InteriorFrontZ - 0.45f && z < InnerMaxZ + 0.3f;
+
+        /// <summary>The lower flight's tread line at world z (the hall floor before it, the landing after it).</summary>
+        public static float LowerFlightAt(float z) =>
+            Math.Max(FloorY, Math.Min(LandingY, FloorY + (z - StairFootZ) * StairGradient));
+
+        /// <summary>The upper flight's tread line at world x (the landing before it, the attic floor after it).</summary>
+        public static float UpperFlightAt(float x) =>
+            Math.Max(LandingY, Math.Min(LoftY, LandingY + (x - UpperFlightStartX) * StairGradient));
 
         /// <summary>Ramp slabs of the mandatory route (legs and landing), for the 1:5 and width checks.</summary>
         public static IEnumerable<StageSlab> RampSlabs()
@@ -386,10 +482,11 @@ namespace SpookyStreet.Core.World
             }
         }
 
-        /// <summary>Highest walk-slab top at (x, z) at or below <paramref name="maxY"/>; the lawn (0) otherwise.</summary>
+        /// <summary>Highest walk-slab top at (x, z) at or below <paramref name="maxY"/>; the lawn (0) otherwise (and
+        /// nothing at all, −100, in the interior, which has no lawn under it).</summary>
         public static float GroundAt(float x, float z, float maxY)
         {
-            float best = 0f;
+            float best = Inside(x, z) ? -100f : 0f;
             foreach (var slab in Slabs)
             {
                 if (slab.Kind == SlabKind.Walk && slab.TryTopAt(x, z, 0f, out float y) && y <= maxY && y > best)
@@ -402,10 +499,15 @@ namespace SpookyStreet.Core.World
         }
 
         /// <summary>First wall slab that a standing Pip at (x, y, z) would touch (above the step), or null.</summary>
-        public static string Blocking(float x, float y, float z)
+        public static string Blocking(float x, float y, float z, bool doorOpen = false)
         {
             foreach (var slab in Slabs)
             {
+                if (doorOpen && slab.Name == DoorBlockerName)
+                {
+                    continue;
+                }
+
                 if (slab.Kind == SlabKind.Wall && slab.Blocks(x, z, y + StepOffset + 0.02f, y + PipHeight, PipRadius))
                 {
                     return slab.Name;
@@ -414,6 +516,9 @@ namespace SpookyStreet.Core.World
 
             return null;
         }
+
+        /// <summary>Name of the inner door leaf's blocker that the runtime switches off once the door is open.</summary>
+        public const string DoorBlockerName = "Hall_DoorLeaf";
 
         private static StageSlab[] BuildSlabs()
         {
@@ -424,9 +529,9 @@ namespace SpookyStreet.Core.World
             float legWidth = Leg1MaxX - Leg1MinX; // 1.9
             float leg2Z = (Leg1EndZ + RampNorthZ) * 0.5f;
             float leg2Width = RampNorthZ - Leg1EndZ; // 1.7
-            Walk(s, "Ramp_Leg1", SlabGroup.Route, leg1X, 0f, Leg1StartZ, leg1X, LandingY, Leg1EndZ, legWidth, 0.4f);
-            Walk(s, "Ramp_Landing", SlabGroup.Route, leg1X, LandingY, Leg1EndZ, leg1X, LandingY, RampNorthZ, legWidth, LandingY);
-            Walk(s, "Ramp_Leg2", SlabGroup.Route, Leg1MaxX, LandingY, leg2Z, Leg2EndX, TreehouseY, leg2Z, leg2Width, 0.4f);
+            Walk(s, "Ramp_Leg1", SlabGroup.Route, leg1X, 0f, Leg1StartZ, leg1X, RampLandingY, Leg1EndZ, legWidth, 0.4f);
+            Walk(s, "Ramp_Landing", SlabGroup.Route, leg1X, RampLandingY, Leg1EndZ, leg1X, RampLandingY, RampNorthZ, legWidth, RampLandingY);
+            Walk(s, "Ramp_Leg2", SlabGroup.Route, Leg1MaxX, RampLandingY, leg2Z, Leg2EndX, TreehouseY, leg2Z, leg2Width, 0.4f);
             // The tall shed: solid to its roof; north of leg 2's arrival it starts at leg 2's end.
             Walk(s, "Shed_RoofSouth", SlabGroup.Route, (RoofMinX + RoofMaxX) * 0.5f, TreehouseY, RoofMinZ,
                 (RoofMinX + RoofMaxX) * 0.5f, TreehouseY, Leg1EndZ, RoofMaxX - RoofMinX, TreehouseY);
@@ -437,16 +542,16 @@ namespace SpookyStreet.Core.World
                 TreehouseY, RampOriginZ + 0.9f, 0.5f, 0.2f);
             // Low shed under the landing, and the skirts closing both legs to the ground.
             Wall(s, "Ramp_Leg1West", SlabGroup.Route, Leg1MinX - 0.05f, 1.0f, Leg1StartZ + 0.15f, Leg1MinX - 0.05f,
-                LandingY + 1.0f, Leg1EndZ, 0.1f, 3f);
+                RampLandingY + 1.0f, Leg1EndZ, 0.1f, 3f);
             Wall(s, "Ramp_Leg1East", SlabGroup.Route, Leg1MaxX + 0.05f, 1.0f, Leg1StartZ + 0.15f, Leg1MaxX + 0.05f,
-                LandingY + 1.0f, Leg1EndZ - 0.05f, 0.1f, 3f);
-            Wall(s, "Ramp_LandingWest", SlabGroup.Route, Leg1MinX - 0.05f, LandingY + 1f, Leg1EndZ, Leg1MinX - 0.05f,
-                LandingY + 1f, RampNorthZ, 0.1f, LandingY + 1f);
-            Wall(s, "Ramp_North", SlabGroup.Route, Leg1MinX, LandingY + 1f, RampNorthZ + 0.05f, Leg1MaxX,
-                LandingY + 1f, RampNorthZ + 0.05f, 0.1f, LandingY + 1f);
-            Wall(s, "Ramp_Leg2North", SlabGroup.Route, Leg1MaxX, LandingY + 1f, RampNorthZ + 0.05f, Leg2EndX,
+                RampLandingY + 1.0f, Leg1EndZ - 0.05f, 0.1f, 3f);
+            Wall(s, "Ramp_LandingWest", SlabGroup.Route, Leg1MinX - 0.05f, RampLandingY + 1f, Leg1EndZ, Leg1MinX - 0.05f,
+                RampLandingY + 1f, RampNorthZ, 0.1f, RampLandingY + 1f);
+            Wall(s, "Ramp_North", SlabGroup.Route, Leg1MinX, RampLandingY + 1f, RampNorthZ + 0.05f, Leg1MaxX,
+                RampLandingY + 1f, RampNorthZ + 0.05f, 0.1f, RampLandingY + 1f);
+            Wall(s, "Ramp_Leg2North", SlabGroup.Route, Leg1MaxX, RampLandingY + 1f, RampNorthZ + 0.05f, Leg2EndX,
                 TreehouseY + 1f, RampNorthZ + 0.05f, 0.1f, 3.5f);
-            Wall(s, "Ramp_Leg2South", SlabGroup.Route, Leg1MaxX + 0.1f, LandingY + 1f, Leg1EndZ - 0.05f, RoofMinX,
+            Wall(s, "Ramp_Leg2South", SlabGroup.Route, Leg1MaxX + 0.1f, RampLandingY + 1f, Leg1EndZ - 0.05f, RoofMinX,
                 TreehouseY + 1f, Leg1EndZ - 0.05f, 0.1f, 3.5f);
             Wall(s, "Shed_NorthRail", SlabGroup.Route, Leg2EndX, TreehouseY + 1f, RampNorthZ + 0.05f, RoofMaxX,
                 TreehouseY + 1f, RampNorthZ + 0.05f, 0.1f, 1f);
@@ -461,14 +566,18 @@ namespace SpookyStreet.Core.World
                 RoofMaxX + 0.05f, TreehouseY + 1f, RampNorthZ, 0.1f, 1f);
 
             // ---- Bridge to the sill, with guards so the crossing needs no precision. ----
-            Walk(s, "Bridge", SlabGroup.Route, BridgeStartX - 0.05f, TreehouseY, BridgeZ, BridgeEndX, SillY, BridgeZ,
+            Walk(s, "Bridge", SlabGroup.Route, BridgeStartX - 0.05f, TreehouseY, BridgeZ, BridgeEndX, ExteriorSillY, BridgeZ,
                 BridgeWidth, 0.25f);
             for (int side = -1; side <= 1; side += 2)
             {
                 float z = BridgeZ + side * (BridgeWidth * 0.5f + 0.05f);
                 Wall(s, side < 0 ? "Bridge_GuardSouth" : "Bridge_GuardNorth", SlabGroup.Route, BridgeStartX + 0.05f,
-                    TreehouseY + 0.8f, z, BridgeEndX - 0.05f, SillY + 0.8f, z, 0.08f, 0.8f);
+                    TreehouseY + 0.8f, z, BridgeEndX - 0.05f, ExteriorSillY + 0.8f, z, 0.08f, 0.8f);
             }
+
+            // June's sill outside the window: the solid body stops Pip at the window plane, in the dormer's exit zone.
+            Walk(s, "Window_Sill", SlabGroup.Route, ExteriorWindowX - 0.43f, ExteriorSillY, ExteriorWindowZ,
+                ExteriorWindowX + 0.05f, ExteriorSillY, ExteriorWindowZ, 2f * WindowHalfWidth, 0.12f);
 
             // ---- Skilled ascent: the awning slope and its wall slice (the crate fits its own bounds). ----
             // Built from the Awning's CollisionRules recipe; listed here for the route checks.
@@ -477,114 +586,195 @@ namespace SpookyStreet.Core.World
             Wall(s, "Awning_Wall", SlabGroup.Reference, AwningX - 1.3f, AwningWallTopY, AwningWallZ + 0.04f, AwningX + 1.3f,
                 AwningWallTopY, AwningWallZ + 0.04f, 0.16f, AwningWallTopY);
 
-            // ---- Treehouse cabin walls on the platform (the deck itself belongs to the street set). ----
-            CabinWalls(s);
+            // ---- The treehouse cabin: closed walls, the lookout bay's boards and the roof (D24). ----
+            Cabin(s);
 
-            // ---- The owl house shell ----
-            Walk(s, "House_Floor", SlabGroup.Interior, 0f, FloorY, FrontZ + 0.02f, 0f, FloorY, BackZ, 2f * OuterX, FloorY);
-            // Front wall either side of the door, the head over it and the gable above.
-            Wall(s, "Shell_FrontWest", SlabGroup.Shell, -OuterX, KneeY, FrontZ + 0.07f, DoorHingeX - 0.05f, KneeY,
-                FrontZ + 0.07f, 0.16f, KneeY);
-            Wall(s, "Shell_FrontEast", SlabGroup.Shell, DoorMaxX + 0.02f, KneeY, FrontZ + 0.07f, OuterX, KneeY,
-                FrontZ + 0.07f, 0.16f, KneeY);
-            Wall(s, "Shell_DoorHead", SlabGroup.Shell, DoorHingeX - 0.05f, KneeY, FrontZ + 0.07f, DoorMaxX + 0.02f, KneeY,
-                FrontZ + 0.07f, 0.16f, KneeY - DoorTopY);
-            Wall(s, "Shell_FrontGable", SlabGroup.Shell, -OuterX, ApexY, FrontZ + 0.07f, OuterX, ApexY, FrontZ + 0.07f,
-                0.16f, ApexY - KneeY);
-            Wall(s, "Shell_Back", SlabGroup.Shell, -OuterX, ApexY, BackZ - 0.07f, OuterX, ApexY, BackZ - 0.07f, 0.16f, ApexY);
-            Wall(s, "Shell_East", SlabGroup.Shell, OuterX - 0.12f, KneeY, FrontZ, OuterX - 0.12f, KneeY, BackZ, 0.24f, KneeY);
-            // West wall: full height except under June's window, where it stops at the sill.
-            float jambS = WindowZ - WindowHalfWidth;
-            float jambN = WindowZ + WindowHalfWidth;
-            Wall(s, "Shell_WestSouth", SlabGroup.Shell, -OuterX + 0.12f, KneeY, FrontZ, -OuterX + 0.12f, KneeY,
-                AlcoveMinZ, 0.24f, KneeY);
-            Wall(s, "Shell_WestNorth", SlabGroup.Shell, -OuterX + 0.12f, KneeY, AlcoveMaxZ, -OuterX + 0.12f, KneeY, BackZ,
-                0.24f, KneeY);
-            Wall(s, "Shell_WestUnderSill", SlabGroup.Shell, -OuterX + 0.12f, SillY, AlcoveMinZ, -OuterX + 0.12f, SillY,
-                AlcoveMaxZ, 0.24f, SillY);
-            // The window: jambs to the spring line plus the arch shoulders, a head above the arch's crown clearance.
-            float shoulderY = SillY + WindowSpring + 0.37f; // the arch is 0.35 m either side of centre at this height
-            Wall(s, "Window_JambSouth", SlabGroup.Shell, -OuterX + 0.12f, shoulderY, AlcoveMinZ, -OuterX + 0.12f,
-                shoulderY, jambS, 0.24f, shoulderY - SillY);
-            Wall(s, "Window_JambNorth", SlabGroup.Shell, -OuterX + 0.12f, shoulderY, jambN, -OuterX + 0.12f, shoulderY,
-                AlcoveMaxZ, 0.24f, shoulderY - SillY);
-            Wall(s, "Window_Head", SlabGroup.Shell, -OuterX + 0.12f, 4.6f, AlcoveMinZ, -OuterX + 0.12f, 4.6f, AlcoveMaxZ,
-                0.24f, 4.6f - shoulderY);
-            Walk(s, "Window_Sill", SlabGroup.Shell, -OuterX - 0.38f, SillY, WindowZ, InnerMinX + 0.05f, SillY, WindowZ,
-                2f * WindowHalfWidth, 0.12f);
-            // Dormer cheeks and ceiling behind the window.
-            Wall(s, "Dormer_South", SlabGroup.Shell, -OuterX, 4.2f, AlcoveMinZ - 0.05f, -1.9f, 4.2f, AlcoveMinZ - 0.05f,
-                0.1f, 4.2f - LoftY);
-            Wall(s, "Dormer_North", SlabGroup.Shell, -OuterX, 4.2f, AlcoveMaxZ + 0.05f, -1.9f, 4.2f, AlcoveMaxZ + 0.05f,
-                0.1f, 4.2f - LoftY);
-            Wall(s, "Dormer_Ceiling", SlabGroup.Shell, -OuterX, 4.45f, WindowZ, -1.9f, 4.45f, WindowZ,
-                AlcoveMaxZ - AlcoveMinZ, 0.12f);
-            // Roof plates following the ceiling slope (open over the dormer on the west side).
-            RoofPlate(s, "Roof_East", 1, FrontZ - 0.2f, BackZ + 0.2f);
-            RoofPlate(s, "Roof_WestSouth", -1, FrontZ - 0.2f, AlcoveMinZ - 0.05f);
-            RoofPlate(s, "Roof_WestNorth", -1, AlcoveMaxZ + 0.05f, BackZ + 0.2f);
-            // The door leaf while latched (the runtime disables it once the door is open).
-            Wall(s, DoorBlockerName, SlabGroup.Shell, DoorHingeX - 0.05f, DoorTopY, FrontZ + 0.07f, DoorMaxX + 0.02f,
-                DoorTopY, FrontZ + 0.07f, 0.16f, DoorTopY - FloorY + 0.05f);
-
-            // ---- Inside: loft (around the stairwell), stair, rails, partition, furniture ----
-            Walk(s, "Loft_Main", SlabGroup.Interior, 0f, LoftY, LoftFrontZ, 0f, LoftY, StairMinZ, 2f * InnerMaxX, 0.16f);
-            Walk(s, "Loft_West", SlabGroup.Interior, (InnerMinX + StairHoleMinX) * 0.5f, LoftY, StairMinZ,
-                (InnerMinX + StairHoleMinX) * 0.5f, LoftY, InnerMaxZ, StairHoleMinX - InnerMinX, 0.16f);
-            Walk(s, "Loft_East", SlabGroup.Interior, (StairTopX + InnerMaxX) * 0.5f, LoftY, StairMinZ,
-                (StairTopX + InnerMaxX) * 0.5f, LoftY, InnerMaxZ, InnerMaxX - StairTopX, 0.16f);
-            float stairZ = (StairMinZ + StairMaxZ) * 0.5f;
-            Walk(s, "Stair", SlabGroup.Interior, StairBottomX - 0.05f, FloorY, stairZ, StairTopX + 0.02f, LoftY, stairZ,
-                StairMaxZ - StairMinZ, 0.2f);
-            Wall(s, "Stair_Stringer", SlabGroup.Interior, StairBottomX, FloorY + 0.9f, StairMinZ - 0.04f, StairTopX,
-                LoftY + 0.05f, StairMinZ - 0.04f, 0.08f, 0.9f);
-            Wall(s, "Loft_FrontRail", SlabGroup.Interior, InnerMinX, LoftY + 0.98f, LoftFrontZ + 0.08f, InnerMaxX,
-                LoftY + 0.98f, LoftFrontZ + 0.08f, 0.1f, 1.1f);
-            Wall(s, "Loft_HoleRailSouth", SlabGroup.Interior, StairHoleMinX - 0.07f, LoftY + 0.98f, StairMinZ - 0.07f,
-                StairTopX + 0.06f, LoftY + 0.98f, StairMinZ - 0.07f, 0.1f, 0.98f);
-            Wall(s, "Loft_HoleRailWest", SlabGroup.Interior, StairHoleMinX - 0.07f, LoftY + 0.98f, StairMinZ - 0.07f,
-                StairHoleMinX - 0.07f, LoftY + 0.98f, InnerMaxZ, 0.1f, 0.98f);
-            Wall(s, "Workshop_Partition", SlabGroup.Interior, NookX + 0.05f, LoftUnderside, NookMinZ, NookX + 0.05f,
-                LoftUnderside, InnerMaxZ, 0.12f, LoftUnderside - NookFloorY);
-            Wall(s, "Workshop_South", SlabGroup.Interior, NookX, LoftUnderside, NookMinZ + 0.05f, InnerMaxX, LoftUnderside,
-                NookMinZ + 0.05f, 0.12f, LoftUnderside - NookFloorY);
-            Wall(s, "Foyer_Bench", SlabGroup.Interior, InnerMinX + 0.37f, FloorY + 0.41f, FrontZ + 1.85f,
-                InnerMinX + 0.37f, FloorY + 0.41f, FrontZ + 2.95f, 0.36f, 0.41f);
-            Wall(s, "Attic_CraftTable", SlabGroup.Interior, 0.65f, LoftY + 0.47f, FrontZ + 2.35f, 1.75f, LoftY + 0.47f,
-                FrontZ + 2.35f, 0.66f, 0.47f);
-            Wall(s, "Attic_CratesEast", SlabGroup.Interior, 1.9f, LoftY + 0.72f, FrontZ + 5.3f, 2.55f, LoftY + 0.72f,
-                FrontZ + 5.3f, 0.5f, 0.72f);
-            Wall(s, "Attic_CratesWest", SlabGroup.Interior, -2.45f, LoftY + 0.36f, FrontZ + 5.35f, -1.95f, LoftY + 0.36f,
-                FrontZ + 5.35f, 0.45f, 0.36f);
-
-            // ---- Already built by EnvironmentDressing: the owl house porch deck (route checks only). ----
+            // ---- The exterior owl house: EnvironmentDressing's solid body and roof steps and the porch deck. ----
+            Wall(s, "House_Body", SlabGroup.Reference, 0f, BodyTopY, FrontZ, 0f, BodyTopY, BackZ, 2f * BodyHalfX, BodyTopY);
+            Wall(s, "House_RoofLow", SlabGroup.Reference, 0f, 4.0f, FrontZ - 0.3f, 0f, 4.0f, BackZ + 0.3f, 5f, 1.2f);
+            Wall(s, "House_RoofHigh", SlabGroup.Reference, 0f, 5.8f, FrontZ - 0.3f, 0f, 5.8f, BackZ + 0.3f, 2.6f, 1.8f);
             Walk(s, "Porch_Deck", SlabGroup.Reference, 0f, FloorY, FrontZ - 2f, 0f, FloorY, FrontZ, 6f, FloorY);
+
+            Interior(s);
             return s.ToArray();
         }
 
-        /// <summary>Name of the door-leaf blocker that the runtime switches off once the door is open.</summary>
-        public const string DoorBlockerName = "Shell_DoorLeaf";
+        /// <summary>World z of interior builder depth <paramref name="by"/>.</summary>
+        private static float Z(float by) => InteriorFrontZ + by;
 
-        private static void CabinWalls(List<StageSlab> s)
+        /// <summary>The interior's colliders (house v3 anchor tables, docs/S002-house-v3.md §3).</summary>
+        private static void Interior(List<StageSlab> s)
         {
-            // Platform centre in the maple frame (trunk lean, routes.py PLAT) turned by the cabin's yaw.
-            const float platX = 0.2064f;
-            const float platY = -0.048f;
-            const float h = CabinHalf;
-            const float top = TreehouseY + 1.45f;
-            CabinWall(s, "Cabin_North", platX - h, platY - h, platX + h, platY - h, top);
-            CabinWall(s, "Cabin_West", platX + h, platY - h, platX + h, platY + h, top);
-            CabinWall(s, "Cabin_Parapet", platX - h, platY + h, platX + h, platY + h, TreehouseY + 0.75f);
-            // East wall beside the door (door opening local y -1.02..-0.12).
-            CabinWall(s, "Cabin_EastSouth", platX - h, platY - 0.1f, platX - h, platY + h, top);
-            CabinWall(s, "Cabin_EastNorth", platX - h, platY - h, platX - h, platY - 1.04f, top);
+            const SlabGroup g = SlabGroup.Interior;
+            const float fy = FloorY;
+            const float top = 8.5f; // above the ridge
+
+            // ---- Floors: the hall (with the doorway), the strip by the east window, the attic and the window reveal ----
+            Walk(s, "Hall_Floor", g, -0.7f, fy, Z(-0.4f), -0.7f, fy, Z(7.0f), 5.8f, fy);
+            Walk(s, "Hall_FloorEast", g, 2.9f, fy, Z(0.1f), 2.9f, fy, Z(2.4f), 1.4f, fy);
+            Walk(s, "Loft_West", g, -2.85f, LoftY, Z(0.1f), -2.85f, LoftY, StairwellMinZ, 1.5f, 0.22f);
+            Walk(s, "Loft_Middle", g, -0.98f, LoftY, Z(0.1f), -0.98f, LoftY, UpperFlightMinZ, 2.24f, 0.22f);
+            Walk(s, "Loft_East", g, 1.87f, LoftY, Z(0.1f), 1.87f, LoftY, Z(7.0f), 3.46f, 0.22f);
+            Walk(s, "Attic_WindowReveal", g, InnerMinX + 0.1f, LoftY, InnerWindowZ, InnerMinX - 0.35f, LoftY, InnerWindowZ,
+                2f * WindowHalfWidth, 0.22f);
+
+            // ---- Stair: the lower flight north up the west bay, the landing, the upper flight east ----
+            Walk(s, "Stair_Lower", g, -2.85f, fy, StairFootZ, -2.85f, LandingY, LandingZ, 1.5f, 0.3f);
+            Walk(s, "Stair_Landing", g, -2.85f, LandingY, LandingZ, -2.85f, LandingY, Z(7.0f), 1.5f, LandingY - fy);
+            Walk(s, "Stair_Upper", g, UpperFlightStartX, LandingY, UpperFlightZ, StairTopX + 0.02f,
+                LoftY + 0.02f * StairGradient, UpperFlightZ, 1.4f, 0.3f);
+            // The lower flight's closed side and balustrade toward the hall (x −2.12), stepped up to the rail line.
+            const float rail = 0.95f;
+            float[] cuts = { 3.19f, 3.8f, 4.4f, 5.0f, 5.5f };
+            for (int i = 1; i < cuts.Length; i++)
+            {
+                float h = LowerFlightAt(Z(cuts[i])) + rail;
+                Wall(s, "Stair_Side" + i, g, -2.12f, h, Z(cuts[i - 1]), -2.12f, h, Z(cuts[i]), 0.08f, h);
+            }
+
+            Wall(s, "Stair_Post", g, -2.13f, 5.0f, Z(5.55f), -2.03f, 5.0f, Z(5.55f), 0.1f, 5.0f - fy);
+            Wall(s, "Stair_Wall", g, StairBayX, LoftUnderside, Z(5.55f), StairTopX, LoftUnderside, Z(5.55f), 0.1f,
+                LoftUnderside);
+            Wall(s, "Stair_EndWall", g, StairTopX, LoftUnderside, Z(5.5f), StairTopX, LoftUnderside, Z(7.0f), 0.1f,
+                LoftUnderside);
+            // Loft rails round the stairwell (0.95 m).
+            Wall(s, "Loft_RailWest", g, -2.04f, LoftY + rail, StairwellMinZ, -2.04f, LoftY + rail, Z(5.5f), 0.08f, rail);
+            Wall(s, "Loft_RailSouth", g, InnerMinX, LoftY + rail, Z(3.04f), StairBayX, LoftY + rail, Z(3.04f), 0.08f, rail);
+            Wall(s, "Loft_RailNorth", g, StairBayX, LoftY + rail, Z(5.55f), StairTopX, LoftY + rail, Z(5.55f), 0.08f, rail);
+
+            // ---- Workshop partition and the nook's south wall (the nook is behind them, never entered) ----
+            Wall(s, "Workshop_Partition", g, NookX, LoftUnderside, NookMinZ, NookX, LoftUnderside, InnerMaxZ, 0.1f,
+                LoftUnderside);
+            Wall(s, "Workshop_South", g, NookX, LoftUnderside, NookMinZ, InnerMaxX, LoftUnderside, NookMinZ, 0.1f,
+                LoftUnderside);
+
+            // ---- Shell: front wall round the door, back, east, west round June's window, roof plates, dormer ----
+            Wall(s, "Front_West", g, InnerMinX - 0.2f, top, Z(0.04f), -DoorHalfWidth, top, Z(0.04f), 0.2f, top);
+            Wall(s, "Front_East", g, DoorHalfWidth, top, Z(0.04f), InnerMaxX + 0.2f, top, Z(0.04f), 0.2f, top);
+            Wall(s, "Front_DoorHead", g, -DoorHalfWidth, top, Z(0.04f), DoorHalfWidth, top, Z(0.04f), 0.2f, top - DoorTopY);
+            Wall(s, DoorBlockerName, g, -DoorHalfWidth, DoorTopY, Z(0.04f), DoorHalfWidth, DoorTopY, Z(0.04f), 0.2f,
+                DoorTopY - fy + 0.05f);
+            // The door's view box (painted porch): Pip stops a step into it, well inside the door's exit zone.
+            Wall(s, "Front_ViewStop", g, -0.9f, 3.3f, Z(-0.38f), 0.9f, 3.3f, Z(-0.38f), 0.08f, 3.3f);
+            Wall(s, "Back", g, InnerMinX - 0.2f, top, Z(7.1f), InnerMaxX + 0.2f, top, Z(7.1f), 0.2f, top);
+            Wall(s, "East", g, InnerMaxX + 0.1f, KneeY + 0.1f, Z(-0.1f), InnerMaxX + 0.1f, KneeY + 0.1f, Z(7.2f), 0.2f,
+                KneeY + 0.1f);
+            const float jambS = InnerWindowZ - WindowHalfWidth;
+            const float jambN = InnerWindowZ + WindowHalfWidth;
+            Wall(s, "West_South", g, InnerMinX - 0.1f, KneeY + 0.1f, Z(-0.1f), InnerMinX - 0.1f, KneeY + 0.1f, jambS, 0.2f,
+                KneeY + 0.1f);
+            Wall(s, "West_North", g, InnerMinX - 0.1f, KneeY + 0.1f, jambN, InnerMinX - 0.1f, KneeY + 0.1f, Z(7.2f), 0.2f,
+                KneeY + 0.1f);
+            Wall(s, "West_UnderSill", g, InnerMinX - 0.1f, LoftY - 0.01f, jambS, InnerMinX - 0.1f, LoftY - 0.01f, jambN,
+                0.2f, LoftY);
+            Wall(s, "Window_Head", g, InnerMinX - 0.1f, AlcoveRidgeY, jambS, InnerMinX - 0.1f, AlcoveRidgeY, jambN, 0.2f,
+                AlcoveRidgeY - (SillY + WindowApex));
+            // The window's view box (painted yard): Pip stops a step into the reveal, inside the dormer's exit zone.
+            Wall(s, "Window_ViewStop", g, -3.86f, 6.0f, AlcoveMinZ - 0.1f, -3.86f, 6.0f, AlcoveMaxZ + 0.1f, 0.1f, 2.1f);
+            RoofPlate(s, "Roof_East", 1, Z(-0.1f), Z(7.2f));
+            RoofPlate(s, "Roof_WestSouth", -1, Z(-0.1f), AlcoveMinZ);
+            RoofPlate(s, "Roof_WestNorth", -1, AlcoveMaxZ, Z(7.2f));
+            Wall(s, "Dormer_South", g, InnerMinX - 0.2f, AlcoveRidgeY + 0.3f, AlcoveMinZ - 0.05f, -2.1f,
+                AlcoveRidgeY + 0.3f, AlcoveMinZ - 0.05f, 0.1f, AlcoveRidgeY + 0.3f - KneeY);
+            Wall(s, "Dormer_North", g, InnerMinX - 0.2f, AlcoveRidgeY + 0.3f, AlcoveMaxZ + 0.05f, -2.1f,
+                AlcoveRidgeY + 0.3f, AlcoveMaxZ + 0.05f, 0.1f, AlcoveRidgeY + 0.3f - KneeY);
+            Wall(s, "Dormer_Roof", g, InnerMinX - 0.2f, AlcoveRidgeY + 0.25f, InnerWindowZ, -2.1f, AlcoveRidgeY + 0.25f,
+                InnerWindowZ, AlcoveMaxZ - AlcoveMinZ + 0.2f, 0.22f);
+
+            // ---- Furniture with a collider (docs/S002-house-v3.md §3.7; builder x and depth, world heights) ----
+            Box(s, "Hall_BenchAndRack", 0.45f, 1.95f, 6.59f, 7.0f, fy, 2.35f);
+            Box(s, "Hall_Console", 3.24f, 3.6f, 0.8f, 1.8f, fy, 1.35f);
+            Box(s, "Hall_BlanketChest", -3.5f, -3.02f, 1.17f, 2.03f, fy, 1.1f);
+            Box(s, "Hall_Clock", 2.67f, 3.13f, 2.12f, 2.4f, fy, 2.7f);
+            Box(s, "Hall_Crate", -1.87f, -1.33f, 4.97f, 5.43f, fy, 0.96f);
+            Box(s, "Hall_UmbrellaStand", -1.09f, -0.81f, 0.28f, 0.56f, fy, 1.12f);
+            Box(s, "Attic_CraftTable", 2.1f, 3.16f, 2.35f, 3.45f, LoftY, 4.47f);
+            Box(s, "Attic_TrunkEast", 2.74f, 3.26f, 4.27f, 5.23f, LoftY, 4.8f);
+            Box(s, "Attic_TrunkBack", 2.84f, 3.26f, 5.5f, 6.2f, LoftY, 4.5f);
+            Box(s, "Attic_TrunkAndHatBoxes", -2.3f, -0.35f, 0.25f, 0.78f, LoftY, 4.55f);
+            Box(s, "Attic_Crates", 2.05f, 3.25f, 0.3f, 1.02f, LoftY, 4.72f);
+            Box(s, "Attic_Pumpkin", 1.4f, 1.8f, 0.35f, 0.75f, LoftY, 4.32f);
+            Box(s, "Attic_JuneStool", -1.27f, -0.93f, 2.58f, 2.92f, LoftY, 4.3f);
+            Box(s, "Attic_Bookshelf", 1.27f, 2.53f, 6.69f, 7.0f, LoftY, 5.34f);
         }
 
-        private static void CabinWall(List<StageSlab> s, string name, float ax, float ay, float bx, float by, float top)
+        /// <summary>A furniture box from builder ranges (x, depth) and world heights.</summary>
+        private static void Box(List<StageSlab> s, string name, float x0, float x1, float by0, float by1, float y0, float y1)
         {
-            CabinToWorld(ax, ay, out float x0, out float z0);
-            CabinToWorld(bx, by, out float x1, out float z1);
-            Wall(s, name, SlabGroup.Route, x0, top, z0, x1, top, z1, 0.08f, top - TreehouseY);
+            float x = (x0 + x1) * 0.5f;
+            Wall(s, name, SlabGroup.Interior, x, y1, Z(by0), x, y1, Z(by1), x1 - x0, y1 - y0);
+        }
+
+        private static void RoofPlate(List<StageSlab> s, string name, int side, float z0, float z1)
+        {
+            // Plate top 0.25 m above the ceiling line, from beyond the wall to the ridge.
+            float wallX = side * (InnerMaxX + 0.2f);
+            const float eaveY = KneeY - 0.2f * RoofSlope + 0.25f;
+            float z = (z0 + z1) * 0.5f;
+            // Width runs along z (across the slope's line), so the line goes eave → ridge.
+            s.Add(new StageSlab(name, SlabKind.Wall, SlabGroup.Interior, wallX, eaveY, z, 0f, ApexY + 0.25f, z, z1 - z0,
+                0.22f));
+        }
+
+        private static void Cabin(List<StageSlab> s)
+        {
+            const float h = CabinHalf;
+            const float deck = TreehouseY;
+            const float eave = deck + CabinEave;
+            const float bay = deck + CabinBayEave + 0.06f;
+            // Walls on all four sides (routes.py build_cabin): north and west carry small windows, the east wall the
+            // door (cabin y −1.02…−0.12), the yard side opens into the lookout bay. No parapet any more.
+            CabinWall(s, "Cabin_North", -h, -h, h, -h, eave);
+            CabinWall(s, "Cabin_West", h, -h, h, h, eave);
+            CabinWall(s, "Cabin_EastSouth", -h, -0.1f, -h, h, eave);
+            CabinWall(s, "Cabin_EastNorth", -h, -h, -h, -1.04f, eave);
+            CabinWall(s, "Cabin_DoorHead", -h, -1.04f, -h, -0.1f, eave, deck + 1.45f);
+            CabinWall(s, "Cabin_BayWest", h, h, h, CabinBayY, bay);
+            CabinWall(s, "Cabin_BayEast", -h, h, -h, CabinBayY, bay);
+            CabinWall(s, "Cabin_BayOuter", -h, CabinBayY, h, CabinBayY, bay);
+            // The bay's boards beyond the platform edge (the deck itself is the TreehousePlatform recipe).
+            CabinToWorld(CabinPlatX, CabinPlatY + 1.2f, out float bx0, out float bz0);
+            CabinToWorld(CabinPlatX, CabinPlatY + 1.81f, out float bx1, out float bz1);
+            Walk(s, "Cabin_BayFloor", SlabGroup.Route, bx0, deck, bz0, bx1, deck, bz1, 2f * h, 0.12f);
+            // The roof: two slopes up to the boarded ridge, and the bay's lean-to (heads bump, never pass).
+            CabinRoof(s, "Cabin_RoofNorth", -h - 0.3f, -0.3f);
+            CabinRoof(s, "Cabin_RoofSouth", h + 0.3f, 0.3f);
+            CabinToWorld(CabinPlatX, CabinPlatY + h, out float lx0, out float lz0);
+            CabinToWorld(CabinPlatX, CabinPlatY + CabinBayY + 0.2f, out float lx1, out float lz1);
+            s.Add(new StageSlab("Cabin_RoofBay", SlabKind.Wall, SlabGroup.Route, lx0, deck + 1.74f + 0.2f, lz0, lx1,
+                deck + CabinBayEave + 0.2f, lz1, 2f * h + 0.3f, 0.18f));
+        }
+
+        /// <summary>The cabin's roof underside above the deck at cabin y (the bay's lean-to past the main wall).</summary>
+        public static float CabinCeilingAt(float cy)
+        {
+            if (cy > CabinHalf)
+            {
+                float t = Math.Min(1f, (cy - CabinHalf) / (CabinBayY - CabinHalf));
+                return 1.74f + (CabinBayEave - 1.74f) * t;
+            }
+
+            float under = CabinEave - 0.1f + (CabinHalf + 0.3f - Math.Max(0.3f, Math.Abs(cy))) * CabinRoofSlope;
+            return Math.Min(CabinRidge - 0.05f, under);
+        }
+
+        /// <summary>Cabin roof slope from the eave line at cabin y <paramref name="eaveY"/> to the ridge.</summary>
+        private static void CabinRoof(List<StageSlab> s, string name, float eaveY, float ridgeY)
+        {
+            const float under = TreehouseY + CabinEave - 0.1f;
+            CabinToWorld(CabinPlatX, CabinPlatY + eaveY, out float x0, out float z0);
+            CabinToWorld(CabinPlatX, CabinPlatY + ridgeY, out float x1, out float z1);
+            float ridge = under + (Math.Abs(eaveY) - Math.Abs(ridgeY)) * CabinRoofSlope;
+            s.Add(new StageSlab(name, SlabKind.Wall, SlabGroup.Route, x0, under + 0.2f, z0, x1, ridge + 0.2f, z1,
+                2f * CabinHalf + 0.6f, 0.18f));
+        }
+
+        private static void CabinWall(List<StageSlab> s, string name, float ax, float ay, float bx, float by, float top,
+            float bottom = TreehouseY)
+        {
+            CabinToWorld(CabinPlatX + ax, CabinPlatY + ay, out float x0, out float z0);
+            CabinToWorld(CabinPlatX + bx, CabinPlatY + by, out float x1, out float z1);
+            Wall(s, name, SlabGroup.Route, x0, top, z0, x1, top, z1, 0.08f, top - bottom);
         }
 
         /// <summary>Maple-frame plan point (Blender x, y) to world (x, z): the maple stands at the ramp origin.</summary>
@@ -597,15 +787,16 @@ namespace SpookyStreet.Core.World
             z = RampOriginZ - mx * sn + my * c;
         }
 
-        private static void RoofPlate(List<StageSlab> s, string name, int side, float z0, float z1)
+        /// <summary>World (x, z) to the cabin frame: centred on the platform, +y the yard side, −x the door side.</summary>
+        public static void WorldToCabin(float x, float z, out float cx, out float cy)
         {
-            // Plate top 0.25 m above the ceiling line, from beyond the eave to the ridge.
-            float slope = (ApexY - KneeY) / InnerMaxX;
-            float eaveX = side * (OuterX + 0.1f);
-            float eaveY = KneeY + (InnerMaxX - (OuterX + 0.1f)) * slope + 0.25f;
-            float z = (z0 + z1) * 0.5f;
-            // Width runs along z (across the slope's line), so the line goes eave → ridge.
-            s.Add(new StageSlab(name, SlabKind.Wall, SlabGroup.Shell, eaveX, eaveY, z, 0f, ApexY + 0.25f, z, z1 - z0, 0.22f));
+            double a = CabinYaw * Math.PI / 180.0;
+            float c = (float)Math.Cos(a);
+            float sn = (float)Math.Sin(a);
+            float dx = x - RampOriginX;
+            float dz = z - RampOriginZ;
+            cx = dx * c - dz * sn - CabinPlatX;
+            cy = dx * sn + dz * c - CabinPlatY;
         }
 
         private static void Walk(List<StageSlab> s, string name, SlabGroup group, float x0, float y0, float z0, float x1,
