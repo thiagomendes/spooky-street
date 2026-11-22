@@ -13,10 +13,24 @@ namespace SpookyStreet.World
     {
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
+        private static readonly int BumpMapId = Shader.PropertyToID("_BumpMap");
+        private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
+
+        /// <summary>
+        /// Committed Lit material with the <c>_NORMALMAP</c> keyword on, so the player build keeps that shader
+        /// variant for runtime-built textured materials (an unreferenced variant would be stripped).
+        /// </summary>
+        public const string TexturedBasePath = "Materials/Felt_Lit";
+
+        /// <summary>Matte felt and fabric: low, soft highlights.</summary>
+        public const float FeltSmoothness = 0.12f;
 
         private readonly Dictionary<Color, Material> _lit = new Dictionary<Color, Material>();
         private readonly Dictionary<Color, Material> _glow = new Dictionary<Color, Material>();
+        private readonly Dictionary<(Texture2D, Texture2D), Material> _textured =
+            new Dictionary<(Texture2D, Texture2D), Material>();
         private readonly Material _litBase;
+        private Material _texturedBase;
         private readonly Material _unlitBase;
 
         public MaterialLibrary(Material litBase, Material unlitBase)
@@ -62,7 +76,82 @@ namespace SpookyStreet.World
             return material;
         }
 
+        /// <summary>
+        /// Matte URP Lit surface sampling baked textures (original models): <paramref name="baseColor"/> as the
+        /// base map and an optional tangent-space <paramref name="normal"/> map. Cached per texture pair. Without a
+        /// base colour texture it returns the plain paper palette material, so a model never draws untextured magenta.
+        /// </summary>
+        public Material Textured(Texture2D baseColor, Texture2D normal = null, float smoothness = FeltSmoothness)
+        {
+            if (baseColor == null)
+            {
+                return Get(Palette.WarmPaper);
+            }
+
+            var key = (baseColor, normal);
+            if (_textured.TryGetValue(key, out var material))
+            {
+                return material;
+            }
+
+            material = new Material(TexturedBase()) { name = "Textured_" + baseColor.name };
+            if (material.HasProperty(BaseMapId))
+            {
+                material.SetTexture(BaseMapId, baseColor);
+            }
+
+            if (material.HasProperty(BaseColorId))
+            {
+                material.SetColor(BaseColorId, Color.white);
+            }
+
+            if (material.HasProperty(SmoothnessId))
+            {
+                material.SetFloat(SmoothnessId, smoothness);
+            }
+
+            if (normal != null && material.HasProperty(BumpMapId))
+            {
+                material.SetTexture(BumpMapId, normal);
+                material.EnableKeyword("_NORMALMAP");
+            }
+            else
+            {
+                material.DisableKeyword("_NORMALMAP");
+            }
+
+            _textured.Add(key, material);
+            return material;
+        }
+
         public void Apply(Renderer renderer, Color color) => renderer.sharedMaterial = Get(color);
+
+        /// <summary>Gives every sub-mesh of <paramref name="renderer"/> the same material.</summary>
+        public static void ApplyAll(Renderer renderer, Material material)
+        {
+            int count = Mathf.Max(1, renderer.sharedMaterials.Length);
+            var materials = new Material[count];
+            for (int i = 0; i < count; i++)
+            {
+                materials[i] = material;
+            }
+
+            renderer.sharedMaterials = materials;
+        }
+
+        private Material TexturedBase()
+        {
+            if (_texturedBase == null)
+            {
+                _texturedBase = Resources.Load<Material>(TexturedBasePath);
+                if (_texturedBase == null)
+                {
+                    _texturedBase = _litBase;
+                }
+            }
+
+            return _texturedBase;
+        }
 
         private static Material Cached(Dictionary<Color, Material> cache, Material baseMaterial, Color color, string prefix)
         {

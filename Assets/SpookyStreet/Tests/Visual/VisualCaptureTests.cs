@@ -82,6 +82,29 @@ namespace SpookyStreet.Tests.Visual
             yield return null;
             yield return Shot("03_after_walking");
 
+            // Close-up from Pip's front-right for model and silhouette review (primitive or original model):
+            // park the camera brain, frame Pip, then restore. Pip faces its +Z after walking forward.
+            var camera = game.CameraRig.OutputCamera;
+            var brain = camera.GetComponent("CinemachineBrain") as Behaviour;
+            if (brain != null)
+            {
+                brain.enabled = false;
+            }
+
+            var pip = game.Pip.transform;
+            Vector3 target = pip.position + Vector3.up * 0.65f;
+            camera.transform.position = target + pip.forward * 2.2f + pip.right * 0.7f + Vector3.up * 0.3f;
+            camera.transform.LookAt(target);
+            game.Ui.Hud.SetActive(false);
+            yield return Shot("05_pip_closeup");
+            game.Ui.Hud.SetActive(true);
+            if (brain != null)
+            {
+                brain.enabled = true;
+            }
+
+            yield return null;
+
             Press(_keyboard.escapeKey, queueEventOnly: true);
             yield return null;
             Release(_keyboard.escapeKey, queueEventOnly: true);
