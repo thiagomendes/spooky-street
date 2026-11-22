@@ -260,6 +260,11 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Wait(2f);
             Assert.AreEqual(cast.JuneHasWalk ? CaseCast.WalkClip : "Idle", cast.June.Avatar.Loop,
                 "June steps on her walk clip when she has one, and glides on Idle otherwise");
+            if (cast.JuneHasWalk)
+            {
+                Assert.AreEqual(1f, cast.June.Avatar.ClipSpeed(CaseCast.WalkClip), 0.25f,
+                    "the walk plays at its authored pace while she cruises at 1.1 m/s over the floor plan");
+            }
             yield return WaitForJune();
             Vector3 june = cast.June.transform.position;
             Assert.Less(Vector3.Distance(june, At(CaseStage.JuneFoyer.Position)), 0.2f, "June at her foyer mark");

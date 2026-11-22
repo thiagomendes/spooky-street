@@ -15,7 +15,7 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void SheTurnsFirstThenEasesInAndOut()
         {
-            float length = CaseStage.PathLength(CaseStage.JuneWalk);
+            float length = CaseStage.PlanLength(CaseStage.JuneWalk);
             Assert.AreEqual(0f, CaseStage.JuneWalkDistance(CaseStage.JuneTurnSeconds * 0.9f), "she turns before she moves");
             float total = CaseStage.JuneWalkSeconds;
             Assert.AreEqual(length, CaseStage.JuneWalkDistance(total), 1e-3f, "she ends on her mark");
@@ -42,15 +42,43 @@ namespace SpookyStreet.Tests.Core
         }
 
         [Test]
+        public void LevelFloorsAtTheClipPaceAndTheStairFasterAlongItsSlope()
+        {
+            // The walk clip is 0.55 m steps on a 1.0 s cycle: 1.1 m/s over the floor plan.
+            Assert.AreEqual(1.1f, CaseStage.JuneWalkSpeed, 1e-4f);
+            float plan = CaseStage.PlanLength(CaseStage.JuneWalk);
+            bool sawStair = false;
+            for (float d = 0.05f; d < plan; d += 0.1f)
+            {
+                CaseStage.AlongPlan(CaseStage.JuneWalk, d, out _, out _, out float slope);
+                float along = CaseStage.JuneWalkSpeed * slope;
+                if (slope > 1.05f)
+                {
+                    sawStair = true;
+                    Assert.AreEqual(1.3f, along, 0.12f, "on the stair she moves ~1.3 m/s along the slope at " + d);
+                }
+                else
+                {
+                    Assert.AreEqual(1.1f, along, 0.02f, "1.1 m/s on level floor at " + d);
+                }
+            }
+
+            Assert.IsTrue(sawStair, "the walk includes the stair");
+            var end = CaseStage.AlongPlan(CaseStage.JuneWalk, plan, out _, out _);
+            Assert.AreEqual(CaseStage.JuneFoyer.Position.X, end.X, 1e-3f);
+            Assert.AreEqual(CaseStage.JuneFoyer.Position.Z, end.Z, 1e-3f);
+        }
+
+        [Test]
         public void SheFacesWhereSheIsGoing()
         {
-            float length = CaseStage.PathLength(CaseStage.JuneWalk);
+            float length = CaseStage.PlanLength(CaseStage.JuneWalk);
             for (float d = 0f; d < length - 0.5f; d += 0.25f)
             {
                 CaseStage.JuneFacing(d, out float hx, out float hz);
                 Assert.AreEqual(1f, Math.Sqrt(hx * hx + hz * hz), 1e-3f, "a unit heading at " + d);
-                var here = CaseStage.Along(CaseStage.JuneWalk, d, out _, out _);
-                var later = CaseStage.Along(CaseStage.JuneWalk, d + CaseStage.JuneLookAhead, out _, out _);
+                var here = CaseStage.AlongPlan(CaseStage.JuneWalk, d, out _, out _);
+                var later = CaseStage.AlongPlan(CaseStage.JuneWalk, d + CaseStage.JuneLookAhead, out _, out _);
                 float dx = later.X - here.X, dz = later.Z - here.Z;
                 float l = (float)Math.Sqrt(dx * dx + dz * dz);
                 if (l > 0.05f)

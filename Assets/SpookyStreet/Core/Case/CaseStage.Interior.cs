@@ -89,7 +89,7 @@ namespace SpookyStreet.Core.Case
         {
             get
             {
-                float length = PathLength(JuneWalk);
+                float length = PlanLength(JuneWalk);
                 EaseLengths(length, out float easeIn, out float easeOut);
                 return JuneTurnSeconds + (length - easeIn - easeOut) / JuneWalkSpeed + 2f * (easeIn + easeOut) / JuneWalkSpeed;
             }
@@ -101,7 +101,7 @@ namespace SpookyStreet.Core.Case
         /// </summary>
         public static float JuneWalkDistance(float seconds)
         {
-            float length = PathLength(JuneWalk);
+            float length = PlanLength(JuneWalk);
             EaseLengths(length, out float easeIn, out float easeOut);
             float v = JuneWalkSpeed;
             float t = seconds - JuneTurnSeconds;
@@ -131,14 +131,14 @@ namespace SpookyStreet.Core.Case
         /// <summary>Where June faces at <paramref name="distance"/> along her walk: toward a point a little ahead.</summary>
         public static void JuneFacing(float distance, out float headingX, out float headingZ)
         {
-            float length = PathLength(JuneWalk);
-            var here = Along(JuneWalk, distance, out headingX, out headingZ);
+            float length = PlanLength(JuneWalk);
+            var here = AlongPlan(JuneWalk, distance, out headingX, out headingZ);
             if (distance + 0.05f >= length)
             {
                 return;
             }
 
-            var ahead = Along(JuneWalk, Math.Min(length, distance + JuneLookAhead), out _, out _);
+            var ahead = AlongPlan(JuneWalk, Math.Min(length, distance + JuneLookAhead), out _, out _);
             float dx = ahead.X - here.X, dz = ahead.Z - here.Z;
             float l = (float)Math.Sqrt(dx * dx + dz * dz);
             if (l > 1e-3f)
@@ -268,6 +268,67 @@ namespace SpookyStreet.Core.Case
         }
 
         /// <summary>Length of a polyline (June's walk).</summary>
+        /// <summary>Length of <paramref name="path"/> over the floor plan (x and z only).</summary>
+        public static float PlanLength(IReadOnlyList<StagePoint> path)
+        {
+            float total = 0f;
+            for (int i = 1; i < path.Count; i++)
+            {
+                total += PlanDistance(path[i - 1], path[i]);
+            }
+
+            return total;
+        }
+
+        /// <summary>
+        /// Point <paramref name="planDistance"/> floor-plan metres along <paramref name="path"/> (clamped), and its heading.
+        /// <paramref name="slopeFactor"/> is the segment's 3D length over its plan length (1 on level floors).
+        /// </summary>
+        public static StagePoint AlongPlan(IReadOnlyList<StagePoint> path, float planDistance, out float headingX,
+            out float headingZ) => AlongPlan(path, planDistance, out headingX, out headingZ, out _);
+
+        public static StagePoint AlongPlan(IReadOnlyList<StagePoint> path, float planDistance, out float headingX,
+            out float headingZ, out float slopeFactor)
+        {
+            headingX = 0f;
+            headingZ = 1f;
+            slopeFactor = 1f;
+            if (path.Count == 0)
+            {
+                return default;
+            }
+
+            float left = Math.Max(0f, planDistance);
+            for (int i = 1; i < path.Count; i++)
+            {
+                var a = path[i - 1];
+                var b = path[i];
+                float d = PlanDistance(a, b);
+                if (d > 1e-4f)
+                {
+                    headingX = (b.X - a.X) / d;
+                    headingZ = (b.Z - a.Z) / d;
+                    slopeFactor = Distance(a, b) / d;
+                }
+
+                if (left <= d || i == path.Count - 1)
+                {
+                    float t = d > 1e-4f ? Math.Min(1f, left / d) : 1f;
+                    return new StagePoint(a.X + (b.X - a.X) * t, a.Y + (b.Y - a.Y) * t, a.Z + (b.Z - a.Z) * t);
+                }
+
+                left -= d;
+            }
+
+            return path[path.Count - 1];
+        }
+
+        private static float PlanDistance(StagePoint a, StagePoint b)
+        {
+            float dx = b.X - a.X, dz = b.Z - a.Z;
+            return (float)Math.Sqrt(dx * dx + dz * dz);
+        }
+
         public static float PathLength(IReadOnlyList<StagePoint> path)
         {
             float total = 0f;
