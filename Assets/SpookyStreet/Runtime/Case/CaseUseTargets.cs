@@ -17,6 +17,7 @@ namespace SpookyStreet.Case
     public sealed class CaseUseTargets : IUseTargetSource
     {
         private readonly List<InteractionPoint> _points;
+        private readonly List<InteractionPoint> _offered = new List<InteractionPoint>();
         private readonly Action<InteractionPoint> _interact;
         private readonly int _sightMask;
 
@@ -34,6 +35,9 @@ namespace SpookyStreet.Case
         public bool Suspended { get; set; }
 
         public IReadOnlyList<InteractionPoint> Points => _points;
+
+        /// <summary>Which points exist right now (the world's state: June's mark, the panel, the latch). Null: all.</summary>
+        public Func<InteractionPoint, bool> Filter { get; set; }
 
         public bool HasTarget => !Suspended && Current != null;
 
@@ -58,8 +62,17 @@ namespace SpookyStreet.Case
 
         public void Tick(Vector3 pip, Vector3 cameraForward)
         {
-            int index = UseTargetPicker.Pick(pip.x, pip.y, pip.z, cameraForward.x, cameraForward.z, _points);
-            var picked = index >= 0 ? _points[index] : null;
+            _offered.Clear();
+            foreach (var point in _points)
+            {
+                if (Filter == null || Filter(point))
+                {
+                    _offered.Add(point);
+                }
+            }
+
+            int index = UseTargetPicker.Pick(pip.x, pip.y, pip.z, cameraForward.x, cameraForward.z, _offered);
+            var picked = index >= 0 ? _offered[index] : null;
             if (picked != null && !InSight(pip, picked))
             {
                 picked = null;

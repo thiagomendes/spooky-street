@@ -25,6 +25,39 @@ namespace SpookyStreet.CameraSystem
         private CameraOrbitModel _orbit;
         private Transform _pivot;
         private readonly CameraHeightFollow _height = new CameraHeightFollow();
+        private CinemachineThirdPersonFollow _follow;
+        private LayerMask _obstacles;
+
+        /// <summary>Closer framing per place (spec §5: "Entering the attic blends to a closer shoulder view").</summary>
+        public const float DistanceBlendPerSecond = 2.5f;
+
+        /// <summary>
+        /// Boom length to ease toward; null keeps the tuned distance. The case sets a shorter boom indoors and the
+        /// closer shoulder view in the attic.
+        /// </summary>
+        public float? DistanceOverride { get; set; }
+
+        /// <summary>Current boom length (eased toward <see cref="DistanceOverride"/>).</summary>
+        public float Distance => _follow != null ? _follow.CameraDistance : 0f;
+
+        /// <summary>
+        /// Layers the boom treats as solid. Indoors the case removes the house's floors and walls so the camera can
+        /// sit outside the shell and look in through the culled near walls.
+        /// </summary>
+        public LayerMask ObstacleLayers
+        {
+            get => _obstacles;
+            set
+            {
+                _obstacles = value;
+                if (_follow != null)
+                {
+                    var avoid = _follow.AvoidObstacles;
+                    avoid.CollisionFilter = value;
+                    _follow.AvoidObstacles = avoid;
+                }
+            }
+        }
 
         public Camera OutputCamera { get; private set; }
 
@@ -90,6 +123,8 @@ namespace SpookyStreet.CameraSystem
                 DampingFromCollision = 0.6f,
             };
             rig.VirtualCamera = vcam;
+            rig._follow = follow;
+            rig._obstacles = obstacleLayers;
             return rig;
         }
 
@@ -121,6 +156,11 @@ namespace SpookyStreet.CameraSystem
 
                 _orbit.Tick(dt, _pip.HorizontalSpeed, _pip.HeadingYaw);
                 _height.Step(_pip.transform.position.y, _pip.Grounded, dt);
+                float wanted = DistanceOverride ?? _tuning.cameraDistance;
+                if (_follow != null && Mathf.Abs(_follow.CameraDistance - wanted) > 1e-3f)
+                {
+                    _follow.CameraDistance = Mathf.MoveTowards(_follow.CameraDistance, wanted, DistanceBlendPerSecond * dt);
+                }
             }
             else if (_input.Touch != null)
             {

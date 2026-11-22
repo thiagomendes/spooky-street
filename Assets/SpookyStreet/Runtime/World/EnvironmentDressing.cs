@@ -315,9 +315,14 @@ namespace SpookyStreet.World
         private void BuildHouseColliders()
         {
             var origin = new Vector3(EnvironmentLayout.HouseX, 0f, EnvironmentLayout.HouseZ);
-            HouseBox("OwlHouse_Body", origin, new Vector3(0f, 1.4f, 1f), new Vector3(6.1f, 2.8f, 6f), false);
-            HouseBox("OwlHouse_RoofLow", origin, new Vector3(0f, 3.4f, 1f), new Vector3(5f, 1.2f, 6.6f), false);
-            HouseBox("OwlHouse_RoofHigh", origin, new Vector3(0f, 4.9f, 1f), new Vector3(2.6f, 1.8f, 6.6f), false);
+            // With the interior committed, the case's OwlHouseStage builds the hollow shell (walls, roof plates, door
+            // leaf, floors) instead of the solid body (S002 interior wiring).
+            if (!_kit.Has(CaseRouteLayout.OwlHouseInterior))
+            {
+                HouseBox("OwlHouse_Body", origin, new Vector3(0f, 1.4f, 1f), new Vector3(6.1f, 2.8f, 6f), false);
+                HouseBox("OwlHouse_RoofLow", origin, new Vector3(0f, 3.4f, 1f), new Vector3(5f, 1.2f, 6.6f), false);
+                HouseBox("OwlHouse_RoofHigh", origin, new Vector3(0f, 4.9f, 1f), new Vector3(2.6f, 1.8f, 6.6f), false);
+            }
             HouseBox("OwlHouse_Porch", origin, new Vector3(0f, 0.3f, -3f), new Vector3(6f, 0.6f, 2f), true);
             for (int i = 0; i < 2; i++)
             {

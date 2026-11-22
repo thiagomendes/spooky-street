@@ -307,6 +307,19 @@ namespace SpookyStreet.Core.World
                     ColliderPart.Span("Wall", -1.43f, 0f, -0.1f, 1.43f, 2.55f, 0.2f),
                     ColliderPart.Box("Canvas", 0f, 1.74f, -0.75f, 2.26f, 0.06f, 1.7f, -26.6f)),
 
+                // Interior wiring (CaseRouteLayout): these models are carried by the authored slab colliders that
+                // OwlHouseStage builds (ramp legs, shed, bridge, cabin walls, the hollow house shell, the partition).
+                new ColliderRecipe(CaseRouteLayout.ShedRamp, true, "CaseRouteLayout ramp, landing and shed slabs")
+                    .Covered("Ramp_Leg1"),
+                new ColliderRecipe(CaseRouteLayout.SillBridge, true, "CaseRouteLayout bridge slab and guards").Covered("Bridge"),
+                new ColliderRecipe(CaseRouteLayout.TreehouseCabin, true,
+                    "CaseRouteLayout cabin walls (the deck is the TreehousePlatform recipe)").Covered("Cabin_North"),
+                new ColliderRecipe(CaseRouteLayout.OwlHouseInterior, true,
+                    "CaseRouteLayout shell, floor, stair, loft and rails").Covered("House_Floor"),
+                new ColliderRecipe(CaseRouteLayout.WorkshopMechanism, true,
+                    "behind the CaseRouteLayout workshop partition").Covered("Workshop_Partition"),
+                new ColliderRecipe(CaseRouteLayout.ClothSnag, false, "decoration (evidence scrap on the bridge-head post)"),
+
                 // Decoration: Pip and the camera pass through.
                 new ColliderRecipe(EnvironmentLayout.PaperBat, false, "decoration (hangs in the air)"),
                 new ColliderRecipe(EnvironmentLayout.Lawn, false, "ground decal; the greybox Ground and the ground ring carry Pip"),

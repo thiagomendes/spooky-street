@@ -1,15 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using SpookyStreet.App;
 using SpookyStreet.Characters;
 using SpookyStreet.Core.Art;
 using SpookyStreet.Core.Case;
 using SpookyStreet.Core.Flow;
 using SpookyStreet.Core.Save;
+using SpookyStreet.Core.World;
 using SpookyStreet.Player;
 using SpookyStreet.Save;
 using SpookyStreet.UI;
+using SpookyStreet.World;
 using UnityEngine;
 using UnityEngine.UI;
 using NoteKeys = SpookyStreet.Core.Localization.LocalizationKeys.Notebook;
@@ -50,6 +53,18 @@ namespace SpookyStreet.Case
         private bool _continuing;
         private float _walkedAtStart;
         private bool _onPorch;
+        private bool _inAtticEntry;
+        private bool _inFoyer;
+        private bool _juneWalkPending;
+        private bool _finaleLines;
+        private float _finaleHold = -1f;
+        private float _nookPeek = -1f;
+        private float _finaleIntro = -1f;
+        private IReadOnlyList<ScriptLine> _finaleIntroLines;
+        private readonly List<Renderer> _hiddenPip = new List<Renderer>();
+        private int _baseObstacles;
+        private int _indoorObstacles;
+        private CaseWorldView _view = CaseWorldView.From(CaseState.Empty);
 
         public CaseState State { get; private set; } = CaseState.Empty;
 
@@ -76,6 +91,28 @@ namespace SpookyStreet.Case
         public Button NotebookButton { get; private set; }
         public BenchView Bench { get; private set; }
         public KnockBeat Knocks { get; private set; }
+
+        /// <summary>The interior half's set: route and interior models, colliders, cut-away, door (null without models).</summary>
+        public OwlHouseStage House { get; private set; }
+
+        /// <summary>The workshop mechanism and the rooftop owl (null without models).</summary>
+        public WorkshopView Workshop { get; private set; }
+
+        /// <summary>June and Aunt Kit (null without models).</summary>
+        public CaseCast Cast { get; private set; }
+
+        public CutawayView Cutaway { get; private set; }
+        public FinaleView Finale { get; private set; }
+
+        /// <summary>The world view the stage shows (derived from the facts).</summary>
+        public CaseWorldView View => _view;
+
+        /// <summary>True while the finale's framing holds (lines, then a beat before the notebook).</summary>
+        public bool FinalePlaying => Finale != null && Finale.Active;
+
+        /// <summary>Spec §5: entering the attic blends to a closer shoulder view; the foyer is a little closer too.</summary>
+        public const float AtticCameraDistance = 2.1f;
+        public const float FoyerCameraDistance = 2.9f;
 
         /// <summary>The canvas holding captions, the interaction marker, dialogue and the notebook.</summary>
         public Canvas UiCanvas { get; private set; }
@@ -113,12 +150,26 @@ namespace SpookyStreet.Case
 
             BuildUi();
             int sightMask = Physics.DefaultRaycastLayers & ~(1 << _pip.gameObject.layer);
-            Targets = new CaseUseTargets(CaseStage.ExteriorPoints, point => Perform(point.Action), sightMask);
+            bool models = game.Environment != null && game.Environment.UsesModels;
+            Targets = new CaseUseTargets(models ? CaseStage.AllPoints : CaseStage.ExteriorPoints, point => Perform(point.Action),
+                sightMask) { Filter = IsOffered };
             _pip.UseTargets = Targets;
             Bench = BenchView.Create(transform, _pip, game.Controls, _camera);
             var anchors = game.Environment != null ? game.Environment.Anchors : default;
-            Knocks = KnockBeat.Create(transform, game.Materials, anchors.AtticLight,
-                game.Environment != null && game.Environment.UsesModels);
+            Knocks = KnockBeat.Create(transform, game.Materials, anchors.AtticLight, models);
+            if (models)
+            {
+                House = OwlHouseStage.Create(transform, game.Environment, game.Materials);
+                Workshop = WorkshopView.Create(transform, House.Mechanism, game.Environment.OwlPuppet);
+                Cast = CaseCast.Create(transform, game.Materials, _pip.transform);
+            }
+
+            Cutaway = CutawayView.Create(transform, _camera, (RectTransform)UiCanvas.transform);
+            Finale = FinaleView.Create(transform);
+            _baseObstacles = game.CameraRig.ObstacleLayers;
+            int safe = LayerMask.NameToLayer(SafeGroundTracker.SafeGroundLayerName);
+            int ignore = LayerMask.NameToLayer("Ignore Raycast");
+            _indoorObstacles = _baseObstacles & ~(safe >= 0 ? 1 << safe : 0) & ~(ignore >= 0 ? 1 << ignore : 0);
 
             // Title: Continue resumes the save; New game asks first when a case is in progress.
             _ui.ContinueButton.onClick.AddListener(OnContinue);
@@ -234,7 +285,7 @@ namespace SpookyStreet.Case
         {
             var tracker = _pip.GetComponent<SafeGroundTracker>();
             Vector3 safe = tracker != null && tracker.HasAnchor ? tracker.Anchor : _pip.transform.position;
-            string anchor = CaseStage.NearestAnchor(safe.x, safe.z);
+            string anchor = CaseStage.NearestAnchor(safe.x, safe.y, safe.z);
             bool written = false;
             TryStore(() => written = _store.Save(State, anchor));
             if (written)
@@ -263,8 +314,37 @@ namespace SpookyStreet.Case
         private void ApplyWorld()
         {
             var view = CaseWorldView.From(State);
+            _view = view;
             Knocks.SetHeard(view.PaperBatFallen);
-            // Door, June, workshop panel, owl and booth are interior/finale props: wired with the interior pass.
+            _juneWalkPending = false;
+            _finaleLines = false;
+            _finaleHold = -1f;
+            _finaleIntro = -1f;
+            _finaleIntroLines = null;
+            _nookPeek = -1f;
+            Cutaway.End(false);
+            Finale.End();
+            if (House != null)
+            {
+                House.SetDoor(view.FrontDoor == DoorState.Open);
+                House.NookWallHidden = false;
+                House.ForceBodyVisible = false;
+            }
+
+            if (Workshop != null)
+            {
+                Workshop.SetState(view.ServicePanelOpen, view.ArmLinked, view.Owl == OwlState.Bowing);
+                Workshop.WindEnabled = view.PaperBatFallen;
+            }
+
+            Cast?.Apply(view);
+        }
+
+        /// <summary>Whether a Use target exists in the world right now (June's mark, the panel, the latch...).</summary>
+        private bool IsOffered(InteractionPoint point)
+        {
+            Vector3 pip = _pip.transform.position;
+            return CaseStage.IsOffered(point, _view, CaseRouteLayout.Inside(pip.x, pip.z), Cast != null && Cast.JuneWalking);
         }
 
         private void ResetCase()
@@ -346,6 +426,64 @@ namespace SpookyStreet.Case
             CloseModals();
             Captions.Clear();
             Bench.End();
+            Finale.End();
+            _finaleLines = false;
+            _finaleHold = -1f;
+            _finaleIntro = -1f;
+            _finaleIntroLines = null;
+        }
+
+        /// <summary>The interior half each frame: cut-away, door swing, camera indoors, the nook peek and the finale beat.</summary>
+        private void TickStage(Vector3 pip, float dt)
+        {
+            if (House != null)
+            {
+                House.Tick(pip, _camera.transform.position);
+                bool inside = CaseRouteLayout.Inside(pip.x, pip.z);
+                var rig = _game.CameraRig;
+                rig.DistanceOverride = !inside ? (float?)null
+                    : pip.y > CaseRouteLayout.LoftY - 0.5f ? AtticCameraDistance
+                    : FoyerCameraDistance;
+                rig.ObstacleLayers = inside || House.View.ShowInterior ? _indoorObstacles : _baseObstacles;
+                if (_nookPeek >= 0f && dt > 0f)
+                {
+                    _nookPeek -= dt;
+                    if (_nookPeek < 0f && !Cutaway.Active)
+                    {
+                        House.NookWallHidden = false;
+                    }
+                }
+            }
+
+            if (_finaleIntro >= 0f && dt > 0f)
+            {
+                _finaleIntro -= dt;
+                if (_finaleIntro < 0f)
+                {
+                    var lines = _finaleIntroLines;
+                    _finaleIntroLines = null;
+                    if (lines != null && lines.Count > 0)
+                    {
+                        PlayLines(CaseAction.Of(CaseActionKind.ArriveAtPorch), lines);
+                    }
+                    else
+                    {
+                        SetModal(false);
+                        _finaleLines = false;
+                        _finaleHold = FinaleView.HoldAfterLines;
+                    }
+                }
+            }
+
+            if (_finaleHold >= 0f && dt > 0f && !_modal)
+            {
+                _finaleHold -= dt;
+                if (_finaleHold < 0f)
+                {
+                    Finale.End();
+                    OpenNotebook();
+                }
+            }
         }
 
         // ----------------------------------------------------------------------------------------------- the case
@@ -358,6 +496,7 @@ namespace SpookyStreet.Case
         {
             var step = State.Apply(action);
             State = step.State;
+            _view = CaseWorldView.From(State);
             LastStep = step;
             if (step.ShouldAutosave)
             {
@@ -365,7 +504,15 @@ namespace SpookyStreet.Case
             }
 
             Stage(action, step);
-            PlayLines(action, step.Lines);
+            if (step.ClosedCase && _finaleIntro >= 0f)
+            {
+                // The reopening first plays without the card; its lines follow (TickStage).
+                _finaleIntroLines = step.Lines;
+            }
+            else
+            {
+                PlayLines(action, step.Lines);
+            }
             Stepped?.Invoke(step);
             return step;
         }
@@ -384,7 +531,178 @@ namespace SpookyStreet.Case
                 case CaseActionKind.SitOnBench:
                     Bench.Begin();
                     break;
+                case CaseActionKind.Talk:
+                    if (action.Speaker == Speaker.June && step.Gained.Contains(CaseFact.FoundJune))
+                    {
+                        // She walks down to her mark once her lines are done.
+                        _juneWalkPending = true;
+                    }
+
+                    break;
+                case CaseActionKind.LiftLatch:
+                    if (step.Gained.Contains(CaseFact.FrontOpen))
+                    {
+                        House?.OpenDoor();
+                    }
+
+                    break;
+                case CaseActionKind.ExamineGrille:
+                    // Through the grille the follower visibly lifts three times; seeing it opens the service panel.
+                    if (Workshop != null)
+                    {
+                        Workshop.OpenPanel();
+                        if (!Workshop.Playing)
+                        {
+                            Workshop.PlayCycle();
+                        }
+
+                        PeekIntoNook(MechanismMotion.CycleSeconds + 0.4f);
+                    }
+
+                    break;
+                case CaseActionKind.LinkArm:
+                    if (step.Gained.Contains(CaseFact.LinkedArm))
+                    {
+                        Workshop?.LinkArm();
+                        PeekIntoNook(1.2f);
+                    }
+
+                    break;
+                case CaseActionKind.TurnCrank:
+                    StageCrank(step);
+                    break;
+                case CaseActionKind.ArriveAtPorch:
+                    if (step.ClosedCase)
+                    {
+                        StartFinale();
+                    }
+
+                    break;
             }
+
+            if (step.Gained.Contains(CaseFact.HeardKnocks) && Workshop != null)
+            {
+                Workshop.WindEnabled = true;
+            }
+        }
+
+        private void StageCrank(CaseStep step)
+        {
+            if (Workshop == null)
+            {
+                return;
+            }
+
+            if (step.Outcome == CaseOutcome.CrankGap)
+            {
+                // One tap and a visible gap where the arm should connect; no fact.
+                Workshop.PlayGap();
+                PeekIntoNook(MechanismMotion.GapCycleSeconds + 0.6f);
+                return;
+            }
+
+            Workshop.PlayCycle();
+            if (step.Gained.Contains(CaseFact.TestedOwl))
+            {
+                Workshop.SetBowing();
+            }
+
+            if (step.PlayCutaway)
+            {
+                PlayCutaway();
+            }
+            else
+            {
+                PeekIntoNook(MechanismMotion.CycleSeconds + 0.4f);
+            }
+        }
+
+        /// <summary>Hides the workshop's near wall for a moment so the mechanism reads from where Pip stands.</summary>
+        private void PeekIntoNook(float seconds)
+        {
+            if (House == null)
+            {
+                return;
+            }
+
+            House.NookWallHidden = true;
+            _nookPeek = Mathf.Max(_nookPeek, seconds);
+        }
+
+        /// <summary>The 4 s skippable cutaway: cam, taps and linkage in the nook, the owl bowing in the inset.</summary>
+        private void PlayCutaway()
+        {
+            if (House == null || Workshop == null)
+            {
+                return;
+            }
+
+            Vector3 mechanism = House.Mechanism != null ? ModelKit.RendererBounds(House.Mechanism.gameObject).center
+                : new Vector3(CaseRouteLayout.MechanismX + 0.6f, 1.1f, CaseRouteLayout.MechanismZ);
+            Vector3 eye = new Vector3(CaseRouteLayout.NookX - 1.3f, 1.55f, CaseRouteLayout.MechanismZ + 1.15f);
+            Vector3 owl = Workshop.Owl != null ? ModelKit.RendererBounds(Workshop.Owl.gameObject).center
+                : new Vector3(0f, 7f, CaseRouteLayout.FrontZ);
+            Vector3 owlEye = owl + new Vector3(1.8f, -0.6f, -4.2f);
+            House.NookWallHidden = true;
+            House.ForceBodyVisible = true;
+            _nookPeek = -1f;
+            Bench.End();
+            SetModal(true);
+            SetPipHidden(true);
+            Cutaway.Play(eye, mechanism + new Vector3(0f, -0.2f, 0f), owlEye, owl, OnCutawayEnded);
+        }
+
+        private void SetPipHidden(bool hidden)
+        {
+            if (hidden)
+            {
+                foreach (var renderer in _pip.GetComponentsInChildren<Renderer>())
+                {
+                    if (renderer.enabled)
+                    {
+                        renderer.enabled = false;
+                        _hiddenPip.Add(renderer);
+                    }
+                }
+
+                return;
+            }
+
+            foreach (var renderer in _hiddenPip)
+            {
+                if (renderer != null)
+                {
+                    renderer.enabled = true;
+                }
+            }
+
+            _hiddenPip.Clear();
+        }
+
+        private void OnCutawayEnded()
+        {
+            SetPipHidden(false);
+            if (House != null)
+            {
+                House.NookWallHidden = false;
+                House.ForceBodyVisible = false;
+            }
+
+            SetModal(false);
+        }
+
+        /// <summary>The reopening (spec §3 Resolve): Kit at her booth, June beside her, the owl bowing, the arrival view.</summary>
+        private void StartFinale()
+        {
+            Cutaway.End();
+            Cast?.StageReopening();
+            Workshop?.PlayCycle();
+            Bench.End();
+            Finale.Begin();
+            _finaleLines = true;
+            _finaleHold = -1f;
+            _finaleIntro = FinaleView.IntroSeconds;
+            SetModal(true);
         }
 
         private void PlayLines(CaseAction action, IReadOnlyList<ScriptLine> lines)
@@ -429,7 +747,19 @@ namespace SpookyStreet.Case
                 return () => attic;
             }
 
-            return null;
+            var workshop = new Vector3(CaseRouteLayout.MechanismX + 0.5f, 0.9f, CaseRouteLayout.MechanismZ);
+            switch (action.Kind)
+            {
+                case CaseActionKind.EnterFoyer:
+                case CaseActionKind.ExamineGrille:
+                case CaseActionKind.LinkArm:
+                    return () => workshop;
+                case CaseActionKind.TurnCrank:
+                    var owl = Workshop != null ? Workshop.Owl : null;
+                    return () => owl != null ? owl.position : workshop;
+                default:
+                    return null;
+            }
         }
 
         private Witness WitnessFor(Speaker speaker)
@@ -437,7 +767,7 @@ namespace SpookyStreet.Case
             var cast = _game.Witnesses;
             if (cast == null)
             {
-                return null;
+                return Cast != null ? Cast.For(speaker) : null;
             }
 
             switch (speaker)
@@ -447,7 +777,7 @@ namespace SpookyStreet.Case
                 case Speaker.Vale:
                     return cast.Vale;
                 default:
-                    return null;
+                    return Cast != null ? Cast.For(speaker) : null;
             }
         }
 
@@ -471,6 +801,18 @@ namespace SpookyStreet.Case
             }
 
             SetModal(false);
+            if (_juneWalkPending)
+            {
+                _juneWalkPending = false;
+                Cast?.WalkJuneToFoyer();
+            }
+
+            if (_finaleLines)
+            {
+                // The reopening lines are done: hold the restored view a beat, then the notebook's final card.
+                _finaleLines = false;
+                _finaleHold = FinaleView.HoldAfterLines;
+            }
         }
 
         // -------------------------------------------------------------------------------------------- notebook
@@ -541,6 +883,13 @@ namespace SpookyStreet.Case
             Captions.Raised = false;
             Notebook.Cancel();
             Notice.Hide();
+            Cutaway.End(false);
+            SetPipHidden(false);
+            if (House != null)
+            {
+                House.ForceBodyVisible = false;
+                House.NookWallHidden = false;
+            }
             if (_modal)
             {
                 SetModal(false);
@@ -574,11 +923,30 @@ namespace SpookyStreet.Case
             }
 
             Vector3 pip = _pip.transform.position;
+            TickStage(pip, dt);
             if (!_modal)
             {
                 if (CaseStage.ShouldHearKnocks(State, _pip.DistanceWalked - _walkedAtStart, pip.z))
                 {
                     Perform(CaseAction.Of(CaseActionKind.HearKnocks));
+                }
+
+                if (House != null)
+                {
+                    bool attic = CaseStage.InAtticEntry(pip.x, pip.y, pip.z);
+                    if (attic && !_inAtticEntry)
+                    {
+                        Perform(CaseAction.Of(CaseActionKind.EnterAttic));
+                    }
+
+                    _inAtticEntry = attic;
+                    bool foyer = CaseStage.InFoyer(pip.x, pip.y, pip.z);
+                    if (foyer && !_inFoyer)
+                    {
+                        Perform(CaseAction.Of(CaseActionKind.EnterFoyer));
+                    }
+
+                    _inFoyer = foyer;
                 }
 
                 bool onPorch = CaseStage.OnArrivalPorch(pip.x, pip.z);

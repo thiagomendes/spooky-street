@@ -22,17 +22,33 @@ namespace SpookyStreet.Core.Case
         public override string ToString() => $"({X:F2}, {Y:F2}, {Z:F2})";
     }
 
+    /// <summary>Which side of the owl house shell a Use target can be used from.</summary>
+    public enum PointSide
+    {
+        Any,
+        Outside,
+        Inside,
+    }
+
     /// <summary>One authored Use target of the case: what it reports, where it is and how close Pip must be.</summary>
     public sealed class InteractionPoint
     {
-        internal InteractionPoint(string id, CaseAction action, StagePoint position, float reach, float markerHeight)
+        internal InteractionPoint(string id, CaseAction action, StagePoint position, float reach, float markerHeight,
+            PointSide side = PointSide.Any, string verbKey = null)
         {
             Id = id;
             Action = action;
             Position = position;
             Reach = reach;
             MarkerHeight = markerHeight;
+            Side = side;
+            _verbKey = verbKey;
         }
+
+        private readonly string _verbKey;
+
+        /// <summary>Offered only from this side of the house shell (the latch from inside, the door from outside).</summary>
+        public PointSide Side { get; }
 
         /// <summary>Stable name (logs and tests only; never saved).</summary>
         public string Id { get; }
@@ -49,7 +65,7 @@ namespace SpookyStreet.Core.Case
         public float MarkerHeight { get; }
 
         /// <summary>Localization key of the verb on the Use disc.</summary>
-        public string VerbKey => CaseInteractions.VerbKey(Action.Kind);
+        public string VerbKey => _verbKey ?? CaseInteractions.VerbKey(Action.Kind);
     }
 
     /// <summary>
@@ -57,7 +73,7 @@ namespace SpookyStreet.Core.Case
     /// to and the trigger zones. Positions come from <see cref="EnvironmentLayout"/>, so the stage follows the street.
     /// Interior targets (attic, foyer, workshop) are added when their rooms exist.
     /// </summary>
-    public static class CaseStage
+    public static partial class CaseStage
     {
         public const string PointBea = "bea";
         public const string PointVale = "vale";
@@ -104,9 +120,16 @@ namespace SpookyStreet.Core.Case
             { CaseAnchors.BicycleCorner, new StagePoint(-5.6f, 0.1f, -0.4f) },
             { CaseAnchors.Bench, new StagePoint(6.4f, 0.1f, 1.4f) },
             { CaseAnchors.BluePorch, new StagePoint(0f, 0.7f, 10f) },
+            // Interior pass: the treehouse route and the three rooms (CaseRouteLayout).
+            { CaseAnchors.SideYard, new StagePoint(-11.2f, 0.1f, 5.6f) },
+            { CaseAnchors.Treehouse, new StagePoint(-6.6f, 2.45f, 13.4f) },
+            { CaseAnchors.AtticSill, new StagePoint(-4.1f, 2.5f, CaseRouteLayout.BridgeZ) },
+            { CaseAnchors.Attic, new StagePoint(-1.3f, 2.55f, 14.0f) },
+            { CaseAnchors.Foyer, new StagePoint(-0.7f, 0.65f, 12.3f) },
+            { CaseAnchors.Workshop, new StagePoint(0.7f, 0.65f, 14.1f) },
         };
 
-        /// <summary>Anchors that exist on the stage today (the exterior ones).</summary>
+        /// <summary>Anchors that exist on the stage (every anchor of the case since the interior pass).</summary>
         public static IEnumerable<string> StagedAnchors => Anchors.Keys;
 
         public static bool TryGetAnchor(string anchorId, out StagePoint point)
@@ -136,16 +159,31 @@ namespace SpookyStreet.Core.Case
             return Anchors[CaseAnchors.Fallback];
         }
 
-        /// <summary>The staged anchor nearest to (x, z): what an autosave records as the last safe anchor.</summary>
-        public static string NearestAnchor(float x, float z)
+        /// <summary>The staged anchor nearest to (x, z) at ground level: see <see cref="NearestAnchor(float, float, float)"/>.</summary>
+        public static string NearestAnchor(float x, float z) => NearestAnchor(x, 0f, z);
+
+        /// <summary>
+        /// The staged anchor nearest to (x, y, z): what an autosave records as the last safe anchor. Height counts
+        /// three times as much as plan distance, so the attic and the foyer (one above the other) never mix, and an
+        /// inside anchor is only chosen for a point inside the house shell (and an outside one for a point outside),
+        /// so a save on the porch never restores Pip behind the latched door.
+        /// </summary>
+        public static string NearestAnchor(float x, float y, float z)
         {
             string best = CaseAnchors.Fallback;
             float bestDistance = float.MaxValue;
+            bool inside = CaseRouteLayout.Inside(x, z);
             foreach (var pair in Anchors)
             {
+                if (CaseAnchors.IsInside(pair.Key) != inside)
+                {
+                    continue;
+                }
+
                 float dx = pair.Value.X - x;
+                float dy = (pair.Value.Y - y) * 3f;
                 float dz = pair.Value.Z - z;
-                float d = dx * dx + dz * dz;
+                float d = dx * dx + dy * dy + dz * dz;
                 if (d < bestDistance)
                 {
                     bestDistance = d;
@@ -165,7 +203,7 @@ namespace SpookyStreet.Core.Case
 
         public static InteractionPoint Find(string id)
         {
-            foreach (var point in ExteriorPoints)
+            foreach (var point in AllPoints)
             {
                 if (point.Id == id)
                 {
@@ -214,7 +252,7 @@ namespace SpookyStreet.Core.Case
                 new InteractionPoint(PointBicycle, CaseAction.Of(CaseActionKind.ExamineStreamer),
                     new StagePoint(bike.X, 0f, bike.Z), 1.8f, 1.35f),
                 new InteractionPoint(PointFrontDoor, CaseAction.Of(CaseActionKind.TryFrontDoor), FrontDoor, DefaultReach,
-                    1.9f),
+                    1.9f, PointSide.Outside),
                 // The candy bowl sits on the arrival porch crate; a short reach keeps it off the Use disc at the spawn.
                 new InteractionPoint(PointCandyBowl, CaseAction.Of(CaseActionKind.ExamineCandyBowl),
                     new StagePoint(bowl.X, bowl.Y, bowl.Z), 1.15f, 0.45f),

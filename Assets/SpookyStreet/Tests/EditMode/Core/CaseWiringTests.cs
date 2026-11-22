@@ -126,16 +126,12 @@ namespace SpookyStreet.Tests.Core
             Assert.AreEqual(CaseAnchors.Plaza, id, "inside without the window entry → plaza");
             var inside = CaseState.FromFacts(new[] { CaseFact.EnteredByWindow });
             CaseStage.RestorePoint(CaseAnchors.Workshop, inside, out id);
-            Assert.AreEqual(CaseAnchors.Plaza, id, "rooms that are not built yet restore to the plaza");
+            Assert.AreEqual(CaseAnchors.Workshop, id, "the workshop is staged (interior pass)");
 
             Assert.AreEqual(CaseAnchors.Bench, CaseStage.NearestAnchor(7f, 1f));
             Assert.AreEqual(CaseAnchors.ArrivalPorch, CaseStage.NearestAnchor(0.5f, -12.8f));
             Assert.AreEqual(CaseAnchors.BicycleCorner, CaseStage.NearestAnchor(-6.5f, -1f));
-            foreach (string anchor in CaseStage.StagedAnchors)
-            {
-                Assert.IsTrue(CaseAnchors.IsKnown(anchor), anchor);
-                Assert.IsFalse(CaseAnchors.IsInside(anchor), anchor);
-            }
+            CollectionAssert.AreEquivalent(CaseAnchors.All, CaseStage.StagedAnchors, "every anchor is staged");
         }
 
         [Test]
