@@ -219,7 +219,7 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void EveryCaseVignetteIsValid()
         {
-            Assert.AreEqual(8, C01Vignettes.All.Count);
+            Assert.AreEqual(36, C01Vignettes.All.Count, "5 key lines, 3 notebook strips, 28 for the other lines");
             foreach (var v in C01Vignettes.All)
             {
                 var errors = VignetteValidator.Validate(v);
@@ -272,35 +272,134 @@ namespace SpookyStreet.Tests.Core
         }
 
         [Test]
-        public void EveryScriptLineHasAnEntryAndScopedLinesHaveAVignette()
+        public void EveryScriptLineHasAVignetteAndNoneKeepsTheV1Card()
         {
             var scriptKeys = new List<string>(CaseScript.AllLineKeys);
+            Assert.AreEqual(35, scriptKeys.Count, "case 01 has 35 lines (captions, examines, dialogue)");
             Assert.AreEqual(scriptKeys.Count, C01Vignettes.LineTable.Count, "one table row per CaseScript line");
-            var scoped = new HashSet<string>(C01Vignettes.ScopedLineKeys);
+            CollectionAssert.AreEquivalent(scriptKeys, C01Vignettes.ScopedLineKeys, "every line is in scope");
             foreach (string key in scriptKeys)
             {
                 var visual = C01Vignettes.For(key);
                 Assert.NotNull(visual, key);
                 Assert.AreEqual(key, visual.LineKey);
-                if (scoped.Contains(key))
-                {
-                    Assert.IsFalse(visual.UsesV1Strip, key + " is in scope and needs a vignette");
-                    Assert.NotNull(C01Vignettes.Get(visual.VignetteId), key + " → " + visual.VignetteId);
-                }
-                else
-                {
-                    Assert.IsTrue(visual.UsesV1Strip, key + " keeps the v1 strip until its vignette is made");
-                    Assert.IsNull(visual.VignetteId);
-                }
+                Assert.IsFalse(visual.UsesV1Strip, key + " needs a vignette (no v1 fallback in case 01)");
+                var vignette = C01Vignettes.Get(visual.VignetteId);
+                Assert.NotNull(vignette, key + " → " + visual.VignetteId);
+                Assert.AreEqual(0, vignette.LoopCount, key + ": speech vignettes loop until next");
+                Assert.IsEmpty(VignetteValidator.Validate(vignette), key);
             }
 
-            foreach (string key in scoped)
+            foreach (var row in C01Vignettes.LineTable)
             {
-                CollectionAssert.Contains(scriptKeys, key, "scoped key is a real CaseScript line");
+                Assert.IsFalse(row.UsesV1Strip, row.LineKey);
+                Assert.AreEqual(C01Vignettes.For(row.LineKey).VignetteId, row.VignetteId, row.LineKey);
             }
 
             Assert.IsNull(C01Vignettes.For("c01.line.nope"));
             Assert.IsNull(C01Vignettes.For(null));
+            Assert.IsNull(C01Vignettes.For("c01.hint.arrival.observe"), "hints are not case lines");
+        }
+
+        [Test]
+        public void EveryVignetteIsUsedByALineOrANotebookStrip()
+        {
+            var used = new HashSet<string>();
+            foreach (var row in C01Vignettes.LineTable)
+            {
+                used.Add(row.VignetteId);
+            }
+
+            foreach (var question in CaseNotebook.Questions)
+            {
+                used.Add(C01Vignettes.AnswerStripFor(question.Id).Id);
+            }
+
+            foreach (var v in C01Vignettes.All)
+            {
+                Assert.IsTrue(used.Contains(v.Id), v.Id + " is not used by any line");
+            }
+        }
+
+        [Test]
+        public void SimilarLinesShareOneVignette()
+        {
+            Assert.AreEqual(C01Vignettes.JuneGreet, C01Vignettes.For(Lines.JuneGreet).VignetteId);
+            Assert.AreEqual(C01Vignettes.JuneGreet, C01Vignettes.For(Lines.JuneGreetShortcut).VignetteId, "both hellos");
+            Assert.AreEqual(C01Vignettes.JuneResolve, C01Vignettes.For(Lines.CaptionOwlBows).VignetteId,
+                "the owl-bow caption is the resolve: knock, knock … knock, three bows");
+        }
+
+        [Test]
+        public void ClueLinesShowTheActualClue()
+        {
+            AssertShows(Lines.ExamineCloth, "pg.cloth", "pg.cape");
+            AssertShows(Lines.ExamineSill, PuppetParts.SillSnag, "pg.cape");
+            AssertShows(Lines.ExamineStreamer, "pg.streamer", "pg.not");
+            AssertShows(Lines.ExamineBowlSweet, "pg.sweet");
+            AssertShows(Lines.ExamineDoorStuck, "pg.door_shut", "pg.lock");
+            AssertShows(Lines.BeaRepeat, "pg.hedge", "pg.cape", "pg.feet", "pg.not");
+            AssertShows(Lines.CaptionGrille, "pg.grille");
+            AssertShows(Lines.CaptionArmLinked, "pg.arm", "pg.cam");
+            AssertShows(Lines.CaptionCrankGap, "pg.crank", "pg.gap", "pg.not");
+            AssertShows(Lines.CaptionFoyerHum, "pg.floor_hum");
+            AssertShows(Lines.JuneLatchReminder, PuppetParts.LatchBar, "pg.hands");
+            AssertShows(Lines.JuneGreet, PuppetParts.WaveHand, "pg.june");
+
+            // The clue lines mark the clue with the key ring.
+            foreach (string key in new[] { Lines.ExamineCloth, Lines.ExamineSill, Lines.ExamineBowlSweet })
+            {
+                var v = C01Vignettes.Get(C01Vignettes.For(key).VignetteId);
+                bool ring = false;
+                foreach (var cue in v.Cues)
+                {
+                    ring |= cue.Kind == CueKind.Ring;
+                }
+
+                Assert.IsTrue(ring, key + " rings its clue");
+            }
+        }
+
+        [Test]
+        public void KnockLinesKnockInTheMachinesRhythm()
+        {
+            foreach (string key in new[] { Lines.CaptionArrivalKnocks, Lines.CaptionFoyerHum, Lines.JuneClosed })
+            {
+                var v = C01Vignettes.Get(C01Vignettes.For(key).VignetteId);
+                var knocks = new List<float>();
+                foreach (var cue in v.Cues)
+                {
+                    if (cue.Kind == CueKind.Knock)
+                    {
+                        knocks.Add(cue.T);
+                    }
+                }
+
+                Assert.AreEqual(3, knocks.Count, key);
+                Assert.Greater(knocks[2] - knocks[1], 1.5f * (knocks[1] - knocks[0]), key + ": knock, knock … knock");
+            }
+        }
+
+        private static void AssertShows(string lineKey, params string[] parts)
+        {
+            var v = C01Vignettes.Get(C01Vignettes.For(lineKey).VignetteId);
+            var present = new HashSet<string>();
+            foreach (var track in v.Tracks)
+            {
+                present.Add(track.Part);
+                foreach (var key in track.Keys)
+                {
+                    if (key.Part != null)
+                    {
+                        present.Add(key.Part);
+                    }
+                }
+            }
+
+            foreach (string part in parts)
+            {
+                Assert.IsTrue(present.Contains(part), lineKey + " (" + v.Id + ") should show " + part);
+            }
         }
 
         [Test]
@@ -309,7 +408,7 @@ namespace SpookyStreet.Tests.Core
             CollectionAssert.AreEquivalent(new[]
             {
                 Lines.BeaSawCape, Lines.BeaDoorOpen, Lines.ValeDoorShut, Lines.ValeWasShut, Lines.JuneResolve,
-            }, C01Vignettes.ScopedLineKeys);
+            }, C01Vignettes.KeyLineKeys);
             Assert.AreEqual(C01Vignettes.BeaSawCape, C01Vignettes.For(Lines.BeaSawCape).VignetteId);
             Assert.AreEqual(C01Vignettes.ValeDoorShut, C01Vignettes.For(Lines.ValeDoorShut).VignetteId);
             Assert.AreEqual(C01Vignettes.JuneResolve, C01Vignettes.For(Lines.JuneResolve).VignetteId);

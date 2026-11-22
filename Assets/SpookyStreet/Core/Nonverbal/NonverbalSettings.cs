@@ -7,41 +7,25 @@ namespace SpookyStreet.Core.Nonverbal
     /// <summary>
     /// Non-verbal UX settings (owner decisions D23.1 and D23.4). Settings are not case progress: they live in their
     /// own file and survive a fresh start or replay. A missing or invalid field takes its default.
+    /// D23.1 (revised 2026-11-22): one hybrid reading mode for everyone, so every line plays its vignette and shows its
+    /// text line; there is no "Pictures only" setting and no first-launch choice. Schema 1 files (which stored
+    /// <c>showSpeechText</c> and <c>firstLaunchChoiceMade</c>) still load: those two fields are ignored and dropped on
+    /// the next save.
     /// </summary>
     public sealed class NonverbalSettings
     {
-        public const int CurrentSchemaVersion = 1;
+        /// <summary>2: the reading-mode fields are gone (D23.1). Schema 1 is read and migrated.</summary>
+        public const int CurrentSchemaVersion = 2;
 
         /// <summary>With <see cref="HelperAutoHints"/> on, the tier-3 "show me" hint may appear after this stall.</summary>
         public const float AutoHintStallSeconds = 180f;
 
-        /// <summary>
-        /// The small text line under the vignette stage. On by default; "Pictures only" turns it off. Animations
-        /// always play either way (reading mode, D23.1).
-        /// </summary>
-        public bool ShowSpeechText { get; set; } = true;
-
         /// <summary>Opt-in Helper (D23.4). Off: tier-3 help plays only on a radio press, never after a stall.</summary>
         public bool HelperAutoHints { get; set; }
-
-        /// <summary>The first-launch "Words and pictures / Pictures only" choice was made.</summary>
-        public bool FirstLaunchChoiceMade { get; set; }
-
-        /// <summary>Show the two-card first-launch choice before the title screen.</summary>
-        public bool NeedsFirstLaunchChoice => !FirstLaunchChoiceMade;
-
-        public static string ShowSpeechTextLabelKey => NvKeys.SettingsShowSpeechText;
 
         public static string HelperLabelKey => NvKeys.SettingsHelper;
 
         public NonverbalSettings Clone() => (NonverbalSettings)MemberwiseClone();
-
-        /// <summary>One tap at first launch: <paramref name="picturesOnly"/> hides the text line.</summary>
-        public void ChooseReadingMode(bool picturesOnly)
-        {
-            ShowSpeechText = !picturesOnly;
-            FirstLaunchChoiceMade = true;
-        }
 
         /// <summary>Whether the tier-3 ghost hand may show without a radio press after <paramref name="stallSeconds"/>.</summary>
         public bool MayAutoShowTier3(float stallSeconds) => HelperAutoHints && stallSeconds >= AutoHintStallSeconds;
@@ -55,13 +39,14 @@ namespace SpookyStreet.Core.Nonverbal
 
             return new SaveJsonWriter()
                 .Number("schemaVersion", CurrentSchemaVersion)
-                .Bool("showSpeechText", s.ShowSpeechText)
                 .Bool("helperAutoHints", s.HelperAutoHints)
-                .Bool("firstLaunchChoiceMade", s.FirstLaunchChoiceMade)
                 .ToString();
         }
 
-        /// <summary>Reads settings; false (and defaults) when the text is not a usable settings file.</summary>
+        /// <summary>
+        /// Reads settings; false (and defaults) when the text is not a usable settings file. Schema 1 loads too; its
+        /// retired reading-mode fields are ignored.
+        /// </summary>
         public static bool TryRead(string json, out NonverbalSettings settings, out bool newerSchema)
         {
             settings = new NonverbalSettings();
@@ -78,9 +63,7 @@ namespace SpookyStreet.Core.Nonverbal
                 return false;
             }
 
-            if (SaveJsonReader.TryBool(root, "showSpeechText", out bool b)) settings.ShowSpeechText = b;
-            if (SaveJsonReader.TryBool(root, "helperAutoHints", out b)) settings.HelperAutoHints = b;
-            if (SaveJsonReader.TryBool(root, "firstLaunchChoiceMade", out b)) settings.FirstLaunchChoiceMade = b;
+            if (SaveJsonReader.TryBool(root, "helperAutoHints", out bool b)) settings.HelperAutoHints = b;
             return true;
         }
 
@@ -116,8 +99,8 @@ namespace SpookyStreet.Core.Nonverbal
         public SaveLoadStatus LastLoadStatus { get; private set; } = SaveLoadStatus.Empty;
 
         /// <summary>
-        /// Loads settings, or defaults when none are readable (a first launch, or a lost file: the player is offered
-        /// the reading choice again, which is harmless). A newer-schema file is left untouched.
+        /// Loads settings, or defaults when none are readable (a first launch, or a lost file: Helper is off again,
+        /// which is harmless). A newer-schema file is left untouched.
         /// </summary>
         public NonverbalSettings Load()
         {

@@ -18,10 +18,11 @@ namespace SpookyStreet.Case
     /// The animated non-verbal UX in the running case (docs/nonverbal-ux.md §12, D23), kept beside
     /// <see cref="CaseDirector"/> so the director only creates it and forwards hint requests and resets:
     /// settings (<see cref="NonverbalSettingsStore"/>) and the seen-replays set (<see cref="NonverbalProgressStore"/>)
-    /// beside the case save; the bubble's words setting, gesture cues to the speaking witness and the speaker tail;
+    /// beside the case save; gesture cues to the speaking witness and the speaker tail;
     /// the memory replay trigger (<see cref="MemoryReplayPolicy.OnLineDismissed"/>, seen marked before playing,
     /// played once the conversation closes); the notebook's strips and replay eyes; the radio's tier-2 bat trail and
-    /// the opt-in tier-3 helper; the first-launch reading choice and the parent-gated settings toggles.
+    /// the opt-in tier-3 helper; the parent-gated Helper toggle. One hybrid reading mode (D23.1): every line plays its
+    /// vignette with its text line, so there is no words setting and no first-launch choice.
     /// </summary>
     public sealed class NonverbalLayer : MonoBehaviour
     {
@@ -96,7 +97,6 @@ namespace SpookyStreet.Case
             var notebook = director.Notebook;
             notebook.SeenReplays = () => _progress.Seen;
             notebook.WatchReplay = WatchOnDemand;
-            notebook.ShowWords = () => Settings.ShowSpeechText;
             notebook.CanAnimate = () => _flow.State == GameState.Playing;
 
             BuildRadio();
@@ -105,10 +105,6 @@ namespace SpookyStreet.Case
             director.Stepped += OnStepped;
             _flow.StateChanged += OnStateChanged;
             _objective = CaseHints.ObjectiveFor(director.State);
-            if (_flow.State == GameState.Title)
-            {
-                OfferReadingChoice();
-            }
         }
 
         private static T Try<T>(Func<T> read, T fallback)
@@ -136,9 +132,9 @@ namespace SpookyStreet.Case
 
         private void ApplySettings()
         {
-            _director.Dialogue.ShowSpeechText = Settings.ShowSpeechText;
             _director.Dialogue.ReducedMotion = ReducedMotion;
             _director.Notebook.ReducedMotion = ReducedMotion;
+            _director.Captions.ReducedMotion = ReducedMotion;
         }
 
         private void SaveSettings(NonverbalSettings settings)
@@ -150,23 +146,6 @@ namespace SpookyStreet.Case
                 _settingsStore.Save(settings);
                 return true;
             }, false);
-        }
-
-        /// <summary>First launch (D23.1): two picture cards over the title; one tap chooses, Settings can change it.</summary>
-        private void OfferReadingChoice()
-        {
-            if (Settings.NeedsFirstLaunchChoice)
-            {
-                Menus.ShowReadingChoice(ChooseReadingMode);
-            }
-        }
-
-        /// <summary>The reading choice (true = Pictures only); saved at once.</summary>
-        public void ChooseReadingMode(bool picturesOnly)
-        {
-            Settings.ChooseReadingMode(picturesOnly);
-            Menus.HideReadingChoice();
-            SaveSettings(Settings);
         }
 
         private void BuildSettingsGear()
@@ -395,11 +374,6 @@ namespace SpookyStreet.Case
                 RestoreHud();
                 Guide.Stop();
                 Menus.CloseAll();
-                OfferReadingChoice();
-            }
-            else
-            {
-                Menus.HideReadingChoice();
             }
 
             if (current == GameState.Playing)

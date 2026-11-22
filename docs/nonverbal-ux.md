@@ -17,9 +17,9 @@ The v1 stills stay in `docs/evidence/s002/nonverbal/` for reference; `nv_icons.p
 | Stuck helper | Opt-in **Helper** setting, **OFF** by default. Tier-3 help plays only when the radio is pressed; nothing auto-plays after a stall. |
 | Parent gate | **Press and hold two marked spots for 3 s.** No reading, no maths. |
 | Gestures | Make **only Bea's Point** now. Vale bench-pat, June high five and other new gestures wait for the "more character actions" work; those lines use existing clips. |
-| Reading mode | **Decided (D23.1):** animations always, small text line on by default, one-tap Pictures only at first launch, changeable in Settings; one setting `ShowSpeechText`. |
+| Reading mode | **Decided (D23.1, revised 2026-11-22):** one hybrid mode for everyone: every line always plays its animation **and** always shows its text line. No Pictures-only mode, no first-launch choice, no words toggle. |
 | Memory replay | **Decided (D23.2):** first time each key line is heard in a save, then on demand from the notebook. |
-| Scope | **Decided (D23.3):** now the 4 key Bea/Vale lines, June's resolve, the animated notebook and the tier-2 bat trail; other lines keep the v1 strip. |
+| Scope | **Decided (D23.3):** first the 4 key Bea/Vale lines, June's resolve, the animated notebook and the tier-2 bat trail. **Done in S002:** every other case 01 line now has a vignette too (§3 table); no line keeps the v1 card. |
 | Ghost, bat trail | **Decided (D23.7):** June mesh + translucent paper material (flat cut-out on low-end); trail repeats every 4 s for about 8 s per radio press. |
 
 ## 2. Principles
@@ -33,11 +33,10 @@ The v1 stills stay in `docs/evidence/s002/nonverbal/` for reference; `nv_icons.p
 4. **Never by colour alone** (spec §6): the key ring is a stitched shape that pulses; ⊘ is a shape; found = sticker
    + stamp; unfound = dashed outline.
 5. **Never blocks play.** Every vignette loops until tapped, every replay is skippable, hints never stop movement.
-6. **Reading mode (decided, D23.1).** Animations always play, in every mode. A small optional
-   text line under the stage is **on by default** (Andika 14 pt, `nv2_bea_vignette`). At first launch one tap
-   chooses **Pictures only** (two big cards: child + book / child + pictures; no reading needed); Pictures only
-   hides the text line and the bubble shrinks to the stage (`nv2_vale_vignette`). Settings can change it later.
-   `NonverbalSettings.ShowSpeechText` (bool, default true, in its own settings file) replaces v1's three-way `ReadingMode`.
+6. **Reading mode (D23.1, revised by the owner on 2026-11-22).** One hybrid mode for everyone: animations always
+   play and the small text line under the stage (Andika 14 pt, `nv2_bea_vignette`) is always shown. Pre-readers read
+   the pictures, readers and grown-ups reading along get the words. There is no Pictures-only mode, no first-launch
+   choice and no words setting (the earlier `ShowSpeechText` setting is gone; old settings files still load).
 
 ## 3. Animated speech (`nv2_bea_vignette.gif`, `nv2_vale_vignette.gif`)
 **Bubble.** When a character speaks (babble voice, D20) a bone-paper speech bubble opens with its tail on the speaker
@@ -61,20 +60,51 @@ cross-fade between 2–3 still poses, rings stop pulsing.
    Vale's eye (looking at the door) blinks once. Two moving parts.
 2. 2.6–3.4 s: a ⊘ stamp thumps onto the door and wiggles to a stop: "never opened".
 
-**Other lines (one vignette ID per `CaseScript` key; same beat rules).**
-| Line key (`c01.…`) | Vignette beats |
-|---|---|
-| `line.bea.repeat` | hedge; the cape tip glides along its top · feet below stay empty, ⊘ thumps on the feet slot |
-| `line.bea.door_open` | memory frame (pencil-cloud border) replays `vg.bea.saw_cape` beats 1–2 · Bea nods |
-| `line.vale.invite_sit` | the bench; Pip hops onto it · an eye opens above it |
-| `line.vale.repeat` / `was_shut` | moon slides across · door stays still (was_shut inside the memory frame) |
-| `line.june.greet` | three knocks ring out of the window · June waves from inside |
-| `line.june.latch_reminder` | the latch bar; a hand lifts it · the door swings open |
-| `line.june.listen_floor` | floor planks shiver three times · an ear pops up beside them |
-| `line.june.resolve` | knock, knock, … knock · the owl bows in the same rhythm |
-| examine lines (Pip) | one object + one reaction (sparkle, shrug, wiggle), never more |
-Captions (`caption.*`) stay as the v1 direction strip but with one moving glyph (knock rings travel toward the
-arrow), since they must not hide the world.
+**Every line (S002, `docs/S002-vignettes.md`).** Each `CaseScript` key maps to one vignette in `C01Vignettes`
+(35 lines, 33 vignettes for them; June's two greetings share one, and the owl-bow caption reuses June's resolve).
+Same rules as the key lines: 2–4 s, 1–3 beats, at most two moving parts, one idea per beat, the words under the stage.
+Clue lines show the clue itself. Captions (`caption.*`) keep their strip and words and play their vignette on a small
+night-felt stage that stands on the strip's top edge (`CaptionStrip`, 108 units tall); hints and notebook notes are
+not case lines and keep the strip alone. Contact sheet of all of them, mid-animation:
+`docs/evidence/s002/vignettes_all_sheet.jpg` (rendered offline by `tools/ui_mock/vignette_sheet.py` from the C# data).
+
+| Line key (`c01.…`) | Vignette | Length · beats | What it shows |
+|---|---|---|---|
+| `caption.arrival_knocks` | `vg.caption.knocks` | 2.8 s · 2 | The blue house; knock rings come off it: knock, knock … knock. |
+| `caption.foyer_hum` | `vg.caption.foyer_hum` | 2.8 s · 2 | The floor planks jump on each knock and knock rings rise from them. |
+| `caption.grille` | `vg.caption.grille` | 3.0 s · 2 | A wooden piece peeks up over the grille three times; an eye opens beside it. |
+| `caption.arm_linked` | `vg.caption.arm_linked` | 3.0 s · 3 | The striped arm swings onto the cam, a click puff, the green check thumps. |
+| `caption.crank_gap` | `vg.caption.crank_gap` | 3.4 s · 3 | The crank turns; the ring glows on the gap in the arm; ⊘ thumps on the still owl. |
+| `caption.owl_bows` | `vg.june.resolve` | 2.8 s · 2 | Knock, knock … knock at the open door; the owl in the booth bows in the same rhythm. |
+| `examine.streamer` | `vg.pip.streamer` | 3.4 s · 3 | The lavender foil swishes and twinkles; June's silver cape appears; ⊘ thumps on the foil. |
+| `examine.cloth` | `vg.pip.cloth` | 3.2 s · 3 | The silver cloth on its splinter pops up; the key ring pulses on it; June's cape slides in beside it. |
+| `examine.sill` | `vg.pip.sill` | 3.2 s · 3 | The sill under the round window with its silver snag pops up; the key ring; June's cape slides in. |
+| `examine.door_stuck` | `vg.pip.door_stuck` | 3.2 s · 2 | The front door rattles but stays shut; a padlock pops on, ringed (stuck on the inside). |
+| `examine.bowl` | `vg.pip.bowl` | 2.8 s · 2 | Three candies drop into the bowl one by one; a sparkle. |
+| `examine.bowl_sweet` | `vg.pip.bowl_sweet` | 2.8 s · 2 | The knight-helmet sweet hops out of the bowl; the key ring pulses on it. |
+| `line.bea.saw_cape` | `vg.bea.saw_cape` | 3.6 s · 3 | June runs across the bridge, pops into the window (it lights), Bea's hand points, the ring pulses. |
+| `line.bea.repeat` | `vg.bea.repeat` | 3.4 s · 3 | Only the cape tip glides along the hedge top; her feet pop up below and ⊘ thumps on them. |
+| `line.bea.door_open` | `vg.bea.door_open` | 3.4 s · 3 | Inside the memory cloud: June runs the bridge into the window; Bea nods. |
+| `line.bea.closed` | `vg.bea.closed` | 3.0 s · 3 | A little owl hops onto Bea's bike; a heart pops; the owl bows once. |
+| `line.vale.door_shut` | `vg.vale.door_shut` | 3.6 s · 2 | The shut door, the clock hand ticking, Vale's eye blinking; ⊘ thumps on the door. |
+| `line.vale.invite_sit` | `vg.vale.invite_sit` | 2.8 s · 2 | Pip hops onto the bench; an eye opens above it (look from here). |
+| `line.vale.repeat` | `vg.vale.repeat` | 3.2 s · 2 | The door stays still while the moon crosses the sky; ⊘ thumps on the door. |
+| `line.vale.was_shut` | `vg.vale.was_shut` | 3.2 s · 2 | Inside the memory cloud: the moon slides, the door stays still; ⊘ on the door. |
+| `line.vale.open_now` | `vg.vale.open_now` | 2.4 s · 2 | The shut door swings open with a puff; a "wow" bubble pops. |
+| `line.vale.closed` | `vg.vale.closed` | 3.0 s · 2 | The owl bows three times; a "wow" bubble pops over the bench. |
+| `line.vale.saved_sweet` | `vg.vale.saved_sweet` | 2.8 s · 2 | The knight-helmet sweet slides over to Pip; a heart pops. |
+| `line.june.greet` | `vg.june.greet` | 3.0 s · 2 | A waving hand says hello beside June; then the house knocks, knock … knock. |
+| `line.june.greet_shortcut` | `vg.june.greet` | 3.0 s · 2 | A waving hand says hello beside June; then the house knocks, knock … knock. |
+| `line.june.door_sticks` | `vg.june.door_sticks` | 3.0 s · 2 | The front door rattles but stays shut; two hands pop up (give me a hand?). |
+| `line.june.door_already_open` | `vg.june.door_already_open` | 2.8 s · 3 | Pip beside the door; it swings open with a puff; "wow"; a sparkle for Pip. |
+| `line.june.latch_reminder` | `vg.june.latch_reminder` | 3.4 s · 3 | The ring shows the latch bar on the door; two hands lift it; the door swings open. |
+| `line.june.latch_thanks` | `vg.june.latch_thanks` | 2.8 s · 3 | The door pops open; the two hands appear; a heart. |
+| `line.june.listen_floor` | `vg.june.listen_floor` | 3.2 s · 2 | The floor planks jump three times; an ear pops up beside them. |
+| `line.june.go_outside` | `vg.june.go_outside` | 3.0 s · 2 | June runs from the open door to the porch; an eye opens (let's watch). |
+| `line.june.resolve` | `vg.june.resolve` | 2.8 s · 2 | Knock, knock … knock at the open door; the owl in the booth bows in the same rhythm. |
+| `line.june.closed` | `vg.june.closed` | 3.2 s · 2 | Knock rings come off a door while June bobs in the same rhythm; the moon rises (all night). |
+| `line.kit.first_show` | `vg.kit.first_show` | 3.0 s · 2 | A star pops over the owl booth (the show); Pip hops onto the porch (the best seat). |
+| `line.kit.thanks` | `vg.kit.thanks` | 3.2 s · 2 | The owl bows twice; a heart pops over Pip, then over June. |
 
 ## 4. In-world memory replay (`nv2_memory_replay.gif`)
 For the **key evidence lines only**: `line.bea.saw_cape`, `line.bea.door_open`, `line.vale.door_shut`,
@@ -125,7 +155,8 @@ move in a tiny looping stage** above the hand (hold Jump → a tall arc; tap in 
 ## 8. Feedback, menus, parent gate (kept from v1, simplified)
 - Success: green stamp + felt confetti + three-note motif + haptic; the nearest character cheers. Not yet: soft
   wooden *tok*, object wiggles, Pip shrugs; never a buzzer. Fact gained: sticker flies to the notebook disc.
-- Menus: icon + picture toggles; settings rows gain **Helper** (off) and **Words under pictures** (on).
+- Menus: icon + picture toggles; the settings card has one row, **Helper** (off). (The **Words under pictures** row
+  was removed with D23.1: words always show.)
 - Parent gate (decided): two marked felt spots; hold both 3 s, a candy ring fills; release resets. Guards language
   downloads, credits links and any external link. Destructive actions use a pictogram confirm, no gate.
 
@@ -165,7 +196,7 @@ New v2 parts: full-body puppets (June running, Pip, Bea arm), clock + hand, puff
   URP Shader Graph; Bea Point goes to the Blender character scripts now.
 
 ## 11. Open questions (all answered by the owner on 2026-11-22, D23; kept for the record)
-1. **Reading mode:** confirm "animations always + small text line on by default + one-tap Pictures only at first
+1. **Reading mode** (superseded on 2026-11-22: one hybrid mode, D23.1)**:** confirm "animations always + small text line on by default + one-tap Pictures only at first
    launch" (§2.6). Recommended.
 2. **Memory replay frequency:** once per key line per save, then on demand from the notebook. Recommended over every
    time (repeats would slow replays of the same conversation).
@@ -191,10 +222,10 @@ be added when an editor exists; until then the compiler and `VignetteValidator` 
 | Data | `C01Vignettes` | `For(lineKey)` → `LineVisual` (vignette ID, or `UsesV1Strip` = true); `LineTable` covers every `CaseScript` key; `AnswerStripFor(questionId)` for the three notebook questions. |
 | Replays | `MemoryReplays`, `MemoryReplayPolicy`, `MemoryReplayPlayback`, `MemoryReplayTiming` | Which lines replay and where (`ReplayPlace`), the first-hearing decision, notebook availability per sticker, and the blend weight / ghost progress over time (0.35 s in, 1.8 s hold, 0.35 s out; skip blends back from the current weight; reduced motion cuts). |
 | Seen set | `NonverbalProgressStore` (`case-c01-nonverbal.json`) | Seen replay IDs for the current save, with atomic writes and recovery (`SaveSlotStore`). |
-| Settings | `NonverbalSettings`, `NonverbalSettingsStore` (`nonverbal-settings.json`) | `ShowSpeechText` (on), `HelperAutoHints` (off), `FirstLaunchChoiceMade`; `ChooseReadingMode(picturesOnly)`, `MayAutoShowTier3(stall)`. |
+| Settings | `NonverbalSettings`, `NonverbalSettingsStore` (`nonverbal-settings.json`) | `HelperAutoHints` (off), `MayAutoShowTier3(stall)`. Schema 2 since D23.1; schema 1 files (with the retired `showSpeechText` and `firstLaunchChoiceMade`) still load, keep Helper and drop the old fields on the next save. |
 | Parent gate | `ParentGate` | Feed `TouchDown/Move/Up(id, x, y)` in normalized panel coordinates, `ReleaseAll()` on OS touch cancel, `Update(dt)`; read `State`, `Progress` (candy ring), `IsZoneHeld(0/1)`. Hold 3 s, timeout 30 s. |
 | Bat trail | `BatTrailSchedule` | `Press(now)` on a tier-2 radio press, `Sample(now, BatState[])` → route progress (0..1, eased) and alpha per bat, `BeaconVisible(now)`, `Stop()`. Two waves (0 s, 4 s), 9 bats each, ends at about 7.9 s, ≤ 12 bats alive. |
-| Strings | `LocalizationKeys.NonverbalUi` | First-launch cards, the two settings rows, memory replay skip / watch-again names, the parent gate line (all in `en.json` with context). |
+| Strings | `LocalizationKeys.NonverbalUi` | The Helper row, memory replay skip / watch-again names, the parent gate line (all in `en.json` with context). The first-launch card and words-row strings were retired with D23.1. |
 
 **Why a separate seen-replays file.** It cannot be derived from facts: `line.bea.door_open` and `line.vale.was_shut`
 repeat in every conversation after the door opens without gaining a fact (`saw_cape` and `door_shut` could be, via
@@ -207,16 +238,15 @@ needed.
 
 **What the integration step must do (after `feature/s002-interior-wiring` merges).**
 1. **Boot (`GameBootstrap` / `CaseDirector`).** Create `NonverbalSettingsStore` and `NonverbalProgressStore` with the
-   same `ISaveFileSystem` and directory as `CaseSaveStore`. Load settings before the title; if
-   `NeedsFirstLaunchChoice`, show the two picture cards (`ReadingChoiceWords` / `ReadingChoicePictures`), call
-   `ChooseReadingMode` and `Save`. After `CaseSaveStore.Load()` call `progress.Load(resume.State)`.
+   same `ISaveFileSystem` and directory as `CaseSaveStore`. Load settings before the title (no reading choice since
+   D23.1). After `CaseSaveStore.Load()` call `progress.Load(resume.State)`.
 2. **Case state changes.** After every fact change, fresh start (`StartFresh`) or confirmed replay (`Replay`) call
    `progress.Observe(newState)`; on fresh start/replay also call `progress.Reset()`.
 3. **`DialogueView`.** In `Show(index)`: `var visual = C01Vignettes.For(line.Key)`; if `visual.UsesV1Strip` keep the v1
    pictogram strip, else play `C01Vignettes.Get(visual.VignetteId)` in a `VignettePlayer` (masked stage, `Image` per
    track from the `PuppetAtlas`, sampled each frame with a reused `PartState[Vignette.MaxTracks]`; use
    `ReducedMotionTime` when reduced motion is on). Forward `CuesStarted` gesture cues to the speaker (`Point` for Bea).
-   Show the text line only when `settings.ShowSpeechText`.
+   The text line always shows (D23.1).
 4. **Memory replay trigger.** When the player taps next on a line (after its vignette played once):
    `var d = MemoryReplayPolicy.OnLineDismissed(line.Key, progress.Seen, pip.IsAirborne, pip.InHazard)`; if
    `d.MarkSeen` call `progress.MarkSeen(d.Replay.Id, state)` **before** playing; if `d.Play` start a
@@ -229,7 +259,7 @@ needed.
 6. **`HintSession` / `HintGuide`.** On a tier-2 radio press call `BatTrailSchedule.Press(Time.time)`; render
    `Sample(...)` bats on billboard quads along the objective route; `Stop()` when the tier changes or the objective is
    met. Tier 3 plays on a radio press; auto after a stall only if `settings.MayAutoShowTier3(stallSeconds)`.
-7. **Settings screen.** Two toggles: `ShowSpeechTextLabelKey` and `HelperLabelKey`, saved with
+7. **Settings screen.** One toggle since D23.1: `HelperLabelKey`, saved with
    `NonverbalSettingsStore.Save`.
 8. **Parent gate.** A `ParentGate` instance per gated action (language download, credits link, any external link),
    with the two felt spots drawn at `ZoneA`/`ZoneB` and the `ParentGateHint` line; proceed only on `Passed`.

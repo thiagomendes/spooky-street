@@ -47,8 +47,6 @@ namespace SpookyStreet.Core.Nonverbal
         /// <summary>Flipbook frames of <see cref="PuppetParts.JuneRun"/> after its own cell, in order.</summary>
         public static readonly IReadOnlyList<string> JuneRunFrames = new[] { "x.june_run_1", "x.june_run_2", "x.june_run_3" };
 
-        public const string Book = "x.book";
-        public const string Pictures = "x.pictures";
         public const string BubbleTail = "x.tail";
         public const string PaperBat = "x.paper_bat";
 
@@ -139,6 +137,10 @@ namespace SpookyStreet.Core.Nonverbal
             new PuppetRect("pg.stage", 2, 214, 608, 200, 1.00f, 40),
             new PuppetRect("pg.eye_shut", 1838, 418, 200, 200, 0.85f, 0),
             new PuppetRect("pg.key_ring", 614, 214, 200, 200, 0.85f, 0),
+            new PuppetRect("pg.wave_hand", 1430, 214, 200, 200, 0.85f, 0),
+            new PuppetRect("pg.sill_snag", 1634, 214, 200, 200, 0.85f, 0),
+            new PuppetRect("pg.latch_bar", 1022, 10, 200, 200, 0.85f, 0),
+            new PuppetRect("pg.sparkle", 1226, 10, 200, 200, 0.85f, 0),
         };
 
         public static readonly IReadOnlyList<PuppetRect> Extras = new[]
@@ -146,8 +148,6 @@ namespace SpookyStreet.Core.Nonverbal
             new PuppetRect("x.june_run_1", 818, 214, 200, 200, 0.85f, 0),
             new PuppetRect("x.june_run_2", 1022, 214, 200, 200, 0.85f, 0),
             new PuppetRect("x.june_run_3", 1226, 214, 200, 200, 0.85f, 0),
-            new PuppetRect("x.book", 1430, 214, 200, 200, 1.00f, 0),
-            new PuppetRect("x.pictures", 1634, 214, 200, 200, 1.00f, 0),
             new PuppetRect("x.tail", 1838, 214, 200, 200, 1.00f, 0),
             new PuppetRect("x.june_ghost_0", 2, 10, 200, 200, 0.85f, 0),
             new PuppetRect("x.june_ghost_1", 206, 10, 200, 200, 0.85f, 0),
