@@ -82,6 +82,45 @@ namespace SpookyStreet.Tests.Visual
             yield return null;
             yield return Shot("03_after_walking");
 
+            // Close-up from Pip's front-right for model and silhouette review (primitive or original model):
+            // park the camera brain, frame Pip, then restore. Pip faces its +Z after walking forward.
+            var camera = game.CameraRig.OutputCamera;
+            var brain = camera.GetComponent("CinemachineBrain") as Behaviour;
+            if (brain != null)
+            {
+                brain.enabled = false;
+            }
+
+            var pip = game.Pip.transform;
+            Vector3 target = pip.position + Vector3.up * 0.65f;
+            camera.transform.position = target + pip.forward * 2.2f + pip.right * 0.7f + Vector3.up * 0.3f;
+            camera.transform.LookAt(target);
+            game.Ui.Hud.SetActive(false);
+            yield return Shot("05_pip_closeup");
+
+            // Key frame camera (docs/evidence/s000.2/env_keyframe_v2.png): a child's eye height (1.05 m) on the
+            // arrival porch, looking up the path past the candy bowl (foreground left) to the owl house (right of
+            // centre), as in the key frame. Pip is a few metres up the path after the walk above.
+            float fieldOfView = camera.fieldOfView;
+            camera.fieldOfView = 40f;
+            camera.transform.position = new Vector3(-0.4f, 0.6f + 1.05f, -15f);
+            camera.transform.LookAt(new Vector3(-2.5f, 3.4f, 8f));
+            yield return Shot("06_keyframe_view");
+
+            // Owl house from the plaza, front-left: house facing, glows, owl, wind wheel, gate and fence.
+            camera.fieldOfView = 50f;
+            camera.transform.position = new Vector3(-3.2f, 1.8f, -0.5f);
+            camera.transform.LookAt(new Vector3(0f, 3f, 11f));
+            yield return Shot("07_owl_house");
+            camera.fieldOfView = fieldOfView;
+            game.Ui.Hud.SetActive(true);
+            if (brain != null)
+            {
+                brain.enabled = true;
+            }
+
+            yield return null;
+
             Press(_keyboard.escapeKey, queueEventOnly: true);
             yield return null;
             Release(_keyboard.escapeKey, queueEventOnly: true);

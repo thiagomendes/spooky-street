@@ -3,7 +3,10 @@ using NUnit.Framework;
 using SpookyStreet.App;
 using SpookyStreet.Core.Flow;
 using SpookyStreet.Core.Localization;
+using SpookyStreet.Core.Animation;
 using SpookyStreet.Localization;
+using SpookyStreet.Player;
+using SpookyStreet.World;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -210,6 +213,76 @@ namespace SpookyStreet.Tests.PlayMode
             StringAssert.StartsWith("[", title.text);
             Localizer.TogglePseudo();
             Assert.AreEqual("Spooky Street", title.text);
+        }
+
+        /// <summary>
+        /// Pip is the original rigged model when it is committed (animated, child-sized, feet on the ground) and the
+        /// primitive avatar otherwise. Holds in both states so the model can land without changing this test.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator PipAvatarMatchesModelAvailability()
+        {
+            yield return LoadGame();
+            var game = GameBootstrap.Instance;
+            var avatar = game.Pip.GetComponent<PipAvatar>();
+            bool modelCommitted = Resources.Load<GameObject>(PipAvatar.ModelPath) != null;
+            Assert.AreEqual(modelCommitted, avatar.UsesModel, "model presence and avatar choice disagree");
+
+            Bounds bounds = ModelKit.RendererBounds(avatar.Body.gameObject);
+            Assert.That(bounds.size.y, Is.InRange(0.9f, 1.8f), "Pip's height is off (antennae included)");
+            Assert.That(bounds.min.y - game.Pip.transform.position.y, Is.InRange(-0.1f, 0.1f),
+                "Pip's feet must sit on the capsule base");
+
+            if (!modelCommitted)
+            {
+                Assert.IsNull(avatar.Animator);
+                Assert.IsNotNull(avatar.Body.Find("Hood"), "primitive avatar missing");
+                yield break;
+            }
+
+            Assert.IsNull(avatar.Body.Find("Hood"), "primitive avatar must not be built under the model");
+            Assert.IsNotNull(avatar.Animator, "Pip model needs at least its Idle clip");
+            Assert.IsTrue(avatar.Animator.IsReady, "Pip's animation graph did not start");
+            Assert.IsTrue(avatar.Animator.HasClip(PipClips.Idle));
+            foreach (var renderer in avatar.Body.GetComponentsInChildren<Renderer>())
+            {
+                var material = renderer.sharedMaterial;
+                Assert.IsNotNull(material, $"{renderer.name} has no material");
+                Assert.IsTrue(material.HasProperty("_BaseMap") && material.GetTexture("_BaseMap") != null,
+                    $"{renderer.name} must use Pip's baked texture, not a flat colour ({material.name})");
+            }
+
+            // Walk: locomotion pose with the walk/run clips carrying weight. Then jump: an air pose.
+            game.Ui.NewGameButton.onClick.Invoke();
+            for (int i = 0; i < 10; i++)
+            {
+                yield return null;
+            }
+
+            Press(_keyboard.wKey);
+            float until = Time.time + 0.6f;
+            while (Time.time < until)
+            {
+                yield return null;
+            }
+
+            Assert.AreEqual(PipPose.Locomotion, avatar.Animator.Pose);
+            Assert.Less(avatar.Animator.WeightOf(PipClips.Idle), 0.5f, "moving Pip should not look idle");
+
+            Press(_keyboard.spaceKey);
+            yield return null;
+            Release(_keyboard.spaceKey);
+            until = Time.time + 0.25f;
+            while (Time.time < until)
+            {
+                yield return null;
+            }
+
+            Release(_keyboard.wKey);
+            Assert.That(avatar.Animator.Pose,
+                Is.EqualTo(PipPose.JumpStart).Or.EqualTo(PipPose.JumpAir).Or.EqualTo(PipPose.Fall),
+                "a jump should show an air pose");
+            Assert.IsFalse(game.Pip.Grounded);
         }
     }
 }

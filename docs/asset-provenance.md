@@ -11,4 +11,5 @@
 | Built-in UI font (`LegacyRuntime.ttf`) | Unity built-in resource | Fallback only, if a bundled font fails to load |
 | `ProjectSettings/*.asset` (Audio, Dynamics, Editor, Input, Memory, NavMesh, Physics2D, Preset, Time, URPProject, VersionControl, Graphics, Quality templates) | Derived from `Unity-Technologies/Graphics` @ `6000.3/staging`, `Tests/SRPTests/Projects/BatchRendererGroup_URP`, then edited | Unity Companion License (settings templates); edited values project-owned |
 | `ci/unity/container.sh` activation sequence | Modelled on GameCI `unity-builder` v4.8.2 ubuntu steps | MIT (GameCI); re-implemented, not copied verbatim |
-| Imported art, audio | None yet | — |
+| `Content/Resources/Models/Characters/Pip/` (Pip.fbx rig, 12 clips, baked BaseColor/Normal/Face textures) | Built from scratch by `tools/blender/chars/*` and `tools/blender/export/pip_*.py` (headless Blender 4.0.2); review sheet `docs/evidence/s000.2/pip_game_review.png` | Project-owned (original, spec v1.3) |
+| Imported third-party art, audio | None | — |

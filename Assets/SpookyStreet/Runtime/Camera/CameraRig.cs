@@ -48,7 +48,7 @@ namespace SpookyStreet.CameraSystem
             cameraObject.transform.SetParent(root.transform, false);
             var outputCamera = cameraObject.AddComponent<Camera>();
             outputCamera.clearFlags = CameraClearFlags.SolidColor;
-            outputCamera.backgroundColor = Palette.TwilightSky;
+            outputCamera.backgroundColor = Palette.NightViolet;
             outputCamera.nearClipPlane = 0.1f;
             outputCamera.farClipPlane = 200f;
             World.Atmosphere.ConfigureCamera(outputCamera);

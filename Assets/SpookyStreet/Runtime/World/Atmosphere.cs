@@ -1,52 +1,114 @@
+using SpookyStreet.Core.World;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 namespace SpookyStreet.World
 {
+    /// <summary>Where the warm practical lights sit, from the greybox or from the environment models.</summary>
+    public struct AtmosphereAnchors
+    {
+        /// <summary>Centre of the round attic window (the opening's focal point).</summary>
+        public Vector3 AtticWindow;
+        public Vector3 AtticLight;
+        public Vector3 ArrivalLight;
+        public Vector3 DoorLight;
+
+        public static AtmosphereAnchors Greybox => new AtmosphereAnchors
+        {
+            AtticWindow = GreyboxBuilder.AtticWindow,
+            AtticLight = GreyboxBuilder.AtticWindow + new Vector3(0f, -0.2f, -0.9f),
+            ArrivalLight = GreyboxBuilder.PorchLamp + new Vector3(-0.3f, -0.35f, 0.3f),
+            DoorLight = new Vector3(0f, 2.6f, GreyboxBuilder.HouseFrontZ - 0.9f),
+        };
+    }
+
     /// <summary>
-    /// Light story for the arrival view (docs/art-bible.md): cool moonlight from behind the street rim-lights the
-    /// silhouettes, warm amber pools carry the eye, shadows stay blue-indigo. Also owns the global post-processing
-    /// Volume; the camera must have post-processing enabled for it to do anything.
+    /// Light story for the arrival view (docs/art-bible.md, spec v1.3 Halloween night): a violet night sky with a
+    /// pale moon, cool moonlight from behind the street rim-lighting the silhouettes, warm amber practicals (attic
+    /// window, street lamp, porch lamp) carrying the eye, shadows staying blue-violet. Mobile-cheap: one shadowed
+    /// directional light, three unshadowed point lights, trilight ambient, linear fog. Also owns the global
+    /// post-processing Volume (bloom picks up the emissive glow parts); the camera must have post-processing on.
     /// </summary>
     public static class Atmosphere
     {
-        public static Transform Build(Transform parent)
+        /// <summary>Moon disc centre: up and left of the owl house from the arrival porch, in front of the sky card.</summary>
+        public static readonly Vector3 MoonPosition = new Vector3(-8f, 13f, 33f);
+        public const float MoonDiameter = 4.2f;
+
+        public static Transform Build(Transform parent, MaterialLibrary materials, AtmosphereAnchors anchors)
         {
             var root = new GameObject("Atmosphere").transform;
             root.SetParent(parent, false);
 
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = Palette.AmbientSky;
-            RenderSettings.ambientEquatorColor = Palette.HouseIndigo;
-            RenderSettings.ambientGroundColor = Palette.AmbientGround;
+            RenderSettings.ambientSkyColor = Palette.NightAmbientSky;
+            RenderSettings.ambientEquatorColor = Palette.NightAmbientEquator;
+            RenderSettings.ambientGroundColor = Palette.NightAmbientGround;
             RenderSettings.ambientIntensity = 1f;
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogColor = Palette.SkyHorizon;
-            RenderSettings.fogStartDistance = 25f;
-            RenderSettings.fogEndDistance = 110f;
+            RenderSettings.fogColor = Palette.NightFog;
+            RenderSettings.fogStartDistance = 28f;
+            RenderSettings.fogEndDistance = 130f;
 
-            var moon = Light("Moonlight", root, LightType.Directional, Palette.Moonlight, 0.55f);
+            // Cool moonlight from behind the house (north-west), rim-lighting roofs, hedge tops and Pip.
+            var moon = Light("Moonlight", root, LightType.Directional, Palette.MoonCool, 0.6f);
             moon.shadows = LightShadows.Soft;
-            moon.shadowStrength = 0.75f;
-            moon.transform.rotation = Quaternion.Euler(30f, 150f, 0f);
+            moon.shadowStrength = 0.7f;
+            moon.transform.rotation = Quaternion.Euler(32f, 160f, 0f);
 
             var attic = Light("AtticLamp", root, LightType.Point, Palette.PumpkinAmber, 3f);
             attic.range = 7f;
-            attic.transform.position = GreyboxBuilder.AtticWindow + new Vector3(0f, -0.2f, -0.9f);
+            attic.transform.position = anchors.AtticLight;
 
             var porch = Light("ArrivalPorchLamp", root, LightType.Point, Palette.PumpkinAmber, 2.2f);
             porch.range = 6f;
-            porch.transform.position = GreyboxBuilder.PorchLamp + new Vector3(-0.3f, -0.35f, 0.3f);
+            porch.transform.position = anchors.ArrivalLight;
 
-            // Warm light over the owl house's door so the façade reads at dusk, not as a black cut-out.
+            // Warm light over the owl house's door so the façade reads at night, not as a black cut-out.
             var door = Light("OwlHouseDoorLamp", root, LightType.Point, Palette.PumpkinAmber, 1.6f);
             door.range = 5f;
-            door.transform.position = new Vector3(0f, 2.6f, GreyboxBuilder.HouseFrontZ - 0.9f);
+            door.transform.position = anchors.DoorLight;
+
+            if (materials != null)
+            {
+                BuildMoon(root, materials);
+            }
 
             BuildVolume(root);
             return root;
+        }
+
+        /// <summary>
+        /// A flat paper moon with three soft craters (key frame), unlit and below the bloom threshold so the attic
+        /// window keeps the brightest value on screen.
+        /// </summary>
+        private static void BuildMoon(Transform parent, MaterialLibrary materials)
+        {
+            var moon = new GameObject("Moon").transform;
+            moon.SetParent(parent, false);
+            moon.position = MoonPosition;
+            Disc(moon, "MoonDisc", Vector3.zero, MoonDiameter, materials.Glow(Palette.MoonDisc, GlowLevels.Moon));
+            var crater = materials.Glow(Palette.MoonCrater, GlowLevels.Moon);
+            Disc(moon, "MoonCrater", new Vector3(-0.85f, 0.7f, -0.05f), 1.0f, crater);
+            Disc(moon, "MoonCrater", new Vector3(0.9f, -0.25f, -0.05f), 0.75f, crater);
+            Disc(moon, "MoonCrater", new Vector3(-0.25f, -1.1f, -0.05f), 0.85f, crater);
+        }
+
+        private static void Disc(Transform parent, string name, Vector3 localPosition, float diameter, Material material)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            go.name = name;
+            Object.Destroy(go.GetComponent<Collider>());
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPosition;
+            go.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            go.transform.localScale = new Vector3(diameter, 0.02f, diameter);
+            var renderer = go.GetComponent<Renderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
         }
 
         /// <summary>Turns on HDR and post-processing for a script-created camera (both default off).</summary>
@@ -77,15 +139,16 @@ namespace SpookyStreet.World
             volume.priority = 0f;
 
             var profile = ScriptableObject.CreateInstance<VolumeProfile>();
-            profile.name = "LanternLane_Twilight";
+            profile.name = "LanternLane_Night";
 
             // Neutral keeps pumpkin amber from drifting to yellow (ACES pushes it).
             profile.Add<Tonemapping>().mode.Override(TonemappingMode.Neutral);
 
             var bloom = profile.Add<Bloom>();
+            // Glow parts emit above 1 (GlowLevels): the attic window blooms widest, lamps and faces softly.
             bloom.threshold.Override(1f);
-            bloom.intensity.Override(0.35f);
-            bloom.scatter.Override(0.6f);
+            bloom.intensity.Override(0.55f);
+            bloom.scatter.Override(0.65f);
             bloom.tint.Override(Palette.PumpkinAmber);
 
             var vignette = profile.Add<Vignette>();

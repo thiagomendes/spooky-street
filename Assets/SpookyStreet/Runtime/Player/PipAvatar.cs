@@ -1,3 +1,4 @@
+using SpookyStreet.Core.Animation;
 using SpookyStreet.World;
 using UnityEngine;
 
@@ -8,9 +9,28 @@ namespace SpookyStreet.Player
     /// palette-tinted primitives so the silhouette reads from the gameplay camera (behind and slightly above).
     /// Antennae are ~30% larger than life on purpose. Procedural motion: breathing idle, gait bob and roll,
     /// lagging antenna sway that settles when Pip stops. Never cloth silver (June's clue colour).
+    /// When the original rigged model (tools/blender, imported by Editor/ModelImportRules.cs) is present at
+    /// <see cref="ModelPath"/>, Pip is that model instead: URP Lit materials from its baked textures, scaled to a
+    /// child's height with feet on Pip's origin, animated by <see cref="PipAnimator"/>; the primitives are not built.
+    /// Without the model nothing is logged and the primitive avatar is used exactly as before.
     /// </summary>
     public sealed class PipAvatar : MonoBehaviour
     {
+        /// <summary>Resources folder of Pip's model and its baked textures.</summary>
+        public const string ModelFolder = "Models/Characters/Pip";
+        public const string ModelName = "Pip";
+        public const string ModelPath = ModelFolder + "/" + ModelName;
+
+        /// <summary>Optional face texture names, applied to renderers whose name contains "Face".</summary>
+        public static readonly string[] FaceTextureNames = { "Pip_Face", "Pip_FaceMap" };
+
+        [Header("Imported model")]
+        [Tooltip("Yaw added to the model so its face looks down Pip's +Z (depends on the FBX export axes).")]
+        [SerializeField] private float modelYawOffset = 180f;
+        [Tooltip("A model whose height (antennae included) is outside this range is rescaled to the target height.")]
+        [SerializeField] private Vector2 nativeHeightRange = new Vector2(1.0f, 1.6f);
+        [SerializeField] private float modelTargetHeight = 1.2f;
+
         [SerializeField] private float idleBobHz = 0.6f;
         [SerializeField] private float idleBobFraction = 0.02f;
         [SerializeField] private float stepHz = 2.5f;
@@ -28,6 +48,15 @@ namespace SpookyStreet.Player
 
         public Transform Body => _body;
 
+        /// <summary>True when Pip is the imported, animated model rather than the primitive fallback.</summary>
+        public bool UsesModel { get; private set; }
+
+        /// <summary>The model's animation driver; null for the primitive avatar or a model without clips.</summary>
+        public PipAnimator Animator { get; private set; }
+
+        /// <summary>Uniform scale applied to the imported model (1 when it was authored at game size).</summary>
+        public float ModelScale { get; private set; } = 1f;
+
         public void Build(MaterialLibrary materials, PipMovementTuning tuning)
         {
             _motor = GetComponent<PipMotor>();
@@ -36,6 +65,10 @@ namespace SpookyStreet.Player
 
             _body = new GameObject("PipBody").transform;
             _body.SetParent(transform, false);
+            if (TryBuildModel(materials))
+            {
+                return;
+            }
 
             // Legs and feet (dark tights).
             for (int side = -1; side <= 1; side += 2)
@@ -102,6 +135,100 @@ namespace SpookyStreet.Player
                 Quaternion.identity, materials.Glow(Palette.PumpkinAmber, 1.5f));
         }
 
+        private bool TryBuildModel(MaterialLibrary materials)
+        {
+            var kit = new ModelKit(materials, ModelFolder);
+            var prefab = kit.Load(ModelName);
+            if (prefab == null)
+            {
+                return false;
+            }
+
+            var model = Instantiate(prefab, _body, false);
+            model.name = "PipModel";
+            model.transform.localRotation = Quaternion.Euler(0f, modelYawOffset, 0f);
+            ModelKit.SetLayer(model.transform, gameObject.layer);
+
+            Material skin = kit.MaterialFor(ModelName);
+            Material face = null;
+            foreach (var faceName in FaceTextureNames)
+            {
+                var texture = kit.Texture(faceName);
+                if (texture != null)
+                {
+                    face = materials.Textured(texture, null);
+                    break;
+                }
+            }
+
+            foreach (var renderer in model.GetComponentsInChildren<Renderer>(true))
+            {
+                bool isFace = face != null &&
+                              renderer.gameObject.name.IndexOf("Face", System.StringComparison.OrdinalIgnoreCase) >= 0;
+                MaterialLibrary.ApplyAll(renderer, isFace ? face : skin);
+            }
+
+            FitHeight(model);
+
+            var clips = Resources.LoadAll<AnimationClip>(ModelPath);
+            var animator = model.GetComponentInChildren<UnityEngine.Animator>();
+            if (animator == null)
+            {
+                animator = model.AddComponent<UnityEngine.Animator>();
+            }
+
+            var driver = model.AddComponent<PipAnimator>();
+            if (driver.Build(animator, clips, _motor, _maxSpeed))
+            {
+                Animator = driver;
+            }
+            else
+            {
+                Destroy(driver);
+                if (Debug.isDebugBuild)
+                {
+                    Debug.Log($"[PipAvatar] Pip model has no {PipClips.Required} clip ({clips.Length} clips); " +
+                              "showing its bind pose.");
+                }
+            }
+
+            UsesModel = true;
+            if (Debug.isDebugBuild)
+            {
+                var baseMap = skin != null && skin.HasProperty("_BaseMap") ? skin.GetTexture("_BaseMap") : null;
+                Debug.Log($"[PipAvatar] skin material '{(skin != null ? skin.name : "none")}' shader " +
+                          $"'{(skin != null ? skin.shader.name : "none")}', base map " +
+                          $"{(baseMap != null ? $"{baseMap.name} {baseMap.width}x{baseMap.height} {baseMap.graphicsFormat}" : "MISSING")}, " +
+                          $"face {(face != null ? face.name : "none")}");
+                Debug.Log($"[PipAvatar] model: {clips.Length} clips, scale {ModelScale:F3}, " +
+                          $"height {ModelKit.RendererBounds(model).size.y:F2} m, animated {Animator != null}");
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Keeps a model authored at game size as it is, rescales one authored at another unit scale to a child's
+        /// height, then puts its lowest point on Pip's origin (the capsule's base).
+        /// </summary>
+        private void FitHeight(GameObject model)
+        {
+            Bounds bounds = ModelKit.RendererBounds(model);
+            float height = bounds.size.y;
+            if (height > 0.01f && (height < nativeHeightRange.x || height > nativeHeightRange.y))
+            {
+                ModelScale = modelTargetHeight / height;
+                model.transform.localScale *= ModelScale;
+                bounds = ModelKit.RendererBounds(model);
+            }
+
+            float lift = transform.position.y - bounds.min.y;
+            if (height > 0.01f && Mathf.Abs(lift) > 0.02f)
+            {
+                model.transform.position += Vector3.up * lift;
+            }
+        }
+
         private Transform Part(PrimitiveType type, string name, Vector3 position, Vector3 scale, Quaternion rotation,
             Material material)
         {
@@ -120,7 +247,8 @@ namespace SpookyStreet.Player
 
         private void LateUpdate()
         {
-            if (_body == null)
+            // The imported model's clips carry breathing, gait and antenna motion.
+            if (_body == null || UsesModel)
             {
                 return;
             }
