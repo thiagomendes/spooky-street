@@ -638,6 +638,7 @@ namespace SpookyStreet.Case
 
                     break;
                 case CaseActionKind.ExamineGrille:
+                case CaseActionKind.ExamineOwlPanel:
                     // Through the grille the follower visibly lifts three times; seeing it opens the service panel.
                     if (Workshop != null)
                     {
@@ -850,6 +851,7 @@ namespace SpookyStreet.Case
             {
                 case CaseActionKind.EnterFoyer:
                 case CaseActionKind.ExamineGrille:
+                case CaseActionKind.ExamineOwlPanel:
                 case CaseActionKind.LinkArm:
                     return () => workshop;
                 case CaseActionKind.TurnCrank:

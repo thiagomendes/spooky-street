@@ -27,6 +27,7 @@ namespace SpookyStreet.Core.Nonverbal
         public const string PipDoorStuck = "vg.pip.door_stuck";
         public const string PipBowl = "vg.pip.bowl";
         public const string PipBowlSweet = "vg.pip.bowl_sweet";
+        public const string PipOwlPanel = "vg.pip.owl_panel";
 
         // Bea, Mr. Vale, June, Aunt Kit.
         public const string BeaRepeat = "vg.bea.repeat";
@@ -46,6 +47,7 @@ namespace SpookyStreet.Core.Nonverbal
         public const string JuneClosed = "vg.june.closed";
         public const string KitFirstShow = "vg.kit.first_show";
         public const string KitThanks = "vg.kit.thanks";
+        public const string KitAsk = "vg.kit.ask";
 
         // Properties, not fields: static initializers in different partial files run in no defined order, and the
         // tables in C01Vignettes.cs are built from these during type initialization.
@@ -64,7 +66,7 @@ namespace SpookyStreet.Core.Nonverbal
             BuildValeSavedSweet(),
             BuildJuneGreet(), BuildJuneDoorSticks(), BuildDoorOpenWow(JuneDoorAlreadyOpen, true), BuildJuneLatchReminder(),
             BuildJuneLatchThanks(), BuildJuneListenFloor(), BuildJuneGoOutside(), BuildJuneClosed(),
-            BuildKitFirstShow(), BuildKitThanks(),
+            BuildKitFirstShow(), BuildKitThanks(), BuildPipOwlPanel(), BuildKitAsk(),
         };
 
         /// <summary>Line key → vignette for every line outside the original key five.</summary>
@@ -100,6 +102,8 @@ namespace SpookyStreet.Core.Nonverbal
             (Lines.JuneClosed, JuneClosed),
             (Lines.KitFirstShow, KitFirstShow),
             (Lines.KitThanks, KitThanks),
+            (Lines.ExamineOwlPanel, PipOwlPanel),
+            (Lines.KitAsk, KitAsk),
         };
 
         // ------------------------------------------------------------------------------------------- captions
@@ -119,7 +123,7 @@ namespace SpookyStreet.Core.Nonverbal
                 cues.ToArray());
         }
 
-        /// <summary>"[The floor hums: knock, knock… knock]": the floor planks jump on each knock, knock rings rise.</summary>
+        /// <summary>"[Knock, knock… knock. The floorboards tremble.]": the floor planks jump on each knock (a perception).</summary>
         private static Vignette BuildCaptionFoyerHum()
         {
             var floor = Shiver(0.46f, 0.42f, 1.5f, KnockRhythm);
@@ -158,106 +162,116 @@ namespace SpookyStreet.Core.Nonverbal
                 new VignetteCue[0]);
         }
 
-        /// <summary>"[Click. The striped arm is back in place.]": the arm swings onto the cam, click puff, check.</summary>
+        /// <summary>"[Click!]": the arm swings onto the cam, a click puff. No check stamp (D26).</summary>
         private static Vignette BuildCaptionArmLinked()
         {
-            return new Vignette(CaptionArmLinked, 3.0f, 0,
-                Beats(0.4f, 1.0f, 1.0f, 1.4f, 1.8f, 2.6f),
+            return new Vignette(CaptionArmLinked, 2.4f, 0,
+                Beats(0.4f, 1.0f, 1.0f, 1.4f),
                 new[]
                 {
-                    Still("cam", "cam", 0.30f, 0.48f, 1.3f),
+                    Still("cam", "cam", 0.36f, 0.48f, 1.3f),
                     Track("arm", "arm",
-                        K(0f, 0.64f, 0.24f, 1.2f, -35f, 1f),
-                        K(0.40f, 0.64f, 0.24f, 1.2f, -35f, 1f),
-                        K(1.00f, 0.52f, 0.50f, 1.2f, 0f, 1f, Ease.Back)),
-                    Check(1.8f, 0.80f, 0.66f),
+                        K(0f, 0.68f, 0.24f, 1.2f, -35f, 1f),
+                        K(0.40f, 0.68f, 0.24f, 1.2f, -35f, 1f),
+                        K(1.00f, 0.58f, 0.50f, 1.2f, 0f, 1f, Ease.Back)),
                 },
-                new[]
-                {
-                    new VignetteCue(1.00f, CueKind.Puff, "arm", 0.4f),
-                    new VignetteCue(1.80f, CueKind.Stamp, "check", 0.6f),
-                });
+                new[] { new VignetteCue(1.00f, CueKind.Puff, "arm", 0.4f) });
         }
 
-        /// <summary>"[Tap. Nothing else moves: the arm isn't connected.]": the crank turns, the gap glows, ⊘ on the owl.</summary>
+        /// <summary>"[Tap. The striped arm swings in the air.]": the crank turns once, one tap; the loose arm dangles
+        /// and swings. No ring on the gap, no ⊘ on the owl (D26: what is seen, not what it means).</summary>
         private static Vignette BuildCaptionCrankGap()
         {
-            return new Vignette(CaptionCrankGap, 3.4f, 0,
-                Beats(0.2f, 1.2f, 1.3f, 2.2f, 2.3f, 3.1f),
+            return new Vignette(CaptionCrankGap, 3.0f, 0,
+                Beats(0.2f, 1.2f, 1.3f, 2.8f),
                 new[]
                 {
                     Track("crank", "crank",
-                        K(0f, 0.20f, 0.48f, 1.2f, 0f, 1f),
-                        K(0.20f, 0.20f, 0.48f, 1.2f, 0f, 1f),
-                        K(1.20f, 0.20f, 0.48f, 1.2f, -360f, 1f, Ease.InOut)),
-                    Still("gap", "gap", 0.50f, 0.48f, 1.1f),
-                    Still("owl", "owl", 0.80f, 0.48f, 1.15f),
-                    Stamp("not", 2.3f, 0.80f, 0.46f, 1.15f),
+                        K(0f, 0.28f, 0.48f, 1.2f, 0f, 1f),
+                        K(0.20f, 0.28f, 0.48f, 1.2f, 0f, 1f),
+                        K(1.20f, 0.28f, 0.48f, 1.2f, -360f, 1f, Ease.InOut)),
+                    Track("arm", "arm",
+                        K(0f, 0.70f, 0.44f, 1.2f, -10f, 1f),
+                        K(1.30f, 0.70f, 0.44f, 1.2f, -10f, 1f),
+                        K(1.60f, 0.70f, 0.44f, 1.2f, 18f, 1f, Ease.Out),
+                        K(1.95f, 0.70f, 0.44f, 1.2f, -14f, 1f, Ease.InOut),
+                        K(2.30f, 0.70f, 0.44f, 1.2f, 9f, 1f, Ease.InOut),
+                        K(2.70f, 0.70f, 0.44f, 1.2f, -10f, 1f, Ease.InOut)),
                 },
-                new[]
-                {
-                    new VignetteCue(1.30f, CueKind.Ring, "gap", 0.9f),
-                    new VignetteCue(2.30f, CueKind.Stamp, "not", 0.8f),
-                });
+                new[] { new VignetteCue(1.20f, CueKind.Knock, "crank", 0.3f) });
         }
 
         // ------------------------------------------------------------------------------------------- Pip examines
 
-        /// <summary>"Smooth foil streamer. Shiny, but not woven.": the lavender foil swishes and twinkles; June's
-        /// silver cape appears beside it; ⊘ thumps on the foil (not the same stuff).</summary>
+        /// <summary>"Crinkly, shiny foil.": the lavender foil swishes and twinkles. No cape beside it, no ⊘: comparing
+        /// it with the silver cloth is the child's job (D26, the honest decoy).</summary>
         private static Vignette BuildPipStreamer()
         {
-            return new Vignette(PipStreamer, 3.4f, 0,
-                Beats(0.2f, 1.4f, 1.6f, 1.9f, 2.2f, 3.0f),
+            return new Vignette(PipStreamer, 2.6f, 0,
+                Beats(0.2f, 1.4f, 1.6f, 2.2f),
                 new[]
                 {
                     Track("streamer", "streamer",
-                        K(0f, 0.38f, 0.50f, 1.5f, 0f, 1f),
-                        K(0.20f, 0.38f, 0.50f, 1.5f, 0f, 1f),
-                        K(0.50f, 0.38f, 0.53f, 1.5f, 9f, 1f),
-                        K(0.80f, 0.38f, 0.47f, 1.5f, -7f, 1f),
-                        K(1.10f, 0.38f, 0.53f, 1.5f, 6f, 1f),
-                        K(1.40f, 0.38f, 0.50f, 1.5f, 0f, 1f)),
+                        K(0f, 0.46f, 0.50f, 1.5f, 0f, 1f),
+                        K(0.20f, 0.46f, 0.50f, 1.5f, 0f, 1f),
+                        K(0.50f, 0.46f, 0.53f, 1.5f, 9f, 1f),
+                        K(0.80f, 0.46f, 0.47f, 1.5f, -7f, 1f),
+                        K(1.10f, 0.46f, 0.53f, 1.5f, 6f, 1f),
+                        K(1.40f, 0.46f, 0.50f, 1.5f, 0f, 1f)),
                     Track("shine", PuppetParts.Sparkle,
-                        K(0.20f, 0.55f, 0.78f, 0.25f, 0f, 0f),
-                        K(0.55f, 0.55f, 0.78f, 0.6f, 0f, 1f, Ease.Back),
-                        K(1.00f, 0.55f, 0.78f, 0.42f, 30f, 1f),
-                        K(1.40f, 0.55f, 0.78f, 0.55f, 0f, 1f)),
-                    Pop("cape", "cape", 1.6f, 0.80f, 0.48f, 1.1f),
-                    Stamp("not", 2.2f, 0.38f, 0.46f, 1.2f),
+                        K(0.20f, 0.64f, 0.78f, 0.25f, 0f, 0f),
+                        K(0.55f, 0.64f, 0.78f, 0.6f, 0f, 1f, Ease.Back),
+                        K(1.00f, 0.64f, 0.78f, 0.42f, 30f, 1f),
+                        K(1.60f, 0.64f, 0.78f, 0.6f, 0f, 1f),
+                        K(2.20f, 0.64f, 0.78f, 0.45f, 30f, 1f)),
                 },
-                new[] { new VignetteCue(2.20f, CueKind.Stamp, "not", 0.8f) });
+                new VignetteCue[0]);
         }
 
         /// <summary>
-        /// "Silver cloth. One corner's torn." / "Another silver snag, right on the sill.": the clue pops up, the key ring
-        /// pulses on it (this matters), then June's cape slides in beside it (it matches her cape).
+        /// "Soft silver cloth, caught on a splinter." / "A silver thread on the sill.": the clue pops up and flutters in
+        /// the draught, glinting twice. No ring (nothing says "this matters") and no cape beside it: matching it is the
+        /// child's deduction (D26).
         /// </summary>
         private static Vignette BuildClueMatch(string id, string clue, float scale)
         {
-            return new Vignette(id, 3.2f, 0,
-                Beats(0.1f, 0.45f, 0.8f, 1.8f, 2.0f, 2.5f),
+            return new Vignette(id, 2.8f, 0,
+                Beats(0.1f, 0.45f, 0.6f, 2.4f),
                 new[]
                 {
-                    Pop("clue", clue, 0.1f, 0.40f, 0.50f, scale),
-                    Track("cape", "cape",
-                        K(2.00f, 0.94f, 0.48f, 1.1f, 0f, 0f),
-                        K(2.50f, 0.78f, 0.48f, 1.1f, 0f, 1f, Ease.Out)),
+                    Track("clue", clue,
+                        K(0.10f, 0.46f, 0.50f, scale * 0.3f, 0f, 0f),
+                        K(0.40f, 0.46f, 0.50f, scale, 0f, 1f, Ease.Back),
+                        K(0.80f, 0.46f, 0.52f, scale, 8f, 1f, Ease.InOut),
+                        K(1.20f, 0.46f, 0.49f, scale, -6f, 1f, Ease.InOut),
+                        K(1.60f, 0.46f, 0.52f, scale, 7f, 1f, Ease.InOut),
+                        K(2.00f, 0.46f, 0.50f, scale, 0f, 1f, Ease.InOut)),
+                    Track("glint", PuppetParts.Sparkle,
+                        K(0.60f, 0.62f, 0.66f, 0.2f, 0f, 0f),
+                        K(0.80f, 0.62f, 0.66f, 0.5f, 0f, 1f, Ease.Out),
+                        K(1.10f, 0.62f, 0.66f, 0.2f, 45f, 0f, Ease.InOut),
+                        K(1.70f, 0.30f, 0.40f, 0.2f, 0f, 0f),
+                        K(1.90f, 0.30f, 0.40f, 0.45f, 0f, 1f, Ease.Out),
+                        K(2.20f, 0.30f, 0.40f, 0.2f, 45f, 0f, Ease.InOut)),
                 },
-                new[] { new VignetteCue(0.80f, CueKind.Ring, "clue", 1.0f) });
+                new VignetteCue[0]);
         }
 
-        /// <summary>"It's stuck on the inside.": the door rattles but does not open; a lock pops on it with the ring.</summary>
+        /// <summary>"It won't budge.": the door rattles twice but does not open. No padlock, no ring (D26).</summary>
         private static Vignette BuildPipDoorStuck()
         {
-            return new Vignette(PipDoorStuck, 3.2f, 0,
-                Beats(0.2f, 1.2f, 1.5f, 2.8f),
-                new[]
-                {
-                    new VignetteTrack("door", Part("door_shut"), Rattle(0.42f, 0.48f, 1.4f, 0.2f, 1.2f)),
-                    Pop("lock", "lock", 1.5f, 0.66f, 0.44f, 0.85f),
-                },
-                new[] { new VignetteCue(1.80f, CueKind.Ring, "lock", 1.0f) });
+            var first = Rattle(0.46f, 0.48f, 1.4f, 0.2f, 1.1f);
+            var keys = new List<VignetteKey>(first);
+            var second = Rattle(0.46f, 0.48f, 1.4f, 1.6f, 2.5f);
+            for (int i = 2; i < second.Length; i++)
+            {
+                keys.Add(second[i]);
+            }
+
+            return new Vignette(PipDoorStuck, 2.8f, 0,
+                Beats(0.2f, 1.1f, 1.6f, 2.5f),
+                new[] { new VignetteTrack("door", Part("door_shut"), keys.ToArray()) },
+                new VignetteCue[0]);
         }
 
         /// <summary>"A bowl piled high with candy.": candies drop in one by one, then a sparkle.</summary>
@@ -276,7 +290,7 @@ namespace SpookyStreet.Core.Nonverbal
                 new VignetteCue[0]);
         }
 
-        /// <summary>"One sweet, saved in a tiny knight helmet.": the helmet sweet hops out of the bowl; the ring pulses.</summary>
+        /// <summary>"One sweet, saved in a tiny knight helmet.": the helmet sweet hops out of the bowl; a little puff.</summary>
         private static Vignette BuildPipBowlSweet()
         {
             return new Vignette(PipBowlSweet, 2.8f, 0,
@@ -289,29 +303,30 @@ namespace SpookyStreet.Core.Nonverbal
                         K(0.60f, 0.45f, 0.80f, 1.1f, 10f, 1f, Ease.Out),
                         K(0.90f, 0.62f, 0.48f, 1.2f, 0f, 1f, Ease.Back)),
                 },
-                new[] { new VignetteCue(1.20f, CueKind.Ring, "sweet", 1.0f) });
+                new[] { new VignetteCue(1.20f, CueKind.Puff, "sweet", 0.4f) });
         }
 
         // ------------------------------------------------------------------------------------------- Bea
 
-        /// <summary>"Only the cape, above the hedge. I couldn't see her feet.": the cape tip glides along the hedge top;
-        /// feet pop up below, and ⊘ thumps on them.</summary>
+        /// <summary>"Up high, over the hedge. Then it was gone!": the silver glint skims above the hedge top and
+        /// fades. No cape, no feet, no ⊘ (D26: only the flash she saw).</summary>
         private static Vignette BuildBeaRepeat()
         {
-            return new Vignette(BeaRepeat, 3.4f, 0,
-                Beats(0.2f, 1.8f, 2.0f, 2.25f, 2.3f, 3.1f),
+            return new Vignette(BeaRepeat, 3.0f, 0,
+                Beats(0.2f, 1.8f, 2.0f, 2.6f),
                 new[]
                 {
-                    Track("cape", "cape",
-                        K(0.20f, 0.22f, 0.60f, 0.75f, 0f, 0f),
-                        K(0.45f, 0.26f, 0.60f, 0.75f, 0f, 1f, Ease.Out),
-                        K(1.80f, 0.60f, 0.60f, 0.75f, 0f, 1f, Ease.InOut)),
+                    Track("flash", PuppetParts.Sparkle,
+                        K(0.20f, 0.18f, 0.66f, 0.3f, 0f, 0f),
+                        K(0.40f, 0.22f, 0.66f, 0.55f, 0f, 1f, Ease.Out),
+                        K(1.50f, 0.70f, 0.70f, 0.45f, 120f, 1f, Ease.InOut),
+                        K(1.80f, 0.78f, 0.71f, 0.2f, 160f, 0f, Ease.InOut)),
                     Still("hedge", "hedge", 0.28f, 0.32f, 1.6f),
                     Still("hedge2", "hedge", 0.56f, 0.32f, 1.6f),
-                    Pop("feet", "feet", 2.0f, 0.85f, 0.44f, 1.0f),
-                    Stamp("not", 2.3f, 0.85f, 0.44f, 1.15f),
+                    Still("hedge3", "hedge", 0.84f, 0.32f, 1.6f),
+                    Pop("what", "question", 2.0f, 0.86f, 0.70f, 0.6f),
                 },
-                new[] { new VignetteCue(2.30f, CueKind.Stamp, "not", 0.8f) });
+                new VignetteCue[0]);
         }
 
         /// <summary>"Three knocks, three bows! I'm putting an owl on my bike.": a little owl hops onto the bike, a
@@ -441,8 +456,8 @@ namespace SpookyStreet.Core.Nonverbal
         // ------------------------------------------------------------------------------------------- June
 
         /// <summary>
-        /// "You came my way! I heard the knocks before I climbed in." (and the shortcut version): a waving hand says
-        /// hello beside June; then the house knocks, knock … knock.
+        /// "Pip! You found my secret way in! Did you hear the knocks too?" (and the shortcut version): a waving hand
+        /// says hello beside June; then the house knocks, knock … knock.
         /// </summary>
         private static Vignette BuildJuneGreet()
         {
@@ -479,8 +494,8 @@ namespace SpookyStreet.Core.Nonverbal
                 new VignetteCue[0]);
         }
 
-        /// <summary>"The latch is down by the front door. Lift it with me?": the ring shows the latch on the door; two
-        /// hands lift it; the door swings open.</summary>
+        /// <summary>"The latch is down by the front door. Lift it with me?": two hands lift the latch; the door swings
+        /// open. No ring (D26).</summary>
         private static Vignette BuildJuneLatchReminder()
         {
             return new Vignette(JuneLatchReminder, 3.4f, 0,
@@ -502,7 +517,6 @@ namespace SpookyStreet.Core.Nonverbal
                 },
                 new[]
                 {
-                    new VignetteCue(0.20f, CueKind.Ring, "latch", 0.8f),
                     new VignetteCue(2.35f, CueKind.Puff, "door", 0.45f),
                 });
         }
@@ -524,18 +538,24 @@ namespace SpookyStreet.Core.Nonverbal
                 new[] { new VignetteCue(0.25f, CueKind.Puff, "door", 0.4f) });
         }
 
-        /// <summary>"I came down here to find the knocks. They're under the floor somewhere.": the floor planks jump
-        /// three times; an ear pops up beside them (listen low down).</summary>
+        /// <summary>"I came down to find the knocks. Listen…": an ear pops up, then knock rings in the knock, knock …
+        /// knock rhythm. No jumping floorboards: where the knocks come from is the child's question (D26).</summary>
         private static Vignette BuildJuneListenFloor()
         {
-            return new Vignette(JuneListenFloor, 3.2f, 0,
-                Beats(0.3f, 1.9f, 2.2f, 2.5f),
+            var cues = new List<VignetteCue>();
+            foreach (float k in KnockRhythm)
+            {
+                cues.Add(new VignetteCue(k + 0.6f, CueKind.Knock, "ear", 0.35f));
+            }
+
+            return new Vignette(JuneListenFloor, 3.0f, 0,
+                Beats(0.1f, 0.5f, 0.9f, 2.6f),
                 new[]
                 {
-                    new VignetteTrack("floor", Part("floor_hum"), Shiver(0.40f, 0.42f, 1.45f, KnockRhythm)),
-                    Pop("ear", "ear", 2.2f, 0.76f, 0.52f, 1.05f),
+                    Still("june", "june", 0.26f, 0.46f, 1.1f),
+                    Pop("ear", "ear", 0.1f, 0.64f, 0.54f, 1.05f),
                 },
-                new VignetteCue[0]);
+                cues.ToArray());
         }
 
         /// <summary>"Come on, let's watch from the porch!": June runs from the open door to the porch; an eye opens.</summary>
@@ -626,6 +646,40 @@ namespace SpookyStreet.Core.Nonverbal
                 new VignetteCue[0]);
         }
 
+        /// <summary>"A painted owl, wings folded.": the little panel swings open on a painted owl, which stays still.</summary>
+        private static Vignette BuildPipOwlPanel()
+        {
+            return new Vignette(PipOwlPanel, 2.4f, 0,
+                Beats(0.2f, 0.7f, 0.9f, 2.0f),
+                new[]
+                {
+                    Still("grille", "grille", 0.50f, 0.36f, 1.3f),
+                    Pop("owl", "owl", 0.4f, 0.50f, 0.58f, 1.1f),
+                    Pop("eye", "eye", 1.2f, 0.80f, 0.62f, 0.8f),
+                },
+                new VignetteCue[0]);
+        }
+
+        /// <summary>"So, detective, what happened here?": Kit by her booth; a "?" pops; Pip's notebook disc wobbles.</summary>
+        private static Vignette BuildKitAsk()
+        {
+            return new Vignette(KitAsk, 2.6f, 0,
+                Beats(0.2f, 0.8f, 1.0f, 2.2f),
+                new[]
+                {
+                    Still("kit", "kit", 0.28f, 0.46f, 1.2f),
+                    Pop("what", "question", 0.5f, 0.50f, 0.74f, 0.7f),
+                    Track("pip", "pip",
+                        K(0f, 0.76f, 0.44f, 1.0f, 0f, 1f),
+                        K(1.00f, 0.76f, 0.44f, 1.0f, 0f, 1f),
+                        K(1.30f, 0.76f, 0.47f, 1.0f, 8f, 1f, Ease.Out),
+                        K(1.60f, 0.76f, 0.44f, 1.0f, -6f, 1f, Ease.InOut),
+                        K(1.90f, 0.76f, 0.44f, 1.0f, 0f, 1f, Ease.InOut)),
+                    Pop("think", "emo_think", 1.0f, 0.90f, 0.72f, 0.6f),
+                },
+                new VignetteCue[0]);
+        }
+
         // ------------------------------------------------------------------------------------------- helpers
 
         /// <summary>A part that pops in at <paramref name="t"/> (0.3 s, overshoot) and stays.</summary>
@@ -701,9 +755,5 @@ namespace SpookyStreet.Core.Nonverbal
 
             return keys.ToArray();
         }
-
-        private static VignetteTrack Check(float t, float x, float y) => Track("check", "check",
-            K(t, x, y, 1.6f, -8f, 0f),
-            K(t + 0.25f, x, y, 1.0f, -8f, 1f, Ease.Out));
     }
 }

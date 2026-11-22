@@ -121,17 +121,20 @@ namespace SpookyStreet.Tests.Core
             var state = CaseScenarioTests.PlayCanonical().State;
             var data = CaseSaveData.FromState(state, CaseAnchors.Workshop);
             string json = CaseSaveCodec.Serialize(data);
-            StringAssert.Contains("\"schemaVersion\": 1", json);
+            StringAssert.Contains("\"schemaVersion\": 2", json);
             StringAssert.Contains("\"caseId\": \"c01\"", json);
             StringAssert.Contains("\"c01.attic.entered\"", json);
             StringAssert.Contains("\"anchorId\": \"c01.anchor.workshop\"", json);
             StringAssert.Contains("\"c01.note.q_entry\"", json);
+            StringAssert.Contains("\"answers\": [", json);
 
             var read = CaseSaveCodec.Read(json);
             Assert.AreEqual(CaseSaveStatus.Ok, read.Status);
             CollectionAssert.IsEmpty(read.Issues);
             CollectionAssert.AreEqual(data.Facts, read.Data.Facts, "acquisition order survives");
             CollectionAssert.AreEqual(data.NotebookEntries, read.Data.NotebookEntries);
+            CollectionAssert.AreEqual(data.Answers, read.Data.Answers);
+            Assert.AreEqual(3, read.Data.Answers.Count, "the three solved questions keep their sets");
             Assert.AreEqual(CaseAnchors.Workshop, read.Data.AnchorId);
             CollectionAssert.AreEqual(state.Facts, read.Data.ToState().Facts);
             Assert.AreEqual(json, CaseSaveCodec.Serialize(read.Data), "deterministic");
@@ -152,15 +155,17 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void ValidationDropsUnknownFactsAndRestoresImpliedOnes()
         {
-            string json = Json(1, "c01", new[] { "c01.workshop.owl_tested", "c01.future.thing", "c01.workshop.owl_tested" },
+            string json = Json(2, "c01", new[] { "c01.workshop.owl_tested", "c01.future.thing", "c01.workshop.owl_tested" },
                 CaseAnchors.Foyer, new[] { "c01.note.q_moved", "c01.note.made_up" });
             var read = CaseSaveCodec.Read(json);
             Assert.AreEqual(CaseSaveStatus.Ok, read.Status);
             var state = read.Data.ToState();
             Assert.IsTrue(state.Has(CaseFact.LinkedArm));
             Assert.IsTrue(state.Has(CaseFact.SawCam));
-            Assert.AreEqual(3, state.Count);
-            CollectionAssert.AreEqual(new[] { "c01.note.q_source", "c01.note.q_moved" }, read.Data.NotebookEntries);
+            Assert.AreEqual(5, state.Count, "tested ⇒ linked ⇒ cam seen and arm loose; tested ⇒ owl seen");
+            Assert.IsFalse(state.Has(CaseFact.SolvedMoved), "a schema-2 save is never helped to an answer");
+            CollectionAssert.AreEqual(new[] { CaseNotebook.WoodenPiece, CaseNotebook.LooseArm, CaseNotebook.OwlBooth },
+                read.Data.NotebookEntries);
             Assert.AreEqual(CaseAnchors.Plaza, read.Data.AnchorId, "foyer without the window entry");
             Assert.IsTrue(string.Join("; ", read.Issues).Contains("c01.future.thing"), "the dropped fact is reported");
         }
@@ -168,9 +173,9 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void NewerSchemaIsReportedNotRead()
         {
-            var read = CaseSaveCodec.Read(Json(2, "c01", new string[0], CaseAnchors.Plaza, new string[0]));
+            var read = CaseSaveCodec.Read(Json(3, "c01", new string[0], CaseAnchors.Plaza, new string[0]));
             Assert.AreEqual(CaseSaveStatus.NewerSchema, read.Status);
-            Assert.AreEqual(2, read.FoundSchemaVersion);
+            Assert.AreEqual(3, read.FoundSchemaVersion);
             Assert.IsNull(read.Data);
         }
 
