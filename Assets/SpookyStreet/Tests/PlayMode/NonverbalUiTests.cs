@@ -26,11 +26,12 @@ namespace SpookyStreet.Tests.PlayMode
         private const string SceneName = "LanternLane";
 
         private string _saves;
+        private Keyboard _keyboard;
 
         public override void Setup()
         {
             base.Setup();
-            InputSystem.AddDevice<Keyboard>();
+            _keyboard = InputSystem.AddDevice<Keyboard>();
             Localizer.ResetForTests();
             _saves = CaseDirector.UseTemporarySaveDirectory();
         }
@@ -303,6 +304,33 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreNotSame(gate, menus.Gate, "one gate per guarded action");
             Assert.AreEqual(ParentGateState.Waiting, menus.Gate.State);
             menus.CancelGate();
+            game.Flow.Resume();
+        }
+
+        [UnityTest]
+        public IEnumerator TheParentGateAlsoOpensWithTwoHeldButtons()
+        {
+            yield return StartGame();
+            var game = GameBootstrap.Instance;
+            var layer = game.Director.Nonverbal;
+            var menus = layer.Menus;
+            game.Flow.Pause();
+            yield return Frames(2);
+            layer.SettingsButton.onClick.Invoke();
+            yield return Frames(2);
+            Assert.IsTrue(menus.GateOpen);
+
+            // One button is not enough (portability, D25: Q + P or both shoulder buttons).
+            Press(_keyboard.qKey);
+            yield return Wait(1.0f);
+            Assert.IsTrue(menus.Gate.IsZoneHeld(0));
+            Assert.AreEqual(ParentGateState.Waiting, menus.Gate.State);
+            Press(_keyboard.pKey);
+            yield return Wait(ParentGate.DefaultHoldSeconds + 0.4f);
+            Assert.IsTrue(menus.SettingsOpen, "holding both buttons for 3 s passes the gate");
+            Release(_keyboard.qKey);
+            Release(_keyboard.pKey);
+            menus.CloseSettings();
             game.Flow.Resume();
         }
 

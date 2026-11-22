@@ -39,8 +39,55 @@ integration steps in §12. The visual target is the mocks in `docs/evidence/s002
 
 ## Evidence
 
-RESULTS
+**CI.**
+- Run 73 failed to compile: Cinemachine 3.1 has no `kBlendFromAnyCameraLabel`. Fixed by using the literal wildcard
+  label.
+- Run 74: EditMode 378/378 and PlayMode 60/60 passed. Visual 5/6: the first-launch capture waited on game time,
+  which the title screen stops.
+- Runs 75 and 78 (commit `091ca6d`, Unity 6000.3.28f1): EditMode 378/378, PlayMode 60/60, Visual 6/6, magenta 0 %
+  in every frame. The existing `CaseWiringTests` and `CaseInteriorTests` pass with the replay running after Bea's
+  line, because it never takes the controls.
+- The final validation run of the merge with `main` (D25) and the gamepad/keyboard gate is listed in the hand-off
+  report.
+
+**Frames** (run 78, reviewed against the `nonverbal_v2` mock sheets):
+
+| Frame | Mock | Review |
+|---|---|---|
+| `docs/evidence/s002/24_bea_vignette_run78.jpg` | `nv2_bea_vignette_sheet.jpg` frame 5 | Bubble with its tail on Bea, the pumpkin face disc, and the stage with the treehouse, bridge and wall. The window is lit with June inside, Bea's hand points at it and the orange ring pulses. Words line under the stage. Matches the mock's layout and clarity. |
+| `docs/evidence/s002/25_memory_replay_run78.jpg` | `nv2_memory_replay_sheet.jpg` frames 2–3 | The real treehouse deck and the house from the plaza side, letterbox bars, a lilac pencil tint and the skip disc with its progress ring. June's pale paper ghost with a candy rim runs on the bridge toward the side window. |
+| `docs/evidence/s002/26_notebook_page_run78.jpg` | `nv2_notebook_sheet.jpg` | One question per page: an order dot, the June ? house chips, and the comic panels (treehouse → bridge → window) with June running. The answer words sit under the strip; Bea's and Vale's stickers carry eye badges, and unfound clues show dashed slots. The next page peeks dimmed beside an arrow, with page pips below. |
+| `docs/evidence/s002/27_bat_trail_run78.jpg` | `nv2_hint_sheet.jpg` frames 2–4 | From the arrival porch, the paper bats fly an arc toward Mr. Vale's bench, and the bench sticker in the orange ring pulses over it. |
+| `docs/evidence/s002/28_first_launch_run78.jpg` | (§2.6) | Two picture cards over the dimmed title: Pip with an open book ("Words and pictures") and Pip with comic panels ("Pictures only"). |
+| `docs/evidence/s002/14_dialogue_run78.jpg`, `15_notebook_run78.jpg` | — | The existing case frames with the new views: the raised caption now sits above the bubble, and the notebook is the carousel. |
+
+Review iterations, from run 74 to run 78:
+- **Atlas:** Bea's hand turned to point at the window; `house_side` redrawn as a wall section; pale paper ghost frames
+  (the cut-out had kept June's colours); a bone-paper bat with a candy glow (the v1 bat vanished against the night).
+- **Hint trail:** bats and sticker keep a minimum on-screen size, so they read at distance.
+- **Notebook:** the active panel gets an orange stitch instead of a large ring; the arrows point the right way; the
+  eye is a small badge (`PressScale` was undoing its scale); neighbouring pages are dimmed.
+- **Dialogue:** raised captions sit above the bubble.
 
 ## Known gaps
 
-GAPS
+- **June's ghost:** only the flat paper cut-out. The skinned-mesh ghost with a translucent URP material (D23.7's
+  first choice) is not built; the cut-out is the documented fallback and low-end path.
+- **Tier 3:** still the action caption. The ghost-hand demo over the real controls (§6) is a later pass, and so is the
+  tier-1 sparkle and head turn.
+- **Lines without a vignette** keep the v1 card, and its words show even in Pictures only: no v1 pictogram strip
+  exists at runtime, and those lines get vignettes in S004 (D23.3).
+- **Babble arcs and sync:** the arcs beside the face disc and the babble syllable sync are not drawn (no babble
+  voice yet).
+- **Replay staging:** the cameras, the ghost route and the marks come from `MemoryReplayView.DefaultStaging`
+  (`ReplayStaging` data, overridable with `SetStaging`). When D24/D24.1 move the interior to its own space, only that
+  data changes.
+- **Parent gate, portability (D25):** besides two touches, the gate passes with two held buttons through the same
+  `ParentGate` logic: both gamepad shoulder buttons, or Q + P on a keyboard (`NonverbalMenus.FeedButtons`; tested).
+  The gate's hint line still describes the touch spots: a per-scheme hint string is a follow-up. The new UI bakes in
+  no "tap" wording (every new control is icon-only), but the bubble's next disc and the skip disc do not yet swap
+  glyphs per control scheme.
+- **Accessibility names:** the `ui.memory.skip` and `ui.memory.watch_again` keys are not used yet (both controls
+  are icon-only).
+- **`CaptionStrip`:** gains one property, `RaisedHeight`, so raised captions sit above the taller bubble (a 2-line
+  change kept apart from `fix/interior-polish`).

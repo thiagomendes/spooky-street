@@ -171,6 +171,8 @@ namespace SpookyStreet.UI.Nonverbal
         public ParentGate RequireParent(Action onPassed)
         {
             Gate = new ParentGate();
+            _buttonA = false;
+            _buttonB = false;
             _onGatePassed = onPassed;
             _gatePanel.SetActive(true);
             Canvas.ForceUpdateCanvases();
@@ -197,6 +199,8 @@ namespace SpookyStreet.UI.Nonverbal
         {
             Gate?.ReleaseAll();
             Gate = null;
+            _buttonA = false;
+            _buttonB = false;
             _onGatePassed = null;
             _gatePanel.SetActive(false);
         }
@@ -260,6 +264,55 @@ namespace SpookyStreet.UI.Nonverbal
                         FeedTouch(id, touch.position.ReadValue(), false, true);
                         break;
                 }
+            }
+        }
+
+        /// <summary>Virtual touch IDs for the button path (outside any real touch ID range).</summary>
+        public const int ButtonTouchA = 100001;
+        public const int ButtonTouchB = 100002;
+
+        /// <summary>
+        /// Portability (D25): with a gamepad or keyboard the two spots are two buttons held together, through the same
+        /// gate logic: both shoulder buttons, or Q and P (far apart on the keyboard). Each held button presses its spot.
+        /// </summary>
+        public void FeedButtons(bool holdA, bool holdB)
+        {
+            if (Gate == null)
+            {
+                return;
+            }
+
+            FeedButton(ButtonTouchA, holdA, Gate.ZoneA);
+            FeedButton(ButtonTouchB, holdB, Gate.ZoneB);
+        }
+
+        private bool _buttonA;
+        private bool _buttonB;
+
+        private void FeedButton(int id, bool held, GateZone zone)
+        {
+            ref bool was = ref id == ButtonTouchA ? ref _buttonA : ref _buttonB;
+            if (held && !was)
+            {
+                Gate.TouchDown(id, zone.CenterX, zone.CenterY);
+            }
+            else if (!held && was)
+            {
+                Gate.TouchUp(id);
+            }
+
+            was = held;
+        }
+
+        private void ReadButtons()
+        {
+            var pad = Gamepad.current;
+            var keys = Keyboard.current;
+            bool a = (pad != null && pad.leftShoulder.isPressed) || (keys != null && keys.qKey.isPressed);
+            bool b = (pad != null && pad.rightShoulder.isPressed) || (keys != null && keys.pKey.isPressed);
+            if (a || b || _buttonA || _buttonB)
+            {
+                FeedButtons(a, b);
             }
         }
 
@@ -383,6 +436,7 @@ namespace SpookyStreet.UI.Nonverbal
             }
 
             ReadTouches();
+            ReadButtons();
             Gate.Update(Time.unscaledDeltaTime);
             RefreshGate();
             if (Gate.State == ParentGateState.Passed)
