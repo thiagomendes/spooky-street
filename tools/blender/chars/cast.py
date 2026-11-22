@@ -380,6 +380,13 @@ def build_june(craft):
 def build_vale(craft):
     P = an.Proportions(h=1.72, child=False, belly=1.12, neck=1.4)
     P.arm_out = 0.42  # relaxed, a little away from the body
+    # Owner's notes on the approved cast (fixed for the game version): his shoulders sat as high as the base of
+    # his neck and stood out square, and his limbs were thin. Lower, narrower, rounder shoulders; fuller limbs.
+    P.z["shoulder"] = 0.797 * P.h
+    P.shoulder_x *= 0.93
+    P.shoulder_r = 0.74
+    P.limb *= 1.13
+    P.neck /= 1.13  # the neck keeps its girth
     z, T, L, r, hc = P.z, P.torso, P.limb, P.head_r, P.head_c
     grey = craft.felt(C["grey"])
     skin, surface = face(craft, "Vale_", P, "vale", H(0x4F7FA8), C["grey"], adult=True, mouth="smile")
@@ -407,7 +414,7 @@ def build_vale(craft):
         depth = -on_body((P.hip_x * 0.6, -1, zz), (0, 1, 0))[0].y  # off-centre: below the hips there are two legs
         band("Vale_Wrap", cream, (0, 0, zz), (depth + 0.026) / 0.76 * (1 + 0.5 * tilt_y * tilt_y), width, ys=0.76,
              tilt=(tilt_x, tilt_y, 0))
-    band("Vale_WrapSash", cream, (0, 0, z["chest"] + 0.01), T * 1.06, 0.07, ys=0.84, tilt=(0.0, 0.5, 0))
+    band("Vale_WrapSash", cream, (0, 0, z["chest"] - 0.02), T * 1.06, 0.07, ys=0.8, tilt=(0.0, 0.47, 0))
     band("Vale_Collar", craft.knit(V["purple"]), (0, 0.002, z["neck"] + 0.012), L * 0.68 * P.neck + 0.01, 0.08)
     for s in (1, -1):
         sh, el, wr = Vector((s * P.shoulder_x, 0, z["shoulder"])), P.elbow(s), P.wrist(s)

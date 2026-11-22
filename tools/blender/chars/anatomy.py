@@ -171,7 +171,7 @@ def body(name, P, materials, classify):
         knee = Vector((s * P.hip_x * 1.02, -0.006, z["knee"]))
         ankle = Vector((s * P.hip_x * 1.0, 0.004, z["ankle"]))
         n.update({
-            "shoulder" + side: (sh, L * 0.86),
+            "shoulder" + side: (sh, L * getattr(P, "shoulder_r", 0.86)),
             "puff" + side: (sh.lerp(el, 0.28), L * 0.9),  # softly puffed sleeve head
             "bicep" + side: (sh.lerp(el, 0.66), L * 0.68),
             "elbow" + side: (el + Vector((0, 0.014, 0)), L * 0.54),
