@@ -1,0 +1,11 @@
+{
+ "Maple": {
+  "triangles": 10874,
+  "children": {},
+  "atlas": "Maple",
+  "px_per_m": 253,
+  "leaf_px_per_m": 316,
+  "leaves": 532,
+  "leaf_triangles": 8512
+ }
+}

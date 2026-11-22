@@ -258,8 +258,7 @@ def _wheel_game(inner):
     return wind_wheel
 
 
-GAME_LEAF = [(0.0, -0.55), (0.05, -0.2), (0.42, -0.3), (0.6, 0.1), (0.37, 0.19), (0.44, 0.47), (0.0, 0.8)]  # crown leaf
-CROWN_CARDS, CROWN_LEAF_SCALE = 68, 1.25  # the review crown has 96 smaller leaves per clump
+GAME_LEAF = [(0.0, -0.55), (0.05, -0.2), (0.42, -0.3), (0.6, 0.1), (0.37, 0.19), (0.44, 0.47), (0.0, 0.8)]  # fallen leaf
 HEAP_SCALE = 1.0
 
 
@@ -276,18 +275,11 @@ def install_hooks():
     _tagging(pr, "hanging_lamp", glow_tag="Lamp")
     _tagging(pr, "_carve", glow_tag="Face", solid=True)  # carved faces lie on the shell: no back faces needed
     pr.MAPLE_MID = GAME_LEAF
-    leaf, foliage, heap = pr.leaf, pr.foliage, pr.candy_heap
-
-    def game_leaf(b, craft, M, size, rgb, curl=0.25, low=False, mat=None, tint=None, fold=0.25):
-        leaf(b, craft, M, size * (CROWN_LEAF_SCALE if mat is not None else 1.0), rgb, curl, low, mat, tint, fold)
-
-    def game_foliage(b, craft, centre, radii, seed, cards=96):
-        foliage(b, craft, centre, radii, seed, CROWN_CARDS)
+    heap = pr.candy_heap
 
     def game_heap(b, craft, radius, height, count, s=1.0, lollies=2):
         heap(b, craft, radius, height, count, s * HEAP_SCALE, lollies)
-    pr.leaf, pr.foliage, pr.candy_heap = game_leaf, game_foliage, game_heap
-    _tagging(pr, "foliage", solid=True)  # crown leaves lie on the clumps facing out: single-sided
+    pr.candy_heap = game_heap
 
 
 # --- models ------------------------------------------------------------------------------------------------
@@ -390,7 +382,7 @@ def model_list(craft):
         Model("Crate", "Env", pr.build_crate, 1.3, min_size=0.03),
         Model("Awning", "Env", pr.build_awning, 0.7),
         Model("PlankBridge", "Env", pr.build_bridge, 0.9, min_size=0.03),
-        Model("Maple", "Env", lambda c: pr.build_maple(c, treehouse=False), 0.3),
+        # `Maple` has its own textures and export (`env_export_maple.py`); the Env atlas keeps its old texels unused
         Model("TreehousePlatform", "Env", lambda c: pr.build_maple(c, treehouse=True, crown=False), 0.8,
               skip_finish=("Maple",)),
         Model("Pumpkin", "Env", _pumpkin, 2.0),
@@ -739,9 +731,9 @@ def _uv_and_area(me):
     return uv, a3, a2
 
 
-def unwrap_and_pack(models, atlas, size):
+def unwrap_and_pack(models, atlas, size, **pack):
     """Smart-project every part, give each model `weight` x the common texel density, then pack all islands of
-    the atlas into one square."""
+    the atlas into one square. `pack` overrides the island packer's settings."""
     objs = [(m, o) for m in models if m.atlas == atlas for o in m.parts.values()]
     if not objs:
         return 0.0
@@ -762,8 +754,8 @@ def unwrap_and_pack(models, atlas, size):
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="SELECT")
     bpy.ops.uv.select_all(action="SELECT")
-    bpy.ops.uv.pack_islands(udim_source="CLOSEST_UDIM", rotate=True, rotate_method="CARDINAL", scale=True, merge_overlap=False,
-                            margin_method="FRACTION", margin=1.0 / size, shape_method="AABB")
+    bpy.ops.uv.pack_islands(**{**dict(udim_source="CLOSEST_UDIM", rotate=True, rotate_method="CARDINAL", scale=True, merge_overlap=False,
+                                      margin_method="FRACTION", margin=1.0 / size, shape_method="AABB"), **pack})
     bpy.ops.object.mode_set(mode="OBJECT")
     used = area = 0.0
     for m, o in objs:
@@ -896,9 +888,7 @@ def bake_atlas(models, atlas, size, samples, out_dir):
 
 # --- final meshes and FBX ----------------------------------------------------------------------------------
 
-def final_object(name, src, to_local, material):
-    """Plain game mesh: one material, baked UVs, the approved shading normals, real back faces on cards,
-    geometry moved into its pivot frame by `to_local`."""
+def _final_arrays(src, to_local):
     me = src.data
     me.calc_normals_split()
     nl = len(me.loops)
@@ -927,6 +917,17 @@ def final_object(name, src, to_local, material):
         loops = np.arange(nl).reshape(-1, 3)[card][:, ::-1].ravel()
         nrm = np.concatenate([nrm, -nrm[loops]])
         uv = np.concatenate([uv, uv[loops]])
+    return co, tris, nrm, uv
+
+
+def final_object(name, src, to_local, material, merge=()):
+    """Plain game mesh: one material, baked UVs, the approved shading normals, real back faces on cards,
+    geometry moved into its pivot frame by `to_local`. `merge`: further working meshes that become part of it."""
+    co, tris, nrm, uv = _final_arrays(src, to_local)
+    for other in merge:
+        co2, tris2, nrm2, uv2 = _final_arrays(other, to_local)
+        tris = np.concatenate([tris, tris2 + len(co)])
+        co, nrm, uv = np.concatenate([co, co2]), np.concatenate([nrm, nrm2]), np.concatenate([uv, uv2])
     out = bpy.data.meshes.new(name)
     out.from_pydata(co.tolist(), [], tris.tolist())
     out.uv_layers.new(name="UVMap").data.foreach_set("uv", uv.ravel())
@@ -945,7 +946,7 @@ def export_model(m, materials, out_dir):
     root_name = m.name
     children = []
     if None in m.parts:
-        root = final_object(root_name, m.parts[None], shift, materials[m.atlas])
+        root = final_object(root_name, m.parts[None], shift, materials[m.atlas], getattr(m, "merge", ()))
     else:
         root = bpy.data.objects.new(root_name, None)
         el.pm.link(root)
