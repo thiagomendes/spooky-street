@@ -155,7 +155,12 @@ def ghostify(cut, col=hexc("EEF2FF"), a=0.55, edge=CANDY):
 
 def june_puppet(phase=0.0, d=200):
     """Tiny paper June running right: violet hat, silver cape flowing back, striped stockings."""
-    sp = Sprite(d, d, 16)
+    return Cut(june_puppet_sprite(phase, d))
+
+
+def june_puppet_sprite(phase=0.0, d=200, pad=16):
+    """The running June puppet as a Sprite (also baked into the game's PuppetAtlas by puppet_atlas.py)."""
+    sp = Sprite(d, d, pad)
     g = G(sp, d / 2, d / 2, d)
     swing = math.sin(phase * 2 * math.pi)
     # legs (striped stockings) behind the cape
@@ -180,7 +185,7 @@ def june_puppet(phase=0.0, d=200):
     g.shape([(-0.1, -0.27), (0.0, -0.52), (0.07, -0.47), (0.16, -0.27)], VIOLET)
     g.shape([(-0.08, -0.32), (0.13, -0.32), (0.15, -0.27), (-0.1, -0.27)], CANDY, ow=0.6)
     g.ell(0.03, -0.27, 0.19, 0.04, VIOLET)
-    return Cut(sp)
+    return sp
 
 
 def pointer_hand(d=170, alpha=255):

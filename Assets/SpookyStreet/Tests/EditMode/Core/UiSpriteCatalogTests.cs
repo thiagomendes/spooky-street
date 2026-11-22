@@ -80,6 +80,11 @@ namespace SpookyStreet.Tests.Core
             foreach (string path in Directory.GetFiles(UiFolder(), "*.png"))
             {
                 string name = Path.GetFileNameWithoutExtension(path);
+                if (name == Path.GetFileName(SpookyStreet.Core.Nonverbal.PuppetAtlasLayout.ResourcePath))
+                {
+                    continue; // the puppet sheet is cut by its own rect table (PuppetAtlasLayout), not the catalog
+                }
+
                 Assert.IsTrue(UiSpriteCatalog.TryFind(name, out _), name + ".png is not in UiSpriteCatalog");
             }
         }
