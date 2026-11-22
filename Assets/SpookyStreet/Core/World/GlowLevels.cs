@@ -14,7 +14,7 @@ namespace SpookyStreet.Core.World
 
         public const float AtticWindow = 4f;
         public const float SideWindow = 1.6f;
-        public const float Lamp = 2.2f;
+        public const float Lamp = 1.3f; // amber, never clipping to white next to the attic (CI run 27)
         public const float JackFace = 1.8f;
         public const float PaperBatEdge = 1.2f;
         public const float Default = 1.5f;

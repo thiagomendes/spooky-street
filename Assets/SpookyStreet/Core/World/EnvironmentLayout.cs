@@ -200,7 +200,7 @@ namespace SpookyStreet.Core.World
             new Placement(PaperBat, 2.45f, 3.35f, -9.95f, 25f, detail: false),
             new Placement(PaperBat, -2.1f, 2.45f, 8.6f, 15f, detail: false),
             new Placement(PaperBat, 2.35f, 2.3f, 8.7f, -25f, detail: false),
-            new Placement(PaperBat, -3.4f, 2.7f, 1.0f, 30f, detail: false),
+            new Placement(PaperBat, -2.6f, 3.0f, -1.6f, 30f, detail: false), // clear of the maple crown
             new Placement(PaperBat, -0.9f, 2.0f, 4.7f, -10f, detail: false),
         };
 
