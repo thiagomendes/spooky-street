@@ -154,4 +154,65 @@ It wires the house v3 models into the game, following D24 and D24.1:
 
 ## Evidence
 
-(CI runs and frame review: see below.)
+- **Local checks.** `./tools/check-local.sh` passed. `dotnet test tools/core-tests`: 392 passed.
+- **CI run 85** (`908ea17`). It compiled. EditMode 415/415, PlayMode 66/67, visual 6/6.
+  - The route walk stopped 0.1 m short of the dormer zone (the test's 0.12 m arrival tolerance).
+  - `31_threshold_page` showed only Pip's cape: with Pip in the doorway the shoulder was outside the room's air, so
+    the boom collapsed. Fix: the doorway and the window's reveal count as camera air, and the latched leaf is now a
+    camera solid.
+- **CI runs 86 and 87.**
+  - The route walk still missed a zone. Pip's capsule skin stops it about 0.1 m before the body. The outside dormer
+    zone now also covers the bridge end (arrival moved out to x −4.1), and the route walks deeper into the doorway.
+  - `32_cabin_inside` showed a black band where the roof is. A warm cabin lamp now lights the closed roof, so it reads
+    as boards.
+  - The page got an inked cut edge and a warmer bone tint.
+- **CI run 88** (`16f3b15`, run id 45066297319): **green.** EditMode 416/416, PlayMode 67/67 (`CaseInteriorTests` 7/7,
+  `InteriorFramingTests` 3/3, `CollisionTests` 5/5), visual 6/6.
+
+**Frames** (`docs/evidence/s002/*_run88.jpg`, reviewed by eye):
+
+- `18_treehouse_route`: unchanged route. The closed cabin with its bay sits on the maple.
+- `19_attic_june`:
+  - June sits on her stool beside Pip on the star rug.
+  - The round window and the owl lantern are behind them, and the alcove arch and stair rail on the right.
+  - The roof slopes and garlands close the top.
+  - Nothing is cut away and no void shows.
+- `23_hall_door`: the lens is in the hall, behind Pip. Both street windows and the open door show their painted night
+  views. The inner leaf is swung open, and the lamps and the frieze are in frame. The hum caption is on two lines.
+- `29_stair`: Pip on the lower flight, seen from behind and above. The bat cut-outs are on the wall, and the balustrade
+  and the framed pictures are on the stair wall. No void.
+- `20_workshop_cutaway`:
+  - The nook from the hall, with `NookWall` hidden.
+  - The cam, the striped push rod, the crank and Kit's photo are in frame.
+  - The inset shows the rooftop owl on the street.
+  - The nook is dim at the top.
+- `31_threshold_page`:
+  - Mid page-turn on the way out.
+  - Pip stands in the doorway against the painted porch.
+  - The bone page comes in from the right, tilted, with a stitched edge, a highlight on the curl and a cast shadow.
+  - The open-door stamp is in a stitched ring.
+
+  It reads as paper (about 4/5).
+- `30_exterior_cards`:
+  - The exterior at street scale. Warm cards glow in the ground-floor windows, and the door is open on its painted
+    hall.
+  - The round attic window stays clearly the brightest point.
+  - Pip is on the porch.
+- `32_cabin_inside`: inside the closed cabin with the short boom. The lit roof boards, the bay's lookout window and its
+  lamp are in frame, with the trunk on the right.
+- `21_finale`: the arrival sightline. June and Kit are on the porch, and there is no leftover caption.
+
+**Not run:** device. No device or TestFlight pass is claimed.
+
+## Remaining gaps
+
+- **Arrival points.** They sit 0.3–0.8 m further in than the house v3 table, so the camera has its boom at once.
+  Pip appears a step inside the room, not on the threshold.
+- **Cabin framing.** The cabin's 1.0–1.2 m boom frames Pip almost full height. Corners near the trunk may swing the
+  camera past 90° (cheaper there by design).
+- **Drawing cost.** The street keeps drawing while Pip is in the interior; nothing culls it but distance and the
+  walls. If the frame budget needs it, hide the street while inside.
+- **Workshop lighting.** The nook is dim at the top of the cutaway frame. A brighter nook lamp would help.
+- **The page in captures.** It looks a little grey in captures: they render the UI through the camera's colour
+  grading. On a device the page is an overlay.
+- **Device.** Not run. The page-turn's timing and feel need a phone.
