@@ -54,3 +54,6 @@ __pycache__/
 tools/core-lib/bin/
 tools/core-lib/obj/
 !/tools/core-lib/*.csproj
+
+# Agent worktrees created by Claude Code sessions (local only).
+.claude/worktrees/

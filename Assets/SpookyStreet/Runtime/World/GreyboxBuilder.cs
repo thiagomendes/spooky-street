@@ -285,7 +285,8 @@ namespace SpookyStreet.World
             var sky = new Texture2D(width, height, TextureFormat.RGB24, false)
             {
                 name = "NightSky",
-                wrapMode = TextureWrapMode.Clamp,
+                wrapModeU = TextureWrapMode.Repeat,
+                wrapModeV = TextureWrapMode.Clamp,
                 filterMode = FilterMode.Bilinear,
             };
             var pixels = new Color32[width * height];
@@ -313,13 +314,72 @@ namespace SpookyStreet.World
 
             sky.SetPixels32(pixels);
             sky.Apply(false, true);
-            var card = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            card.name = "SkyCard";
-            Object.Destroy(card.GetComponent<Collider>());
-            card.transform.SetParent(_root, false);
-            card.transform.localPosition = new Vector3(0f, 24f, 34f);
-            card.transform.localScale = new Vector3(170f, 52f, 1f);
-            card.GetComponent<Renderer>().sharedMaterial = _materials.Unlit(sky);
+
+            // A closed dome instead of a single card: the night sky surrounds the block from every camera angle
+            // (owner feedback: the card left the sky unfinished when looking sideways or up while gliding).
+            var dome = new GameObject("SkyDome", typeof(MeshFilter), typeof(MeshRenderer));
+            dome.transform.SetParent(_root, false);
+            dome.transform.localPosition = SkyDomeCentre;
+            dome.GetComponent<MeshFilter>().sharedMesh = BuildSkyDomeMesh(SkyDomeRadius);
+            var renderer = dome.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = _materials.Unlit(sky);
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+        }
+
+        /// <summary>Sky dome centre: under the middle of the lawn ring so every neighbour house sits inside it.</summary>
+        public static readonly Vector3 SkyDomeCentre = new Vector3(0f, -3f, 8f);
+
+        /// <summary>Inside the fog's soft range, outside the block, the neighbours and the moon.</summary>
+        public const float SkyDomeRadius = 52f;
+
+        /// <summary>
+        /// Inward-facing hemisphere (slightly below the horizon so the rim hides under the ground). U wraps around
+        /// the azimuth, so the star scatter repeats seamlessly; V runs from the horizon glow to the zenith.
+        /// </summary>
+        public static Mesh BuildSkyDomeMesh(float radius, int segments = 48, int rings = 16)
+        {
+            const float bottom = -8f * Mathf.Deg2Rad;
+            var vertices = new Vector3[(segments + 1) * (rings + 1)];
+            var uvs = new Vector2[vertices.Length];
+            for (int r = 0; r <= rings; r++)
+            {
+                float v = r / (float)rings;
+                float elevation = Mathf.Lerp(bottom, Mathf.PI * 0.5f, v);
+                float y = Mathf.Sin(elevation) * radius;
+                float ring = Mathf.Cos(elevation) * radius;
+                for (int s = 0; s <= segments; s++)
+                {
+                    float u = s / (float)segments;
+                    float azimuth = u * Mathf.PI * 2f;
+                    int i = r * (segments + 1) + s;
+                    vertices[i] = new Vector3(Mathf.Sin(azimuth) * ring, y, Mathf.Cos(azimuth) * ring);
+                    uvs[i] = new Vector2(u * 3f, Mathf.Clamp01((elevation - bottom * 0.25f) / (Mathf.PI * 0.5f)));
+                }
+            }
+
+            var triangles = new int[segments * rings * 6];
+            int t = 0;
+            for (int r = 0; r < rings; r++)
+            {
+                for (int s = 0; s < segments; s++)
+                {
+                    int a = r * (segments + 1) + s;
+                    int b = a + segments + 1;
+                    // Wound to face inward (the camera is inside the dome).
+                    triangles[t++] = a;
+                    triangles[t++] = b;
+                    triangles[t++] = a + 1;
+                    triangles[t++] = a + 1;
+                    triangles[t++] = b;
+                    triangles[t++] = b + 1;
+                }
+            }
+
+            var mesh = new Mesh { name = "SkyDome", vertices = vertices, uv = uvs, triangles = triangles };
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         private GameObject Disc(string name, Vector3 centre, float diameter, Material material)
