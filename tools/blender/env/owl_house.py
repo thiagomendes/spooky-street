@@ -40,7 +40,7 @@ def owl_puppet(b, P, craft, height=0.95):
     body = craft.timber(H(0xC9762B), "Z", wear=0.35, bare=E["timber_dark"])
     wing = craft.timber(E["plum"], "Z", wear=0.35, bare=E["timber_dark"])
     paint = craft.paint()
-    b.prism(body, owl_outline(height, 3), 0.22, T(0, -0.11, 0), bevel=0.035, tint=1.0)
+    b.prism(body, owl_outline(height, 3), 0.22, T(0, -0.11, 0), bevel=0.012, tint=1.0)
     chest = [(-12 * u, 30 * u), (12 * u, 30 * u), (17 * u, 14 * u), (0, 2 * u), (-17 * u, 14 * u)]
     b.prism(P["candy"], chest, 0.03, T(0, -0.135, 0), bevel=0.01, tint=1.0)
     for row in range(3):  # painted feather chevrons
@@ -62,7 +62,7 @@ def owl_puppet(b, P, craft, height=0.95):
         for k in range(3):  # toes over the perch bar
             b.box(paint, (0.028, 0.11, 0.035), (s * 9 * u + (k - 1) * 0.034, -0.085, 0.012), bevel=0.01, tint=lc(E["orange"]))
     for s in (1, -1):  # the V brow
-        b.box(wing, (24 * u, 0.03, 5.5 * u), (s * 10.5 * u, -0.15, 62.5 * u), bevel=0.01, rot=R("Y", -s * 32), tint=0.95)
+        b.box(wing, (21 * u, 0.03, 5.5 * u), (s * 12 * u, -0.185 - 0.004 * s, 63.5 * u), bevel=0.01, rot=R("Y", s * 30), tint=1.25)
     b.lathe(paint, [(0.0, 0.0), (5.5 * u, 0.0), (0.0, 0.085)], 4, T(0, -0.11, 40 * u) @ R("X", 115) @ R("Z", 45), tint=lc(E["orange"]))
 
 

@@ -275,6 +275,7 @@ def build_paper_bat(craft):
     wire = [(0.0, 0.13, 0.03), (0.0, 0.14, 0.2), (0.0, 0.12, 0.32), (0.0, 0.092, 0.39)]
     for a, c in zip(wire, wire[1:]):
         b.rod(craft.paint(), a, c, 0.004, 5, lc(E["bone_dim"]))
+    b.disc(craft.glow(H(0x5A4690), 0.3), 0.17, 0.004, T(0, 0.16, 0.41), segs=24, tint=1.0)  # soft halo card behind (FX)
     for k in range(3):  # sparkle flecks of the pick-up glow
         a = 2.1 * k + 0.5
         b.poly(craft.glow(E["candy"], 3.0), [(0.2 * math.cos(a) - 0.008, 0.06, 0.42 + 0.14 * math.sin(a)), (0.2 * math.cos(a) + 0.008, 0.06, 0.42 + 0.14 * math.sin(a)),
