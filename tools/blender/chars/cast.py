@@ -658,12 +658,13 @@ def main():
     bpy.context.scene.eevee.taa_render_samples = 32  # software GL: keeps the ten tiles to a few minutes
     tmp = os.path.splitext(out)[0]
     full, faces = [], []
-    face_width = sum(round(entry[2] * PIXELS_PER_METRE) for entry in LINEUP) // 5
+    total = sum(round(entry[2] * PIXELS_PER_METRE) for entry in LINEUP)
     for name, _build, width, centre in LINEUP:
         P, x = placed[name]
         solo(name)
         full.append(co.render_view(cam, *lineup_view(x, centre), round(width * PIXELS_PER_METRE), 800,
                                    f"{tmp}_{name}.png"))
+        face_width = total // 5 + (total % 5 if name == GROUPS[-1] else 0)  # the two rows end flush
         faces.append(co.render_view(cam, *portrait_view(P, x, 0.08 if name == "Kit" else 0.0), face_width, 540,
                                     f"{tmp}_{name}_face.png"))
     # Inset: Aunt Kit's owl brooch up close, in the corner of her portrait.
