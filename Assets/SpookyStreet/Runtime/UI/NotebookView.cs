@@ -272,12 +272,12 @@ namespace SpookyStreet.UI
             for (int d = 0; d <= index; d++)
             {
                 var dot = UiFactory.Sprite(page, "Order" + d, UiFactory.Baked(UiSpriteCatalog.FeltDiscOrange), Color.white,
-                    topLeft, new Vector2(52f + d * 26f, -56f), new Vector2(30f, 30f));
+                    topLeft, new Vector2(46f + d * 20f, -56f), new Vector2(22f, 22f));
                 UiFactory.InkShadow(dot, new Vector2(1f, -2f), 0.5f);
             }
 
             string[] chips = ChipsFor(question.Definition.Id);
-            float chipX = 76f + index * 26f + 40f;
+            const float chipX = 140f;
             for (int c = 0; c < chips.Length; c++)
             {
                 var chip = UiFactory.PaperTag(page, "Chip" + c, null, 20, topLeft, new Vector2(chipX + c * 74f, -56f),
@@ -395,15 +395,15 @@ namespace SpookyStreet.UI
             IReadOnlyCollection<string> seen)
         {
             var row = UiFactory.Rect(page, "Stickers");
-            UiFactory.Place(row, new Vector2(0f, 0f), new Vector2(40f, 70f), new Vector2(PageSize.x - 80f, 100f),
+            UiFactory.Place(row, new Vector2(0f, 0f), new Vector2(30f, 66f), new Vector2(PageSize.x - 60f, 100f),
                 new Vector2(0f, 0.5f));
             float x = 0f;
             foreach (var annotation in annotations)
             {
                 float angle = (annotation.Id.GetHashCode() & 3) - 1.5f;
                 string[] art = StickerArt(annotation.Id);
-                float width = 40f + art.Length * 64f;
-                if (x + width > PageSize.x - 80f)
+                float width = 16f + art.Length * 46f;
+                if (x + width > PageSize.x - 60f)
                 {
                     break;
                 }
@@ -411,12 +411,12 @@ namespace SpookyStreet.UI
                 if (annotation.Found)
                 {
                     var sticker = UiFactory.PaperTag(row, "Sticker", null, 20, new Vector2(0f, 0.5f),
-                        new Vector2(x + width * 0.5f, 0f), new Vector2(width, 88f), angle, Color.white);
+                        new Vector2(x + width * 0.5f, 0f), new Vector2(width, 72f), angle, Color.white);
                     sticker.raycastTarget = true;
                     for (int a = 0; a < art.Length; a++)
                     {
                         var img = UiFactory.Sprite(sticker.transform, "Art" + a, PuppetAtlas.Get(art[a]), Color.white,
-                            new Vector2(0f, 0.5f), new Vector2(20f + 32f + a * 64f, 0f), new Vector2(64f, 64f));
+                            new Vector2(0f, 0.5f), new Vector2(8f + 23f + a * 46f, 0f), new Vector2(46f, 46f));
                         img.preserveAspect = true;
                     }
 
@@ -458,11 +458,11 @@ namespace SpookyStreet.UI
                 else
                 {
                     var slot = UiFactory.Sprite(row, "EmptySlot", null, UiFactory.WithAlpha(Graphite, 0.08f),
-                        new Vector2(0f, 0.5f), new Vector2(x + width * 0.5f, 0f), new Vector2(width, 88f));
+                        new Vector2(0f, 0.5f), new Vector2(x + width * 0.5f, 0f), new Vector2(width, 72f));
                     UiFactory.StitchLayer(slot.transform, UiFactory.WithAlpha(Graphite, 0.45f));
                 }
 
-                x += width + 16f;
+                x += width + 9f;
             }
         }
 

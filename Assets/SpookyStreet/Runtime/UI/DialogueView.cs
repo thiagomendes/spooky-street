@@ -187,8 +187,9 @@ namespace SpookyStreet.UI
                 new Vector2(70f - 500f - 6f, 182f), new Vector2(188f, 188f));
             _portrait.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -3f);
             UiFactory.InkShadow(_portrait, new Vector2(4f, -6f), 0.55f);
-            UiFactory.Sprite(_portrait.transform, "Ring", UiFactory.Baked(UiSpriteCatalog.StitchRing),
+            var ring = UiFactory.Sprite(_portrait.transform, "Ring", UiFactory.Baked(UiSpriteCatalog.StitchRing),
                 Palette.CandyCornYellow, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(188f, 188f));
+            UiFactory.Stretch(ring.rectTransform); // follows the disc's size on the card and on the bubble
             _initial = UiFactory.Label(_portrait.transform, "Initial", null, 104, TextAnchor.MiddleCenter, UiFactory.Ink,
                 UiFactory.DisplayFont);
             UiFactory.Stretch(_initial.rectTransform);
