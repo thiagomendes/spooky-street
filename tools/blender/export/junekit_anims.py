@@ -19,7 +19,7 @@ Pip's vocabulary:
   both   hand<S>_twist              pronation of the hand at the cuff
 
 The exporter calls `bind(rig)` first: seated and pointing poses are fitted to the skeleton with a small numeric
-IK (`reach`). All clips are in place.
+IK (`reach`). All clips are in place; June's Walk is planted for JUNE_WALK_SPEED (the game moves her root).
 """
 import math
 
@@ -409,6 +409,93 @@ def june_point(u):
     return plant(p)
 
 
+# Walk: the game moves her root along the path at JUNE_WALK_SPEED; the clip is in place. One cycle is two
+# steps (left heel strikes on frame 0, right on frame 15), so she covers JUNE_WALK_STRIDE per cycle.
+JUNE_WALK_FRAMES = 30
+JUNE_WALK_SPEED = 1.1  # m/s the feet are planted for
+JUNE_WALK_STRIDE = JUNE_WALK_SPEED * JUNE_WALK_FRAMES / FPS  # metres per cycle (two steps of half that)
+JUNE_WALK_DUTY = 0.56  # share of the cycle a foot is on the ground (0.06 of double support after each strike)
+JUNE_WALK_TRACK = 0.052  # half the distance between the two lines of footprints
+JUNE_WALK_LEAD = 0.062  # the contact patch runs from this far short of symmetric about the hips (she leans in)
+JUNE_WALK_STRIKE, JUNE_WALK_PUSH = -17.0, 56.0  # foot pitch at heel strike and at toe-off (toes down +)
+
+
+def _june_walk_foot(S, s, q):
+    """Ankle position, foot pitch and toe bend of side S at phase q of its own cycle (0 = heel strike).
+    On the ground the foot's contact (the heel while the toes are up, then the whole sole, then the toes with
+    the heel peeling off) travels straight back at exactly the walk speed, so nothing slides."""
+    ankle, toe_j = RIG["Foot_" + S][1], RIG["Toe_" + S][1]
+    heel = next(pt for b, pt in RIG["_sole"][S] if b == "Foot_" + S)
+    travel = JUNE_WALK_STRIDE * JUNE_WALK_DUTY
+    c0 = -travel / 2 + JUNE_WALK_LEAD
+    x = s * JUNE_WALK_TRACK
+
+    def planted(c, pitch):
+        pivot = heel if pitch < 0 else toe_j
+        at = Vector((0.0, c + pivot.y - ankle.y, pivot.z)) + rx(pitch) @ (ankle - pivot)
+        return Vector((x, at.y, at.z))
+
+    if q < JUNE_WALK_DUTY:
+        t = q / JUNE_WALK_DUTY
+        pitch = JUNE_WALK_STRIKE * (1 - smooth(t / 0.17)) + JUNE_WALK_PUSH * max(0.0, (t - 0.5) / 0.5) ** 1.6
+        return planted(c0 + travel * t, pitch), pitch, max(0.0, pitch)
+    t = (q - JUNE_WALK_DUTY) / (1 - JUNE_WALK_DUTY)
+    a, b = planted(c0 + travel, JUNE_WALK_PUSH), planted(c0, JUNE_WALK_STRIKE)
+    m = JUNE_WALK_STRIDE * (1 - JUNE_WALK_DUTY)  # leaves and meets the ground at the ground's own speed
+    t2, t3 = t * t, t * t * t
+    y = (2 * t3 - 3 * t2 + 1) * a.y + (t3 - 2 * t2 + t) * 0.1 * m + (-2 * t3 + 3 * t2) * b.y + (t3 - t2) * 0.3 * m
+    pitch = JUNE_WALK_PUSH + (JUNE_WALK_STRIKE - JUNE_WALK_PUSH) * smooth(t / 0.9)
+    toe = JUNE_WALK_PUSH * (1 - smooth(t / 0.35))
+    z = a.z + (b.z - a.z) * smooth(t) + 0.03 * math.sin(math.pi * min(1.0, t / 0.8)) ** 2
+    # never through the floor: lift the ankle until the lowest point of the sole clears it
+    low = min((rx(pitch) @ (heel - ankle)).z, (rx(pitch) @ (toe_j - ankle)).z - toe_j.z,
+              (rx(pitch) @ (toe_j - ankle) + rx(pitch - toe) @ Vector((0.0, -0.06, -toe_j.z))).z)
+    z = max(z, 0.014 * math.sin(math.pi * t) - low)
+    return Vector((x, y, z)), pitch, toe
+
+
+def june_walk(u):
+    """A cheerful kid's walk, in place: 1.0 s per cycle of two steps, planted for JUNE_WALK_SPEED. Left heel
+    strikes at u = 0. Arms swing opposite the legs under the cloak (the side panels swing with them), a small
+    bounce, the cape trailing behind and rippling a beat late, braid and hat tip bobbing."""
+    a = TAU * u
+    step = 2 * a  # one turn per step
+    up = -math.cos(step - TAU * 0.09)  # highest as each leg passes under her, lowest just after a heel strikes
+    p = pose(feet_world=1.0, ground=0.0, head_world=0.0)
+    p.update(hz=-0.018 + 0.012 * up, hx=0.011 * math.sin(a - 0.5), hy=-0.012,
+             hip_pitch=3.0, hip_yaw=-5.5 * math.cos(a), hip_roll=2.2 * math.sin(a - 0.3),
+             spine_pitch=2.0 + 1.0 * up, spine_yaw=4.5 * math.cos(a), spine_roll=-1.6 * math.sin(a - 0.3),
+             chest_pitch=0.5, chest_yaw=5.5 * math.cos(a - 0.2), chest_roll=-1.0 * math.sin(a - 0.3),
+             neck_pitch=-2.0, head_pitch=-5.0 - 1.6 * math.cos(step - TAU * 0.75), head_yaw=-4.0 * math.cos(a - 0.2),
+             head_roll=3.2 * math.sin(a - 0.6),
+             shoulderL=1.5 + 1.5 * math.cos(a), shoulderR=1.5 - 1.5 * math.cos(a),
+             armL_fwd=3 - 19 * math.cos(a - 0.25), armR_fwd=3 + 19 * math.cos(a - 0.25),
+             armL_out=-1, armR_out=-1, armL_twist=8, armR_twist=8,
+             elbowL=20 - 10 * math.cos(a - 0.7), elbowR=20 + 10 * math.cos(a - 0.7),
+             handL_pitch=5 * math.sin(a - 0.9), handR_pitch=-5 * math.sin(a - 0.9), fingersL=12, fingersR=12,
+             cape_arm=0.75,
+             braid1_x=3 + 2.5 * math.cos(step - TAU * 0.85), braid2_x=5 + 4.5 * math.cos(step - TAU * 1.0),
+             braid1_y=2.0 * math.sin(a - 1.2), braid2_y=4.0 * math.sin(a - 1.7),
+             hat_back=5 + 4.5 * math.cos(step - TAU * 0.9), hat_side=3.5 * math.sin(a - 1.4))
+    # the cape trails: leaning back from the collar, more toward the hem, each level a beat later
+    for i in (1, 2, 3):
+        ripple = math.cos(step - TAU * 0.3 + 0.75 * (3 - i))  # the hem is furthest back as a heel kicks up
+        p[f"capeM{i}_back"] = (6.0, 12.0, 17.0)[i - 1] + 2.0 * i * ripple
+        for S, s in SIDES:
+            mine = math.cos(a - 0.5 * i - (0.0 if S == "L" else math.pi))  # behind its own leg's back-swing
+            p[f"cape{S}{i}_back"] = (3.0, 7.0, 11.0)[i - 1] + 1.2 * i * ripple + 1.5 * i * mine
+            p[f"cape{S}{i}_flare"] = (1.5, 3.5, 5.5)[i - 1] + 0.8 * i * math.cos(step - TAU * 0.4 + 0.75 * (3 - i))
+    p["cape_sway"] = 2.2 * math.sin(a - 1.1)
+    for S, s, q in (("L", 1.0, u % 1.0), ("R", -1.0, (u + 0.5) % 1.0)):
+        at, pitch, toe = _june_walk_foot(S, s, q)
+        p[f"foot{S}"], p[f"toe{S}"] = pitch, toe
+        hip = point(p, "UpperLeg_" + S)
+        p[f"leg{S}_fwd"] = math.degrees(math.atan2(hip.y - at.y, hip.z - at.z)) + 12.0
+        p[f"knee{S}"] = 24.0
+        reach(p, [f"leg{S}_fwd", f"leg{S}_out", f"knee{S}"], "Foot_" + S, at, steps=30)
+    return p
+
+
 # --- Aunt Kit ---------------------------------------------------------------------------------------------
 # She carries the crystal-ball lantern in her right hand, so her left does the talking and waving; in OpenBooth
 # both arms open wide and the lantern goes up.
@@ -522,6 +609,8 @@ JUNE_CLIPS = [
     ("Wave", june_wave, 45, False, 0.0, "standing: right-hand wave; starts and ends on Idle frame 0"),
     ("Point", june_point, 48, False, 0.0,
      "standing: right hand points ahead and down into the house; on target frames 14-34; starts/ends on Idle 0"),
+    ("Walk", june_walk, JUNE_WALK_FRAMES, True, JUNE_WALK_SPEED,
+     "in place, 1.1 m per cycle (two 0.55 m steps): left heel strikes on frame 0, right on frame 15"),
 ]
 KIT_CLIPS = [
     ("Idle", kit_idle, 90, True, 0.0, "standing: weight shift, breathing, lantern swaying in her right hand"),

@@ -100,6 +100,9 @@ namespace SpookyStreet.UI
         private const float RestY = 30f;
         private const float RaisedY = 300f;
 
+        /// <summary>Height of the raised strip; the speech bubble (non-verbal UX) sets it above itself.</summary>
+        public float RaisedHeight { get; set; } = RaisedY;
+
         /// <summary>Camera used for the direction cue (the gameplay camera).</summary>
         public Camera ViewCamera { get; set; }
 
@@ -134,7 +137,7 @@ namespace SpookyStreet.UI
                 _raised = value;
                 if (_root != null)
                 {
-                    _root.anchoredPosition = new Vector2(0f, value ? RaisedY : RestY);
+                    _root.anchoredPosition = new Vector2(0f, value ? RaisedHeight : RestY);
                 }
             }
         }

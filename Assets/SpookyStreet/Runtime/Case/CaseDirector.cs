@@ -104,6 +104,12 @@ namespace SpookyStreet.Case
         public CutawayView Cutaway { get; private set; }
         public FinaleView Finale { get; private set; }
 
+        /// <summary>The animated non-verbal UX (D23): replays, bat trail, reading settings (NonverbalLayer).</summary>
+        public NonverbalLayer Nonverbal { get; private set; }
+
+        /// <summary>The witness in the current conversation (null otherwise).</summary>
+        public Witness Talking => _talking;
+
         /// <summary>The world view the stage shows (derived from the facts).</summary>
         public CaseWorldView View => _view;
 
@@ -180,6 +186,7 @@ namespace SpookyStreet.Case
             _ui.NewGameButton.onClick.AddListener(OnNewGame);
 
             LoadSave();
+            Nonverbal = NonverbalLayer.Create(this, game);
             _flow.StateChanged += OnStateChanged;
         }
 
@@ -195,7 +202,7 @@ namespace SpookyStreet.Case
             Dialogue.Finished += OnDialogueFinished;
             Notebook = NotebookView.Create(root);
             Notebook.State = () => State;
-            Notebook.RequestHint = () => _hints.Request(State);
+            Notebook.RequestHint = RequestHint;
             Notebook.ReplayRequested = ConfirmReplay;
             Notebook.Closed += () => SetModal(false);
             var safe = UiFactory.Stretch(UiFactory.Rect(root, "CaptionSafeArea"));
@@ -360,7 +367,20 @@ namespace SpookyStreet.Case
             Captions.Clear();
             Bench.End();
             ApplyWorld();
+            Nonverbal?.OnCaseReset();
         }
+
+        /// <summary>The radio (HUD disc or notebook): the next hint for the current objective (returns its key).</summary>
+        public string RequestHint()
+        {
+            var tier = _hints.NextTier(State);
+            string key = _hints.Request(State);
+            Nonverbal?.OnHintGiven(tier, State);
+            return key;
+        }
+
+        /// <summary>The tier the radio gives next.</summary>
+        public HintTier NextHintTier => _hints.NextTier(State);
 
         // ------------------------------------------------------------------------------------------------- title
 

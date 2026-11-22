@@ -175,6 +175,8 @@ attic sill, attic, foyer and workshop.
 
 - There is no walk clip for June (her clips are Idle, Talk, KneeTap, Wave and Point). She glides down her authored
   path on Idle at 1.3 m/s. No art was invented.
+  The clip now exists (`docs/S002-june-walk.md`: `Walk`, planted for 1.1 m/s); playing it on the path is still to
+  be wired.
 - There are no ribbons in the committed art, so nothing twitches. There is no audio for the knocks yet; captions carry
   them.
 - The treehouse platform deck collider belongs to the parallel `fix/collisions` branch. Until that merges, the cabin
