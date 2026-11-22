@@ -218,12 +218,18 @@ namespace SpookyStreet.Core.World
 
         /// <summary>
         /// True when Pip's feet at (x, y, z) are on the interior's walkable area: in the shell's plan, between the hall
-        /// floor and the roof, over a slab top within reach of the feet (at the centre or anywhere under the capsule's
+        /// floor and the roof (never on top of a roof plate), over a slab top within reach of the feet (at the centre or anywhere under the capsule's
         /// rim) and not sunk into a solid.
         /// </summary>
         public static bool OnWalkableArea(float x, float y, float z, bool doorOpen)
         {
             if (!CaseRouteLayout.Inside(x, z) || y < CaseRouteLayout.FloorY - 0.4f || y > CaseRouteLayout.ApexY)
+            {
+                return false;
+            }
+
+            // Upstairs the feet stay under the roof's inner faces: on top of a roof plate is outside the shell.
+            if (y > CaseRouteLayout.LoftY - 0.3f && !InteriorSafety.InsideShell(x, y + 0.3f, z))
             {
                 return false;
             }

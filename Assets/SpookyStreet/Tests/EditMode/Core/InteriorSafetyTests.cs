@@ -362,6 +362,10 @@ namespace SpookyStreet.Tests.Core
             // Out of the shell entirely (beside the interior, in the air).
             t = RunUntilRescue(rescue, 60f, 3f, CaseRouteLayout.InnerMaxX + 1.5f, 3f, Ifz + 3f, false, 0f, out reason);
             Assert.AreEqual(RescueReason.OffWalkable, reason);
+            // On top of the roof (a glitch out through the slope): outside the shell, off the walkable area.
+            float roofTop = CaseRouteLayout.KneeY + (CaseRouteLayout.InnerMaxX - 1.5f) * CaseRouteLayout.RoofSlope + 0.25f;
+            Assert.IsFalse(InteriorRescue.OnWalkableArea(1.5f, roofTop, Ifz + 3f, false), "on the roof plate");
+            Assert.IsTrue(InteriorRescue.OnWalkableArea(2.95f, 4.72f, Ifz + 0.66f, false), "on the crates under the slope");
             // Sunk into the trunk by the front wall.
             Assert.IsFalse(InteriorRescue.OnWalkableArea(-1.3f, CaseRouteLayout.LoftY, Ifz + 0.5f, false), "in the trunk");
             // A jump over the open attic floor is fine (not grounded, over the shell).

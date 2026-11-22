@@ -153,7 +153,8 @@ namespace SpookyStreet.Tests.PlayMode
                     start = new Vector3(-4.6f, 2.55f, wz + 0.12f);
                     break;
                 case Approach.Glide:
-                    start = new Vector3(-5.0f, 4.0f, wz);
+                    // Dropping in from above the shed end of the bridge, the cape spread after the fall begins.
+                    start = new Vector3(-6.5f, 5.0f, wz);
                     break;
                 case Approach.HeldJump:
                     start = new Vector3(-3.95f, 2.55f, wz);
@@ -169,7 +170,7 @@ namespace SpookyStreet.Tests.PlayMode
             Game.Pip.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
             Director.CutCamera();
             Director.Travel.ResetTracker();
-            yield return Wait(approach == Approach.Glide ? 0.25f : 0.8f);
+            yield return Wait(approach == Approach.Glide ? 0.45f : 0.8f);
             Assert.IsTrue(approach == Approach.Glide || Director.Travel.Tracker.Armed, $"{approach}: armed before the window");
             int before = Director.Travel.Crossings;
             if (approach == Approach.Glide)
@@ -306,7 +307,8 @@ namespace SpookyStreet.Tests.PlayMode
 
         /// <summary>
         /// The safety net in the real scene: Pip pushing into the trunk by the front wall for several seconds, and Pip
-        /// out of the shell beside the interior, are both set down on a safe anchor (with a paper puff).
+        /// standing on top of the attic's roof plate (outside the shell), are both set down on a safe anchor (with a
+        /// paper puff).
         /// </summary>
         [UnityTest]
         [Timeout(120000)]
@@ -348,19 +350,21 @@ namespace SpookyStreet.Tests.PlayMode
             yield return SkipModals();
             Assert.IsFalse(Director.ModalOpen, "no conversation holds Pip");
 
-            // Out of the shell (beside the interior, in its band): Pip falls with nothing below; the safety net sets
-            // Pip down inside before the street's fall return would.
-            var beside = new Vector3(CaseRouteLayout.InnerMaxX + 1.5f, CaseRouteLayout.LoftY, CaseRouteLayout.InteriorFrontZ + 3f);
-            Game.Pip.Teleport(beside);
+            // Off the walkable area: Pip on top of the attic's roof plate (outside the shell, as if glitched out
+            // through the slope). The safety net sets Pip down inside. (A fall out of the shell is caught first by
+            // the fall return to the last safe ground, which is inside too.)
+            float roofTop = CaseRouteLayout.KneeY + (CaseRouteLayout.InnerMaxX - 1.5f) * CaseRouteLayout.RoofSlope + 0.25f;
+            var onRoof = new Vector3(1.5f, roofTop + 0.05f, CaseRouteLayout.InteriorFrontZ + 3f);
+            Game.Pip.Teleport(onRoof);
             float until = Time.time + 2f;
             while (Director.Rescues == 1 && Time.time < until)
             {
                 yield return null;
             }
 
-            Assert.AreEqual(2, Director.Rescues, $"out of the shell: the safety net moves Pip (Pip at " +
-                $"{Game.Pip.transform.position:F2}, off for {Director.Rescue.OffTime:F2} s, input " +
-                $"{Game.Controls.GameplayEnabled}, modal {Director.ModalOpen}, safe returns {Game.Pip.SafeReturns})");
+            Assert.AreEqual(2, Director.Rescues, $"on the roof: the safety net moves Pip (Pip at " +
+                $"{Game.Pip.transform.position:F2}, off for {Director.Rescue.OffTime:F2} s, grounded {Game.Pip.Grounded}, " +
+                $"safe returns {Game.Pip.SafeReturns})");
             Assert.AreEqual(RescueReason.OffWalkable, Director.LastRescue);
             pip = Game.Pip.transform.position;
             Assert.IsTrue(CaseRouteLayout.Inside(pip.x, pip.z), "set down inside the interior");
