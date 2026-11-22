@@ -7,6 +7,10 @@ scalars in degrees / metres, `solve` turns it into one rotation per bone as a de
   Bea    pumpkin_*   the costume is one rigid shell on the `Pumpkin` bone; it follows the chest only partly
                      (`pumpkin_follow`), wobbles and bounces (`pumpkin_z`, metres)
          tail_*      the ponytail (`Ponytail_1`, `Ponytail_2`)
+         index<S>    her index finger (`Index_<S>`) relative to the other three: it curls with `fingers<S>`
+                     unless this undoes it, which is how she points with one finger
+         tips<S>     the second joint of those three fingers (`FingerTips_<S>`): with `fingers<S>` it makes a fist
+         thumb<S>_tuck  0..1 lays the thumb under the index finger, against the curled middle finger
   both   hand<S>_twist  pronation of the hand at the cuff
   Vale   pot_*       the cauldron hangs plumb from the right hand (`Cauldron`, like Pip's pail)
          b<End>_*    five loose bandage ends that hang plumb and sway (`Bandage_<End>`)
@@ -36,6 +40,9 @@ DEFAULTS.update({
 })
 for _s in "LR":
     DEFAULTS[f"hand{_s}_twist"] = 0.0  # turns the palm down when the forearm points forward (+), at the cuff
+    # Bea's pointing hand (witness_export.split_hand adds the bones): the index finger's own curl on top of
+    # fingers<S>, the second joint of the other three, and the thumb tucked under the index finger (0..1)
+    DEFAULTS.update({f"index{_s}": 0.0, f"tips{_s}": 0.0, f"thumb{_s}_tuck": 0.0})
 for _b in BANDS:
     DEFAULTS.update({f"b{_b}_x": 0.0, f"b{_b}_y": 0.0})  # swings back (+) / to the character's left (+)
 
@@ -63,6 +70,36 @@ def blend(a, b, t):
 
 # --- solver -----------------------------------------------------------------------------------------------
 
+def hand_axes(knuckle, along, thumb_root, s):
+    """The hand's own axes in character space, from three things every rig has: the `Fingers` bone's head
+    (the knuckle line) and direction, and the thumb's root. Returns (out of the back of the hand, across the
+    knuckles from the index finger to the little one, along the fingers); s = 1 for the left hand, -1 right."""
+    to_thumb = thumb_root - knuckle
+    u = (to_thumb - along * to_thumb.dot(along)).normalized()
+    w = u.cross(-along) * s
+    # in hand units the thumb's root is (-0.007, -0.029) from the knuckle line (char_export.human_bones)
+    return (-0.007 * u - 0.029 * w).normalized(), (-0.029 * u + 0.007 * w).normalized(), along
+
+
+THUMB_REST = Vector((-0.008, -0.020, -0.027)).normalized()  # (back, across, -along) as modelled: beside the palm
+THUMB_TUCKED = Vector((-0.018, 0.016, -0.020)).normalized()  # under the index finger, tip on the middle finger
+
+
+_TUCKS = {}
+
+
+def _thumb_tuck(rig, S, s):
+    """The rotation (character axes) that takes the thumb of side S from where it was modelled to tucked."""
+    key = (id(rig), S)
+    if key not in _TUCKS:
+        knuckle = rig["Fingers_" + S][1]
+        back, across, along = hand_axes(knuckle, (rig["FingerTips_" + S][1] - knuckle).normalized(),
+                                        rig["Thumb_" + S][1], s)
+        a, b = (back * v.x + across * v.y - along * v.z for v in (THUMB_REST, THUMB_TUCKED))
+        _TUCKS[key] = a.rotation_difference(b).to_matrix()
+    return _TUCKS[key]
+
+
 def fk(p, rig):
     """Pose -> (deltas {bone: 3x3}, offsets {bone: Vector}, absolute rotations, joint positions)."""
     D, W = {}, {}
@@ -83,7 +120,11 @@ def fk(p, rig):
         D["LowerArm_" + S] = rx(-p[f"elbow{S}"])
         D["Hand_" + S] = rx(-p[f"hand{S}_pitch"]) @ ry(-s * p[f"hand{S}_side"]) @ rz(-s * p[f"hand{S}_twist"])
         D["Fingers_" + S] = ry(s * p[f"fingers{S}"])
+        D["Index_" + S] = ry(s * (p[f"fingers{S}"] + p[f"index{S}"]))
+        D["FingerTips_" + S] = ry(s * p[f"tips{S}"])
         D["Thumb_" + S] = ry(s * p[f"thumb{S}"])
+        if p[f"thumb{S}_tuck"] > 0:
+            D["Thumb_" + S] = pa._lerp_rot(_thumb_tuck(rig, S, s), p[f"thumb{S}_tuck"]) @ D["Thumb_" + S]
         D["UpperLeg_" + S] = rz(s * p[f"leg{S}_twist"]) @ ry(-s * p[f"leg{S}_out"]) @ rx(-p[f"leg{S}_fwd"])
         D["LowerLeg_" + S] = rx(p[f"knee{S}"])
         if p["feet_world"] > 0.5:
@@ -176,8 +217,9 @@ def plant(p, spread=0.0):
     return p
 
 
-def aim_arm(p, S, direction, bend=12.0, keys=None):
-    """Point the arm of side S (shoulder to fingertips) along `direction` (character axes)."""
+def aim_arm(p, S, direction, bend=12.0, keys=None, twist=40.0):
+    """Point the arm of side S (shoulder to fingertips) along `direction` (character axes). `twist` is where
+    the upper arm's twist starts for a forward aim (and stays, if `keys` leaves it out)."""
     s = 1.0 if S == "L" else -1.0
     p[f"elbow{S}"] = bend
     sh = point(p, "UpperArm_" + S)
@@ -186,7 +228,7 @@ def aim_arm(p, S, direction, bend=12.0, keys=None):
     d = Vector(direction).normalized()
     # start from roughly the right quadrant so the damped solver does not wander through the body
     p[f"arm{S}_out"] = max(p[f"arm{S}_out"], 20.0)
-    p[f"arm{S}_twist"] = 40.0 if d.y < -0.3 else p[f"arm{S}_twist"]
+    p[f"arm{S}_twist"] = twist if d.y < -0.3 else p[f"arm{S}_twist"]
     reach(p, keys or [f"arm{S}_out", f"arm{S}_twist", f"arm{S}_fwd"], "Fingers_" + S, sh + d * length * 0.985, steps=24)
     _ = s
     return p
@@ -290,6 +332,96 @@ def bea_wave(u):
              pumpkin_roll=-2.5 * w, pumpkin_z=0.006 * math.sin(TAU * 3 * u) * env,
              tail_side=-7 * w, tail_back=-4 * env)
     return plant(p)
+
+
+POINT_FRAMES = 54
+POINT_TWIST = 88.0
+POINT_UP = 23.0  # degrees above level; the game turns her to face the target, so the aim is her own forward
+_POINT_ARM = ("armR_fwd", "armR_out", "armR_twist", "elbowR")
+
+
+def _ramp(f, a, b):
+    return smooth((f - a) / (b - a))
+
+
+def _bell(f, centre, width):
+    return math.exp(-((f - centre) / width) ** 2)
+
+
+def _on_ball(S, heel):
+    """Where the ankle of side S is when the heel is raised `heel` degrees with the ball of the foot in place."""
+    ankle, ball = RIG["Foot_" + S][1], RIG["Toe_" + S][1]
+    return ball - rx(heel) @ (ball - ankle)
+
+
+def bea_point(u):
+    """Look, THERE! She rocks back and winds her right hand up to her chin, stamps her left foot forward and
+    throws the arm out straight ahead and POINT_UP degrees up, index finger out and the rest curled, up on her
+    toes with her weight on the front foot; holds it with two eager bounces, then steps back.
+    Starts and ends on Idle frame 0. Frames: wind-up 0-8, strike 8-13, on target 13-41, return 41-54."""
+    f = u * POINT_FRAMES
+    rest = bea_idle(0.0)
+    # the same pose with the hips' height written out: here one heel peels up while the other foot steps, and
+    # `ground` would answer that by lifting her whole body instead of bending the knee
+    rest.update(hz=fk(rest, RIG)[1]["Hips"].z, ground=0.0)
+    wind = _ramp(f, 0, 7) * (1 - _ramp(f, 8, 12.5))
+    out = _ramp(f, 8, 13) * (1 - _ramp(f, 41, 52))
+    hit = _bell(f, 14.5, 2.4) * out  # the overshoot as the arm lands
+    dip = (_bell(f, 21.5, 2.6) + _bell(f, 30.5, 2.6)) * out  # the little squat before each bounce
+    hop = (_bell(f, 25.0, 2.8) + _bell(f, 34.0, 2.8)) * out
+    rise = hit + 0.8 * hop
+    step = _ramp(f, 6.5, 12) * (1 - _ramp(f, 43.5, 50))  # the left foot is forward
+    lift = _bell(f, 8.6, 2.6) * (1 - _ramp(f, 11.5, 13)) + 0.8 * _bell(f, 46.8, 2.4)
+
+    wound = dict(rest)
+    wound.update(hy=0.04, hz=-0.024, hx=-0.012, hip_pitch=-3, spine_pitch=-7, chest_pitch=-6, chest_yaw=-10,
+                 spine_yaw=-4, head_yaw=12, head_pitch=-3, head_roll=3,
+                 shoulderR=8, armR_fwd=8, armR_out=4, armR_twist=34, elbowR=112, handR_pitch=4,
+                 fingersR=45, indexR=-25, tipsR=50, thumbR_tuck=0.5,
+                 armL_fwd=16, armL_out=-4, elbowL=44, pumpkin_pitch=-3, pumpkin_z=0.008, tail_back=-8)
+    aimed = dict(rest)
+    aimed.update(hy=-0.085, hx=0.02, hz=0.012, hip_yaw=4, hip_pitch=2, spine_pitch=4, chest_pitch=3,
+                 spine_yaw=5, chest_yaw=10, chest_roll=-2,
+                 head_yaw=-19, head_pitch=-22, head_roll=-2, neck_pitch=-3,
+                 shoulderR=12, handR_pitch=0, handR_side=0, handR_twist=0,
+                 fingersR=80, indexR=-75, tipsR=86, thumbR_tuck=1.0,
+                 shoulderL=3, armL_fwd=-14, armL_out=-10, elbowL=44, armL_twist=14, fingersL=34,
+                 pumpkin_pitch=2, tail_back=6)
+    p = {k: rest[k] + wind * (wound[k] - rest[k]) + out * (aimed[k] - rest[k]) for k in rest}
+    p.update(hz=p["hz"] - 0.016 * dip + 0.012 * rise,
+             spine_pitch=p["spine_pitch"] + 3 * hit + 2 * dip - 1.5 * hop,
+             chest_pitch=p["chest_pitch"] + 2 * hit - 2 * hop,
+             head_pitch=p["head_pitch"] - 3 * hit + 3 * dip - 3 * hop,
+             shoulderR=p["shoulderR"] + 5 * hit + 3 * hop, shoulderL=p["shoulderL"] + 3 * hop,
+             armL_out=p["armL_out"] + 4 * hit + 3 * hop - 2 * dip, elbowL=p["elbowL"] + 8 * dip,
+             # the costume lags her: it sinks as she pops up and rocks forward after the arm lands
+             pumpkin_z=p["pumpkin_z"] - 0.01 * _bell(f, 13.5, 2.2) * out + 0.008 * _bell(f, 17.5, 2.5) * out
+             - 0.007 * hop + 0.006 * dip,
+             pumpkin_pitch=p["pumpkin_pitch"] + 3 * _bell(f, 16.5, 2.6) * out,
+             pumpkin_yaw=-3 * out,
+             tail_back=p["tail_back"] + 12 * _bell(f, 12.0, 2.4) - 8 * _bell(f, 17.0, 2.8) - 5 * hop,
+             tail_side=p["tail_side"] + 7 * _bell(f, 11.0, 2.5) - 5 * _bell(f, 16.0, 2.8))
+    # feet: the left one lifts, steps 13 cm forward and lands with the strike; the right heel peels up behind
+    heel = {"L": 6 * out + 12 * rise, "R": 24 * out + 8 * rise}
+    for S in "LR":
+        p["foot" + S] = heel[S]
+        p["toe" + S] = heel[S]
+    p["footL"] += -10 * lift  # toes up while it is in the air
+    targets = {"L": _on_ball("L", heel["L"]) + Vector((0.01 * step, -0.13 * step, 0.045 * lift)),
+               "R": _on_ball("R", heel["R"])}
+    for S in "LR":
+        reach(p, [f"leg{S}_fwd", f"leg{S}_out", f"knee{S}"], "Foot_" + S, targets[S], steps=24)
+    # the arm: solved onto the line from the shoulder, straightest at the strike and at the top of each bounce
+    if out > 0:
+        q = dict(p)
+        # the twist is fixed (elbow down and out, palm down): solved freely it flips as the elbow straightens
+        q.update(armR_fwd=80, armR_out=34, armR_twist=POINT_TWIST)
+        up = math.radians(POINT_UP + 4 * hit + 2.5 * hop - 2 * dip)
+        aim_arm(q, "R", Vector((0.0, -math.cos(up), math.sin(up))), bend=7 - 5 * hit + 12 * dip - 3 * hop,
+                keys=["armR_fwd", "armR_out"], twist=POINT_TWIST)
+        for k in _POINT_ARM:
+            p[k] += (q[k] - p[k]) * out
+    return p
 
 
 # --- Mr. Vale ---------------------------------------------------------------------------------------------
@@ -411,6 +543,9 @@ BEA_CLIPS = [
     ("Idle", bea_idle, 90, True, 0.0, "weight shift, a glance to her left (toward the house), a bounce on her toes"),
     ("Talk", bea_talk, 60, True, 0.0, "left arm points ahead-left at the house, two jabs per cycle"),
     ("Wave", bea_wave, 45, False, 0.0, "left-hand wave; starts and ends on Idle frame 0"),
+    ("Point", bea_point, POINT_FRAMES, False, 0.0,
+     "right index finger points straight ahead and 23 degrees up, left foot stamped forward, up on her toes; "
+     "on target frames 13-41; starts and ends on Idle frame 0"),
 ]
 VALE_CLIPS = [
     ("SitIdle", vale_sit_idle, 90, True, 0.0, "seated, breathing, bandage ends swaying, cauldron on his right thigh"),

@@ -114,6 +114,36 @@ namespace SpookyStreet.Tests.Project
         }
 
         [Test]
+        public void BeaHasAOneShotPointClip()
+        {
+            string fbx = ModelImportRules.ModelsRoot + "Characters/Bea/Bea.fbx";
+            var importer = AssetImporter.GetAtPath(fbx) as ModelImporter;
+            if (importer == null)
+            {
+                Assert.Ignore("Bea.fbx is not committed.");
+            }
+
+            bool found = false;
+            foreach (var clip in importer.clipAnimations)
+            {
+                if (clip.name != CharacterClips.Point)
+                {
+                    continue;
+                }
+
+                found = true;
+                Assert.IsFalse(clip.loopTime, "Point plays once");
+                // tools/blender/export/witness_anims.py POINT_FRAMES: 54 frames at 30 fps
+                Assert.That(clip.lastFrame - clip.firstFrame, Is.InRange(48f, 60f), "Point lasts 1.6 to 2.0 s");
+            }
+
+            Assert.IsTrue(found, "Bea.fbx has no Point take");
+            Assert.IsFalse(CharacterClips.IsLooping(CharacterClips.Point));
+            var loaded = Resources.LoadAll<AnimationClip>(SpookyStreet.Characters.NpcAvatar.PathFor("Bea"));
+            Assert.IsNotNull(PipAnimator.Find(loaded, CharacterClips.Point), "Point not loadable from Resources");
+        }
+
+        [Test]
         public void BicycleImportsAsAStaticProp()
         {
             var importer = AssetImporter.GetAtPath(ModelImportRules.ModelsRoot + "Environment/BeaBicycle.fbx") as ModelImporter;

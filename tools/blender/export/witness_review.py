@@ -47,11 +47,14 @@ BIKE_AT, BIKE_YAW = Vector((-0.86, 0.36, 0.0)), 66.0
 BENCH_X = -0.28  # the stand-in bench's centre relative to Mr. Vale (he sits a little to one side of it)
 
 
-def import_model(folder, name, textures=("BaseColor", "Normal", "Face")):
+def import_model(folder, name, textures=("BaseColor", "Normal", "Face"), leaf_bones=False):
+    """`leaf_bones`: also import a bone that is its parent's only child and has none of its own. Blender's
+    importer takes those for length markers and drops them with their weights (here: Toe_*, Ponytail_2 and
+    Bea's FingerTips_*), so a review of what they do has to ask for them; Unity always imports them."""
     before = set(bpy.data.objects)
     before_actions = set(bpy.data.actions)
     bpy.ops.import_scene.fbx(filepath=os.path.join(folder, name + ".fbx"), automatic_bone_orientation=False,
-                             use_anim=True, ignore_leaf_bones=True)
+                             use_anim=True, ignore_leaf_bones=not leaf_bones)
     new = [o for o in bpy.data.objects if o not in before]
     rig = next((o for o in new if o.type == "ARMATURE"), None)
     meshes = [o for o in new if o.type == "MESH"]
