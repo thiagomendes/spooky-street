@@ -26,7 +26,7 @@ namespace SpookyStreet.Player
 
         [Header("Imported model")]
         [Tooltip("Yaw added to the model so its face looks down Pip's +Z (depends on the FBX export axes).")]
-        [SerializeField] private float modelYawOffset;
+        [SerializeField] private float modelYawOffset = 180f;
         [Tooltip("A model whose height (antennae included) is outside this range is rescaled to the target height.")]
         [SerializeField] private Vector2 nativeHeightRange = new Vector2(1.0f, 1.6f);
         [SerializeField] private float modelTargetHeight = 1.2f;
@@ -195,6 +195,11 @@ namespace SpookyStreet.Player
             UsesModel = true;
             if (Debug.isDebugBuild)
             {
+                var baseMap = skin != null && skin.HasProperty("_BaseMap") ? skin.GetTexture("_BaseMap") : null;
+                Debug.Log($"[PipAvatar] skin material '{(skin != null ? skin.name : "none")}' shader " +
+                          $"'{(skin != null ? skin.shader.name : "none")}', base map " +
+                          $"{(baseMap != null ? $"{baseMap.name} {baseMap.width}x{baseMap.height} {baseMap.graphicsFormat}" : "MISSING")}, " +
+                          $"face {(face != null ? face.name : "none")}");
                 Debug.Log($"[PipAvatar] model: {clips.Length} clips, scale {ModelScale:F3}, " +
                           $"height {ModelKit.RendererBounds(model).size.y:F2} m, animated {Animator != null}");
             }

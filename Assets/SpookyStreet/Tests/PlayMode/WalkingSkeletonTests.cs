@@ -244,6 +244,13 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsNotNull(avatar.Animator, "Pip model needs at least its Idle clip");
             Assert.IsTrue(avatar.Animator.IsReady, "Pip's animation graph did not start");
             Assert.IsTrue(avatar.Animator.HasClip(PipClips.Idle));
+            foreach (var renderer in avatar.Body.GetComponentsInChildren<Renderer>())
+            {
+                var material = renderer.sharedMaterial;
+                Assert.IsNotNull(material, $"{renderer.name} has no material");
+                Assert.IsTrue(material.HasProperty("_BaseMap") && material.GetTexture("_BaseMap") != null,
+                    $"{renderer.name} must use Pip's baked texture, not a flat colour ({material.name})");
+            }
 
             // Walk: locomotion pose with the walk/run clips carrying weight. Then jump: an air pose.
             game.Ui.NewGameButton.onClick.Invoke();
