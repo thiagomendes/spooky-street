@@ -93,6 +93,17 @@ namespace SpookyStreet.Core.Art
         public const string IconArrow = "icon_arrow";
         public const string IconCheck = "icon_check";
 
+        // S002 hints (tools/ui_mock/hint_sprites.py, not ui_mock.py): the tier-3 ghost hand (fingertip at
+        // GhostHandFingertip, drawn opaque and shown translucent), the tier-1 star fleck (white, tinted candy corn) and
+        // the key cap glyph (9-sliced so wide keys stretch; the key's name is text on it).
+        public const string GhostHand = "ghost_hand";
+        public const string HintStar = "hint_star";
+        public const string GlyphKey = "glyph_key";
+
+        /// <summary>The ghost hand's fingertip in normalized sprite coordinates (origin bottom-left).</summary>
+        public const float GhostHandFingertipX = 0.5f;
+        public const float GhostHandFingertipY = 0.94f;
+
         public static readonly UiSpriteSpec[] All =
         {
             new UiSpriteSpec(FeltDiscNight, UiSpriteDraw.Simple),
@@ -121,6 +132,9 @@ namespace SpookyStreet.Core.Art
             new UiSpriteSpec(IconNext, UiSpriteDraw.Simple),
             new UiSpriteSpec(IconArrow, UiSpriteDraw.Simple),
             new UiSpriteSpec(IconCheck, UiSpriteDraw.Simple),
+            new UiSpriteSpec(GhostHand, UiSpriteDraw.Simple),
+            new UiSpriteSpec(HintStar, UiSpriteDraw.Simple),
+            new UiSpriteSpec(GlyphKey, UiSpriteDraw.Sliced, 40),
         };
 
         /// <summary>Resources.Load path for a sprite name.</summary>

@@ -9,6 +9,7 @@ using SpookyStreet.UI.Nonverbal;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.UI;
+using NvKeys = SpookyStreet.Core.Localization.LocalizationKeys.NonverbalUi;
 
 namespace SpookyStreet.Case
 {
@@ -99,6 +100,9 @@ namespace SpookyStreet.Case
         public float Weight => Active ? Playback.Weight : 0f;
 
         public Button SkipButton { get; private set; }
+
+        /// <summary>The skip disc's small caption ("Skip memory", <c>ui.memory.skip</c>) in the letterbox.</summary>
+        public Text SkipCaption { get; private set; }
 
         public SpriteRenderer Ghost => _ghost;
 
@@ -197,6 +201,13 @@ namespace SpookyStreet.Case
             button.transition = Selectable.Transition.None;
             button.onClick.AddListener(() => Skip());
             SkipButton = button;
+            // Its name, as the accessibility name and as a small caption in the letterbox beside the disc.
+            SpookyStreet.Localization.AccessibleName.Set(disc.gameObject, NvKeys.MemorySkip);
+            var caption = UiFactory.Label(disc.transform, "Caption", NvKeys.MemorySkip, 26, TextAnchor.MiddleRight,
+                UiFactory.WithAlpha(Palette.WarmPaper, 0.85f), UiFactory.BoldFont);
+            UiFactory.Place(caption.rectTransform, new Vector2(0f, 0.5f), new Vector2(-18f, 0f), new Vector2(300f, 40f),
+                new Vector2(1f, 0.5f));
+            SkipCaption = caption;
             // The candy progress ring fills over the replay (how long is left, without numbers).
             _skipRing = UiFactory.Sprite(disc.transform, "Progress", UiFactory.Baked(UiSpriteCatalog.StitchRing),
                 Palette.CandyCornYellow, new Vector2(0.5f, 0.5f), Vector2.zero,

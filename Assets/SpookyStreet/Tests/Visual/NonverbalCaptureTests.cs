@@ -28,6 +28,7 @@ namespace SpookyStreet.Tests.Visual
             base.Setup();
             InputSystem.AddDevice<Keyboard>();
             CaseDirector.UseTemporarySaveDirectory();
+            SpookyStreet.Controls.ControlSchemeTracker.Override = null;
             if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
             {
                 Assert.Ignore("No graphics device (-nographics); visual captures need rendering.");
@@ -163,6 +164,68 @@ namespace SpookyStreet.Tests.Visual
             yield return Wait(1.15f);
             yield return Shot("26_notebook_page");
             director.Notebook.Close();
+        }
+
+        /// <summary>
+        /// S002 hints close: the tier-1 sparkle on Mr. Vale's bench with Vale turning to look (33), the tier-3 ghost
+        /// hand tapping Use on touch (34) and the same hint with a keyboard, where the key glyph pulses (36).
+        /// </summary>
+        [UnityTest]
+        [Timeout(240000)]
+        public IEnumerator CaptureHintFrames()
+        {
+            yield return Load();
+            var game = GameBootstrap.Instance;
+            var director = game.Director;
+            var layer = director.Nonverbal;
+            game.Ui.NewGameButton.onClick.Invoke();
+            yield return Wait(1.0f);
+            director.Perform(CaseAction.Of(CaseActionKind.HearKnocks));
+            yield return Wait(0.2f);
+            director.Captions.Clear();
+
+            // 33: a few steps from the bench, looking at it (Vale beside it): tier 1 sparkles on the bench.
+            var bench = CaseStage.Find(CaseStage.PointBench).Position;
+            var benchAt = new Vector3(bench.X, 0f, bench.Z);
+            var pip = game.Pip.transform.position;
+            Vector3 away = new Vector3(pip.x - bench.X, 0f, pip.z - bench.Z).normalized;
+            game.Pip.Teleport(benchAt + away * 4.2f + Vector3.up * 0.1f);
+            game.Pip.transform.rotation = Quaternion.LookRotation(-away, Vector3.up);
+            game.CameraRig.Orbit.RequestRecenter();
+            yield return Wait(1.6f);
+            layer.RadioButton.onClick.Invoke();
+            director.Captions.Clear();
+            Assert.IsTrue(layer.Guide.SparkleActive, "33_hint_sparkle: tier 1 should sparkle");
+            yield return Wait(0.9f);
+            Assert.Greater(layer.Guide.VisibleFlecks, 0, "33_hint_sparkle: flecks should be drawn");
+            Debug.Log("[NonverbalCaptureTests] 33 looker: " + (layer.Guide.Looker != null ? layer.Guide.Looker.name : "none"));
+            yield return Shot("33_hint_sparkle");
+
+            // 34: next to the bench (Use in reach), tier 3 on touch: the ghost hand taps the Use disc.
+            layer.RadioButton.onClick.Invoke(); // tier 2
+            layer.Guide.Stop();
+            game.Pip.Teleport(benchAt + away * 1.3f + Vector3.up * 0.1f);
+            game.Pip.transform.rotation = Quaternion.LookRotation(-away, Vector3.up);
+            game.CameraRig.Orbit.RequestRecenter();
+            yield return Wait(1.2f);
+            SpookyStreet.Controls.ControlSchemeTracker.Override = SpookyStreet.Core.Nonverbal.ControlScheme.Touch;
+            layer.RadioButton.onClick.Invoke(); // tier 3
+            director.Captions.Clear();
+            Assert.IsTrue(layer.Demo.Active, "34_hint_ghost_hand: tier 3 should demonstrate");
+            Debug.Log("[NonverbalCaptureTests] 34 demo: " + layer.Demo.Demo);
+            yield return Wait(0.62f); // the finger is down on the control
+            Assert.IsTrue(layer.Demo.HandVisible, "34_hint_ghost_hand: the hand should be up");
+            yield return Shot("34_hint_ghost_hand", game.Ui.GetComponentInParent<Canvas>());
+
+            // 36: the same hint with a keyboard: no hand, the key glyph pulses above the control.
+            SpookyStreet.Controls.ControlSchemeTracker.Override = SpookyStreet.Core.Nonverbal.ControlScheme.KeyboardMouse;
+            layer.RadioButton.onClick.Invoke();
+            director.Captions.Clear();
+            yield return Wait(0.8f);
+            Assert.IsTrue(layer.Demo.GlyphVisible, "36_hint_key_glyph: the key glyph should be up");
+            yield return Shot("36_hint_key_glyph", game.Ui.GetComponentInParent<Canvas>());
+            SpookyStreet.Controls.ControlSchemeTracker.Override = null;
+            layer.Demo.Stop();
         }
 
         [UnityTest]
