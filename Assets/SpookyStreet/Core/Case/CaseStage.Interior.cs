@@ -71,6 +71,89 @@ namespace SpookyStreet.Core.Case
 
         public const float JuneWalkSpeed = 1.3f;
 
+        /// <summary>
+        /// June has no walk clip yet (art to come), so her glide is shaped to read as a walk: she first turns toward the
+        /// path for <see cref="JuneTurnSeconds"/>, speeds up over <see cref="JuneEaseIn"/> metres, slows down over the last
+        /// <see cref="JuneEaseOut"/> metres, and faces a point <see cref="JuneLookAhead"/> metres further along the path,
+        /// so she turns into each corner before she reaches it.
+        /// </summary>
+        public const float JuneTurnSeconds = 0.4f;
+
+        public const float JuneEaseIn = 0.7f;
+        public const float JuneEaseOut = 0.9f;
+        public const float JuneLookAhead = 0.45f;
+
+        /// <summary>Seconds from June's first turn to her stop at the foyer mark.</summary>
+        public static float JuneWalkSeconds
+        {
+            get
+            {
+                float length = PathLength(JuneWalk);
+                EaseLengths(length, out float easeIn, out float easeOut);
+                return JuneTurnSeconds + (length - easeIn - easeOut) / JuneWalkSpeed + 2f * (easeIn + easeOut) / JuneWalkSpeed;
+            }
+        }
+
+        /// <summary>
+        /// Metres walked <paramref name="seconds"/> after June starts (0 while she turns toward the path), with a
+        /// constant-acceleration ease in and ease out around the cruise at <see cref="JuneWalkSpeed"/>.
+        /// </summary>
+        public static float JuneWalkDistance(float seconds)
+        {
+            float length = PathLength(JuneWalk);
+            EaseLengths(length, out float easeIn, out float easeOut);
+            float v = JuneWalkSpeed;
+            float t = seconds - JuneTurnSeconds;
+            if (t <= 0f)
+            {
+                return 0f;
+            }
+
+            float t1 = 2f * easeIn / v;
+            float cruise = length - easeIn - easeOut;
+            float t2 = cruise / v;
+            float t3 = 2f * easeOut / v;
+            if (t < t1)
+            {
+                return 0.5f * (v / t1) * t * t;
+            }
+
+            if (t < t1 + t2)
+            {
+                return easeIn + v * (t - t1);
+            }
+
+            float left = t1 + t2 + t3 - t;
+            return left <= 0f ? length : length - 0.5f * (v / t3) * left * left;
+        }
+
+        /// <summary>Where June faces at <paramref name="distance"/> along her walk: toward a point a little ahead.</summary>
+        public static void JuneFacing(float distance, out float headingX, out float headingZ)
+        {
+            float length = PathLength(JuneWalk);
+            var here = Along(JuneWalk, distance, out headingX, out headingZ);
+            if (distance + 0.05f >= length)
+            {
+                return;
+            }
+
+            var ahead = Along(JuneWalk, Math.Min(length, distance + JuneLookAhead), out _, out _);
+            float dx = ahead.X - here.X, dz = ahead.Z - here.Z;
+            float l = (float)Math.Sqrt(dx * dx + dz * dz);
+            if (l > 1e-3f)
+            {
+                headingX = dx / l;
+                headingZ = dz / l;
+            }
+        }
+
+        private static void EaseLengths(float length, out float easeIn, out float easeOut)
+        {
+            float scale = Math.Min(1f, length / (JuneEaseIn + JuneEaseOut));
+            easeIn = JuneEaseIn * scale;
+            easeOut = JuneEaseOut * scale;
+        }
+
         public static readonly IReadOnlyList<InteractionPoint> InteriorPoints = BuildInteriorPoints();
 
         private static IReadOnlyList<InteractionPoint> _allPoints;

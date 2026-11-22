@@ -290,6 +290,7 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(director.State.Has(CaseFact.LinkedArm));
             Assert.IsTrue(workshop.ArmSeated.gameObject.activeSelf);
             Assert.IsFalse(workshop.ArmSlipped.gameObject.activeSelf);
+            Assert.IsFalse(director.Captions.HasDirectionCue, "what Pip sees in the workshop takes no direction cue");
 
             yield return Use(CaseStage.PointCrank, new Vector3(0.75f, CaseRouteLayout.FloorY, 14.2f));
             Assert.IsTrue(director.State.Has(CaseFact.TestedOwl));
@@ -316,6 +317,7 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Frames(3);
             Assert.IsTrue(director.State.Has(CaseFact.CaseClosed), "closure on the arrival porch");
             Assert.IsTrue(director.FinalePlaying, "the finale frames the booth from the arrival sightline");
+            Assert.IsFalse(director.Captions.Showing, "the finale starts clean: no caption left over from the workshop");
             Assert.IsTrue(cast.Kit.gameObject.activeSelf, "Kit at her booth");
             Assert.AreEqual("OpenBooth", cast.Kit.Avatar.OneShot, "Kit opens her booth");
             Assert.IsFalse(director.Dialogue.IsOpen, "the reopening plays before the card");

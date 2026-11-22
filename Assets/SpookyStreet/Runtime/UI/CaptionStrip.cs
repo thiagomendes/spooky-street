@@ -13,12 +13,60 @@ namespace SpookyStreet.UI
     /// The felt caption strip (docs/ui-language.md "Captions and accessibility"): bracketed sound text and radio
     /// hints on opaque night felt, bottom-centre between the thumb clusters. A caption with a source gets a purple
     /// direction disc whose candy arrow turns toward the source as the camera moves, plus a direction word in the
-    /// text, so the cue never depends on sound. Captions queue and time out on game time (pause freezes them).
+    /// text, so the cue never depends on sound. Only directional sounds get the cue, and only when their source is away
+    /// from Pip (<see cref="CaptionDirection.ShouldCue"/>). Text wraps to at most <see cref="MaxLines"/> lines: the strip
+    /// grows to fit them, and only a caption that still needs a third line steps its size down (never below 13 pt).
+    /// Captions queue and time out on game time (pause freezes them).
     /// </summary>
     public sealed class CaptionStrip : MonoBehaviour
     {
         public const float MinSeconds = 3.5f;
         public const float SecondsPerCharacter = 0.06f;
+
+        /// <summary>Captions wrap to two lines at most.</summary>
+        public const int MaxLines = 2;
+
+        /// <summary>13 pt at the reference (docs/ui-language.md: never shrink below 13 pt).</summary>
+        public const int MinFontSize = 26;
+
+        /// <summary>Strip height for one line (default and large text) and the padding around the text.</summary>
+        public const float RestHeight = 92f;
+        public const float LargeRestHeight = 116f;
+        public const float VerticalPadding = 12f;
+
+        /// <summary>Text insets: left with and without the direction disc, and right.</summary>
+        public const float CueInset = 96f;
+        public const float PlainInset = 30f;
+        public const float RightInset = 26f;
+
+        /// <summary>The strip sits between the thumb clusters (stick ghost and Use + Jump take 820 units together).</summary>
+        public const float ClusterReserve = 820f;
+        public const float MinWidth = 480f;
+        public const float MaxWidth = 720f;
+
+        /// <summary>How a caption lays out in the strip.</summary>
+        public readonly struct Fit
+        {
+            public Fit(int fontSize, int lines, float textHeight, float stripHeight, float textWidth)
+            {
+                FontSize = fontSize;
+                Lines = lines;
+                TextHeight = textHeight;
+                StripHeight = stripHeight;
+                TextWidth = textWidth;
+            }
+
+            public int FontSize { get; }
+            public int Lines { get; }
+            public float TextHeight { get; }
+            public float StripHeight { get; }
+            public float TextWidth { get; }
+
+            /// <summary>The text is whole: within the line limit and inside the strip's padding.</summary>
+            public bool Fits => Lines <= MaxLines && TextHeight <= StripHeight - 2f * VerticalPadding + 0.5f;
+
+            public override string ToString() => $"{Lines} line(s) at {FontSize}, text {TextHeight:F0} in strip {StripHeight:F0}";
+        }
 
         /// <summary>Night felt from the bone paper tag: bone × tint ≈ night violet (#2A2550).</summary>
         private static readonly Color NightTint = new Color(0.172f, 0.161f, 0.4f, 0.94f);
@@ -43,12 +91,26 @@ namespace SpookyStreet.UI
         private float _left;
         private bool _largeText;
         private bool _raised;
+        private string _fitText;
+        private float _fitWidth;
+        private bool _fitCue;
+        private Fit _fit;
+        private readonly TextGenerator _generator = new TextGenerator();
 
         private const float RestY = 30f;
         private const float RaisedY = 300f;
 
         /// <summary>Camera used for the direction cue (the gameplay camera).</summary>
         public Camera ViewCamera { get; set; }
+
+        /// <summary>Where Pip is: a sound's source this close gets no direction cue.</summary>
+        public Func<Vector3> Listener { get; set; }
+
+        /// <summary>The layout of the caption on screen.</summary>
+        public Fit CurrentFit => _fit;
+
+        /// <summary>The strip (its height follows the caption's line count).</summary>
+        public RectTransform Strip => _root;
 
         /// <summary>Text size hook (docs/ui-language.md: 17 pt default, 22 pt large). No settings screen yet.</summary>
         public bool LargeText
@@ -121,6 +183,9 @@ namespace SpookyStreet.UI
             _text = UiFactory.Label(_root, "Text", null, UiFactory.BodySize, TextAnchor.MiddleLeft, Palette.WarmPaper,
                 UiFactory.BoldFont);
             UiFactory.Stretch(_text.rectTransform);
+            // The strip grows to fit the lines (Fit), so the text is sized explicitly and never truncated.
+            _text.resizeTextForBestFit = false;
+            _text.verticalOverflow = VerticalWrapMode.Overflow;
             ApplySize();
             _root.gameObject.SetActive(false);
         }
@@ -132,12 +197,53 @@ namespace SpookyStreet.UI
                 return;
             }
 
-            int size = _largeText ? 44 : UiFactory.BodySize;
-            _text.fontSize = size;
-            _text.resizeTextMaxSize = size;
-            _text.resizeTextMinSize = 26;
-            _root.sizeDelta = new Vector2(_root.sizeDelta.x, _largeText ? 116f : 92f);
+            _fitText = null;
+            if (_current != null)
+            {
+                Refresh();
+            }
         }
+
+        /// <summary>Strip width between the thumb clusters for an area this wide.</summary>
+        public static float WidthFor(float areaWidth) => Mathf.Clamp(areaWidth - ClusterReserve, MinWidth, MaxWidth);
+
+        /// <summary>
+        /// Lays <paramref name="text"/> out in the strip at its current width: the largest size from the default (or large)
+        /// size down to <see cref="MinFontSize"/> that needs at most <see cref="MaxLines"/> lines, and the strip height
+        /// those lines need.
+        /// </summary>
+        public Fit Measure(string text, bool cue)
+        {
+            float width = Mathf.Max(10f, StripWidth - (cue ? CueInset : PlainInset) - RightInset);
+            int max = _largeText ? 44 : UiFactory.BodySize;
+            float rest = _largeText ? LargeRestHeight : RestHeight;
+            var settings = _text.GetGenerationSettings(new Vector2(width, 4000f));
+            settings.resizeTextForBestFit = false;
+            settings.verticalOverflow = VerticalWrapMode.Overflow;
+            settings.horizontalOverflow = HorizontalWrapMode.Wrap;
+            int size = max;
+            int lines = 1;
+            float height = 0f;
+            for (; ; size -= 2)
+            {
+                size = Mathf.Max(size, MinFontSize);
+                settings.fontSize = size;
+                settings.resizeTextMaxSize = size;
+                settings.resizeTextMinSize = size;
+                _generator.Populate(text ?? string.Empty, settings);
+                lines = Mathf.Max(1, _generator.lineCount);
+                height = _generator.GetPreferredHeight(text ?? string.Empty, settings) / Mathf.Max(0.01f, _text.pixelsPerUnit);
+                if (lines <= MaxLines || size <= MinFontSize)
+                {
+                    break;
+                }
+            }
+
+            float strip = Mathf.Max(rest, Mathf.Ceil(height + 2f * VerticalPadding));
+            return new Fit(size, lines, height, strip, width);
+        }
+
+        private float StripWidth => WidthFor(_area.rect.width);
 
         /// <summary>Queues a localized caption; <paramref name="source"/> (world position) adds the direction cue.</summary>
         public void ShowKey(string key, Func<Vector3?> source = null)
@@ -195,13 +301,6 @@ namespace SpookyStreet.UI
                 return;
             }
 
-            // Fit between the thumb clusters (stick ghost ≈ 330 units from one edge, Use + Jump ≈ 400 from the other).
-            float width = Mathf.Clamp(_area.rect.width - 820f, 480f, 720f);
-            if (Mathf.Abs(_root.sizeDelta.x - width) > 0.5f)
-            {
-                _root.sizeDelta = new Vector2(width, _root.sizeDelta.y);
-            }
-
             Refresh();
             _left -= Time.deltaTime;
             if (_left <= 0f)
@@ -214,7 +313,20 @@ namespace SpookyStreet.UI
         {
             string text = Localizer.Get(_current.Key);
             Vector3? source = _current.Source != null ? _current.Source() : null;
-            bool cue = source.HasValue && ViewCamera != null;
+            bool cue = false;
+            if (source.HasValue && ViewCamera != null)
+            {
+                float distance = float.MaxValue;
+                if (Listener != null)
+                {
+                    Vector3 to = source.Value - Listener();
+                    to.y = 0f;
+                    distance = to.magnitude;
+                }
+
+                cue = CaptionDirection.ShouldCue(_current.Key, true, distance);
+            }
+
             if (cue)
             {
                 Vector3 forward = ViewCamera.transform.forward;
@@ -230,8 +342,20 @@ namespace SpookyStreet.UI
                 _cue.SetActive(cue);
             }
 
-            _text.rectTransform.offsetMin = new Vector2(cue ? 100f : 30f, 8f);
-            _text.rectTransform.offsetMax = new Vector2(-26f, -8f);
+            float width = StripWidth;
+            if (text != _fitText || cue != _fitCue || Mathf.Abs(width - _fitWidth) > 0.5f)
+            {
+                _fitText = text;
+                _fitCue = cue;
+                _fitWidth = width;
+                _root.sizeDelta = new Vector2(width, _root.sizeDelta.y);
+                _fit = Measure(text, cue);
+                _root.sizeDelta = new Vector2(width, _fit.StripHeight);
+                _text.fontSize = _fit.FontSize;
+                _text.rectTransform.offsetMin = new Vector2(cue ? CueInset : PlainInset, VerticalPadding);
+                _text.rectTransform.offsetMax = new Vector2(-RightInset, -VerticalPadding);
+            }
+
             if (_text.text != text)
             {
                 _text.text = text;

@@ -110,9 +110,11 @@ namespace SpookyStreet.Case
         /// <summary>True while the finale's framing holds (lines, then a beat before the notebook).</summary>
         public bool FinalePlaying => Finale != null && Finale.Active;
 
-        /// <summary>Spec §5: entering the attic blends to a closer shoulder view; the foyer is a little closer too.</summary>
-        public const float AtticCameraDistance = 2.1f;
-        public const float FoyerCameraDistance = 2.9f;
+        /// <summary>
+        /// Spec §5: entering the attic blends to a closer shoulder view. Indoors the camera follows the house's room
+        /// profiles and never looks through a solid (<see cref="InteriorFraming"/>).
+        /// </summary>
+        public InteriorFraming Framing { get; private set; }
 
         /// <summary>The canvas holding captions, the interaction marker, dialogue and the notebook.</summary>
         public Canvas UiCanvas { get; private set; }
@@ -162,6 +164,7 @@ namespace SpookyStreet.Case
                 House = OwlHouseStage.Create(transform, game.Environment, game.Materials);
                 Workshop = WorkshopView.Create(transform, House.Mechanism, game.Environment.OwlPuppet);
                 Cast = CaseCast.Create(transform, game.Materials, _pip.transform);
+                Framing = new InteriorFraming(game.CameraRig);
             }
 
             Cutaway = CutawayView.Create(transform, _camera, (RectTransform)UiCanvas.transform);
@@ -199,6 +202,7 @@ namespace SpookyStreet.Case
             safe.gameObject.AddComponent<SafeAreaFitter>();
             Captions = CaptionStrip.Create(safe);
             Captions.ViewCamera = _camera;
+            Captions.Listener = () => _pip.transform.position;
             Notebook.ShowCaption = key => Captions.ShowNow(key);
 
             var notices = UiFactory.CreateCanvas("CaseNotices", 15);
@@ -423,6 +427,7 @@ namespace SpookyStreet.Case
 
         private void ResetPresentation()
         {
+            Framing?.Release();
             CloseModals();
             Captions.Clear();
             Bench.End();
@@ -433,6 +438,18 @@ namespace SpookyStreet.Case
             _finaleIntroLines = null;
         }
 
+        /// <summary>The character Pip is talking to, or the one the Use prompt offers to talk to (kept in the camera's view).</summary>
+        private Vector3? FocusPoint()
+        {
+            var witness = _talking;
+            if (witness == null && Targets.HasTarget && Targets.Current.Action.Kind == CaseActionKind.Talk)
+            {
+                witness = WitnessFor(Targets.Current.Action.Speaker);
+            }
+
+            return witness != null && witness.gameObject.activeInHierarchy ? witness.transform.position : (Vector3?)null;
+        }
+
         /// <summary>The interior half each frame: cut-away, door swing, camera indoors, the nook peek and the finale beat.</summary>
         private void TickStage(Vector3 pip, float dt)
         {
@@ -441,10 +458,8 @@ namespace SpookyStreet.Case
                 House.Tick(pip, _camera.transform.position);
                 bool inside = CaseRouteLayout.Inside(pip.x, pip.z);
                 var rig = _game.CameraRig;
-                rig.DistanceOverride = !inside ? (float?)null
-                    : pip.y > CaseRouteLayout.LoftY - 0.5f ? AtticCameraDistance
-                    : FoyerCameraDistance;
                 rig.ObstacleLayers = inside || House.View.ShowInterior ? _indoorObstacles : _baseObstacles;
+                Framing.Tick(pip, House.DoorOpen, FocusPoint(), dt);
                 if (_nookPeek >= 0f && dt > 0f)
                 {
                     _nookPeek -= dt;
@@ -694,6 +709,8 @@ namespace SpookyStreet.Case
         /// <summary>The reopening (spec §3 Resolve): Kit at her booth, June beside her, the owl bowing, the arrival view.</summary>
         private void StartFinale()
         {
+            // The reopening starts clean: no caption from an earlier beat carries over into the finale shot.
+            Captions.Clear();
             Cutaway.End();
             Cast?.StageReopening();
             Workshop?.PlayCycle();
@@ -712,7 +729,8 @@ namespace SpookyStreet.Case
             {
                 if (CaseSpeakers.IsCaption(line.Speaker))
                 {
-                    Captions.ShowKey(line.Key, SourceOf(action));
+                    // Only a sound from somewhere (the knocks, the hum) gets a direction cue; what Pip sees does not.
+                    Captions.ShowKey(line.Key, CaptionDirection.IsDirectionalSound(line.Key) ? SourceOf(action) : null);
                 }
                 else
                 {

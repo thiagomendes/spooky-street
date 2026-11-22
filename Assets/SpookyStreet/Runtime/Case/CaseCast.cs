@@ -21,6 +21,7 @@ namespace SpookyStreet.Case
             new WitnessClipSet(CharacterClips.KneeTap, CharacterClips.KneeTap, null);
 
         private float _walked = -1f;
+        private float _walkTime;
         private float _walkLength;
         private JunePlacement _placement = JunePlacement.Attic;
         private Transform _pip;
@@ -116,6 +117,7 @@ namespace SpookyStreet.Case
             June.enabled = false;
             June.Avatar.PlayLoop(CharacterClips.Idle);
             _walked = 0f;
+            _walkTime = 0f;
         }
 
         /// <summary>The reopening: June on the porch, Kit at her booth opening it.</summary>
@@ -152,11 +154,14 @@ namespace SpookyStreet.Case
                 return;
             }
 
-            _walked += dt * CaseStage.JuneWalkSpeed;
-            var p = CaseStage.Along(CaseStage.JuneWalk, _walked, out float hx, out float hz);
+            // No walk clip yet: she turns toward the path, eases in and out, and turns into corners ahead of them.
+            _walkTime += dt;
+            _walked = CaseStage.JuneWalkDistance(_walkTime);
+            var p = CaseStage.Along(CaseStage.JuneWalk, _walked, out _, out _);
+            CaseStage.JuneFacing(_walked, out float hx, out float hz);
             June.transform.SetPositionAndRotation(new Vector3(p.X, p.Y, p.Z),
-                Quaternion.Slerp(June.transform.rotation, Quaternion.LookRotation(new Vector3(hx, 0f, hz)), 8f * dt));
-            if (_walked >= _walkLength)
+                Quaternion.Slerp(June.transform.rotation, Quaternion.LookRotation(new Vector3(hx, 0f, hz)), 10f * dt));
+            if (_walked >= _walkLength - 1e-3f)
             {
                 PlaceJune(JunePlacement.Foyer);
                 _walked = -1f;
