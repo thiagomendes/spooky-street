@@ -19,6 +19,7 @@ namespace SpookyStreet.Tests.Core
 
             Assert.IsFalse(CharacterClips.IsLooping("Wave"));
             Assert.IsFalse(CharacterClips.IsLooping("June_Rig|Point"));
+            Assert.IsFalse(CharacterClips.IsLooping("Bea_Rig|Point"));
             Assert.IsFalse(CharacterClips.IsLooping("Kit_Rig|OpenBooth"));
             Assert.IsFalse(CharacterClips.IsLooping("Vale_Rig|Wave"));
             Assert.IsFalse(CharacterClips.IsLooping("Take 001"));
