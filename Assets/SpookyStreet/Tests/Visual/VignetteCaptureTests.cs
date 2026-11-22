@@ -55,6 +55,18 @@ namespace SpookyStreet.Tests.Visual
             Assert.Greater(FrameCapture.MeanLuminance(FrameCapture.LastFrame), 0.02f, $"{name}: frame is black");
         }
 
+        /// <summary>
+        /// Shot with the stage frozen: a capture takes several slow batchmode frames (about 1.8 s of unscaled time in
+        /// run 91), which would carry a 3 s loop past the chosen beat.
+        /// </summary>
+        private static IEnumerator FrozenShot(string name, SpookyStreet.UI.Nonverbal.VignettePlayer player)
+        {
+            var run = player.CanRun;
+            player.CanRun = () => false;
+            yield return Shot(name);
+            player.CanRun = run;
+        }
+
         private static IEnumerator Wait(float seconds)
         {
             float until = Time.time + seconds;
@@ -152,8 +164,8 @@ namespace SpookyStreet.Tests.Visual
             var pip = game.Pip.transform;
             camera.transform.position = pip.position - pip.right * 0.9f + Vector3.up * 1.3f - pip.forward * 1.4f;
             camera.transform.LookAt(valeAt + Vector3.up * 1.0f);
-            yield return BubbleAt(Lines.ValeInviteSit, 1.05f, "40_vale_bubble");
-            yield return Shot("40_vale_bubble");
+            yield return BubbleAt(Lines.ValeInviteSit, 1.8f, "40_vale_bubble");
+            yield return FrozenShot("40_vale_bubble", director.Dialogue.Vignette);
             director.Dialogue.Skip();
             if (brain != null)
             {
@@ -179,14 +191,14 @@ namespace SpookyStreet.Tests.Visual
             director.Captions.Clear();
             director.Perform(CaseAction.Talk(Speaker.June));
             yield return BubbleAt(Lines.JuneGreet, 0.85f, "41_june_attic_line");
-            yield return Shot("41_june_attic_line");
+            yield return FrozenShot("41_june_attic_line", director.Dialogue.Vignette);
             director.Dialogue.Skip();
             yield return Wait(0.3f);
 
             // 42: Pip's sill clue, the ring pulsing on the silver snag.
             director.Perform(CaseAction.Of(CaseActionKind.ExamineSill));
             yield return BubbleAt(Lines.ExamineSill, 1.3f, "42_pip_sill_line");
-            yield return Shot("42_pip_sill_line");
+            yield return FrozenShot("42_pip_sill_line", director.Dialogue.Vignette);
             director.Dialogue.Skip();
 
             // 43: down in the hall, the floor-hum caption plays its mini stage above the strip.
@@ -208,7 +220,7 @@ namespace SpookyStreet.Tests.Visual
                 yield return null;
             }
 
-            yield return Shot("43_caption_stage");
+            yield return FrozenShot("43_caption_stage", director.Captions.Vignette);
             director.Captions.Clear();
 
             // 44: the machine, out the front door, back to the porch: Aunt Kit's first finale line.
@@ -238,9 +250,9 @@ namespace SpookyStreet.Tests.Visual
             yield return Wait(0.5f);
             game.Pip.Teleport(new Vector3(0f, 0.7f, -13.4f));
             Face(new Vector3(0f, 0.7f, -13.4f), new Vector3(0f, 0.7f, 0f));
-            yield return BubbleAt(Lines.KitFirstShow, 1.85f, "44_kit_finale_line");
+            yield return BubbleAt(Lines.KitFirstShow, 2.2f, "44_kit_finale_line");
             Assert.IsTrue(director.FinalePlaying, "44_kit_finale_line: the finale framing holds");
-            yield return Shot("44_kit_finale_line");
+            yield return FrozenShot("44_kit_finale_line", director.Dialogue.Vignette);
             director.Dialogue.Skip();
         }
     }
