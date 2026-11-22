@@ -100,4 +100,61 @@ that nothing shows when the finale starts. The reopening's own lines still play 
 
 ## Evidence
 
-(Filled in from the validating CI run below.)
+- **Local checks.** `./tools/check-local.sh` passed. `dotnet test tools/core-tests`: 376 passed, after merging main,
+  which adds the non-verbal UI and June's walk clip.
+- **CI run 74** (`1743cb3`). The run was cancelled: the visual step's editor hung during startup before any test ran.
+  - EditMode: 330/330.
+  - PlayMode: 56/58. Two test-side failures:
+    - Pip's screen share was measured from skinned bounds;
+    - June's focus test assumed she was the offered target in the alcove, where the sill wins.
+- **CI run 82** (`09698f1`, after merging main): green. EditMode 400/400, PlayMode 67/67, visual 6/6. The frames
+  showed two problems:
+  - `24_stair` looked back down at Pip from the stair top, with the attic cut away so the street showed through;
+  - the attic hid whenever the lens was high.
+- **Fixes (`585a284`):**
+  - A swing past 90° (the lens facing Pip, with the stick's directions flipped) costs extra. On the stair the lens now
+    looks down from high behind (pitch up to 66°).
+  - With the lens inside the house, the attic is never cut away (D24).
+  - The stair frame is renamed `29_stair`; main now has a `24_bea_vignette`.
+- **CI run 83** (`585a284`, run id 45053552464): **green.** EditMode 400/400, PlayMode 67/67 (`InteriorFramingTests`
+  3/3, `CaptionStripTests` 3/3, `CaseInteriorTests` 6/6), visual 6/6.
+
+**Frames** (`docs/evidence/s002/*_run83.jpg`, compared with `*_run65.jpg`):
+
+- `23_foyer_door`:
+  - *Before:* the lens sat on the stair under the joists. Beams and the stair rail filled the top third and the left of
+    the frame, and they cut the caption.
+  - *After:* the lens is in the hall at 1.84 m. Pip is centred in front of the open door, with the porch, bunting,
+    windows and broom in view. The joists stay at the top as the ceiling, never between the lens and Pip. The hum
+    caption wraps to two whole lines and says "(to the left)", toward the workshop.
+- `19_attic_june`:
+  - *Before:* the lens was outside June's window, and the arch hid June.
+  - *After:* the lens is in the attic. Pip stands in the dormer, framed by the arch behind him, and June sits on her
+    stool on the right, in front of the rail, with nothing between.
+- `29_stair` (new): Pip halfway up the stair, seen from high behind over the balustrade. The treads, the framed
+  pictures and the attic floor are in view; there is no void and no cut-away.
+- `20_workshop_cutaway`: unchanged shot. The caption on screen ("[Click. The striped arm is back in place.]") has no
+  direction cue. The long grille caption is covered by `CaptionStripTests`.
+- `21_finale`:
+  - *Before:* a workshop caption with "(ahead)" sat over the porch.
+  - *After:* the shot is clean, with no leftover caption.
+
+**Not run:** device. No device pass is claimed.
+
+## Remaining gaps
+
+- **Bottom of the stair and the alcove.** The camera can only look back at Pip there, so the stick's directions flip.
+  - The first metre of the stair runs under the low loft and behind the balustrade.
+  - In the dormer alcove, the window is behind Pip.
+
+  Both are short; walking straight through, the camera only wobbles. A widened stair or alcove (D24) would remove them.
+- **19 composition.** June is half cut by the right edge, and her face washes out under the attic lamp. The solver only
+  keeps her in clear view when she is the offered talk target; from the alcove the sill snag wins. Keeping her fully
+  in frame would need a framing term, not just a clear line.
+- **The hall ceiling.** The joists still show in the top quarter of hall frames: the hall is 1.74 m clear under the
+  loft. D24's taller rooms would fix this.
+- **Mesh colliders.** The PlayMode sightline check gives the interior meshes temporary mesh colliders in the editor.
+  On a device, only the Core model of the solids protects the lens. It is checked by the EditMode sweep, and by the
+  PlayMode check against the real meshes at 14 places.
+- **June's walk.** Her model has the Walk clip: run 83 logs `June Idle,KneeTap,Point,Talk,Walk,Wave`. The canonical
+  case test passed its check that Walk plays at about its authored speed mid-walk. No frame shows her walking yet.
