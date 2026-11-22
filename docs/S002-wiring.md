@@ -115,8 +115,13 @@ made.
 - **Fix (`65f1adc`):** give those labels their full height.
 - **CI run 46** (`65f1adc`): cancelled at the 60-minute job limit. EditMode and PlayMode exited 0. The visual step's
   editor stalled right after start-up, before any test or scene log, and was not stopped by the 20-minute step
-  timeout. The code had not changed since run 45. This looks like a runner stall, but it is unconfirmed. The run
-  after it re-checks it and is the frame evidence for the label fix.
+  timeout. The code had not changed since run 45. This looks like a runner stall, but it is unconfirmed. Pushing `aa8a669`
+  (docs only) started no CI run.
+- **CI run 47** (`b8ddc0b`, run id 45033450928): **all green**. EditMode 223/223, PlayMode 33/33 (including the new
+  guard that every dialogue and notebook label actually draws), visual 2/2. The frames show:
+  - `14_dialogue`: Bea's line on the card, the "B" portrait disc and the name tab, "Tap to continue" with the next
+    disc, Skip, and the knock caption lifted above the card with its arrow and "(behind you)";
+  - `15_notebook`: all labels drawn, including the found slips, the "?" slips, the case name and the hint radio.
 - **Not run:** device. No device pass is claimed.
 
 ## What the interior pass needs
