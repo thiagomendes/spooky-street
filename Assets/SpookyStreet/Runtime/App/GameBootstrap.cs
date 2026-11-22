@@ -13,7 +13,8 @@ namespace SpookyStreet.App
 {
     /// <summary>
     /// The only object authored in the gameplay scene. Builds the S000 walking skeleton through the normal
-    /// player entry point: localization → world → Pip → camera → UI → title screen.
+    /// player entry point: localization → world (greybox, then the original environment models when committed) →
+    /// atmosphere → Pip → camera → UI → title screen.
     /// Owns pause semantics (spec §5): pausing suspends input, simulation and audio, and returning from the
     /// background opens paused.
     /// </summary>
@@ -46,6 +47,9 @@ namespace SpookyStreet.App
 
         public MaterialLibrary Materials { get; private set; }
 
+        /// <summary>The original environment models (owl house, porch kit, props) when committed.</summary>
+        public EnvironmentDressing Environment { get; private set; }
+
         private void Awake()
         {
             // Last loaded scene wins; a reload (tests, "back to title" later) replaces the previous instance.
@@ -67,8 +71,10 @@ namespace SpookyStreet.App
             _input = new GameInput();
 
             Materials = new MaterialLibrary(greyboxMaterial, glowMaterial);
-            Transform world = new GreyboxBuilder(Materials).Build();
-            Atmosphere.Build(world);
+            Environment = new EnvironmentDressing(Materials);
+            Transform world = new GreyboxBuilder(Materials) { UseEnvironmentModels = Environment.Available }.Build();
+            Environment.Build(world);
+            Atmosphere.Build(world, Materials, Environment.Anchors);
             Pip = CreatePip(movementTuning, Materials);
 
             int obstacleLayers = Physics.DefaultRaycastLayers & ~(1 << Pip.gameObject.layer);

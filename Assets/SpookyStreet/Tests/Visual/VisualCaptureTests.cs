@@ -97,6 +97,22 @@ namespace SpookyStreet.Tests.Visual
             camera.transform.LookAt(target);
             game.Ui.Hud.SetActive(false);
             yield return Shot("05_pip_closeup");
+
+            // Key frame camera (docs/evidence/s000.2/env_keyframe_v2.png): a child's eye height (1.05 m) on the
+            // arrival porch, looking up the path past the candy bowl (foreground left) to the owl house (right of
+            // centre), as in the key frame. Pip is a few metres up the path after the walk above.
+            float fieldOfView = camera.fieldOfView;
+            camera.fieldOfView = 40f;
+            camera.transform.position = new Vector3(-0.4f, 0.6f + 1.05f, -15f);
+            camera.transform.LookAt(new Vector3(-2.5f, 3.4f, 8f));
+            yield return Shot("06_keyframe_view");
+
+            // Owl house from the plaza, front-left: house facing, glows, owl, wind wheel, gate and fence.
+            camera.fieldOfView = 50f;
+            camera.transform.position = new Vector3(-3.2f, 1.8f, -0.5f);
+            camera.transform.LookAt(new Vector3(0f, 3f, 11f));
+            yield return Shot("07_owl_house");
+            camera.fieldOfView = fieldOfView;
             game.Ui.Hud.SetActive(true);
             if (brain != null)
             {

@@ -8,6 +8,10 @@ namespace SpookyStreet.World
     /// Units are meters, north is +Z, origin at the plaza (spec §4). The composition serves the opening image
     /// (spec §1): a child-height view past a candy bowl, down a path, to the dark blue house whose round attic
     /// window glows above the hedge. The full block arrives in S001.
+    /// With <see cref="UseEnvironmentModels"/> (set when the original environment models are committed), the pieces
+    /// that <see cref="EnvironmentDressing"/> replaces are not drawn: the owl house, the arrival porch's visuals,
+    /// the candy bowl and porch lamp primitives, the plaza maple and the side-yard hedge block. The arrival porch
+    /// and its steps keep invisible gameplay colliders matched to the porch kit; the dressing adds the rest.
     /// </summary>
     public sealed class GreyboxBuilder
     {
@@ -20,6 +24,9 @@ namespace SpookyStreet.World
         private const float HouseFront = 11f;
         public const float HouseFrontZ = HouseFront;
 
+        /// <summary>Kit steps (Kit_Steps): 0.2 m risers on 0.3 m treads, so the colliders match what is drawn.</summary>
+        public const float KitTread = 0.3f;
+
         private readonly MaterialLibrary _materials;
         private readonly int _safeLayer;
         private Transform _root;
@@ -31,14 +38,21 @@ namespace SpookyStreet.World
             _safeLayer = layer >= 0 ? layer : 0;
         }
 
+        /// <summary>True when the original environment models replace the greybox house, porch and props.</summary>
+        public bool UseEnvironmentModels { get; set; }
+
         public Transform Build()
         {
             _root = new GameObject("Greybox_LanternLane").transform;
 
             BuildGround();
             BuildArrivalPorch();
-            BuildOwlHouse();
-            BuildPlaza();
+            if (!UseEnvironmentModels)
+            {
+                BuildOwlHouse();
+                BuildPlaza();
+            }
+
             BuildBoundary();
             BuildSkyline();
             BuildSkyCard();
@@ -61,6 +75,21 @@ namespace SpookyStreet.World
 
         private void BuildArrivalPorch()
         {
+            if (UseEnvironmentModels)
+            {
+                // The porch kit is drawn by EnvironmentDressing: deck 4 × 2 m at 0.6 m, front edge at z = -13,
+                // steps down toward the plaza. Same footing, invisible.
+                ColliderBox("ArrivalPorch", new Vector3(0f, 0.3f, -14f), new Vector3(4f, 0.6f, 2f), safe: true);
+                for (int i = 0; i < 2; i++)
+                {
+                    float height = 0.4f - i * 0.2f;
+                    ColliderBox("PorchStep" + i, new Vector3(0f, height * 0.5f, -13f + KitTread * (i + 0.5f)),
+                        new Vector3(1.8f, height, KitTread), safe: true);
+                }
+
+                return;
+            }
+
             // Arrival porch (0, −13; 0.6 m) with two 0.2 m steps down toward the plaza.
             Box("ArrivalPorch", new Vector3(0f, 0.3f, -14.2f), new Vector3(4f, 0.6f, 2.4f), Palette.Timber, safe: true);
             for (int i = 0; i < 2; i++)
@@ -162,7 +191,10 @@ namespace SpookyStreet.World
             Box("Hedge_South", new Vector3(0f, 0.7f, -17.5f), new Vector3(44f, 1.4f, 1f), Palette.Hedge, safe: false);
             Box("Hedge_West", new Vector3(-21.5f, 0.7f, 0f), new Vector3(1f, 1.4f, 36f), Palette.Hedge, safe: false);
             Box("Hedge_East", new Vector3(21.5f, 0.7f, 0f), new Vector3(1f, 1.4f, 36f), Palette.Hedge, safe: false);
-            Box("Hedge_SideYard", new Vector3(-6f, 0.8f, 7f), new Vector3(6f, 1.6f, 1f), Palette.Hedge, safe: false);
+            if (!UseEnvironmentModels)
+            {
+                Box("Hedge_SideYard", new Vector3(-6f, 0.8f, 7f), new Vector3(6f, 1.6f, 1f), Palette.Hedge, safe: false);
+            }
         }
 
         private void BuildSkyline()
@@ -179,42 +211,66 @@ namespace SpookyStreet.World
                 float width = h.z;
                 float wallHeight = h.w;
                 Decor(Box("Skyline_House", position + new Vector3(0f, wallHeight * 0.5f, 0f),
-                    new Vector3(width, wallHeight, 5f), Palette.RoofShadow, safe: false));
+                    new Vector3(width, wallHeight, 5f), Palette.SkylineWall, safe: false));
                 var roof = new GameObject("Skyline_Roof", typeof(MeshFilter), typeof(MeshRenderer));
                 roof.transform.SetParent(_root, false);
                 roof.transform.localPosition = position + new Vector3(0f, wallHeight, 0f);
                 roof.transform.localRotation = Quaternion.Euler(0f, Mathf.Abs(h.x) > 20f ? 90f : 0f, 0f);
                 roof.GetComponent<MeshFilter>().sharedMesh = MeshFactory.Prism(width + 0.6f, width * 0.35f, 5.4f);
-                _materials.Apply(roof.GetComponent<MeshRenderer>(), Palette.RoofShadow);
+                _materials.Apply(roof.GetComponent<MeshRenderer>(), Palette.SkylineRoof);
+
+                // A dim window or two keeps the neighbours lived-in without competing with the attic.
+                var window = Box("Skyline_Window", position + new Vector3(width * 0.22f, wallHeight * 0.55f, -2.53f),
+                    new Vector3(0.7f, 0.9f, 0.05f), Palette.PumpkinAmber, safe: false);
+                window.GetComponent<Renderer>().sharedMaterial = _materials.Glow(Palette.PumpkinAmber, 0.45f);
+                Decor(window);
             }
         }
 
         private void BuildSkyCard()
         {
-            // Painted twilight gradient behind the skyline: horizon glow fading up into the spec's sky blue.
-            const int height = 64;
-            var gradient = new Texture2D(2, height, TextureFormat.RGB24, false)
+            // Halloween night (spec v1.3 palette): haunted-purple glow at the horizon rising into night violet and a
+            // deeper violet overhead, with a scatter of small stars in the upper sky. Painted once at load.
+            const int width = 512;
+            const int height = 256;
+            var sky = new Texture2D(width, height, TextureFormat.RGB24, false)
             {
-                name = "SkyGradient",
+                name = "NightSky",
                 wrapMode = TextureWrapMode.Clamp,
                 filterMode = FilterMode.Bilinear,
             };
+            var pixels = new Color32[width * height];
             for (int y = 0; y < height; y++)
             {
-                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(y / (height * 0.45f)));
-                Color c = Color.Lerp(Palette.SkyHorizon, Palette.TwilightSky, t);
-                gradient.SetPixel(0, y, c);
-                gradient.SetPixel(1, y, c);
+                float t = y / (height - 1f);
+                Color c = Color.Lerp(Palette.HauntedPurple, Palette.NightViolet, Mathf.SmoothStep(0f, 1f, t / 0.42f));
+                c = Color.Lerp(c, Palette.NightZenith, Mathf.SmoothStep(0f, 1f, (t - 0.42f) / 0.58f));
+                Color32 row = c;
+                for (int x = 0; x < width; x++)
+                {
+                    pixels[y * width + x] = row;
+                }
             }
 
-            gradient.Apply(false, true);
+            var random = new System.Random(7);
+            for (int i = 0; i < 160; i++)
+            {
+                int x = random.Next(width);
+                int y = (int)(height * (0.28f + 0.72f * (float)random.NextDouble()));
+                y = Mathf.Min(y, height - 1);
+                float brightness = 0.55f + 0.45f * (float)random.NextDouble();
+                pixels[y * width + x] = Color.Lerp(pixels[y * width + x], Palette.StarLight, brightness);
+            }
+
+            sky.SetPixels32(pixels);
+            sky.Apply(false, true);
             var card = GameObject.CreatePrimitive(PrimitiveType.Quad);
             card.name = "SkyCard";
             Object.Destroy(card.GetComponent<Collider>());
             card.transform.SetParent(_root, false);
             card.transform.localPosition = new Vector3(0f, 24f, 34f);
             card.transform.localScale = new Vector3(170f, 52f, 1f);
-            card.GetComponent<Renderer>().sharedMaterial = _materials.Unlit(gradient);
+            card.GetComponent<Renderer>().sharedMaterial = _materials.Unlit(sky);
         }
 
         private GameObject Disc(string name, Vector3 centre, float diameter, Material material)
@@ -238,6 +294,17 @@ namespace SpookyStreet.World
                 Object.Destroy(collider);
             }
 
+            return go;
+        }
+
+        /// <summary>Invisible gameplay footing (no renderer).</summary>
+        private GameObject ColliderBox(string name, Vector3 center, Vector3 size, bool safe)
+        {
+            var go = new GameObject(name, typeof(BoxCollider));
+            go.transform.SetParent(_root, false);
+            go.transform.localPosition = center;
+            go.GetComponent<BoxCollider>().size = size;
+            go.layer = safe ? _safeLayer : 0;
             return go;
         }
 

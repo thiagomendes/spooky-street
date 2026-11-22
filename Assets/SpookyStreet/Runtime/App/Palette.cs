@@ -11,6 +11,27 @@ namespace SpookyStreet
         public static readonly Color ClothSilver = Hex(0xDAE2EE);
         public static readonly Color WarmPaper = Hex(0xF4E6C8);
 
+        // v1.3 Halloween night families (spec §6, owner).
+        public static readonly Color NightViolet = Hex(0x2A2550);
+        public static readonly Color HauntedPurple = Hex(0x5B3A7A);
+        public static readonly Color Plum = Hex(0x7A3E6E);
+        public static readonly Color JackOrange = Hex(0xEE7F2D);
+        public static readonly Color CandyCornYellow = Hex(0xF6D365);
+        public static readonly Color InkBlack = Hex(0x1E1A26);
+
+        // Night look helpers derived from those families (key frame docs/evidence/s000.2/env_keyframe_v2.png).
+        public static readonly Color NightZenith = Hex(0x17143C);
+        public static readonly Color NightFog = Hex(0x3A2D5E);
+        public static readonly Color NightAmbientSky = Hex(0x4B4A86);
+        public static readonly Color NightAmbientEquator = Hex(0x3A2E5C);
+        public static readonly Color NightAmbientGround = Hex(0x221C30);
+        public static readonly Color MoonCool = Hex(0x8FA8FF);
+        public static readonly Color MoonDisc = Hex(0xEDE3BF);
+        public static readonly Color MoonCrater = Hex(0xC9BE98);
+        public static readonly Color StarLight = Hex(0xFFF2C8);
+        public static readonly Color SkylineWall = Hex(0x231E44);
+        public static readonly Color SkylineRoof = Hex(0x33255A);
+
         // Greybox helpers derived from the palette (not part of the spec palette). Art bible: docs/art-bible.md.
         public static readonly Color Ground = Hex(0x3F4559);
         public static readonly Color Hedge = Hex(0x2E4A43);
