@@ -43,38 +43,40 @@ DETAIL = re.compile(r"Pip_(SleeveFold|VestButton|VestPiping|Brooch|Clasp|Jabot|S
                     r"HairStrand|BatClip|Lash|Brow|Smile|Glint|Cuff)")  # atlas meshes; the face is its own mesh with its own map
 
 # Source part (regex on the builder's object name) -> group, subdivision level (None = as built), curve
-# (bevel resolution, spline resolution), keep bevel modifiers, triangle target (None = no decimation).
+# (bevel resolution, spline resolution), keep bevel modifiers, triangle target (None = no decimation;
+# ("sheet", n) decimates the cloth as a single sheet of n triangles and only then gives it its thickness, so the
+# outer and lining shells share one topology and can never cross).
 PARTS = [
     (r"Pip_Head$", "Face", 0, None, True, None),
-    (r"Pip_Sclera", "Face", 0, None, True, 520),
-    (r"Pip_Iris", "Face", None, None, True, None),
+    (r"Pip_Sclera", "Face", 0, None, True, 400),
+    (r"Pip_Iris", "Face", None, None, True, 180),
     (r"Pip_Pupil", "Face", None, None, True, 120),
     (r"Pip_Glint", "Face", None, None, True, None),
-    (r"Pip_Lash", "Face", None, (1, 4), True, 220),
+    (r"Pip_Lash", "Face", None, (1, 4), True, 160),
     (r"Pip_Brow", "Face", None, (1, 4), True, 110),
     (r"Pip_Smile", "Face", None, (1, 4), True, 260),
     (r"Pip_Nose", "Face", 0, None, True, 360),
     (r"Pip_Fang", "Face", 0, None, True, 96),
     (r"Pip_(Mouth|Tongue)", "Face", None, None, True, None),
     (r"Pip_Hair$", "Hair", 0, None, True, None),
-    (r"Pip_HairGroove", "Hair", None, (0, 2), True, 72),
+    (r"Pip_HairGroove", "Hair", None, (0, 2), True, 56),
     (r"Pip_HairStrand", "Hair", None, (0, 1), True, 40),
     (r"Pip_BatClipFelt", "Hair", None, None, False, None),
-    (r"Pip_Body$", "Body", None, None, True, 4400),
-    (r"Pip_Shorts$", "Body", 1, None, True, 800),
-    (r"Pip_ShortsLeg", "Body", 1, None, True, 250),
+    (r"Pip_Body$", "Body", None, None, True, 4100),
+    (r"Pip_Shorts$", "Body", 1, None, True, ("sheet", 360)),
+    (r"Pip_ShortsLeg", "Body", 1, None, True, ("sheet", 96)),
     (r"Pip_ShortsHem", "Body", 0, None, True, 72),
-    (r"Pip_Vest$", "Body", 1, None, True, 1400),
+    (r"Pip_Vest$", "Body", 1, None, True, ("sheet", 560)),
     (r"Pip_VestButtonDisc", "Body", 0, None, True, 56),
     (r"Pip_VestPiping", "Body", None, (0, 3), True, 110),
     (r"Pip_Brooch", "Body", 0, None, True, 90),
-    (r"Pip_Jabot", "Body", 0, None, True, 240),
+    (r"Pip_Jabot", "Body", 0, None, True, ("sheet", 60)),
     (r"Pip_SleeveFold", "Body", 0, None, True, 72),
     (r"Pip_Cuff", "Body", 0, None, True, 150),
-    (r"Pip_CapeCollar", "Body", 1, None, True, 520),
+    (r"Pip_CapeCollar", "Body", 1, None, True, ("sheet", 160)),
     (r"Pip_ClaspButton", "Body", 0, None, True, 72),
     (r"Pip_ClaspCord", "Body", None, (0, 3), True, 72),
-    (r"Pip_Hand[LR]Finger", "Body", None, None, True, 160),
+    (r"Pip_Hand[LR]Finger", "Body", None, None, True, 140),
     (r"Pip_Hand[LR]Thumb", "Body", None, None, True, 210),
     (r"Pip_Hand[LR]Palm", "Body", 0, None, True, 240),
     (r"Pip_Hand[LR]Wrist", "Body", None, None, True, 96),
@@ -84,14 +86,14 @@ PARTS = [
     (r"Pip_Shoe[LR]HeelCounter", "Body", 0, None, True, 180),
     (r"Pip_Shoe[LR]HeelTab", "Body", 0, None, True, 36),
     (r"Pip_Shoe[LR]Lace", "Body", None, (0, 2), True, 24),
-    (r"Pip_Shoe[LR]Sole", "Body", None, None, True, 260),
+    (r"Pip_Shoe[LR]Sole", "Body", None, None, True, 340),
     (r"Pip_Shoe[LR]Tongue", "Body", 0, None, True, 90),
     (r"Pip_Shoe[LR]Collar", "Body", 0, None, True, 200),
-    (r"Pip_Cape$", "Cape", 1, None, True, "unsubdiv"),
+    (r"Pip_Cape$", "Cape", 1, None, True, ("sheet", 1500)),
     (r"Pip_CapeStarFelt", "Cape", None, None, False, None),
-    (r"Pip_CapeStitch", "Cape", None, None, True, 420),
-    (r"Pip_Pail$", "Pail", 0, None, True, 800),
-    (r"Pip_PailRim", "Pail", 0, None, True, 180),
+    (r"Pip_CapeStitch", "Cape", None, None, True, 260),
+    (r"Pip_Pail$", "Pail", 0, None, True, 700),
+    (r"Pip_PailRim", "Pail", 0, None, True, 140),
     (r"Pip_Pail(Eye|Grin)", "Pail", None, None, False, None),
     (r"Pip_PailHandle", "Pail", None, (0, 3), True, 140),
 ]
@@ -142,6 +144,17 @@ def patch_materials():
                 links.new(attr.outputs["Vector"], to)
 
 
+def rebake(obj, old):
+    """Apply the object's modifiers into a fresh mesh."""
+    deps = bpy.context.evaluated_depsgraph_get()
+    deps.update()
+    new = bpy.data.meshes.new_from_object(obj.evaluated_get(deps))
+    obj.modifiers.clear()
+    obj.data = new
+    bpy.data.meshes.remove(old)
+    return new
+
+
 def realize(src, spec):
     """Game-resolution copy of one source part, in world space, remembering its object-space coordinates."""
     _pattern, group, subsurf, curve, bevel, target = spec
@@ -152,6 +165,12 @@ def realize(src, spec):
             m.show_viewport = False
     if src.type == "CURVE" and curve is not None:
         src.data.bevel_resolution, src.data.resolution_u = curve
+    sheet = None
+    if isinstance(target, tuple):
+        sol = next(m for m in src.modifiers if m.type == "SOLIDIFY")
+        sheet = (sol.thickness, sol.offset, sol.material_offset, sol.material_offset_rim)
+        sol.show_viewport = False
+        target = target[1]
     deps = bpy.context.evaluated_depsgraph_get()
     deps.update()
     me = bpy.data.meshes.new_from_object(src.evaluated_get(deps))
@@ -159,20 +178,14 @@ def realize(src, spec):
     bpy.context.scene.collection.objects.link(obj)
     me.calc_loop_triangles()
     count = len(me.loop_triangles)
-    if target is not None and (target == "unsubdiv" or count > target * 1.1):
+    if target is not None and count > target * 1.1:
         dec = obj.modifiers.new("Dec", "DECIMATE")
-        if target == "unsubdiv":  # keeps both cloth shells on the same regular grid, so they never cross
-            dec.decimate_type = "UNSUBDIV"
-            dec.iterations = 1
-        else:
-            dec.ratio = target / count
-        deps = bpy.context.evaluated_depsgraph_get()
-        deps.update()
-        low = bpy.data.meshes.new_from_object(obj.evaluated_get(deps))
-        obj.modifiers.clear()
-        obj.data = low
-        bpy.data.meshes.remove(me)
-        me = low
+        dec.ratio = target / count
+        me = rebake(obj, me)
+    if sheet is not None:
+        sol = obj.modifiers.new("Thick", "SOLIDIFY")
+        sol.thickness, sol.offset, sol.material_offset, sol.material_offset_rim = sheet
+        me = rebake(obj, me)
     co = np.empty(len(me.vertices) * 3, dtype=np.float32)
     me.vertices.foreach_get("co", co)
     me.attributes.new("orco", "FLOAT_VECTOR", "POINT").data.foreach_set("vector", co)
@@ -180,6 +193,13 @@ def realize(src, spec):
     me.transform(world)
     if world.determinant() < 0:
         me.flip_normals()
+    if src.name.startswith("Pip_Vest"):
+        # The vest hem and the shorts' waistband share a radius; at game resolution they would zig-zag through
+        # each other, so the vest flares a few millimetres over the waistband (below the waist, z = 0.696).
+        for v in me.vertices:
+            f = 1 + 0.075 * smooth((0.7 - v.co.z) / 0.08)
+            v.co.x *= f
+            v.co.y *= f
     me.update()
     obj["src"] = src.name
     obj["grp"] = group
@@ -362,11 +382,16 @@ def body_auto_weights(body, rig, table):
 class SkinSource:
     """Nearest-surface lookup of the body's weights."""
 
-    def __init__(self, body, names, W):
+    def __init__(self, body, names, W, bones=None):
+        """`bones`: only body triangles ruled by one of these bones are looked up, and only they are copied."""
         me = body.data
         me.calc_loop_triangles()
         self.co = [v.co.copy() for v in me.vertices]
         self.tris = [tuple(t.vertices) for t in me.loop_triangles]
+        self.keep = None
+        if bones is not None:
+            self.keep = np.array([n in bones for n in names])
+            self.tris = [t for t in self.tris if names[int(np.argmax(W[t[0]] + W[t[1]] + W[t[2]]))] in bones]
         self.tree = BVHTree.FromPolygons(self.co, self.tris)
         self.names, self.W = names, W
 
@@ -396,6 +421,8 @@ class SkinSource:
                 out[i] = cache
                 continue
             w = self.at(p).copy()
+            if self.keep is not None:
+                w = w * self.keep
             if allow is not None:
                 for j, n in enumerate(self.names):
                     if not allow(n, p.x):
@@ -408,15 +435,17 @@ class SkinSource:
         set_weights(obj, {n: out[:, j] for j, n in enumerate(self.names)})
 
 
-def cape_weights(obj):
+def cape_weights(obj, rigid=False):
+    """Analytic cape weights from position; `rigid` gives a sewn-on patch the weights of its centre."""
     n = len(obj.data.vertices)
+    centre = sum((v.co for v in obj.data.vertices), Vector()) / n
     W = {"Chest": np.zeros(n)}
     for C in "LMR":
         for i in (1, 2, 3):
             W[f"Cape_{C}{i}"] = np.zeros(n)
     j = CAPE_JOINTS
     for v in obj.data.vertices:
-        p = v.co
+        p = centre if rigid else v.co
         az = math.degrees(math.atan2(p.x, p.y / CAPE_Y))
         cl = smooth(az / CAPE_AZ)
         cr = smooth(-az / CAPE_AZ)
@@ -490,15 +519,15 @@ def shoe_weights(obj, src):
 def weight_parts(parts, P, rig, table):
     body = next(o for o in parts if o["src"] == "Pip_Body")
     names, W = body_auto_weights(body, rig, table)
-    skin = SkinSource(body, names, W)
-    torso = {"Hips", "Spine", "Chest"}
-
-    def side_only(prefixes):
-        return lambda n, x: any(n.startswith(p) for p in prefixes) and (n[-1] == ("L" if x > 0 else "R"))
+    torso = {"Hips", "Spine", "Chest", "Neck"}
+    on_torso = SkinSource(body, names, W, torso)  # garments never pick up arm weights from a resting arm
+    on_hips = SkinSource(body, names, W, {"Hips", "Spine", "UpperLeg_L", "UpperLeg_R"})
+    on_arm = {S: SkinSource(body, names, W, {"UpperArm_" + S, "LowerArm_" + S}) for S in "LR"}
     for o in parts:
         src = o["src"]
         if o is body:
             continue
+        side = "L" if sum(v.co.x for v in o.data.vertices) > 0 else "R"
         if o["grp"] == "Face":
             set_weights(o, {"Head": 1.0})
         elif o["grp"] == "Hair":
@@ -506,7 +535,7 @@ def weight_parts(parts, P, rig, table):
         elif o["grp"] == "Pail":
             set_weights(o, {"Pail": 1.0})
         elif o["grp"] == "Cape":
-            cape_weights(o)
+            cape_weights(o, rigid=src.startswith("Pip_CapeStar"))
         elif src.startswith("Pip_Hand"):
             hand_weights(o, P, src)
         elif src.startswith("Pip_Shoe"):
@@ -514,18 +543,18 @@ def weight_parts(parts, P, rig, table):
         elif re.match(r"Pip_(CapeCollar|Clasp)", src):
             set_weights(o, {"Chest": 1.0})
         elif src.startswith("Pip_Cuff"):
-            set_weights(o, {"LowerArm_" + ("L" if o.data.vertices[0].co.x > 0 else "R"): 1.0})
+            set_weights(o, {"LowerArm_" + side: 1.0})
         elif src.startswith("Pip_SleeveFold"):
-            skin.transfer(o, side_only(("UpperArm", "LowerArm")), fallback="Chest")
+            on_arm[side].transfer(o)
         elif re.match(r"Pip_(VestButton|Brooch)", src):
-            skin.transfer(o, lambda n, x: n in torso, rigid=True)
+            on_torso.transfer(o, rigid=True)
         elif re.match(r"Pip_(Vest|Jabot)", src):
-            skin.transfer(o, lambda n, x: n in torso or n.startswith("Shoulder"))
+            on_torso.transfer(o)
         elif re.match(r"Pip_Shorts(Leg|Hem)", src):
-            skin.transfer(o, lambda n, x: n == "Hips" or n == "UpperLeg_" + ("L" if x > 0 else "R"),
-                          fallback="Hips")
+            on_hips.transfer(o, lambda n, x: n == "Hips" or n == "UpperLeg_" + ("L" if x > 0 else "R"),
+                             fallback="Hips")
         elif src == "Pip_Shorts":
-            skin.transfer(o, lambda n, x: n in ("Hips", "Spine") or n.startswith("UpperLeg"), fallback="Hips")
+            on_hips.transfer(o, fallback="Hips")
         else:
             raise RuntimeError("no weights for " + src)
     body.modifiers.clear()

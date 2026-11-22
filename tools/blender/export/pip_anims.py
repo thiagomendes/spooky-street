@@ -246,18 +246,18 @@ def _locomotion(u, run):
              chest_yaw=(7 + 6 * k) * math.cos(a), chest_pitch=1 + 3 * k,
              head_pitch=1 + 2 * k + 1.5 * bounce, head_yaw=-2 * math.cos(a), head_roll=1.5 * math.sin(a),
              # free arm pumps opposite its leg; the pail arm stays quieter so the candy survives
-             armL_fwd=-(26 + 26 * k) * math.cos(a) + 4 * k, armL_out=6 + 6 * k, armL_twist=12 * k,
+             armL_fwd=-(26 + 24 * k) * math.cos(a) + 14 * k, armL_out=7 + 9 * k, armL_twist=12 * k,
              elbowL=22 + 58 * k + (10 + 6 * k) * math.cos(a - 0.5), handL_pitch=6 * math.sin(a), fingersL=18 + 45 * k,
              shoulderL=3 * k + 3 * math.cos(a), shoulderR=3 * k - 3 * math.cos(a),
-             armR_fwd=(14 + 10 * k) * math.cos(a) + 6 * k, armR_out=8 + 8 * k, elbowR=16 + 30 * k - 6 * math.cos(a - 0.5),
+             armR_fwd=(14 + 10 * k) * math.cos(a) + 12 * k, armR_out=9 + 9 * k, elbowR=16 + 30 * k - 6 * math.cos(a - 0.5),
              pail_x=(8 + 10 * k) * math.cos(a - 1.1) + 6 * k, pail_y=-(3 + 4 * k) + 4 * math.sin(2 * a),
              hair_back=2 + 9 * k + (2.5 + 2 * k) * math.cos(2 * a - 2.0), hair_side=2 * math.sin(a - 0.8),
              hair_flare=1 + 2 * k)
     base = 15 + 37 * k
     wave = 5 + 4 * k
     cape(p, [base * (0.75 + 0.2 * i) + wave * math.sin(2 * a - 0.9 * i - 0.4) for i in range(3)],
-         flare=[(3 + 4 * k) * (1 + 0.5 * i) + 2.5 * math.sin(2 * a - 0.9 * i) for i in range(3)],
-         fan=[(2 + 5 * k) * (i + 1) for i in range(3)], sway=(3 + 2 * k) * math.sin(a - 0.7))
+         flare=[(5 + 7 * k) * (1 + 0.3 * i) + 2.5 * math.sin(2 * a - 0.9 * i) for i in range(3)],
+         fan=[(4 + 8 * k) * (1 + 0.5 * i) for i in range(3)], sway=(3 + 2 * k) * math.sin(a - 0.7))
     return p
 
 
@@ -408,7 +408,7 @@ def roll(u):
                  armL_fwd=20, armL_out=30, elbowL=30, armR_fwd=10, armR_out=24, elbowR=24, pail_world=1.0)
     cape(end, [44, 36, 28], flare=[5, 8, 10])
     tuck_a, tuck_b = dict(tuck), dict(tuck)
-    tuck_a["hz"], tuck_b["hz"] = -0.26, -0.27
+    tuck_a["hz"], tuck_b["hz"] = -0.27, -0.4  # belly-down, then rolling over the back
     p = keyed([(0.0, start), (0.2, tuck_a), (0.5, tuck), (0.8, tuck_b), (1.0, end)], u)
     spin = 360.0 * smooth((u - 0.06) / 0.86)
     p["hip_pitch"] += spin

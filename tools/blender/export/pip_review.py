@@ -121,7 +121,7 @@ def main():
     print("[pip_review] imported", [o.name for o in meshes], "tris", tris, "actions", sorted(actions))
     cam = co.stage()
     scene = bpy.context.scene
-    scene.eevee.taa_render_samples = 16
+    scene.eevee.taa_render_samples = 32
     tmp = os.path.splitext(out)[0]
 
     def set_pose(clip, frame):
