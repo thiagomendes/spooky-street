@@ -69,7 +69,8 @@ namespace SpookyStreet.Core.Case
             JuneFoyer.Position,
         };
 
-        public const float JuneWalkSpeed = 1.3f;
+        /// <summary>Her cruise speed: the walk clip's pace (0.55 m steps, a 1.0 s cycle), so her feet do not slide.</summary>
+        public const float JuneWalkSpeed = 1.1f;
 
         /// <summary>
         /// June has no walk clip yet (art to come), so her glide is shaped to read as a walk: she first turns toward the

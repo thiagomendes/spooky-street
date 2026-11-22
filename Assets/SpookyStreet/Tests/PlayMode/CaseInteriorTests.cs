@@ -257,6 +257,9 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(Lines.JuneGreet, director.Dialogue.CurrentLine.Key);
             yield return SkipDialogue();
             Assert.IsTrue(cast.JuneWalking, "June walks down after her lines");
+            yield return Wait(2f);
+            Assert.AreEqual(cast.JuneHasWalk ? CaseCast.WalkClip : "Idle", cast.June.Avatar.Loop,
+                "June steps on her walk clip when she has one, and glides on Idle otherwise");
             yield return WaitForJune();
             Vector3 june = cast.June.transform.position;
             Assert.Less(Vector3.Distance(june, At(CaseStage.JuneFoyer.Position)), 0.2f, "June at her foyer mark");

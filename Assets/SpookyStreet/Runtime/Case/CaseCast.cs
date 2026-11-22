@@ -20,6 +20,15 @@ namespace SpookyStreet.Case
         public static readonly WitnessClipSet JuneSeated =
             new WitnessClipSet(CharacterClips.KneeTap, CharacterClips.KneeTap, null);
 
+        /// <summary>
+        /// June's walk loop (CharacterClips.Walk once feature/june-walk lands; the same clip name as Pip's). Played while
+        /// she moves if her model has it; otherwise she glides on Idle. Designed for <see cref="CaseStage.JuneWalkSpeed"/>.
+        /// </summary>
+        public const string WalkClip = PipClips.Walk;
+
+        /// <summary>Below this speed (m/s, the ease in and out) she shows Idle rather than stepping in place.</summary>
+        public const float StepSpeed = 0.35f;
+
         private float _walked = -1f;
         private float _walkTime;
         private float _walkLength;
@@ -28,6 +37,9 @@ namespace SpookyStreet.Case
 
         public Witness June { get; private set; }
         public Witness Kit { get; private set; }
+
+        /// <summary>True when June's model has a walk loop (otherwise she glides on Idle).</summary>
+        public bool JuneHasWalk => June != null && June.Avatar.HasClip(WalkClip);
 
         /// <summary>True while June walks down to the foyer.</summary>
         public bool JuneWalking => _walked >= 0f;
@@ -154,9 +166,17 @@ namespace SpookyStreet.Case
                 return;
             }
 
-            // No walk clip yet: she turns toward the path, eases in and out, and turns into corners ahead of them.
+            // Walk while moving when she has the clip (Idle otherwise): she turns toward the path, eases in and out, and turns into corners ahead of them.
             _walkTime += dt;
+            float before = _walked;
             _walked = CaseStage.JuneWalkDistance(_walkTime);
+            float speed = (_walked - before) / dt;
+            string loop = speed > StepSpeed && JuneHasWalk ? WalkClip : CharacterClips.Idle;
+            if (June.Avatar.Loop != loop)
+            {
+                June.Avatar.PlayLoop(loop);
+            }
+
             var p = CaseStage.Along(CaseStage.JuneWalk, _walked, out _, out _);
             CaseStage.JuneFacing(_walked, out float hx, out float hz);
             June.transform.SetPositionAndRotation(new Vector3(p.X, p.Y, p.Z),
