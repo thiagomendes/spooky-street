@@ -37,8 +37,8 @@ and the finale. It also rebuilds all of them from facts on resume. It completes 
 | `SillBridge` | (−4.55, 0, 14.0) | 2.4 m span, 2.40 → 2.50 m. Low guards (0.8 m) on both sides. |
 | `ClothSnag` | (−5.87, 3.38, 14.5), yaw 90 | On the bridge-head post, 0.98 m above the roof. |
 | `TreehouseCabin` | the maple's frame, yaw 200 | Wall colliders only. The platform deck is owned by `fix/collisions` (see below). |
-| `Crate` | (−7.1, 0, 9.47), yaw 12 | 0.6 m, fitted bounds. |
-| `Awning` | (−7.11, 0, 11.42) | A sloped walk slab (1.35 → 2.1 m, 26.6°) and its wall slice (top 2.53 m). |
+| `Crate` | (−7.1, 0, 9.47), yaw 12 | 0.6 m. Its collider comes from the `CollisionRules` recipe (merged from `fix/collisions`). |
+| `Awning` | (−7.11, 0, 11.42) | Its colliders come from the `CollisionRules` recipe: the canvas slope (1.35 → 2.1 m, 26.6°) and the wall slice. `CaseRouteLayout` keeps matching reference slabs for the route checks. |
 | `OwlHouseInterior` | (0, 0, 13) | The same origin as `OwlHouse`. |
 | `WorkshopMechanism` | (1.45, 0.1, 14.1), yaw 90 | The front faces the foyer (−X). |
 
@@ -137,7 +137,39 @@ attic sill, attic, foyer and workshop.
 
 ## Evidence
 
-(Filled in from the CI runs below.)
+- `./tools/check-local.sh`: all checks passed. `dotnet test tools/core-tests`: **287 passed**, including the 14
+  `CaseRouteTests`.
+- **CI run 63** (`b58d920`, run id 45038439105): compiled. EditMode 301/301, PlayMode 44/47, visual 3/3. The run
+  confirmed the coordinate mapping: the logged latch, sill snag, window pane and mechanism stand where
+  `CaseRouteLayout` puts them. Three failures:
+  - the cutaway inset tried to create a render texture without a graphics device (PlayMode runs `-nographics`);
+  - a caption assertion read the queue, not the step;
+  - a resume anchor was legitimately the attic, not the sill.
+
+  Frame review found three problems: Pip in the cutaway shot, the open panel blocking it, and the finale's speech card
+  covering the porch.
+- **Fixes (`08c46c7`):**
+  - merged `main` (`fix/collisions`): Crate and Awning use their `CollisionRules` recipes, and the route models are
+    audited;
+  - the reopening plays for 3 s before its card;
+  - the cutaway hides Pip and looks from the north;
+  - the inset renders only with a graphics device.
+
+  CI run 64: EditMode 309/309, PlayMode 51/52 (the awning-slope tolerance against the recipe's canvas), visual 4/4.
+- **CI run 65** (`88737dc`, run id 45040964240): **all green**. EditMode 309/309, PlayMode 52/52 (`CaseInteriorTests`
+  6/6, `CollisionTests` 5/5), visual 4/4. Frames (`docs/evidence/s002/*_run65.jpg`):
+  - `18_treehouse_route`: the side yard, ramp with bunting, the cabin on the maple, the awning and crate against the
+    shed, and the owl house. Pip is on the landing.
+  - `19_attic_june`: the closer shoulder view through June's window. June sits on her stool tapping her knee, Pip
+    stands beside her, and the rug, rails, star lantern and craft table are in frame.
+  - `20_workshop_cutaway`: the nook with its near wall hidden. The cam's lobes, the follower bar, the striped push rod,
+    the crank and Kit's photo are visible. The felt-framed inset shows the rooftop owl and wind wheel. Skip is at top
+    right.
+  - `21_finale`: the arrival sightline. The front door is open, June is on the porch to the left, Kit is at her booth
+    to the right, and the owl and wind wheel are on the gable. A leftover caption from the test's quick sequence shows.
+  - `23_foyer_door`: from the foyer, both leaves are swung inward on the west hinge and the porch is visible through
+    the doorway. The loft underside and stair rail crowd the top-left of this gameplay frame.
+- **Not run:** device. No device pass is claimed.
 
 ## Known gaps
 
