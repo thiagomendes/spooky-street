@@ -1237,7 +1237,8 @@ def mock_sheet(mocks, out_dir):
 # sizes and borders in step with Assets/SpookyStreet/Core/Art/UiSpriteCatalog.cs (a Core test checks the PNGs).
 UNITY_UI = os.path.join(ROOT, "Assets", "SpookyStreet", "Content", "Resources", "UI")
 WHITE = (255, 255, 255, 255)
-EXPORT_ICONS = ["jump", "examine", "pause", "notebook", "bat", "gear", "globe", "play", "close", "roll"]
+EXPORT_ICONS = ["jump", "examine", "pause", "notebook", "bat", "gear", "globe", "play", "close", "roll", "talk", "radio",
+                "skip", "next", "arrow", "check"]
 STITCH_TILE, STITCH_BORDER, STITCH_INSET, STITCH_R = 144, 48, 18, 20
 STITCH_DASH, STITCH_PERIOD, STITCH_W = 13.0, 24.0, 4.2
 

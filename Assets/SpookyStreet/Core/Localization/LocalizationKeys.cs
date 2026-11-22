@@ -4,7 +4,7 @@ namespace SpookyStreet.Core.Localization
     /// Stable semantic keys used by code. Every constant here must exist in the bundled English table
     /// (enforced by tests). Never derive saved progress from these strings or their values.
     /// </summary>
-    public static class LocalizationKeys
+    public static partial class LocalizationKeys
     {
         public const string TitleGameName = "ui.title.game_name";
         public const string TitleCaseName = "ui.title.case_name";

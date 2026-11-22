@@ -85,6 +85,14 @@ namespace SpookyStreet.Core.Art
         /// <summary>Use disc glyph while no interaction is in range: Use rolls on the ground and dives in the air.</summary>
         public const string IconRoll = "icon_roll";
 
+        // S002 case UI: dialogue (talk, skip, next), caption direction cue (arrow), hint radio and the notebook stamp.
+        public const string IconTalk = "icon_talk";
+        public const string IconRadio = "icon_radio";
+        public const string IconSkip = "icon_skip";
+        public const string IconNext = "icon_next";
+        public const string IconArrow = "icon_arrow";
+        public const string IconCheck = "icon_check";
+
         public static readonly UiSpriteSpec[] All =
         {
             new UiSpriteSpec(FeltDiscNight, UiSpriteDraw.Simple),
@@ -107,6 +115,12 @@ namespace SpookyStreet.Core.Art
             new UiSpriteSpec(IconPlay, UiSpriteDraw.Simple),
             new UiSpriteSpec(IconClose, UiSpriteDraw.Simple),
             new UiSpriteSpec(IconRoll, UiSpriteDraw.Simple),
+            new UiSpriteSpec(IconTalk, UiSpriteDraw.Simple),
+            new UiSpriteSpec(IconRadio, UiSpriteDraw.Simple),
+            new UiSpriteSpec(IconSkip, UiSpriteDraw.Simple),
+            new UiSpriteSpec(IconNext, UiSpriteDraw.Simple),
+            new UiSpriteSpec(IconArrow, UiSpriteDraw.Simple),
+            new UiSpriteSpec(IconCheck, UiSpriteDraw.Simple),
         };
 
         /// <summary>Resources.Load path for a sprite name.</summary>
