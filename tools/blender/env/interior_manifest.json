@@ -1,0 +1,210 @@
+{
+ "OwlHouseInterior": {
+  "triangles": 24998,
+  "children": {
+   "Attic": {
+    "triangles": 10056,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "AtticStar_Glow": {
+    "triangles": 72,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "AtticWindowIn_Glow": {
+    "triangles": 108,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "DoorLatch": {
+    "triangles": 120,
+    "pivot": [
+     0.12,
+     -1.87,
+     1.55
+    ]
+   },
+   "Face_Glow": {
+    "triangles": 68,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "InnerDoor": {
+    "triangles": 1498,
+    "pivot": [
+     -0.55,
+     -2.015,
+     0.6
+    ]
+   },
+   "Lamp_Glow": {
+    "triangles": 48,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "NookWall": {
+    "triangles": 2236,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "OwlLantern_Glow": {
+    "triangles": 168,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "SillSnag": {
+    "triangles": 112,
+    "pivot": [
+     -2.83,
+     1.47,
+     2.92
+    ]
+   }
+  },
+  "atlas": "OwlHouseInterior",
+  "px_per_m": 87
+ },
+ "WorkshopMechanism": {
+  "triangles": 5420,
+  "children": {
+   "Cam": {
+    "triangles": 1224,
+    "pivot": [
+     0.0,
+     0.68,
+     0.52
+    ]
+   },
+   "Crank": {
+    "triangles": 464,
+    "pivot": [
+     0.0,
+     0.2,
+     1.38
+    ]
+   },
+   "Follower": {
+    "triangles": 424,
+    "pivot": [
+     -0.72,
+     0.38,
+     0.66
+    ]
+   },
+   "KitPhoto": {
+    "triangles": 710,
+    "pivot": [
+     -0.62,
+     0.0,
+     1.52
+    ]
+   },
+   "LinkArm_Seated": {
+    "triangles": 284,
+    "pivot": [
+     0.5,
+     0.38,
+     1.4
+    ]
+   },
+   "LinkArm_Slipped": {
+    "triangles": 284,
+    "pivot": [
+     0.5,
+     0.38,
+     2.11
+    ]
+   },
+   "ServicePanel": {
+    "triangles": 1260,
+    "pivot": [
+     0.65,
+     0.02,
+     1.08
+    ]
+   }
+  },
+  "atlas": "WorkshopMechanism",
+  "px_per_m": 214
+ },
+ "ShedRamp": {
+  "triangles": 11948,
+  "children": {
+   "Face_Glow": {
+    "triangles": 58,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "Lamp_Glow": {
+    "triangles": 36,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "ShedWindow_Glow": {
+    "triangles": 12,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Routes",
+  "px_per_m": 94
+ },
+ "SillBridge": {
+  "triangles": 1484,
+  "children": {},
+  "atlas": "Routes",
+  "px_per_m": 141
+ },
+ "TreehouseCabin": {
+  "triangles": 5433,
+  "children": {
+   "Lamp_Glow": {
+    "triangles": 36,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Routes",
+  "px_per_m": 122
+ },
+ "ClothSnag": {
+  "triangles": 112,
+  "children": {},
+  "atlas": "Routes",
+  "px_per_m": 469
+ }
+}

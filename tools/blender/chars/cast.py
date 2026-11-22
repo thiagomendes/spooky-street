@@ -511,14 +511,129 @@ def owl_brooch(craft, size=1.0):
     return parts
 
 
+def _smooth(t):
+    t = min(1.0, max(0.0, t))
+    return t * t * (3 - 2 * t)
+
+
+KIT_KNOT_LON = -108.0  # the scarf's knot: at her right, a little behind the ear (degrees, 0 = front)
+
+
+def knotted_scarf(craft, P):
+    """Aunt Kit's kerchief: orange cloth gathered into a knot at her right side (the folds radiate from it), a
+    rolled purple hem that runs low over the forehead and down toward the nape, gold coins hanging from the hem
+    across the brow, and the knot's two tails. Returns the knot's position."""
+    r, hc = P.head_r, P.head_c
+    off = Vector((0.0, 0.04, 0.12))
+    radii = Vector((1.2, 1.22, 1.18))
+    orange, purple = craft.felt(V["orange"]), craft.felt(V["purple"])
+
+    def edge(lon):
+        """Height of the hem (head radii above the head centre) at longitude `lon` (radians, 0 = front)."""
+        return 0.06 + 0.47 * _smooth((74 - abs(math.degrees(lon))) / 38)
+
+    def unit(lon, rel_z):
+        zz = (rel_z - off.z) / radii.z
+        c = math.sqrt(max(0.0, 1 - zz * zz))
+        return Vector((c * math.sin(lon), -c * math.cos(lon), zz))
+
+    def shape(u, lift=1.0):
+        return (Vector((u.x * radii.x, u.y * radii.y, u.z * radii.z)) * lift + off) * r + hc
+
+    lon_k = math.radians(KIT_KNOT_LON)
+    pole = unit(lon_k, edge(lon_k) + 0.1)
+    turn = Vector((0, 0, 1)).rotation_difference(pole).to_matrix()
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=48, v_segments=22, radius=1.0)
+    folds = 12
+    lifts = {}
+    for v in bm.verts:
+        theta = math.acos(max(-1.0, min(1.0, v.co.z)))
+        phi = math.atan2(v.co.y, v.co.x)
+        gather = (0.4 + 0.6 * math.exp(-(theta / 0.95) ** 2)) * _smooth(theta / 0.2) * _smooth((math.pi - theta) / 0.5)
+        pleat = abs(math.cos(folds * phi / 2)) ** 0.7 - 0.62
+        lifts[v] = 1.0 + 0.085 * gather * pleat
+        v.co = turn @ v.co
+
+    def below(v):
+        return v.co.z * radii.z + off.z < edge(math.atan2(v.co.x, -v.co.y))
+    bmesh.ops.delete(bm, geom=[f for f in bm.faces if all(below(v) for v in f.verts)], context="FACES")
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
+    for v in bm.verts:
+        u = v.co.copy()
+        lift = lifts[v]
+        if below(v):  # pull the ragged row of vertices onto the hem line
+            lon = math.atan2(u.x, -u.y)
+            u = unit(lon, edge(lon))
+            lift = 1.0 + (lift - 1.0) * 0.4
+        v.co = shape(u, lift)
+    cloth = pm.new_mesh_object("Kit_Scarf", bm, orange)
+    sol = cloth.modifiers.new("Thick", "SOLIDIFY")
+    sol.thickness, sol.offset, sol.use_rim_only = r * 0.05, -1.0, True
+    cloth.modifiers.new("Smooth", "SUBSURF").levels = 1
+    hem = [shape(unit(math.radians(a), edge(math.radians(a))), 1.012) for a in range(-180, 180, 10)]
+    pm.curve_tube("Kit_ScarfTrim", purple, hem, r * 0.04, taper=(1, 1), cyclic=True)
+    gold = craft.smooth(V["candy"], 0.2).copy()
+    gold.node_tree.nodes["Principled BSDF"].inputs["Metallic"].default_value = 0.4
+    for k in range(11):
+        lon = math.radians((k - 5) * 13.0)
+        at = shape(unit(lon, edge(lon)), 1.0)
+        out = Vector((math.sin(lon), -math.cos(lon), 0.0))
+        drop = r * (0.1 + 0.018 * (k % 2))
+        pm.ellipsoid("Kit_Coin", gold, at + out * r * 0.012 - Vector((0, 0, drop)), (r * 0.062, r * 0.014, r * 0.062),
+                     rotation=(0, 0, lon), segments=16, rings=8, subsurf=1)
+        pm.ellipsoid("Kit_CoinLink", gold, at + out * r * 0.02 - Vector((0, 0, r * 0.045)),
+                     (r * 0.012, r * 0.012, r * 0.03), segments=8, rings=6, subsurf=0)
+
+    # The knot: a tight ball of cloth with one short ear standing up behind it and two tails hanging in front
+    # of the curls, each a creased ribbon that widens to a cut corner.
+    knot = shape(unit(lon_k, edge(lon_k) + 0.02), 1.07)
+    out = Vector((math.sin(lon_k), -math.cos(lon_k), 0.0))
+    along = Vector((-out.y, out.x, 0.0))  # horizontal, toward her back
+    pm.ellipsoid("Kit_ScarfKnot", orange, knot, (r * 0.125, r * 0.15, r * 0.125), rotation=(0, 0, lon_k), subsurf=1)
+    pm.ellipsoid("Kit_ScarfEar", orange, knot + along * r * 0.13 + out * r * 0.03 + Vector((0, 0, r * 0.11)),
+                 (r * 0.05, r * 0.11, r * 0.15), rotation=(math.radians(-28), 0, lon_k), subsurf=1)
+    for back, length, width in ((0.16, 0.86, 0.3), (-0.16, 0.66, 0.25)):
+        bm = bmesh.new()
+        rows = []
+        steps = 7
+        for i in range(steps + 1):
+            t = i / steps
+            c = (knot + out * r * (0.05 + 0.3 * _smooth(t / 0.45)) + along * r * back * (0.4 + 1.3 * t)
+                 - Vector((0, 0, r * length * t ** 1.15)))
+            w = r * width * (0.3 + 0.7 * _smooth(t / 0.7)) * (1.0 if i < steps else 0.12)
+            sway = math.sin(t * 5.0 + back * 9) * r * 0.025
+            rows.append([bm.verts.new(c + along * (j * w * 0.5 + sway) + out * (r * 0.035 * (1 - abs(j)) * (1 if i % 2 else 0.5)))
+                         for j in (-1, 0, 1)])
+        for i in range(steps):
+            for j in range(2):
+                bm.faces.new((rows[i][j], rows[i][j + 1], rows[i + 1][j + 1], rows[i + 1][j]))
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+        tail = pm.new_mesh_object("Kit_ScarfTail", bm, orange)
+        sol = tail.modifiers.new("Thick", "SOLIDIFY")
+        sol.thickness, sol.offset = r * 0.03, 0.0
+        tail.modifiers.new("Smooth", "SUBSURF").levels = 1
+    return knot
+
+
 def build_kit(craft):
     P = an.Proportions(h=1.64, child=False, build=0.93, neck=1.35)
+    # Owner's notes on the approved cast (fixed for the game version): her chin was buried in the shawl and the
+    # headscarf was a plain dome. Lower, rounder shoulders and a shawl that drapes from them in a V leave a clear
+    # chin and neck line; the scarf is a gathered, knotted kerchief with a rolled hem and hanging coins.
+    P.z["shoulder"] = 0.797 * P.h
+    P.shoulder_r = 0.78
     z, T, r, hc = P.z, P.torso, P.head_r, P.head_c
     skin, surface = face(craft, "Kit_", P, "kit", H(0xD98A1E), C["kit_hair"], line_rgb=H(0x4A1420), adult=True,
                          mouth="smile", ears=False)
     blouse = craft.felt(V["bone"])
     _on_body, grips = figure(craft, "Kit", P, "kit", skin, blouse, craft.felt(V["violet"]), craft.felt(V["candy"]),
                              curls=(0.4, 1.5))
+    body = bpy.data.objects["Kit_Body"]
+    for poly in body.data.polygons:  # a scooped neckline: her neck is bare above the blouse
+        c = poly.center
+        if c.z > z["shoulder"] + 0.034 and abs(c.x) < P.limb * 1.05:
+            poly.material_index = 2
     shoes(craft, "Kit", P, V["berry"], V["candy"])
 
     # Long gathered skirt with a lime hem stitch and stars, and an orange sash.
@@ -543,10 +658,15 @@ def build_kit(craft):
     sx, sz = P.shoulder_x, z["shoulder"]
     hem_z = P.elbow(1).z - 0.02
     shawl = ell_lathe("Kit_Shawl", craft.felt(V["berry"]),
-                      [(sx * 0.52, z["neck"] + 0.012, 0.9, 24), (sx + 0.016, sz + 0.09, 0.7, 12),
-                       (sx + 0.092, sz + 0.02, 0.6, 6), (sx + 0.118, z["chest"] - 0.05, 0.56, 4),
-                       (sx + 0.14, hem_z, 0.56, 4)], hem=shawl_hem, thickness=0.008, folds=7, fold_depth=0.04,
-                      inner=craft.felt(V["purple"]))
+                      [(sx * 0.56, sz + 0.05, 0.86, 30), (sx * 0.86, sz + 0.066, 0.74, 15),
+                       (sx + 0.04, sz + 0.05, 0.66, 9), (sx + 0.09, sz - 0.02, 0.6, 6),
+                       (sx + 0.118, z["chest"] - 0.05, 0.56, 4), (sx + 0.14, hem_z, 0.56, 4)], hem=shawl_hem,
+                      thickness=0.008, folds=7, fold_depth=0.04, inner=craft.felt(V["purple"]))
+    for v in shawl.data.vertices:  # the neckline dips to a V at the front and lies on the chest
+        top = _smooth((v.co.z - (sz - 0.03)) / 0.07)
+        front = _smooth(-v.co.y / (sx * 0.5))
+        v.co.z -= 0.05 * top * front
+        v.co.y -= 0.014 * top * front
     on_shawl = an.probe(shawl)
     hem_stitch(craft, "Kit_ShawlStitch", on_shawl, V["candy"], hem_z + 0.03, -55, 235)
     fringe = []
@@ -571,21 +691,8 @@ def build_kit(craft):
                 continue
             pm.ellipsoid("Kit_Curl", hair, on_hair(lon, math.radians(el), 0.99), (r * 0.2, r * 0.2, r * 0.18),
                          segments=16, rings=10, subsurf=1)
-    scarf = craft.felt(V["orange"])
-    cap("Kit_Scarf", scarf, P, radii=(1.2, 1.22, 1.18), offset=(0, 0.04, 0.12), fringe_z=0.46, length_z=0.02,
-        face_half=62, thickness=0.04)
-    band("Kit_ScarfTrim", craft.felt(V["purple"]), hc + Vector((0, r * 0.04, r * 0.5)), r * 1.19, r * 0.12,
-         ys=1.02, thickness=0.004)
+    knotted_scarf(craft, P)
     gold = craft.smooth(V["candy"], 0.2)
-    for k in range(7):
-        x = (k - 3) * 0.19
-        pm.ellipsoid("Kit_Coin", gold, surface(r * x, r * (0.4 - 0.05 * x * x), r * 0.014),
-                     (r * 0.075, r * 0.018, r * 0.075), subsurf=1)
-    knot = hc + Vector((-r * 1.28, r * 0.05, r * 0.22))
-    pm.ellipsoid("Kit_ScarfKnot", scarf, knot, (r * 0.14, r * 0.16, r * 0.14), subsurf=1)
-    for dx, dz in ((-0.1, -0.55), (0.12, -0.62)):
-        pm.curve_tube("Kit_ScarfTail", scarf, [knot, knot + Vector((r * dx * 0.5, 0, r * dz * 0.5)),
-                                               knot + Vector((r * dx, 0, r * dz))], r * 0.08, taper=(0.8, 1.2))
     for s in (1, -1):
         pm.torus("Kit_Hoop", gold, hc + Vector((s * r * 1.26, -r * 0.3, -r * 0.62)), r * 0.2, r * 0.022,
                  rotation=(math.pi / 2, 0, 0), segments=32, sides=8)

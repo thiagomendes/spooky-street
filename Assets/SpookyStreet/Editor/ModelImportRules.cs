@@ -19,7 +19,7 @@ namespace SpookyStreet.EditorTools
         public const int MaxTextureSize = 2048;
         public const string IosPlatform = "iPhone";
 
-        public override uint GetVersion() => 6; // 6: witness loops (Talk, SitIdle, SitTalk)
+        public override uint GetVersion() => 7; // 7: June's KneeTap loops
 
         public static bool IsGameModelPath(string path) => path.StartsWith(ModelsRoot, System.StringComparison.Ordinal);
 

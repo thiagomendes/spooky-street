@@ -1,5 +1,6 @@
-"""Shared game-export pipeline for the rigged cast (Pip, Bea, Mr. Vale): everything that does not depend on one
-character's costume. `pip_export.py` and `witness_export.py` supply the part tables, bones, weights and clips.
+"""Shared game-export pipeline for the rigged cast (Pip, Bea, Mr. Vale, June, Aunt Kit): everything that does not
+depend on one character's costume. `pip_export.py`, `witness_export.py` and `junekit_export.py` supply the part
+tables, bones, weights and clips.
 
 Steps (see pip_export.py for the full story): realise every builder part at game resolution -> rig and skin
 weights -> join, remove faces nothing can see -> Smart UV into one atlas plus a small face map (the skull is one
