@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using SpookyStreet.Core.Art;
 using SpookyStreet.Core.Case;
+using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.Localization;
+using SpookyStreet.UI.Nonverbal;
 using UnityEngine;
 using UnityEngine.UI;
 using UiKeys = SpookyStreet.Core.Localization.LocalizationKeys.CaseUi;
@@ -16,7 +18,10 @@ namespace SpookyStreet.UI
     /// text, so the cue never depends on sound. Only directional sounds get the cue, and only when their source is away
     /// from Pip (<see cref="CaptionDirection.ShouldCue"/>). Text wraps to at most <see cref="MaxLines"/> lines: the strip
     /// grows to fit them, and only a caption that still needs a third line steps its size down (never below 13 pt).
-    /// Captions queue and time out on game time (pause freezes them).
+    /// Captions queue and time out on game time (pause freezes them). A case 01 caption that has a vignette
+    /// (<see cref="C01Vignettes.For"/>, S002) also plays it on a small night-felt stage that sits on the strip's top
+    /// edge, so pre-readers see the sound as pictures (one hybrid reading mode, D23.1: the words stay). Hints and
+    /// notebook notes have no vignette and show the strip alone.
     /// </summary>
     public sealed class CaptionStrip : MonoBehaviour
     {
@@ -33,6 +38,10 @@ namespace SpookyStreet.UI
         public const float RestHeight = 92f;
         public const float LargeRestHeight = 116f;
         public const float VerticalPadding = 12f;
+
+        /// <summary>The mini vignette stage above the strip: height, and width as a multiple of it (the bubble's stage shape).</summary>
+        public const float StageHeight = 108f;
+        public const float StageAspect = 4.6f;
 
         /// <summary>Text insets: left with and without the direction disc, and right.</summary>
         public const float CueInset = 96f;
@@ -96,6 +105,7 @@ namespace SpookyStreet.UI
         private bool _fitCue;
         private Fit _fit;
         private readonly TextGenerator _generator = new TextGenerator();
+        private Image _stagePanel;
 
         private const float RestY = 30f;
         private const float RaisedY = 300f;
@@ -151,6 +161,15 @@ namespace SpookyStreet.UI
         /// <summary>True while the current caption shows a direction cue.</summary>
         public bool HasDirectionCue => _cue != null && _cue.activeSelf;
 
+        /// <summary>The caption's mini stage (null before <see cref="Create"/>).</summary>
+        public VignettePlayer Vignette { get; private set; }
+
+        /// <summary>True while the current caption plays its vignette on the mini stage.</summary>
+        public bool ShowsVignette => _stagePanel != null && _stagePanel.gameObject.activeSelf;
+
+        /// <summary>Reduced motion for the mini stage (still beats with cross-fades).</summary>
+        public bool ReducedMotion { get; set; }
+
         /// <summary>Signed angle (degrees, positive = right) the arrow currently points at.</summary>
         public float CueAngle { get; private set; }
 
@@ -189,8 +208,41 @@ namespace SpookyStreet.UI
             // The strip grows to fit the lines (Fit), so the text is sized explicitly and never truncated.
             _text.resizeTextForBestFit = false;
             _text.verticalOverflow = VerticalWrapMode.Overflow;
+            BuildStage();
             ApplySize();
             _root.gameObject.SetActive(false);
+        }
+
+        /// <summary>The mini stage: the bubble's night-felt panel (pg.stage) standing on the strip's top edge.</summary>
+        private void BuildStage()
+        {
+            _stagePanel = UiFactory.Sprite(_root, "Stage", PuppetAtlas.Get(PuppetParts.Stage), new Color(0.2f, 0.18f, 0.38f, 1f),
+                new Vector2(0.5f, 1f), new Vector2(0f, 4f), new Vector2(StageHeight * StageAspect, StageHeight));
+            _stagePanel.rectTransform.pivot = new Vector2(0.5f, 0f);
+            if (_stagePanel.sprite != null)
+            {
+                _stagePanel.color = Color.white;
+            }
+
+            UiFactory.InkShadow(_stagePanel, new Vector2(3f, -4f), 0.4f);
+            var inner = UiFactory.Stretch(UiFactory.Rect(_stagePanel.transform, "Inner"));
+            inner.offsetMin = new Vector2(6f, 6f);
+            inner.offsetMax = new Vector2(-6f, -6f);
+            Vignette = VignettePlayer.Create(inner, "Vignette");
+            Vignette.CanRun = () => Time.timeScale > 0f; // captions run on game time: pause freezes the stage too
+            _stagePanel.gameObject.SetActive(false);
+        }
+
+        /// <summary>Starts the caption's vignette on the mini stage, or hides the stage (hints, notes, no atlas).</summary>
+        private void PlayVignette(string key)
+        {
+            var visual = C01Vignettes.For(key);
+            var vignette = visual != null && !visual.UsesV1Strip && PuppetAtlas.Available
+                ? C01Vignettes.Get(visual.VignetteId)
+                : null;
+            _stagePanel.gameObject.SetActive(vignette != null);
+            Vignette.ReducedMotion = ReducedMotion;
+            Vignette.Play(vignette);
         }
 
         private void ApplySize()
@@ -267,6 +319,8 @@ namespace SpookyStreet.UI
         {
             _queue.Clear();
             _current = null;
+            Vignette.Stop();
+            _stagePanel.gameObject.SetActive(false);
             _root.gameObject.SetActive(false);
         }
 
@@ -287,6 +341,8 @@ namespace SpookyStreet.UI
             if (_queue.Count == 0)
             {
                 _current = null;
+                Vignette.Stop();
+                _stagePanel.gameObject.SetActive(false);
                 _root.gameObject.SetActive(false);
                 return;
             }
@@ -294,6 +350,7 @@ namespace SpookyStreet.UI
             _current = _queue.Dequeue();
             _left = _current.Seconds;
             _root.gameObject.SetActive(true);
+            PlayVignette(_current.Key);
             Refresh();
         }
 

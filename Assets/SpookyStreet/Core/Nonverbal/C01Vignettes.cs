@@ -21,19 +21,20 @@ namespace SpookyStreet.Core.Nonverbal
         public string VignetteId { get; }
 
         /// <summary>
-        /// Explicit fallback (owner decision D23.3): no vignette yet, so the bubble keeps the v1 pictogram strip.
+        /// Explicit fallback (owner decision D23.3): no vignette, so the bubble keeps the v1 card. No case 01 line uses
+        /// it any more; it stays for lines added later before their vignette exists.
         /// </summary>
         public bool UsesV1Strip => VignetteId == null;
     }
 
     /// <summary>
-    /// Case 01 vignette data (docs/nonverbal-ux.md §3, §5), staged per owner decision D23.3: the four key Bea/Vale
-    /// lines, June's resolve line and the three notebook answer strips. Every <see cref="CaseScript"/> line key has a
-    /// <see cref="LineVisual"/>; lines outside the stage fall back to the v1 strip. Coordinates are stage-normalized
-    /// (see <see cref="PuppetPose"/>); parts marked as flipbooks (<see cref="PuppetParts.JuneRun"/>) cycle their
-    /// frames in the view while the track moves.
+    /// Case 01 vignette data (docs/nonverbal-ux.md §3, §5). D23.3 staged it: first the four key Bea/Vale lines, June's
+    /// resolve line and the three notebook answer strips (this file); S002 then gave every other line its vignette
+    /// (<c>C01Vignettes.Lines.cs</c>), so every <see cref="CaseScript"/> line key maps to one and no line keeps the v1
+    /// fallback. Coordinates are stage-normalized (see <see cref="PuppetPose"/>); parts marked as flipbooks
+    /// (<see cref="PuppetParts.JuneRun"/>) cycle their frames in the view while the track moves.
     /// </summary>
-    public static class C01Vignettes
+    public static partial class C01Vignettes
     {
         public const string BeaSawCape = "vg.bea.saw_cape";
         public const string BeaDoorOpen = "vg.bea.door_open";
@@ -47,28 +48,20 @@ namespace SpookyStreet.Core.Nonverbal
         /// <summary>Speech vignettes loop until the player taps next; notebook strips play twice and stop (§5).</summary>
         public const int NotebookLoops = 2;
 
-        /// <summary>The line keys that get a vignette now (owner decision D23.3).</summary>
-        public static readonly IReadOnlyList<string> ScopedLineKeys = new[]
+        /// <summary>The first five key lines (owner decision D23.3), each with its own approved choreography.</summary>
+        public static readonly IReadOnlyList<string> KeyLineKeys = new[]
         {
             Lines.BeaSawCape, Lines.BeaDoorOpen, Lines.ValeDoorShut, Lines.ValeWasShut, Lines.JuneResolve,
         };
 
-        public static readonly IReadOnlyList<Vignette> All = new[]
-        {
-            BuildBeaSawCape(), BuildBeaDoorOpen(), BuildValeDoorShut(), BuildValeWasShut(), BuildJuneResolve(),
-            BuildNotebookEntry(), BuildNotebookSource(), BuildNotebookMoved(),
-        };
+        /// <summary>The line keys that get a vignette: every case 01 line (S002 closed D23.3's staging).</summary>
+        public static readonly IReadOnlyList<string> ScopedLineKeys = new List<string>(CaseScript.AllLineKeys);
+
+        public static readonly IReadOnlyList<Vignette> All = BuildAll();
 
         private static readonly Dictionary<string, Vignette> ById = Index();
 
-        private static readonly Dictionary<string, string> LineToVignette = new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            { Lines.BeaSawCape, BeaSawCape },
-            { Lines.BeaDoorOpen, BeaDoorOpen },
-            { Lines.ValeDoorShut, ValeDoorShut },
-            { Lines.ValeWasShut, ValeWasShut },
-            { Lines.JuneResolve, JuneResolve },
-        };
+        private static readonly Dictionary<string, string> LineToVignette = BuildLineMap();
 
         private static readonly Dictionary<string, string> QuestionToStrip = new Dictionary<string, string>(StringComparer.Ordinal)
         {
@@ -100,6 +93,35 @@ namespace SpookyStreet.Core.Nonverbal
         /// <summary>The animated answer strip of a notebook question (played on tap once answered).</summary>
         public static Vignette AnswerStripFor(string questionId) =>
             questionId != null && QuestionToStrip.TryGetValue(questionId, out string id) ? Get(id) : null;
+
+        private static Vignette[] BuildAll()
+        {
+            var all = new List<Vignette>
+            {
+                BuildBeaSawCape(), BuildBeaDoorOpen(), BuildValeDoorShut(), BuildValeWasShut(), BuildJuneResolve(),
+                BuildNotebookEntry(), BuildNotebookSource(), BuildNotebookMoved(),
+            };
+            all.AddRange(BuildLineVignettes());
+            return all.ToArray();
+        }
+
+        private static Dictionary<string, string> BuildLineMap()
+        {
+            var map = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                { Lines.BeaSawCape, BeaSawCape },
+                { Lines.BeaDoorOpen, BeaDoorOpen },
+                { Lines.ValeDoorShut, ValeDoorShut },
+                { Lines.ValeWasShut, ValeWasShut },
+                { Lines.JuneResolve, JuneResolve },
+            };
+            foreach (var pair in LineVignettes())
+            {
+                map.Add(pair.Line, pair.Vignette);
+            }
+
+            return map;
+        }
 
         private static IReadOnlyList<LineVisual> BuildLineTable()
         {

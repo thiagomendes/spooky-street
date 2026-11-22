@@ -45,8 +45,13 @@ namespace SpookyStreet.Tests.Core
                 Assert.IsTrue(PuppetAtlasLayout.TryGet(frame, out _), frame);
             }
 
-            Assert.IsTrue(PuppetAtlasLayout.TryGet(PuppetAtlasLayout.Book, out _));
-            Assert.IsTrue(PuppetAtlasLayout.TryGet(PuppetAtlasLayout.Pictures, out _));
+            Assert.IsFalse(PuppetAtlasLayout.TryGet("x.book", out _), "the first-launch art was retired with D23.1");
+            Assert.IsFalse(PuppetAtlasLayout.TryGet("x.pictures", out _));
+            foreach (string part in new[] { PuppetParts.WaveHand, PuppetParts.SillSnag, PuppetParts.LatchBar, PuppetParts.Sparkle })
+            {
+                Assert.IsTrue(PuppetAtlasLayout.TryGet(part, out var rect), part + " (v3) is baked");
+                Assert.Greater(rect.StageHeight, 0f, part);
+            }
             Assert.IsTrue(PuppetAtlasLayout.TryGet(PuppetAtlasLayout.BubbleTail, out _));
         }
 

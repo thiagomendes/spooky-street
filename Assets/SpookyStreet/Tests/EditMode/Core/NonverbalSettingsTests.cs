@@ -7,28 +7,16 @@ using NvKeys = SpookyStreet.Core.Localization.LocalizationKeys.NonverbalUi;
 
 namespace SpookyStreet.Tests.Core
 {
-    /// <summary>Reading mode and Helper settings (D23.1, D23.4) and the non-verbal UI strings.</summary>
+    /// <summary>Helper settings (D23.4), the retired reading mode (D23.1, one hybrid mode) and the non-verbal UI strings.</summary>
     public class NonverbalSettingsTests
     {
         [Test]
         public void DefaultsMatchTheOwnerDecisions()
         {
             var s = new NonverbalSettings();
-            Assert.IsTrue(s.ShowSpeechText, "the small text line is on by default");
             Assert.IsFalse(s.HelperAutoHints, "Helper is opt-in");
-            Assert.IsFalse(s.FirstLaunchChoiceMade);
-            Assert.IsTrue(s.NeedsFirstLaunchChoice);
-        }
-
-        [Test]
-        public void OneTapChoiceSetsTheSingleSetting()
-        {
-            var s = new NonverbalSettings();
-            s.ChooseReadingMode(picturesOnly: true);
-            Assert.IsFalse(s.ShowSpeechText);
-            Assert.IsFalse(s.NeedsFirstLaunchChoice);
-            s.ChooseReadingMode(picturesOnly: false);
-            Assert.IsTrue(s.ShowSpeechText);
+            StringAssert.DoesNotContain("showSpeechText", NonverbalSettings.Serialize(s), "one hybrid mode: no words setting");
+            StringAssert.DoesNotContain("firstLaunchChoiceMade", NonverbalSettings.Serialize(s), "no first-launch choice");
         }
 
         [Test]
@@ -44,19 +32,37 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void RoundTripsAndToleratesMissingFields()
         {
-            var s = new NonverbalSettings { ShowSpeechText = false, HelperAutoHints = true, FirstLaunchChoiceMade = true };
+            var s = new NonverbalSettings { HelperAutoHints = true };
             Assert.IsTrue(NonverbalSettings.TryRead(NonverbalSettings.Serialize(s), out var read, out _));
-            Assert.IsFalse(read.ShowSpeechText);
             Assert.IsTrue(read.HelperAutoHints);
-            Assert.IsTrue(read.FirstLaunchChoiceMade);
 
-            Assert.IsTrue(NonverbalSettings.TryRead("{\"schemaVersion\":1,\"helperAutoHints\":\"yes\"}", out var partial, out _));
-            Assert.IsTrue(partial.ShowSpeechText, "missing field takes its default");
+            Assert.IsTrue(NonverbalSettings.TryRead("{\"schemaVersion\":2,\"helperAutoHints\":\"yes\"}", out var partial, out _));
             Assert.IsFalse(partial.HelperAutoHints, "invalid field takes its default");
 
-            Assert.AreEqual(SaveCheck.Newer, NonverbalSettings.Check("{\"schemaVersion\":2}"));
+            Assert.AreEqual(SaveCheck.Newer, NonverbalSettings.Check("{\"schemaVersion\":3}"));
             Assert.AreEqual(SaveCheck.Invalid, NonverbalSettings.Check("not json"));
             Assert.AreEqual(SaveCheck.Invalid, NonverbalSettings.Check("{\"schemaVersion\":0}"));
+        }
+
+        [Test]
+        public void ASchemaOneFileFromTheReadingModeEraStillLoads()
+        {
+            // Written by the build with the first-launch choice (Pictures only picked, Helper on).
+            const string old = "{\"schemaVersion\":1,\"showSpeechText\":false,\"helperAutoHints\":true,\"firstLaunchChoiceMade\":true}";
+            Assert.AreEqual(SaveCheck.Valid, NonverbalSettings.Check(old));
+            var fs = new MemorySaveFileSystem();
+            var paths = NonverbalSettingsStore.PathsFor("saves");
+            fs.Files[paths.Latest] = old;
+            var store = new NonverbalSettingsStore(fs, "saves");
+            var loaded = store.Load();
+            Assert.AreEqual(SaveLoadStatus.Latest, store.LastLoadStatus, "an old file is a valid file, not a recovery");
+            Assert.IsTrue(loaded.HelperAutoHints, "Helper survives the migration");
+
+            store.Save(loaded);
+            string written = fs.Files[paths.Latest];
+            StringAssert.Contains("\"schemaVersion\": 2", written);
+            StringAssert.DoesNotContain("showSpeechText", written, "the retired field is dropped on the next save");
+            StringAssert.DoesNotContain("firstLaunchChoiceMade", written);
         }
 
         [Test]
@@ -64,13 +70,11 @@ namespace SpookyStreet.Tests.Core
         {
             var fs = new MemorySaveFileSystem();
             var store = new NonverbalSettingsStore(fs, "saves");
-            Assert.IsTrue(store.Load().NeedsFirstLaunchChoice);
+            Assert.IsFalse(store.Load().HelperAutoHints);
             Assert.AreEqual(SaveLoadStatus.Empty, store.LastLoadStatus);
 
-            var s = new NonverbalSettings();
-            s.ChooseReadingMode(picturesOnly: true);
+            var s = new NonverbalSettings { HelperAutoHints = true };
             store.Save(s);
-            s.HelperAutoHints = true;
             store.Save(s);
 
             var paths = NonverbalSettingsStore.PathsFor("saves");
@@ -79,44 +83,47 @@ namespace SpookyStreet.Tests.Core
             Assert.IsTrue(fs.Files.ContainsKey(paths.Previous), "one previous valid copy is kept");
 
             var loaded = new NonverbalSettingsStore(fs, "saves").Load();
-            Assert.IsFalse(loaded.ShowSpeechText);
             Assert.IsTrue(loaded.HelperAutoHints);
-            Assert.IsFalse(loaded.NeedsFirstLaunchChoice);
 
             fs.Files[paths.Latest] = "{ broken";
             var recovering = new NonverbalSettingsStore(fs, "saves");
             var recovered = recovering.Load();
             Assert.AreEqual(SaveLoadStatus.Recovered, recovering.LastLoadStatus);
-            Assert.IsFalse(recovered.ShowSpeechText, "the previous copy still has the reading choice");
+            Assert.IsTrue(recovered.HelperAutoHints, "the previous copy still has Helper on");
         }
 
         [Test]
         public void ACrashAtAnyStepKeepsTheOldOrNewSettings()
         {
             var baseFs = new MemorySaveFileSystem();
-            var first = new NonverbalSettings();
-            first.ChooseReadingMode(picturesOnly: true);
-            new NonverbalSettingsStore(baseFs, "saves").Save(first);
+            new NonverbalSettingsStore(baseFs, "saves").Save(new NonverbalSettings { HelperAutoHints = true });
 
             for (int crashAfter = 0; crashAfter < 6; crashAfter++)
             {
                 var fs = baseFs.Clone();
                 var store = new NonverbalSettingsStore(fs, "saves");
                 var s = store.Load();
-                s.HelperAutoHints = true;
+                s.HelperAutoHints = false;
                 fs.CrashAfter = fs.Operations + crashAfter;
+                bool crashed = false;
                 try
                 {
                     store.Save(s);
                 }
                 catch (SimulatedCrash)
                 {
+                    crashed = true;
                 }
 
                 fs.CrashAfter = -1;
-                var after = new NonverbalSettingsStore(fs, "saves").Load();
-                Assert.IsFalse(after.ShowSpeechText, "crash after " + crashAfter + ": the earlier choice survives");
-                Assert.IsTrue(after.FirstLaunchChoiceMade, "crash after " + crashAfter);
+                var reload = new NonverbalSettingsStore(fs, "saves");
+                var after = reload.Load();
+                Assert.That(reload.LastLoadStatus, Is.EqualTo(SaveLoadStatus.Latest).Or.EqualTo(SaveLoadStatus.Recovered),
+                    "crash after " + crashAfter + ": the old or the new file is readable");
+                if (!crashed)
+                {
+                    Assert.IsFalse(after.HelperAutoHints, "crash after " + crashAfter + ": the save completed");
+                }
             }
         }
 
@@ -125,12 +132,12 @@ namespace SpookyStreet.Tests.Core
         {
             var fs = new MemorySaveFileSystem();
             var paths = NonverbalSettingsStore.PathsFor("saves");
-            const string newer = "{\"schemaVersion\":7,\"showSpeechText\":false}";
+            const string newer = "{\"schemaVersion\":7,\"helperAutoHints\":true}";
             fs.Files[paths.Latest] = newer;
             var store = new NonverbalSettingsStore(fs, "saves");
-            Assert.IsTrue(store.Load().ShowSpeechText, "defaults while unreadable");
+            Assert.IsFalse(store.Load().HelperAutoHints, "defaults while unreadable");
             Assert.AreEqual(newer, fs.Files[paths.Latest], "untouched by loading");
-            store.Save(new NonverbalSettings { FirstLaunchChoiceMade = true });
+            store.Save(new NonverbalSettings { HelperAutoHints = true });
             Assert.AreEqual(newer, fs.Files[paths.Kept]);
         }
 
@@ -144,17 +151,18 @@ namespace SpookyStreet.Tests.Core
                 contexts[entry.Key] = entry.Context;
             }
 
-            Assert.AreEqual(7, NvKeys.All.Length);
+            Assert.AreEqual(4, NvKeys.All.Length);
             foreach (string key in NvKeys.All)
             {
                 Assert.IsTrue(contexts.ContainsKey(key), "en.json is missing " + key);
                 Assert.IsFalse(string.IsNullOrWhiteSpace(contexts[key]), key + " needs translator context");
             }
 
-            Assert.AreEqual(NvKeys.SettingsShowSpeechText, NonverbalSettings.ShowSpeechTextLabelKey);
             Assert.AreEqual(NvKeys.SettingsHelper, NonverbalSettings.HelperLabelKey);
-            var catalog = new LocalizationCatalog(table);
-            Assert.AreEqual("Pictures only", catalog.Get(NvKeys.ReadingChoicePictures));
+            foreach (string retired in new[] { "ui.reading.choice_words", "ui.reading.choice_pictures", "ui.settings.show_speech_text" })
+            {
+                Assert.IsFalse(contexts.ContainsKey(retired), retired + " was retired with D23.1 (one hybrid mode)");
+            }
         }
     }
 }

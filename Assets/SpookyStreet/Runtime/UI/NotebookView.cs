@@ -22,7 +22,7 @@ namespace SpookyStreet.UI
     /// <see cref="C01Vignettes.AnswerStripFor"/> twice and holds the end (green check); an unknown one shows dashed
     /// panels with a pencil "?". Found clues are stickers that wiggle in the first time they appear; tapping one shows
     /// its note in the caption strip, and stickers with a memory replay carry an eye that replays it on demand. The
-    /// question and answer words show under the pictures while <see cref="ShowWords"/> is on. Once the case is closed
+    /// question and answer words always show under the pictures (one hybrid reading mode, D23.1). Once the case is closed
     /// a last page holds the final card. Everything is rebuilt from <see cref="CaseNotebook.Build"/> on each open, so
     /// no display text is stored.
     /// </summary>
@@ -73,8 +73,6 @@ namespace SpookyStreet.UI
         /// <summary>The eye on a sticker: play this memory replay now (on demand, nothing is recorded).</summary>
         public Action<MemoryReplayDefinition> WatchReplay { get; set; }
 
-        /// <summary><see cref="NonverbalSettings.ShowSpeechText"/>: words under the pictures.</summary>
-        public Func<bool> ShowWords { get; set; }
 
         /// <summary>Gate for strip animation time (pause); null always runs.</summary>
         public Func<bool> CanAnimate { get; set; }
@@ -230,7 +228,7 @@ namespace SpookyStreet.UI
             BackToStreetButton = null;
             ReplayButton = null;
 
-            bool words = ShowWords == null || ShowWords();
+            const bool words = true; // one hybrid reading mode (D23.1): words always sit under the pictures
             var seen = SeenReplays != null ? SeenReplays() : (IReadOnlyCollection<string>)Array.Empty<string>();
             for (int i = 0; i < page.Questions.Count; i++)
             {
@@ -541,7 +539,6 @@ namespace SpookyStreet.UI
             list.text = string.Join(Localizer.Get(UiKeys.NotebookDiscoverySeparator), names);
             list.alignment = TextAnchor.UpperLeft;
             list.resizeTextMinSize = 26;
-            list.gameObject.SetActive(ShowWords == null || ShowWords());
 
             var bottom = new Vector2(0.5f, 0f);
             BackToStreetButton = UiFactory.SecondaryButton(page, "BackToStreet", final.BackToStreetKey, bottom,

@@ -43,15 +43,19 @@ STAGE = V.STAGE
 DEFAULT_HEIGHT = 0.85   # a part's cell height in stage heights at scale 1
 
 
-def part_ids():
-    """Reads PuppetParts.cs so the atlas follows the C# contract exactly (v1 names, then the v2 constants)."""
+def part_ids(split=False):
+    """Reads PuppetParts.cs so the atlas follows the C# contract exactly (v1 names, then the v2 and v3 constants)."""
     src = open(PARTS_CS, encoding="utf-8").read()
     v1_block = src[src.index("private static readonly string[] V1"):src.index("};", src.index("string[] V1"))]
     v1 = ["pg." + n for n in re.findall(r'"([a-z0-9_]+)"', v1_block)]
     consts = dict(re.findall(r'public const string (\w+) = "(pg\.[a-z0-9_]+)";', src))
-    v2_names = re.search(r"V2 = \{([^}]*)\}", src).group(1)
-    v2 = [consts[n.strip()] for n in v2_names.split(",") if n.strip()]
-    return v1 + v2
+
+    def group(name):
+        m = re.search(name + r" = \{([^}]*)\}", src)
+        return [consts[n.strip()] for n in m.group(1).split(",") if n.strip()] if m else []
+
+    v2, v3 = group("V2"), group("V3")
+    return (v1 + v2, v3) if split else v1 + v2 + v3
 
 
 # ----------------------------------------------------------------------------------------------- cell art
@@ -185,35 +189,6 @@ def bea_arm():
     return sp
 
 
-def book_card():
-    """First-launch card art: Pip holding an open storybook with lines of words (reading on)."""
-    sp = Sprite(CELL, CELL, 0)
-    N.g_pip_mini(G(sp, CELL * 0.3, CELL * 0.52, CELL * 0.8))
-    g = G(sp, CELL * 0.66, CELL * 0.55, CELL * 0.62)
-    g.shape([(-0.42, -0.3), (0.0, -0.22), (0.0, 0.3), (-0.42, 0.22)], BONE, kind="paper")
-    g.shape([(0.0, -0.22), (0.42, -0.3), (0.42, 0.22), (0.0, 0.3)], BONE, kind="paper")
-    for i in range(4):
-        y = -0.14 + i * 0.1
-        g.line([(-0.34, y - 0.02), (-0.08, y + 0.01)], GRAPHITE, 0.7)
-        g.line([(0.08, y + 0.01), (0.34, y - 0.02)], GRAPHITE, 0.7)
-    g.shape([(-0.46, 0.22), (0.0, 0.32), (0.46, 0.22), (0.46, 0.28), (0.0, 0.38), (-0.46, 0.28)], PURPLE)
-    return sp
-
-
-def pictures_card():
-    """First-launch card art: Pip beside three picture frames (a tiny comic, no words)."""
-    sp = Sprite(CELL, CELL, 0)
-    N.g_pip_mini(G(sp, CELL * 0.22, CELL * 0.55, CELL * 0.78))
-    for i, name in enumerate(("treehouse", "bridge", "june_window")):
-        cx = CELL * (0.46 + i * 0.19)
-        cy = CELL * (0.42 + (i % 2) * 0.12)
-        s = CELL * 0.17
-        sp.fill(U.rrect_path(cx - s, cy - s, cx + s, cy + s, 6, 2), BONE, "paper", 3 + i)
-        sp.line(U.rrect_path(cx - s, cy - s, cx + s, cy + s, 6, 2), INK, 2.6, closed=True)
-        N.GLYPHS[name](G(sp, cx, cy, s * 1.7))
-    return sp
-
-
 def pointer_right():
     """Bea's pointing hand, turned to point right (toward the clue on the stage)."""
     sp = Sprite(CELL, CELL, 0)
@@ -278,6 +253,62 @@ def bubble_tail():
     return sp
 
 
+def wave_hand():
+    """An open waving palm (hello, come on): bone paper with five spread fingers and an orange felt cuff."""
+    sp = Sprite(CELL, CELL, 0)
+    g = G(sp, CELL / 2, CELL / 2, CELL * 0.9)
+    palm = [(-0.2, 0.1), (-0.36, -0.12), (-0.33, -0.17), (-0.26, -0.15), (-0.15, -0.02), (-0.2, -0.36),
+            (-0.15, -0.4), (-0.1, -0.37), (-0.04, -0.12), (-0.04, -0.44), (0.02, -0.47), (0.07, -0.43),
+            (0.08, -0.13), (0.13, -0.41), (0.19, -0.42), (0.21, -0.37), (0.17, -0.08), (0.26, -0.3),
+            (0.32, -0.3), (0.33, -0.24), (0.22, 0.08), (0.16, 0.22), (-0.14, 0.22)]
+    g.shape(palm, BONE, kind="paper")
+    for x0, y0, x1, y1 in ((-0.1, -0.02, -0.12, -0.12), (0.03, -0.03, 0.02, -0.14), (0.13, 0.0, 0.15, -0.1)):
+        g.line([(x0, y0), (x1, y1)], INK, 0.5)
+    g.shape([(-0.17, 0.2), (0.19, 0.2), (0.2, 0.4), (-0.16, 0.4)], ORANGE)
+    g.line([(-0.16, 0.3), (0.19, 0.3)], CANDY, 0.7)
+    return sp
+
+
+def sill_snag():
+    """The attic sill clue: the base of the round window, a wooden sill and a silver cloth tuft caught on a nail."""
+    sp = Sprite(CELL, CELL, 0)
+    g = G(sp, CELL / 2, CELL / 2, CELL * 0.9)
+    arc = [(-0.3, -0.02)] + [(0.3 * math.cos(a), -0.02 - 0.3 * math.sin(a)) for a in np.linspace(math.pi, 0, 24)]
+    g.shape(arc + [(0.3, -0.02)], INDIGO)
+    inner = [(0.2 * math.cos(a), -0.02 - 0.2 * math.sin(a)) for a in np.linspace(math.pi, 0, 20)]
+    g.shape(inner, N.WARM)
+    g.line([(0, -0.22), (0, -0.02)], INK, 0.7)
+    g.rect(-0.44, -0.02, 0.44, 0.1, WOOD, r=0.02)
+    g.rect(-0.38, 0.1, 0.38, 0.15, WOOD_D, r=0.01)
+    g.dot(0.16, 0.06, 0.025, INK)
+    tuft = [(0.14, 0.05), (0.24, 0.07), (0.27, 0.3), (0.21, 0.24), (0.17, 0.34), (0.12, 0.22), (0.05, 0.28)]
+    g.shape(tuft, U.SILVER)
+    g.line([(0.17, 0.08), (0.17, 0.24)], U.hexc("AEB8CC"), 0.6)
+    N.sparkle(g, -0.27, 0.27, 0.08)
+    return sp
+
+
+def latch_bar():
+    """The wooden latch bar of the front door with its two iron brackets (lifts as one piece)."""
+    sp = Sprite(CELL, CELL, 0)
+    g = G(sp, CELL / 2, CELL / 2, CELL * 0.92)
+    g.rect(-0.44, -0.07, 0.44, 0.07, WOOD)
+    g.line([(-0.38, 0.0), (0.38, -0.01)], WOOD_D, 0.6)
+    for x in (-0.28, 0.28):
+        g.rect(x - 0.06, -0.12, x + 0.06, 0.12, U.hexc("6A5A70"), r=0.02)
+        g.dot(x, 0.0, 0.018, CANDY)
+    return sp
+
+
+def sparkle_part():
+    """A four-point candy twinkle ("shiny", "found"), smaller and sharper than the show star."""
+    sp = Sprite(CELL, CELL, 0)
+    g = G(sp, CELL / 2, CELL / 2, CELL * 0.9)
+    N.sparkle(g, 0.0, 0.0, 0.42)
+    N.sparkle(g, 0.3, -0.3, 0.12, BONE)
+    return sp
+
+
 SPECIAL = {
     "pg.bridge": (wide_bridge, 2, 1, 0.7, 0),
     "pg.memory": (memory_frame, 3, 1, 0.98, 0),
@@ -292,14 +323,20 @@ SPECIAL = {
     "pg.bea_arm": (bea_arm, 1, 1, DEFAULT_HEIGHT, 0),
     "pg.pointer": (pointer_right, 1, 1, DEFAULT_HEIGHT, 0),
     "pg.house_side": (house_side, 1, 1, 1.0, 0),
+    "pg.wave_hand": (wave_hand, 1, 1, DEFAULT_HEIGHT, 0),
+    "pg.sill_snag": (sill_snag, 1, 1, DEFAULT_HEIGHT, 0),
+    "pg.latch_bar": (latch_bar, 1, 1, DEFAULT_HEIGHT, 0),
+    "pg.sparkle": (sparkle_part, 1, 1, DEFAULT_HEIGHT, 0),
 }
 
 EXTRAS = [
     ("x.june_run_1", lambda: june_run(0.25), 1, 1, DEFAULT_HEIGHT),
     ("x.june_run_2", lambda: june_run(0.5), 1, 1, DEFAULT_HEIGHT),
     ("x.june_run_3", lambda: june_run(0.75), 1, 1, DEFAULT_HEIGHT),
-    ("x.book", book_card, 1, 1, 1.0),
-    ("x.pictures", pictures_card, 1, 1, 1.0),
+    # The first-launch card art (x.book, x.pictures) sat here; D23.1 retired the reading choice, and the first two
+    # v3 parts take their cells (bake() puts them at this point), so every other rect stays where it was.
+    ("v3", None, 1, 1, 0),
+    ("v3", None, 1, 1, 0),
     ("x.tail", bubble_tail, 1, 1, 1.0),
     ("x.june_ghost_0", lambda: june_ghost(0.0), 1, 1, DEFAULT_HEIGHT),
     ("x.june_ghost_1", lambda: june_ghost(0.25), 1, 1, DEFAULT_HEIGHT),
@@ -326,20 +363,31 @@ def render_cell(sp, shadow):
 
 # ----------------------------------------------------------------------------------------------- packing
 
+def part_job(pid):
+    if pid in SPECIAL:
+        fn, cols, rows, height, border = SPECIAL[pid]
+    else:
+        name = pid[3:]
+        if name not in N.GLYPHS:
+            raise SystemExit(f"no drawing for {pid}")
+        fn, cols, rows, height, border = (lambda n=name: glyph_cell(n)), 1, 1, DEFAULT_HEIGHT, 0
+    return (pid, fn, cols, rows, height, border, False)
+
+
 def bake():
-    ids = part_ids()
-    jobs = []
-    for pid in ids:
-        if pid in SPECIAL:
-            fn, cols, rows, height, border = SPECIAL[pid]
-        else:
-            name = pid[3:]
-            if name not in N.GLYPHS:
-                raise SystemExit(f"no drawing for {pid}")
-            fn, cols, rows, height, border = (lambda n=name: glyph_cell(n)), 1, 1, DEFAULT_HEIGHT, 0
-        jobs.append((pid, fn, cols, rows, height, border, False))
+    """Packs first-fit in a fixed order: v1+v2 parts, the extras (the first v3 parts fill the retired first-launch
+    cells), then the remaining v3 parts. Appending keeps every earlier rect stable."""
+    base, v3 = part_ids(split=True)
+    ids = base + v3
+    jobs = [part_job(pid) for pid in base]
+    pending = list(v3)
     for xid, fn, cols, rows, height in EXTRAS:
+        if xid == "v3":
+            if pending:
+                jobs.append(part_job(pending.pop(0)))
+            continue
         jobs.append((xid, fn, cols, rows, height, 0, True))
+    jobs.extend(part_job(pid) for pid in pending)
 
     per_row = ATLAS // PITCH
     atlas = Image.new("RGBA", (ATLAS, ATLAS), (0, 0, 0, 0))
@@ -428,8 +476,6 @@ namespace SpookyStreet.Core.Nonverbal
         /// <summary>Flipbook frames of <see cref="PuppetParts.JuneRun"/> after its own cell, in order.</summary>
         public static readonly IReadOnlyList<string> JuneRunFrames = new[] {{ "x.june_run_1", "x.june_run_2", "x.june_run_3" }};
 
-        public const string Book = "x.book";
-        public const string Pictures = "x.pictures";
         public const string BubbleTail = "x.tail";
         public const string PaperBat = "x.paper_bat";
 

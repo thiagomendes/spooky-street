@@ -75,8 +75,9 @@ Review iterations, from run 74 to run 78:
   first choice) is not built; the cut-out is the documented fallback and low-end path.
 - **Tier 3:** still the action caption. The ghost-hand demo over the real controls (§6) is a later pass, and so is the
   tier-1 sparkle and head turn.
-- **Lines without a vignette** keep the v1 card, and its words show even in Pictures only: no v1 pictogram strip
-  exists at runtime, and those lines get vignettes in S004 (D23.3).
+- **Lines without a vignette** kept the v1 card. Closed in `docs/S002-vignettes.md`: every case 01 line now has a
+  vignette, and D23.1 was revised to one hybrid reading mode (no Pictures only, no first-launch cards, so frame 28 and
+  the words toggle are gone).
 - **Babble arcs and sync:** the arcs beside the face disc and the babble syllable sync are not drawn (no babble
   voice yet).
 - **Replay staging:** the cameras, the ghost route and the marks come from `MemoryReplayView.DefaultStaging`

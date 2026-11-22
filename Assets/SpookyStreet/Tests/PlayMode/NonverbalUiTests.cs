@@ -81,48 +81,80 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Frames(3);
         }
 
-        [UnityTest]
-        public IEnumerator VignettePlaysForAScopedLineAndTheCardForOthers()
+        /// <summary>Every case 01 line by speaker, with the speaker who says it.</summary>
+        private static readonly (Speaker Speaker, string[] Keys)[] LinesBySpeaker =
         {
-            yield return StartGame();
-            var dialogue = Director.Dialogue;
-            dialogue.Play(new[] { new ScriptLine(Speaker.Bea, Lines.BeaSawCape), new ScriptLine(Speaker.Bea, Lines.BeaRepeat) });
-            yield return Wait(1.0f);
-            Assert.IsTrue(dialogue.ShowsVignette, "Bea's key line plays its vignette in the bubble");
-            Assert.AreEqual(C01Vignettes.BeaSawCape, dialogue.Vignette.Current.Id);
-            Assert.Greater(dialogue.Vignette.LocalTime, 0.5f, "the vignette advances");
-            Assert.Greater(dialogue.Vignette.VisibleParts, 3, "puppets are on the stage");
-            Assert.IsTrue(dialogue.TextLineVisible, "words are on by default");
-
-            dialogue.Advance();
-            yield return Frames(2);
-            Assert.AreEqual(Lines.BeaRepeat, dialogue.CurrentLine.Key);
-            Assert.IsTrue(C01Vignettes.For(Lines.BeaRepeat).UsesV1Strip);
-            Assert.IsFalse(dialogue.ShowsVignette, "a line without a vignette keeps the v1 card");
-            Assert.IsNull(dialogue.Vignette.Current);
-            Assert.IsTrue(dialogue.TextLineVisible, "the v1 card always shows its words");
-            dialogue.Skip();
-        }
+            (Speaker.Bea, new[] { Lines.BeaSawCape, Lines.BeaRepeat, Lines.BeaDoorOpen, Lines.BeaClosed }),
+            (Speaker.Vale, new[]
+            {
+                Lines.ValeDoorShut, Lines.ValeInviteSit, Lines.ValeRepeat, Lines.ValeWasShut, Lines.ValeOpenNow,
+                Lines.ValeClosed, Lines.ValeSavedSweet,
+            }),
+            (Speaker.June, new[]
+            {
+                Lines.JuneGreet, Lines.JuneGreetShortcut, Lines.JuneDoorSticks, Lines.JuneDoorAlreadyOpen,
+                Lines.JuneLatchReminder, Lines.JuneLatchThanks, Lines.JuneListenFloor, Lines.JuneGoOutside,
+                Lines.JuneResolve, Lines.JuneClosed,
+            }),
+            (Speaker.Kit, new[] { Lines.KitFirstShow, Lines.KitThanks }),
+            (Speaker.Pip, new[]
+            {
+                Lines.ExamineStreamer, Lines.ExamineCloth, Lines.ExamineSill, Lines.ExamineDoorStuck, Lines.ExamineBowl,
+                Lines.ExamineBowlSweet,
+            }),
+        };
 
         [UnityTest]
-        public IEnumerator TheTextLineFollowsTheWordsSetting()
+        public IEnumerator EveryCaseLineShowsItsVignetteAndItsTextLine()
         {
             yield return StartGame();
             var director = Director;
             var dialogue = director.Dialogue;
-            director.Nonverbal.ChooseReadingMode(true);
-            Assert.IsFalse(director.Nonverbal.Settings.ShowSpeechText);
-            Assert.IsTrue(File.Exists(NonverbalSettingsStore.PathsFor(_saves).Latest), "the choice is saved");
-            dialogue.Play(new[] { new ScriptLine(Speaker.Vale, Lines.ValeDoorShut) });
-            yield return Frames(3);
-            Assert.IsTrue(dialogue.ShowsVignette);
-            Assert.IsFalse(dialogue.TextLineVisible, "Pictures only hides the words");
-            Assert.AreEqual(Localizer.Get(Lines.ValeDoorShut), dialogue.CurrentText, "the line text is still known");
+            int seen = 0;
+            foreach (var (speaker, keys) in LinesBySpeaker)
+            {
+                var lines = keys.Select(k => new ScriptLine(speaker, k)).ToArray();
+                dialogue.Play(lines);
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    yield return Wait(0.25f);
+                    string key = lines[i].Key;
+                    Assert.AreEqual(key, dialogue.CurrentLine.Key);
+                    Assert.IsTrue(dialogue.ShowsVignette, key + " plays in the bubble");
+                    Assert.AreEqual(C01Vignettes.For(key).VignetteId, dialogue.Vignette.Current.Id, key);
+                    Assert.Greater(dialogue.Vignette.LocalTime, 0.05f, key + ": the vignette advances");
+                    Assert.Greater(dialogue.Vignette.VisibleParts, 0, key + ": puppets are on the stage");
+                    Assert.IsTrue(dialogue.TextLineVisible, key + ": the words show under the pictures (D23.1)");
+                    Assert.AreEqual(Localizer.Get(key), dialogue.CurrentText, key);
+                    seen++;
+                    dialogue.Advance();
+                    yield return null;
+                }
 
-            director.Nonverbal.ChooseReadingMode(false);
-            yield return Frames(2);
-            Assert.IsTrue(dialogue.TextLineVisible, "Words and pictures shows the line again");
-            dialogue.Skip();
+                Assert.IsFalse(dialogue.IsOpen, speaker + ": the conversation closes after its last line");
+                director.Nonverbal.MemoryReplay.End(false);
+            }
+
+            // Captions: the strip keeps its words and plays the vignette on its mini stage.
+            foreach (string key in CaseScript.AllLineKeys.Where(k => k.StartsWith("c01.caption.")))
+            {
+                director.Captions.Clear();
+                director.Captions.ShowKey(key);
+                yield return Wait(0.25f);
+                Assert.IsTrue(director.Captions.ShowsVignette, key + " plays on the caption's mini stage");
+                Assert.AreEqual(C01Vignettes.For(key).VignetteId, director.Captions.Vignette.Current.Id, key);
+                Assert.Greater(director.Captions.Vignette.VisibleParts, 0, key);
+                Assert.AreEqual(Localizer.Get(key), director.Captions.CurrentText, key + ": the words stay");
+                seen++;
+            }
+
+            Assert.AreEqual(CaseScript.AllLineKeys.Count(), seen, "every case 01 line was shown");
+
+            // A hint is not a case line: the strip shows it alone.
+            director.Captions.ShowNow("c01.hint.arrival.observe");
+            yield return null;
+            Assert.IsFalse(director.Captions.ShowsVignette, "hints have no mini stage");
+            director.Captions.Clear();
         }
 
         [UnityTest]
@@ -287,16 +319,13 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(menus.SettingsOpen, "both spots held for 3 s open the settings");
             Assert.IsFalse(menus.GateOpen);
 
-            Assert.IsTrue(layer.Settings.ShowSpeechText);
-            menus.ShowSpeechTextToggle.onClick.Invoke();
-            Assert.IsFalse(layer.Settings.ShowSpeechText, "the words toggle turns the text line off");
-            Assert.IsFalse(game.Director.Dialogue.ShowSpeechText);
+            Assert.IsNull(menus.Canvas.transform.Find("NonverbalSettings/Content/SettingsCard/WordsRow"),
+                "one hybrid reading mode (D23.1): no words toggle, only Helper");
             Assert.IsFalse(layer.Settings.HelperAutoHints);
             menus.HelperToggle.onClick.Invoke();
             Assert.IsTrue(layer.Settings.HelperAutoHints, "the Helper toggle turns tier-3 auto help on");
             var saved = new NonverbalSettingsStore(new SpookyStreet.Save.DiskSaveFileSystem(), _saves).Load();
-            Assert.IsFalse(saved.ShowSpeechText, "settings are saved at once");
-            Assert.IsTrue(saved.HelperAutoHints);
+            Assert.IsTrue(saved.HelperAutoHints, "settings are saved at once");
 
             // A new guarded action needs a new gate.
             menus.CloseSettings();
@@ -335,21 +364,26 @@ namespace SpookyStreet.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator FirstLaunchOffersTheTwoPictureCards()
+        public IEnumerator NoReadingChoiceAtFirstLaunchAndOldSettingsStillLoad()
         {
+            // A settings file from the build with the reading choice: Pictures only picked, Helper on.
+            Directory.CreateDirectory(_saves);
+            File.WriteAllText(NonverbalSettingsStore.PathsFor(_saves).Latest,
+                "{\"schemaVersion\":1,\"showSpeechText\":false,\"helperAutoHints\":true,\"firstLaunchChoiceMade\":true}");
             yield return LoadGame();
             var layer = GameBootstrap.Instance.Director.Nonverbal;
-            Assert.IsTrue(layer.Settings.NeedsFirstLaunchChoice);
-            Assert.IsTrue(layer.Menus.ChoiceOpen, "a first launch shows the reading choice over the title");
-            layer.Menus.PicturesCard.onClick.Invoke();
-            Assert.IsFalse(layer.Menus.ChoiceOpen);
-            Assert.IsFalse(layer.Settings.ShowSpeechText, "Pictures only");
-            Assert.IsFalse(layer.Settings.NeedsFirstLaunchChoice);
+            Assert.IsNull(layer.Menus.Canvas.transform.Find("ReadingChoice"), "no first-launch reading cards (D23.1)");
+            Assert.IsTrue(layer.Settings.HelperAutoHints, "the old file's Helper choice is kept");
 
-            yield return LoadGame();
-            var again = GameBootstrap.Instance.Director.Nonverbal;
-            Assert.IsFalse(again.Menus.ChoiceOpen, "asked only once");
-            Assert.IsFalse(again.Settings.ShowSpeechText, "the choice persists");
+            GameBootstrap.Instance.Ui.NewGameButton.onClick.Invoke();
+            yield return Wait(0.6f);
+            Assert.AreEqual(GameState.Playing, GameBootstrap.Instance.Flow.State, "nothing stands between title and play");
+            var dialogue = Director.Dialogue;
+            dialogue.Play(new[] { new ScriptLine(Speaker.Vale, Lines.ValeDoorShut) });
+            yield return Frames(3);
+            Assert.IsTrue(dialogue.ShowsVignette);
+            Assert.IsTrue(dialogue.TextLineVisible, "an old Pictures-only file no longer hides the words");
+            dialogue.Skip();
         }
     }
 }
