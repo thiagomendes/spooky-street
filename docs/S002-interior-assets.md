@@ -58,3 +58,14 @@ window from the bridge with a Pip-sized capsule; the inner and outer window fram
 - The game code does not yet hide `OwlHouseBody`, `DoorRecessCard` or `SideWindowPane`; until it does, an opened
   door shows the dark card and the window stays closed.
 - The inner sill board sits 3 mm above the outer sill where they overlap; watch for shimmer on device.
+
+## Integration branch
+
+`feature/s002-assets` combines three branches into one, so a single CI run can check every new S002 asset before the
+interior wiring pass:
+
+- the interior, mechanism and routes (`feature/s002-interior`);
+- the split owl house (`feature/s002-owlhouse-split`);
+- June and Aunt Kit (`feature/s002-june-kit`).
+
+No game code uses the new models yet, apart from the import rules for the June/Kit clips.
