@@ -1,9 +1,9 @@
 {
  "OwlHouseInterior": {
-  "triangles": 24998,
+  "triangles": 34436,
   "children": {
    "Attic": {
-    "triangles": 10056,
+    "triangles": 13500,
     "pivot": [
      0.0,
      0.0,
@@ -35,7 +35,7 @@
     ]
    },
    "Face_Glow": {
-    "triangles": 68,
+    "triangles": 107,
     "pivot": [
      0.0,
      0.0,
@@ -43,7 +43,7 @@
     ]
    },
    "InnerDoor": {
-    "triangles": 1498,
+    "triangles": 1892,
     "pivot": [
      -0.55,
      -2.015,
@@ -51,7 +51,7 @@
     ]
    },
    "Lamp_Glow": {
-    "triangles": 48,
+    "triangles": 488,
     "pivot": [
      0.0,
      0.0,
@@ -59,7 +59,7 @@
     ]
    },
    "NookWall": {
-    "triangles": 2236,
+    "triangles": 2328,
     "pivot": [
      0.0,
      0.0,
@@ -77,14 +77,22 @@
    "SillSnag": {
     "triangles": 112,
     "pivot": [
-     -2.83,
-     1.47,
-     2.92
+     -3.57,
+     -0.03,
+     4.42
+    ]
+   },
+   "StreetView_Glow": {
+    "triangles": 812,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
     ]
    }
   },
   "atlas": "OwlHouseInterior",
-  "px_per_m": 87
+  "px_per_m": 66
  },
  "WorkshopMechanism": {
   "triangles": 5420,
@@ -178,19 +186,19 @@
    }
   },
   "atlas": "Routes",
-  "px_per_m": 94
+  "px_per_m": 87
  },
  "SillBridge": {
   "triangles": 1484,
   "children": {},
   "atlas": "Routes",
-  "px_per_m": 141
+  "px_per_m": 131
  },
  "TreehouseCabin": {
-  "triangles": 5433,
+  "triangles": 6822,
   "children": {
    "Lamp_Glow": {
-    "triangles": 36,
+    "triangles": 72,
     "pivot": [
      0.0,
      0.0,
@@ -199,12 +207,12 @@
    }
   },
   "atlas": "Routes",
-  "px_per_m": 122
+  "px_per_m": 113
  },
  "ClothSnag": {
   "triangles": 112,
   "children": {},
   "atlas": "Routes",
-  "px_per_m": 469
+  "px_per_m": 436
  }
 }

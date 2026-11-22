@@ -45,6 +45,12 @@ EDGE_S = maple_to_ramp(PLAT + Vector((-HALF, HALF)))  # the platform's open east
 EDGE_N = maple_to_ramp(PLAT + Vector((-HALF, -HALF)))
 
 
+def cabin_centre_world():
+    """The cabin's centre on the street, as (world X, world Z)."""
+    c = maple_to_ramp(PLAT)
+    return c.x - 9.5, c.y + 12.0
+
+
 def edge_x(y, gap=0.03):
     t = (y - EDGE_S.y) / (EDGE_N.y - EDGE_S.y)
     return EDGE_S.x + (EDGE_N.x - EDGE_S.x) * t + gap
@@ -253,20 +259,33 @@ def build_sill_bridge(craft):
     b.finish("SillBridge")
 
 
+CABIN_HALF, CABIN_EAVE, CABIN_BAY, CABIN_DOOR_H = 1.12, 1.7, 1.75, 1.45  # wall lines, eave height, the lookout bay's outer wall
+CABIN_PITCH = 33.0
+CABIN_SLOT = (-0.45, 0.97, 0.3)  # the collar in the ridge that the four limbs leave through: x0, x1, half width
+CABIN_TOP = CABIN_EAVE - 0.1 + CABIN_HALF * math.tan(math.radians(CABIN_PITCH))  # the closed ridge: 2.33 m over the deck
+# Viewpoints inside the cabin (builder space): the export keeps every face they can see.
+CABIN_EYES = [(PLAT.x + x, PLAT.y + y, ZT + z) for x in (-0.8, 0.0, 0.8) for y in (-0.8, 0.5, 1.4) for z in (0.35, 1.0, 1.5)]
+
+
 def build_cabin(craft):
-    """Small plank cabin on the treehouse platform: board walls with a window on the two railed sides, a
-    lookout parapet toward the yard, a door toward the shed roof, and a shingled roof split at the ridge for
-    the boughs."""
+    """Small plank cabin on the treehouse platform, closed on every side (decision D24): board walls with a
+    window on the two railed sides, a door toward the shed roof, a lookout bay over the yard on its own
+    brackets, gables, and a shingled roof whose ridge is boarded over except for the collar the boughs leave
+    through. Windows, door and collar look onto the real street and tree."""
     P = woods(craft)
     b = Builder(223)
-    h, eave, t = 1.12, 1.45, 0.03
-    door = (-1.02, -0.12, 1.3)  # y0, y1, height of the opening in the east wall
+    h, eave, t, yb = CABIN_HALF, CABIN_EAVE, 0.03, CABIN_BAY
+    door = (-1.02, -0.12, CABIN_DOOR_H)  # y0, y1, height of the opening in the east wall
+    pitch, ez = CABIN_PITCH, eave - 0.1
+    tan = math.tan(math.radians(pitch))
+    bz = 1.36  # eave of the bay's lean-to roof
+    bev = [0.008]
 
     def board(axis, at, lo, hi, z0, z1, mat=None):
         c = (lo + hi) / 2
         size = (hi - lo - 0.01, t, z1 - z0) if axis == "x" else (t, hi - lo - 0.01, z1 - z0)
         pos = (c, at, (z0 + z1) / 2) if axis == "x" else (at, c, (z0 + z1) / 2)
-        b.box(mat or P["plank_z"], size, pos, bevel=0.008, tint=b.vary(0.76, 1.12))
+        b.box(mat or P["plank_z"], size, pos, bevel=bev[0], tint=b.vary(0.76, 1.12))
 
     def boards(axis, at, lo, hi, z0, z1, gap=None):
         n = round((hi - lo) / 0.19)
@@ -283,13 +302,24 @@ def build_cabin(craft):
         for sx in (-1, 1):
             for sy in (-1, 1):
                 b.box(P["dark_z"], (0.1, 0.1, eave), (sx * h, sy * h, eave / 2), bevel=0.018)
+            b.box(P["dark_z"], (0.1, 0.1, bz + 0.06), (sx * h, yb, (bz + 0.06) / 2), bevel=0.018)
             b.box(P["dark_y"], (0.1, 2 * h + 0.3, 0.1), (sx * h, 0, eave + 0.03), bevel=0.016)
             b.box(P["dark_x"], (2 * h + 0.3, 0.1, 0.1), (0, sx * h, eave + 0.03), bevel=0.016)
+            b.box(P["dark_y"], (0.08, yb - h, 0.12), (sx * h, (yb + h) / 2, bz + 0.07), bevel=0.014)
+        b.box(P["dark_x"], (2 * h + 0.1, 0.08, 0.1), (0, yb, bz + 0.04), bevel=0.014)
         win = (-0.3, 0.3, 0.62, 1.12)
+        look = (-0.78, 0.78, 0.72, 1.24)
         boards("x", -h, -h + 0.06, h - 0.06, 0.0, eave - 0.02, win)  # north wall (railed side)
         boards("y", h, -h + 0.06, h - 0.06, 0.0, eave - 0.02, win)  # west wall (railed side)
-        boards("x", h, -h + 0.06, h - 0.06, 0.0, 0.72)  # lookout parapet toward the yard
-        b.box(P["trim_x"], (2 * h - 0.1, 0.12, 0.045), (0, h, 0.745), bevel=0.014)
+        bev[0] = 0.0
+        boards("y", h, h + 0.06, yb - 0.06, 0.0, bz + 0.02)  # the bay's side walls
+        boards("y", -h, h + 0.06, yb - 0.06, 0.0, bz + 0.02)
+        boards("x", yb, -h + 0.06, h - 0.06, 0.0, bz, look)  # the bay's outer wall with the lookout window
+        bev[0] = 0.008
+        b.box(P["trim_x"], (look[1] - look[0] + 0.16, 0.16, 0.045), (0, yb - 0.01, look[2] - 0.02), bevel=0.014)
+        b.box(P["trim_x"], (look[1] - look[0] + 0.12, 0.06, 0.06), (0, yb, look[3] + 0.03), bevel=0.014)
+        for s in (-1, 0, 1):
+            b.box(P["trim_z"], (0.06, 0.06, look[3] - look[2]), (s * (look[1] + 0.03), yb, (look[2] + look[3]) / 2), bevel=0.014)
         boards("y", -h, door[1] + 0.02, h - 0.06, 0.0, eave - 0.02)  # east wall beside the door
         boards("y", -h, -h + 0.06, door[0] - 0.02, 0.0, eave - 0.02)
         b.box(P["plank_y"], (t, door[1] - door[0] + 0.04, eave - 0.02 - door[2]), (-h, (door[0] + door[1]) / 2, (eave - 0.02 + door[2]) / 2), bevel=0.008)
@@ -303,23 +333,65 @@ def build_cabin(craft):
             for s in (-1, 1):
                 size = (0.06, 0.06, 0.5) if axis == "x" else (0.06, 0.06, 0.5)
                 b.box(P["trim_z"], size, (s * 0.33, at, 0.87) if axis == "x" else (at, s * 0.33, 0.87), bevel=0.014)
-        # roof: two shingled panels, open at the ridge where the boughs leave
-        pitch, ez = 33.0, eave - 0.1
-        ln = (h + 0.3 - 0.3) / math.cos(math.radians(pitch))
-        pk.roof(b, P, 2.9, ln, pitch, T(0, -h - 0.3, ez))
-        pk.roof(b, P, 2.9, ln, pitch, T(0, h + 0.3, ez) @ R("Z", 180))
-        rz = ez + (h + 0.0) * math.tan(math.radians(pitch))
+        # gables: boards up to the underside of the roof, on both wall lines
+        under = 0.085
+        gable = [(-h, eave - 0.03), (h, eave - 0.03), (h, ez + 0.3 * tan - under), (CABIN_SLOT[2], CABIN_TOP - under), (-CABIN_SLOT[2], CABIN_TOP - under),
+                 (-h, ez + 0.3 * tan - under)]
+        for sx in (-1, 1):
+            b.prism(P["plank_z"], gable, t, T(sx * h + t / 2, 0, 0) @ R("Z", 90), tint=b.vary(0.8, 1.0), smooth=False)
+            for y in (-0.56, 0.0, 0.56):
+                b.box(P["dark_z"], (0.012, 0.014, 0.5), (sx * (h - t), y, eave + 0.2), bevel=0, tint=0.7)
+        # roof: two shingled panels, the ridge boarded over between them except for the collar round the boughs
+        ln = (h + 0.3 - CABIN_SLOT[2]) / math.cos(math.radians(pitch))
+        pk.roof(b, P, 2.9, ln, pitch, T(0, -h - 0.3, ez), rafters=False)
+        ln_s = (h - CABIN_SLOT[2]) / math.cos(math.radians(pitch))  # the south panel starts over the wall: the bay's roof carries on from it
+        pk.roof(b, P, 2.9, ln_s, pitch, T(0, h, ez + 0.3 * tan) @ R("Z", 180), rafters=False)
+        rz = CABIN_TOP
+        sx0, sx1, sw = CABIN_SLOT
+        for x0, x1 in ((-1.45, sx0), (sx1, 1.45)):
+            n = max(1, round((x1 - x0) / 0.24))
+            for i in range(n):
+                a, c = x0 + (x1 - x0) * i / n, x0 + (x1 - x0) * (i + 1) / n
+                b.box(P["dark_y"], (c - a - 0.008, 2 * sw + 0.1, 0.05), ((a + c) / 2, 0, rz - 0.01), bevel=0.01, tint=b.vary(0.8, 1.05))
+        for x in (sx0, sx1):
+            b.box(P["trim_y"], (0.07, 2 * sw + 0.12, 0.14), (x, 0, rz + 0.0), bevel=0.016)
+        for sy in (-1, 1):
+            b.box(P["trim_x"], (sx1 - sx0, 0.07, 0.14), ((sx0 + sx1) / 2, sy * (sw + 0.02), rz + 0.0), bevel=0.016)
         for sx in (-1, 1):  # gable frames: rafters pair and a star
             for sy in (-1, 1):
                 beam(b, P["trim_x"], (sx * 1.46, sy * (h + 0.3), ez - 0.04), (sx * 1.46, sy * 0.3, rz + 0.02), 0.05, 0.14, 0.014)
             b.box(P["trim_y"], (0.05, 0.66, 0.1), (sx * 1.46, 0, rz + 0.02), bevel=0.014)
             b.prism(P["candy"], el.co.star_outline(0.13), 0.03, T(sx * 1.49, 0, rz + 0.03) @ R("Z", 90 * sx) @ T(0, -0.015, 0), tint=1.0, bevel=0.006)
-        # inside and around: a box seat, paper bats on the wall, bunting on the parapet, a lantern by the door
+        # the lookout bay: its own boards on a rim joist and two brackets, under a lean-to roof
+        n = 11
+        for i in range(n):
+            x = -h + (i + 0.5) * 2 * h / n
+            b.box(P["plank_y"], (2 * h / n - 0.012, yb + 0.06 - 1.28, 0.045), (x, (yb + 0.06 + 1.28) / 2, -0.0225), bevel=0, tint=b.vary(0.78, 1.12))
+        b.box(P["trim_x"], (2 * h + 0.14, 0.07, 0.16), (0, yb + 0.06, -0.1), bevel=0.016)
+        for sx in (-1, 1):
+            b.box(P["trim_y"], (0.07, yb + 0.06 - 1.3, 0.16), (sx * (h + 0.03), (yb + 0.06 + 1.3) / 2, -0.1), bevel=0.016)
+            b.prism(P["dark_x"], [(1.3, -0.18), (yb, -0.18), (1.3, -0.62)], 0.07, T(sx * 0.8 + 0.035, 0, 0) @ R("Z", 90), bevel=0.012)
+        bp = math.degrees(math.atan2(ez + 0.3 * tan - 0.05 - bz, yb + 0.2 - h))
+        lb = (yb + 0.2 - h) / math.cos(math.radians(bp))
+        pk.roof(b, P, 2.9, lb, bp, T(0, yb + 0.2, bz) @ R("Z", 180))
+        for sx in (-1, 1):  # the bay's side walls up to its roof
+            b.prism(P["plank_z"], [(h, bz + 0.0), (yb, bz + 0.0), (yb, bz + 0.03), (h, ez + 0.3 * tan - 0.15)], t, T(sx * h + t / 2, 0, 0) @ R("Z", 90),
+                    tint=0.9, smooth=False)
+        # inside and around: a box seat, paper bats on the wall, a rug and a spyglass in the bay, bunting, lanterns
         it.crate(b, P, (0.5, 0.36, 0.3), T(0.72, -0.82, 0) @ R("Z", 8))
         b.lathe(P["felt_v"], [(0.0, 0.3), (0.16, 0.3), (0.17, 0.33), (0.1, 0.36), (0.0, 0.365)], 10, T(0.72, -0.82, 0) @ S(1.2, 0.9, 1.0), tint=1.0)
         pr.bat(b, P["paper"], 0.26, T(-0.62, -h + 0.025, 1.0) @ R("Z", 180) @ R("Y", 10), fold=0.2, curl=0.25)
         pr.bat(b, P["paper"], 0.2, T(0.7, -h + 0.025, 1.12) @ R("Z", 180) @ R("Y", -14), fold=0.2, curl=0.25)
-        pr.bunting(b, craft, (-h, h + 0.05, 0.7), (h, h + 0.05, 0.7), 0.12, 8, 0.18, 0.22, start=1)
+        rug = T(0.0, 1.12, 0.0) @ S(1.0, 0.62, 1.0)
+        b.lathe(P["cloth"], [(0.0, 0.0), (0.72, 0.0), (0.74, 0.01), (0.7, 0.018), (0.0, 0.018)], 16, rug, tint=1.0)
+        b.lathe(P["felt"], [(0.0, 0.018), (0.52, 0.018), (0.52, 0.022), (0.0, 0.022)], 16, rug, tint=1.0)
+        b.rod(P["brass"], (-0.3, yb - 0.06, look[2] + 0.04), (0.05, yb - 0.1, look[2] + 0.07), 0.028, 8, 1.0, r2=0.018)  # spyglass on the sill
+        b.rod(P["ink"], (0.05, yb - 0.1, look[2] + 0.07), (0.2, yb - 0.12, look[2] + 0.083), 0.02, 8, 1.0)
+        for i, rgb in enumerate((E["candy"], E["orange"], E["bone"])):  # drawings pinned beside the door
+            b.box(P["paint"], (0.004, 0.2, 0.26), (-h + t, 0.35 + 0.26 * i, 0.95 + 0.06 * (i % 2)), bevel=0, rot=R("X", 6 * i - 5), tint=lc(rgb), drop=("-x",))
+        pr.bunting(b, craft, (-h, yb + 0.05, 0.66), (h, yb + 0.05, 0.66), 0.12, 8, 0.18, 0.22, start=1)
+        with b.at(T(0.85, yb - 0.22, bz - 0.02)):
+            pr.hanging_lamp(b, craft, 0.05, 0.55, 2.4)
         beam(b, P["dark_y"], (-h - 0.02, -h + 0.02, eave - 0.12), (-h - 0.42, -h + 0.02, eave - 0.12), 0.05, 0.05, 0.012)
         with b.at(T(-h - 0.36, -h + 0.02, eave - 0.15)):
             pr.hanging_lamp(b, craft, 0.1, 0.75, 2.4)

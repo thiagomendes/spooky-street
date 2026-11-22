@@ -10,6 +10,9 @@ Rows: attic / stair and foyer / foyer toward the door; the mechanism slipped and
 grille; the cutaway (exterior hidden, near walls culled) / the routes with the owl house and the maple / bridge
 and cabin close-ups.
 
+Its interior views were framed for the first interior; the closed rooms of D24 are reviewed by
+`env_house_v3_review.py`, which reuses this module's loader and lamps.
+
 Run: blender -b -t 2 --python tools/blender/env/env_interior_review.py -- out.png [draft|final] [models_dir] [view ...]"""
 import math
 import os
