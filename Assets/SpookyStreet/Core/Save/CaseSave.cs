@@ -107,7 +107,7 @@ namespace SpookyStreet.Core.Save
         /// Migration steps keyed by the version they upgrade FROM (v → v + 1), each over the parsed JSON object.
         /// Schema 1 is the first shipped schema, so the table is empty; add a step whenever the schema changes.
         /// </summary>
-        internal static readonly Dictionary<int, Func<Dictionary<string, object>, Dictionary<string, object>>> Migrations =
+        public static readonly Dictionary<int, Func<Dictionary<string, object>, Dictionary<string, object>>> Migrations =
             new Dictionary<int, Func<Dictionary<string, object>, Dictionary<string, object>>>();
 
         public static string Serialize(CaseSaveData data)
