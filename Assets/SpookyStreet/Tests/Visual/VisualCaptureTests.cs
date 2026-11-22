@@ -4,6 +4,7 @@ using SpookyStreet.App;
 using SpookyStreet.Core.Animation;
 using SpookyStreet.Core.Flow;
 using SpookyStreet.Core.Tips;
+using SpookyStreet.World;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
@@ -207,6 +208,29 @@ namespace SpookyStreet.Tests.Visual
             yield return Shot("12_dive_dust");
             Time.timeScale = 1f;
             yield return WaitGameTime(0.6f);
+
+            // Handcrafted sky (owner request): the paper moon from above the west lawn, with a cloud sliding across
+            // it and bats in front of it, then a shooting star forced mid-streak above the roofs seen from the
+            // arrival porch. Time is frozen so the forced flight and streak hold for the captures.
+            var sky = game.Sky;
+            Assert.IsNotNull(sky, "16_sky_moon: the handcrafted sky should be built");
+            Assert.IsTrue(sky.Crafted, "with a graphics device the sky must use its own shaders, not the fallback");
+            Time.timeScale = 0f;
+            camera.fieldOfView = 34f;
+            camera.transform.position = new Vector3(-13f, 9f, 0f);
+            camera.transform.LookAt(Atmosphere.MoonPosition + new Vector3(4f, -3.5f, 0f));
+            sky.ShowCloudOverMoon(camera.transform.position, -12f); // covering the left half of the disc
+            sky.ShowBats(0.62f); // just past the middle: all three bats over the clear half
+            yield return Shot("16_sky_moon");
+
+            camera.fieldOfView = 50f;
+            camera.transform.position = MagicSky.ReferenceView;
+            Vector3 streak = sky.ShowShootingStar(0.5f, 25f);
+            camera.transform.LookAt(streak + new Vector3(-4f, -10f, 0f));
+            yield return Shot("17_shooting_star");
+            Assert.IsTrue(sky.ShootingStar.activeSelf, "17_shooting_star: the streak should be mid-flight");
+            Time.timeScale = 1f;
+            yield return null;
 
             camera.fieldOfView = fieldOfView;
             game.Ui.Hud.SetActive(true);

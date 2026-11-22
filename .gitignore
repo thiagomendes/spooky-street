@@ -53,6 +53,8 @@ __pycache__/
 /Assets/SpookyStreet/Content/Generated.meta
 tools/core-lib/bin/
 tools/core-lib/obj/
+tools/sky_preview/bin/
+tools/sky_preview/obj/
 !/tools/core-lib/*.csproj
 
 # Agent worktrees created by Claude Code sessions (local only).

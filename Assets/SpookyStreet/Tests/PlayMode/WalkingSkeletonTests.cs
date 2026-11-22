@@ -147,6 +147,12 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(GameState.Paused, game.Flow.State, "resuming the app stays paused until the player chooses");
         }
 
+        /// <summary>URP's own shaders, or the project's two URP sky shaders (written for URP, see MagicSky).</summary>
+        private static bool IsUrpShader(string shaderName) =>
+            shaderName.StartsWith("Universal Render Pipeline/", System.StringComparison.Ordinal) ||
+            shaderName == SpookyStreet.World.MagicSky.DomeShaderName ||
+            shaderName == SpookyStreet.World.MagicSky.PaperShaderName;
+
         /// <summary>
         /// Machine check from the visual floor: no renderer may use Unity's built-in Default-Material or a
         /// non-URP shader. Under URP those render as the magenta error shader on device (TestFlight 3.1).
@@ -174,8 +180,7 @@ namespace SpookyStreet.Tests.PlayMode
                     {
                         problem = "built-in Default-Material";
                     }
-                    else if (material.shader == null || !material.shader.name.StartsWith("Universal Render Pipeline/",
-                                 System.StringComparison.Ordinal))
+                    else if (material.shader == null || !IsUrpShader(material.shader.name))
                     {
                         problem = "non-URP shader " + (material.shader == null ? "null" : material.shader.name);
                     }
