@@ -23,6 +23,9 @@
   translator context, referenced through `LocalizationKeys`. Never key saved progress off display text.
 - Changing the Unity patch: update `ProjectVersion.txt` and both workflow image tags + digests together.
 - Signing secrets live only in the `testflight` environment; PR jobs must never reference them.
+- North star (D26, D27): `docs/narrative-bible.md` (checklist), `docs/world-and-cases.md`, `docs/mystery-first.md`,
+  `docs/engagement.md`, `docs/roadmap.md`. Every stage or case plan passes the bible's checklist first; the child
+  makes the deductions; hints never give answers; Kids-category engagement guardrails are hard rules.
 - Portability (D25, `docs/portability.md`): one codebase for iPhone first, later iPad, Mac, Android, PC/Steam and
   Switch. Input only via Input System actions, prompts per control scheme, any aspect ratio and safe area,
   URP quality tiers, platform services behind interfaces.
