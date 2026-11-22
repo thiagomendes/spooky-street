@@ -173,6 +173,10 @@ namespace SpookyStreet.Core.World
 
         private static readonly Blocker[] FixedBlockers = BuildBlockers();
         private static readonly Blocker OpenDoorLeaf = BuildDoorLeaf();
+        private static readonly Blocker ClosedDoorLeaf = Blocker.FromSlab(CaseRouteLayout.Find(CaseRouteLayout.DoorBlockerName));
+
+        /// <summary>The inner door leaf as it stands: in the doorway while latched, swung into the hall once open.</summary>
+        private static Blocker Leaf(bool doorOpen) => doorOpen ? OpenDoorLeaf : ClosedDoorLeaf;
 
         /// <summary>Every solid the indoor camera avoids (door closed).</summary>
         public static IReadOnlyList<string> BlockerNames
@@ -285,6 +289,22 @@ namespace SpookyStreet.Core.World
 
         private static bool HouseAir(float x, float y, float z)
         {
+            // The two openings are air too, so a shoulder in the doorway or the window's reveal (Pip stepping into a
+            // threshold) still has a boom back into the room; beyond them are the closed, painted view boxes.
+            if (y > CaseRouteLayout.FloorY + 0.1f && y < CaseRouteLayout.DoorTopY - 0.1f &&
+                Math.Abs(x) < CaseRouteLayout.DoorHalfWidth && z > CaseRouteLayout.InteriorFrontZ - 0.1f &&
+                z <= CaseRouteLayout.InnerMinZ)
+            {
+                return true;
+            }
+
+            if (y > CaseRouteLayout.LoftY + 0.1f && y < CaseRouteLayout.SillY + CaseRouteLayout.WindowApex - 0.1f &&
+                x > -3.75f && x <= CaseRouteLayout.InnerMinX &&
+                Math.Abs(z - CaseRouteLayout.InnerWindowZ) < CaseRouteLayout.WindowHalfWidth)
+            {
+                return true;
+            }
+
             if (x < CaseRouteLayout.InnerMinX || x > CaseRouteLayout.InnerMaxX || z < CaseRouteLayout.InnerMinZ ||
                 z > CaseRouteLayout.InnerMaxZ || y < CaseRouteLayout.FloorY + 0.1f)
             {
@@ -359,7 +379,7 @@ namespace SpookyStreet.Core.World
                 }
             }
 
-            return !doorOpen || !OpenDoorLeaf.OverlapsSphere(c, radius);
+            return !Leaf(doorOpen).OverlapsSphere(c, radius);
         }
 
         /// <summary>True when a sphere at (x, y, z) touches any indoor solid (room air is not checked).</summary>
@@ -374,7 +394,7 @@ namespace SpookyStreet.Core.World
                 }
             }
 
-            return doorOpen && OpenDoorLeaf.OverlapsSphere(c, radius);
+            return Leaf(doorOpen).OverlapsSphere(c, radius);
         }
 
         /// <summary>The first solid crossing the line from a to b, or null when the line is clear.</summary>
@@ -390,7 +410,8 @@ namespace SpookyStreet.Core.World
                 }
             }
 
-            return doorOpen && OpenDoorLeaf.HitsSegment(a, b, SightRadius) ? OpenDoorLeaf.Name : null;
+            var leaf = Leaf(doorOpen);
+            return leaf.HitsSegment(a, b, SightRadius) ? leaf.Name : null;
         }
 
         public static bool SightClear(float ax, float ay, float az, float bx, float by, float bz, bool doorOpen) =>
@@ -649,9 +670,10 @@ namespace SpookyStreet.Core.World
                 }
             }
 
-            if (doorOpen && (OpenDoorLeaf.Centre - hand).Length <= r + OpenDoorLeaf.Bound)
+            var leaf = Leaf(doorOpen);
+            if ((leaf.Centre - hand).Length <= r + leaf.Bound)
             {
-                list.Add(OpenDoorLeaf);
+                list.Add(leaf);
             }
 
             return list;

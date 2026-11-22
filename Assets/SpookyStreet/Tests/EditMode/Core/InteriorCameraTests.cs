@@ -258,6 +258,21 @@ namespace SpookyStreet.Tests.Core
         }
 
         [Test]
+        public void StepsIntoAThresholdKeepTheBoomInTheRoom()
+        {
+            // Pip in the open doorway or in the window's reveal: the shoulder is in the opening, the lens in the room.
+            var door = Solve(0f, CaseRouteLayout.FloorY, Ifz + 0.05f, 180f, true);
+            Assert.IsTrue(door.Clear, door.ToString());
+            Assert.GreaterOrEqual(door.Distance, 1.8f, door.ToString());
+            Assert.Greater(door.CameraZ, CaseRouteLayout.InnerMinZ + InteriorCamera.Radius, "the lens is in the hall");
+            var window = Solve(-3.45f, CaseRouteLayout.LoftY, CaseRouteLayout.InnerWindowZ, 270f);
+            Assert.IsTrue(window.Clear, window.ToString());
+            Assert.Greater(window.CameraX, CaseRouteLayout.InnerMinX + InteriorCamera.Radius, "the lens is in the attic");
+            // A latched door is solid: no lens ever sits in its doorway.
+            Assert.IsFalse(InteriorCamera.SphereClear(0f, 1.6f, Ifz + 0.05f, false), "the latched leaf fills the doorway");
+        }
+
+        [Test]
         public void TheAlcoveTurnsTheCameraIntoTheRoom()
         {
             // Just in by the window, facing into the attic: behind Pip is the window, so the lens swings into the room.

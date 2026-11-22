@@ -217,6 +217,7 @@ namespace SpookyStreet.Tests.Visual
             brain.enabled = false;
             camera.transform.position = new Vector3(5.6f, 2.3f, 1.6f);
             camera.transform.LookAt(new Vector3(-0.4f, 3.0f, 12.0f));
+            director.Captions.Clear();
             yield return Shot("30_exterior_cards");
             brain.enabled = true;
 
@@ -227,6 +228,7 @@ namespace SpookyStreet.Tests.Visual
             yield return Wait(2.2f);
             Debug.Log("[InteriorCaptureTests] 32_cabin_inside: " + director.Framing.Shot);
             Assert.IsTrue(director.Framing.Active, "32: the cabin camera has the room");
+            director.Captions.Clear();
             yield return Shot("32_cabin_inside");
 
             // 21: the finale from the arrival sightline: Kit at her booth, June beside her, the reopening lines.

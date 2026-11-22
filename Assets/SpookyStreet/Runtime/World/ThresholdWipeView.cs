@@ -32,6 +32,7 @@ namespace SpookyStreet.World
         private RectTransform _curl;
         private RectTransform _crease;
         private RectTransform _shade;
+        private RectTransform _fold;
         private Image _glyph;
 
         public Canvas Canvas { get; private set; }
@@ -72,6 +73,11 @@ namespace SpookyStreet.World
             var shade = UiFactory.Sprite(_page, "CastShadow", Ramp(), UiFactory.WithAlpha(Palette.InkBlack, 0.5f),
                 Vector2.zero, Vector2.zero, Vector2.zero);
             _shade = shade.rectTransform;
+
+            // The page bends as it turns: a soft shade across it just behind the lifted edge.
+            var fold = UiFactory.Sprite(_page, "Fold", Ramp(), UiFactory.WithAlpha(Palette.InkBlack, 0.22f), Vector2.zero,
+                Vector2.zero, Vector2.zero);
+            _fold = fold.rectTransform;
 
             // The light on the curling edge, and the crease where the curl meets the flat page.
             var curl = UiFactory.Sprite(_page, "Curl", Ramp(), UiFactory.WithAlpha(Color.white, 0.75f), Vector2.zero,
@@ -133,8 +139,10 @@ namespace SpookyStreet.World
             _curl.gameObject.SetActive(lifting);
             _crease.gameObject.SetActive(lifting);
             _shade.gameObject.SetActive(lifting);
+            _fold.gameObject.SetActive(lifting);
             if (lifting)
             {
+                Edge(_fold, edge, 2.5f * curl, inside: true, offset: curl);
                 Edge(_curl, edge, curl, inside: true);
                 Edge(_crease, edge, 3f, inside: true, offset: curl);
                 Edge(_shade, edge, 0.06f * screen + curl, inside: false);
