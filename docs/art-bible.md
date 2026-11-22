@@ -122,7 +122,8 @@ UI decisions made overnight (owner may revise):
    asset.
 2. The hint radio lives **in the notebook only**, so the HUD stays minimal.
 3. The notebook closes with an **X**. "Back to the street" appears only on the case-closed card (spec §3).
-4. The Continue sub-label ("Find June · 7 paper bats") comes from saved facts in S002.
+4. The Continue sub-label comes from saved facts. *(D26: it shows the open question's chips and a picture recap,
+   never a route instruction such as "Find June"; spec v1.4 §5.)*
 5. The volume sliders mock is deferred to the settings implementation.
 
 ## 7. Production rules

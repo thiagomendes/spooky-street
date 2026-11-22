@@ -1,8 +1,8 @@
-# Spooky Street narrative bible (north star, pending owner approval)
+# Spooky Street narrative bible (north star, approved 2026-11-22, D27)
 
-Every stage plan, case design, vignette, line, hint and mechanic is checked against this page. It is grounded in
-`Spooky-Street-Spec.md` (v1.3), the art bible (`docs/art-bible.md` v2) and decisions D14–D25. Where the spec is
-silent this page **proposes**, and says so. Companion documents:
+Every stage plan, case design, vignette, line, hint, cutscene and mechanic is checked against this page. It is
+grounded in `Spooky-Street-Spec.md` (v1.4, which points here), the art bible (`docs/art-bible.md` v2) and decisions
+D14–D27. The owner approved it on 2026-11-22 (D27); §8 records the answers. Companion documents:
 
 - `docs/mystery-first.md`: these rules applied to case 01 (audit, deduction mechanic, hints, proposed D26).
 - `docs/world-and-cases.md`: the neighbourhood, the cast framework, the case template and the season arc.
@@ -15,6 +15,10 @@ Spec §1: "You worked that out by moving through a place you now understand a li
 pleasure of Spooky Street." The game exists so a child feels **clever and brave in a friendly place**: a street
 that looked a little frightening at dusk turns out to be full of kind people and clever old things, and the child
 is the one who figured it out.
+
+**Audience (decided 2026-11-22, D27).** The core is designed for children about **6–9**; optional **detective's
+extras** (a bonus clue, an extra question or a harder link, never needed for the case stamp) give depth up to 12.
+One hybrid mode of pictures and words (D23.1) serves pre-readers and readers alike.
 
 ## 2. Pillars
 
@@ -30,22 +34,27 @@ is the one who figured it out.
 4. **Moving is exploring.** The platformer moveset (spec v1.2) is how the child reaches clues and sees the street
    from new angles; the treehouse view is how Bea and Vale's stories reconcile (CASE-03).
 5. **A living neighbourhood that remembers.** What Pip does stays done: the booth reopens, Vale saves a sweet,
-   friends greet Pip differently. *(The cross-case memory is a proposal; spec §3 sets it inside case 01.)*
+   friends greet Pip differently, across cases (decided 2026-11-22, D27; `world-and-cases.md` §5).
 
-## 3. The street's through-line (proposal; the spec defines only case 01)
+## 3. The street's through-line (decided 2026-11-22, D27)
 
-- **Pip.** *(Proposal.)* Pip moved to Lantern Lane this autumn and does not know anyone yet. She notices things
+- **Pip.** Pip moved to Lantern Lane this autumn and does not know anyone yet. She notices things
   because everything is new to her, and every case makes one more friend. Her bat cape and sketchbook notebook are
   her tools; she sketches, never lectures. The arc is belonging: from "the new kid" to "our detective".
-- **The big mystery.** *(Proposal.)* Decades ago Aunt Kit and her friends were **the Lantern Lane Players**: they
+- **The big mystery.** Decades ago Aunt Kit and her friends were **the Lantern Lane Players**: they
   built wind- and water-powered puppet machines all over the neighbourhood for a yearly **Night of Lanterns**. The
   troupe drifted apart and the machines fell quiet. Case 01's knocking owl is the first one Pip wakes. Each case
-  wakes another machine and reconnects one old Player who still lives nearby. The finale relights the festival: the
+  wakes another machine and brings back someone tied to the Players. The finale relights the festival: the
   whole street performs together, and Pip is in the photo this time.
+- **An open-ended season.** The season is designed for eight cases with four committed first (D27). The Night of
+  Lanterns resolves the season's spine for real (the last Player is found, the festival returns, Pip belongs), and
+  then leaves two or three warm threads open, so the child finishes satisfied and still wants more
+  (`world-and-cases.md` §4.1). An open thread is an invitation, never an unresolved question of a solved case, and
+  never a sales prompt (`engagement.md` §2).
 - **How case 01 seeds it.** Kit's framed workshop photo (spec §2) shows her with four friends and four other puppets
   (a fox, a moth, a moon, a bell). The owl's crest on the booth matches a crest Pip will find again elsewhere.
   Paper bat sketch pages (spec §4) hint at the next places. All three are cheap additions to existing assets.
-- **The recurring cast.** *(Growth arcs are proposals.)*
+- **The recurring cast.** Growth arcs are the plan; each case design confirms its step.
 
 | Character | Case 01 (spec) | Wants / worries | Grows across cases |
 |---|---|---|---|
@@ -119,6 +128,28 @@ cursor over the tray). No clue depends on haptics, colour alone, or sound alone 
 **Hybrid reading (D23.1).** Pictures carry meaning for pre-readers, words for readers and grown-ups reading along.
 Both must say the same thing; neither may say more than the witness knows.
 
+**Cutscenes** (owner, 2026-11-22: "if it makes sense to build cutscenes to help the narrative and story, that could
+be good too"). A cutscene is a short, authored story moment the child watches. Rules:
+
+- **Short and chunked.** About 10–40 s, in beats of a few seconds with one idea each (the vignette rules above),
+  so a 6-year-old follows every beat.
+- **Always skippable**, with any control scheme (D25), and **rewatchable** from the notebook (the case page). Each
+  plays once per save on its own; the seen set lives outside the case save.
+- **In-engine and original.** The real models, cameras and world, staged with character clips and gestures; no
+  prerecorded video; all art by code (spec v1.3). Reduced motion cuts instead of blending.
+- **Non-verbal with the hybrid text line** (D23.1): gesture, staging and captions carry meaning; babble voices and
+  music arrive with audio (S003, D20).
+- **Never ahead of the child.** A cutscene never reveals an answer before the child has deduced it, never names a
+  conclusion, and never shows anything the child could discover by playing (a clue, a route, a hidden place). A
+  world effect the child caused may be shown; the explanation stays in the notebook.
+- **Used for:** (1) the opening: Pip arrives as the new kid on the street (boxes on the porch, a first look down
+  the lane), ending on the arrival-porch composition so play starts there in control (spec §1, §3); (2) the case
+  intro, where the world raises the question (a sound, a light, a strange motion), handing control back as soon as
+  the question stands; (3) the reveal payoff after a right deduction, staged from the child's own stickers (the
+  in-world twin of the answer comic); (4) "the street remembers" at the end of a case (the booth bows, Bea's owl,
+  a new greeting); (5) the seed or gentle cliffhanger for the next case; (6) the season finale.
+- **Not used for** tutorials, routes, clue reveals, hints or anything the child can do in play.
+
 ## 6. Design checklist (a stage plan or case passes all before it is built)
 
 1. Is there a written true story, kind, villain-free, that explains every clue and testimony?
@@ -136,6 +167,8 @@ Both must say the same thing; neither may say more than the witness knows.
 13. Does every new mechanic or collectible serve the mystery or exploration (§5)?
 14. Do all strings live in `en.json` with context, keyed by stable IDs (CLAUDE.md)?
 15. Does it fit the guardrails in `engagement.md` §2 (no timers, no FOMO, no purchases in the kids' experience)?
+16. Is every cutscene short, skippable, rewatchable, in-engine, used only for the six purposes of §5, and free of
+    any answer the child has not yet deduced or anything the child could discover by playing?
 
 ## 7. How the planned stages fit (recommended order)
 
@@ -148,15 +181,21 @@ Both must say the same thing; neither may say more than the witness knows.
 | 5 | **Wall jump and ledge grab** | open revisit routes to case 01 extras and the first lore secrets | they need climbable geometry authored with clue placement in mind |
 | 6 | **Dialogue portraits** | faces on stickers and bubbles that act (surprised, unsure) | polish: face discs already identify speakers |
 
-## 8. Open questions for the owner
+**Cutscenes** follow the same order (`roadmap.md` §1): a small reusable system and case 01's opening and reveal with
+the mystery-first foundations (S002.5b), their gesture and voice pass with character actions and audio (S003a),
+the seed cutscene with the troupe photo (S004), and every other cutscene with its own case.
+
+## 8. Owner answers (decided 2026-11-22, D27; questions kept for the record)
 
 1. **Pip's backstory: new kid on the street?** (a) Yes, belonging is her arc. (b) She grew up here; the cases are
-   about the street's past. **Recommend (a):** it explains her curiosity and gives every case a friendship payoff.
+   about the street's past. **Decided (a)**, as recommended: it explains her curiosity and gives every case a
+   friendship payoff.
 2. **The big mystery: the Lantern Lane Players and the Night of Lanterns?** (a) Adopt it as the season's spine.
-   (b) Keep cases standalone. **Recommend (a):** it reuses Kit and the owl booth, stays kind, and gives the finale
-   a whole-street payoff.
+   (b) Keep cases standalone. **Decided (a):** the Players' machines wake one per case, leading to the Night of
+   Lanterns, which resolves the spine and leaves later seasons an opening (§3).
 3. **Cross-case memory.** (a) The street keeps visible changes from every solved case. (b) Each case resets the
-   street. **Recommend (a)**, within a small "street state" set (`world-and-cases.md` §5).
-4. **Age band.** The spec says 8–12 with assisted play for younger; the owner's examples speak of 5–8. (a) Design
-   the core for 6–9 and add optional "detective's extra" deductions for 9–12. (b) Keep 8–12. **Recommend (a):**
-   it matches the non-verbal work and the Kids category band (6–8) while keeping depth for older children.
+   street. **Decided (a)**, within a small "street state" set (`world-and-cases.md` §5).
+4. **Age band.** The spec said 8–12 with assisted play for younger; the owner's examples speak of 5–8. (a) Design
+   the core for 6–9 and add optional "detective's extra" deductions for older children. (b) Keep 8–12. **Decided:
+   6–9, with optional extras up to 12** (spec v1.4 amended).
+5. **Cutscenes** (owner suggestion, 2026-11-22). **Decided:** yes, under the rules in §5 and checklist item 16.

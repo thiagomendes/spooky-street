@@ -6,6 +6,13 @@ v1 rows of 3–4 pictogram chips (eye → cape → house) are retired as the *ca
 moving**, so pre-readers (about 4–7) can read each beat at a glance. Readers keep every word. This is the design; the
 engine-free core is built (§12).
 
+> **Superseded in part by D26 (mystery first, 2026-11-22; `docs/mystery-first.md`, spec v1.4).** The *how* of this
+> page stays (one idea per beat, the stage, the hybrid text line of D23.1, the vignette engine, the bat trail, the
+> ghost hand for moves, the parent gate). The *what* changes: vignettes show only what the witness perceived; the
+> orange "this matters" ring, ⊘ and green check stamps leave case content; memory replays are hazy and on demand
+> only; the notebook answers only after the child places stickers; hints point to areas. Sections marked
+> *superseded* below keep their text for the record; `mystery-first.md` §5–§8 is the current content.
+
 Mocks (animated GIFs at 1266×585, 15 fps, plus a 6-frame `_sheet.jpg` contact sheet each), in
 `docs/evidence/s002/nonverbal_v2/`, drawn by `tools/ui_mock/nonverbal_v2_mock.py` over the CI frames:
 `nv2_bea_vignette.gif` · `nv2_vale_vignette.gif` · `nv2_memory_replay.gif` · `nv2_notebook.gif` · `nv2_hint.gif`.
@@ -18,18 +25,19 @@ The v1 stills stay in `docs/evidence/s002/nonverbal/` for reference; `nv_icons.p
 | Parent gate | **Press and hold two marked spots for 3 s.** No reading, no maths. |
 | Gestures | Make **only Bea's Point** now. Vale bench-pat, June high five and other new gestures wait for the "more character actions" work; those lines use existing clips. |
 | Reading mode | **Decided (D23.1, revised 2026-11-22):** one hybrid mode for everyone: every line always plays its animation **and** always shows its text line. No Pictures-only mode, no first-launch choice, no words toggle. |
-| Memory replay | **Decided (D23.2):** first time each key line is heard in a save, then on demand from the notebook. |
+| Memory replay | ~~Decided (D23.2): first time each key line is heard in a save, then on demand from the notebook.~~ **Superseded by D26:** hazy, partial memory, on demand from the notebook only. |
 | Scope | **Decided (D23.3):** first the 4 key Bea/Vale lines, June's resolve, the animated notebook and the tier-2 bat trail. **Done in S002:** every other case 01 line now has a vignette too (§3 table); no line keeps the v1 card. |
 | Ghost, bat trail | **Decided (D23.7):** June mesh + translucent paper material (flat cut-out on low-end); trail repeats every 4 s for about 8 s per radio press. |
 
 ## 2. Principles
 1. **One idea per beat.** A vignette has 1–3 beats; each beat has one subject, a clean background, big shapes and at
    most **two moving parts** at once. Nothing reads as a row of symbols.
-2. **The world is the picture.** For the key testimony the camera *looks at the real place* and a memory ghost
-   re-enacts it there (§4). Pre-readers link the clue to the place, not to an icon.
+2. **The world is the picture.** For the key testimony the camera *looks at the real place* (§4). *(D26: what the
+   witness perceived, hazy and partial, never a re-enactment of the route.)* Pre-readers link the clue to the place,
+   not to an icon.
 3. **Motion carries grammar.** Travelling = "goes to"; popping into a window = "goes in"; ticking clock + still door
-   = "for a long time, nothing"; a ⊘ stamp that thumps and settles = "never"; an orange stitched ring pulsing =
-   "this matters" (key clue). Same meaning everywhere (dialogue, notebook, hints).
+   = "for a long time, nothing". *(D26: the ⊘ "never" stamp and the orange "this matters" ring are retired from case
+   content; the ring stays only as UI focus.)* Same meaning everywhere (dialogue, notebook, hints).
 4. **Never by colour alone** (spec §6): the key ring is a stitched shape that pulses; ⊘ is a shape; found = sticker
    + stamp; unfound = dashed outline.
 5. **Never blocks play.** Every vignette loops until tapped, every replay is skippable, hints never stop movement.
@@ -39,6 +47,9 @@ The v1 stills stay in `docs/evidence/s002/nonverbal/` for reference; `nv_icons.p
    choice and no words setting (the earlier `ShowSpeechText` setting is gone; old settings files still load).
 
 ## 3. Animated speech (`nv2_bea_vignette.gif`, `nv2_vale_vignette.gif`)
+*Bubble, loop and timing rules stand. The Bea and Vale vignette contents below and the per-line table are
+superseded by D26: the new content is `mystery-first.md` §8 (for example, Bea's line now shows only a silver flash
+up high, `mf_bea_testimony`).*
 **Bubble.** When a character speaks (babble voice, D20) a bone-paper speech bubble opens with its tail on the speaker
 in the world. Inside is a **stage**: a lifted night-felt panel (about 520×120 pt) where a 2–4 s paper-puppet
 vignette loops. The speaker's face medallion sits on the bubble's left edge and the three candy babble arcs pulse
@@ -107,6 +118,9 @@ not case lines and keep the strip alone. Contact sheet of all of them, mid-anima
 | `line.kit.thanks` | `vg.kit.thanks` | 3.2 s · 2 | The owl bows twice; a heart pops over Pip, then over June. |
 
 ## 4. In-world memory replay (`nv2_memory_replay.gif`)
+*Superseded by D26 (`mystery-first.md` §7): the replay no longer auto-plays and no longer re-enacts June's route; it
+plays on demand from a sticker's eye badge as the witness's hazy memory (Bea: a silver blur high above the hedge;
+Vale: the shut door while the moon moves, no ⊘). Camera, blend, letterbox, skip and never-blocks rules below stand.*
 For the **key evidence lines only**: `line.bea.saw_cape`, `line.bea.door_open`, `line.vale.door_shut`,
 `line.vale.was_shut`. It plays **once per line per save** (the first time), then only from the notebook (§5).
 - **Trigger:** after the bubble's vignette has played once and the player taps next (never mid-line).
@@ -125,6 +139,9 @@ For the **key evidence lines only**: `line.bea.saw_cape`, `line.bea.door_open`, 
   play it). Reduced motion: cut instead of blend, ghost appears at its end pose and fades.
 
 ## 5. Animated notebook (`nv2_notebook.gif`)
+*Superseded in part by D26 (`mystery-first.md` §5): the carousel, order badge, question chips and comic stay; the
+page body becomes 2–3 slots plus a shared sticker tray, the comic appears only after the child's right placement and
+is drawn from the child's stickers, no green check stamp, and per-question dashed clue slots are removed.*
 - **One question per page**, in a carousel (swipe or edge arrows; 3 dot pips under the page, neighbours peek at
   the sides). The page has only: the order badge (dots, no digits), the question as three big chips
   (June ? house), the answer strip (three panels) and the found clue stickers. Empty space is intentional.
@@ -137,6 +154,9 @@ For the **key evidence lines only**: `line.bea.saw_cape`, `line.bea.door_open`, 
 - Panels stay fact-driven (`CaseNotebookTags`), so save/restore rebuilds them without stored display text.
 
 ## 6. Animated hints (`nv2_hint.gif`)
+*Superseded by D26 (`mystery-first.md` §6): tier 1 is a breeze and a glance toward an **area**, no object sparkle;
+tier 2's trail circles the area, no goal sticker; tier 3 only demonstrates moves, never Use on a clue; with Helper
+on, a long stall offers tier 1 only. The tier pictures below are kept for the record.*
 The radio (orange disc, top bar) is the hint button; three candy pips show the tier. Each press advances a tier.
 - **Tier 1, look:** the target object sparkles (2–3 felt stars, 0.6 Hz) and the nearest character turns its head
   to look at it. Nothing on the HUD but the pips.
