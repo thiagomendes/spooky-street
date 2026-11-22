@@ -40,6 +40,8 @@ namespace SpookyStreet.UI
         private readonly List<Button> _slips = new List<Button>();
         private readonly List<RectTransform> _pages = new List<RectTransform>();
         private readonly List<Image> _dots = new List<Image>();
+        private readonly List<Image[]> _stitches = new List<Image[]>();
+        private static readonly Color PanelThread = new Color(0.36f, 0.23f, 0.48f, 0.45f);
         private readonly HashSet<string> _shownStickers = new HashSet<string>(StringComparer.Ordinal);
         private readonly List<(RectTransform Rect, float Start, float Angle)> _wiggles =
             new List<(RectTransform, float, float)>();
@@ -220,6 +222,7 @@ namespace SpookyStreet.UI
             AnswerLabels.Clear();
             AnswerStrips.Clear();
             StripButtons.Clear();
+            _stitches.Clear();
             ReplayEyes.Clear();
             FinalCard = null;
             BackToStreetButton = null;
@@ -258,6 +261,7 @@ namespace SpookyStreet.UI
         {
             var card = UiFactory.PaperCard(_track, name, new Vector2(0.5f, 0.5f), new Vector2(_pages.Count * PageSpacing, 0f),
                 PageSize, (_pages.Count % 2 == 0 ? -0.6f : 0.6f), UiFactory.WithAlpha(Palette.HauntedPurple, 0.7f));
+            card.gameObject.AddComponent<CanvasGroup>();
             _pages.Add(card.rectTransform);
             return card.rectTransform;
         }
@@ -318,6 +322,7 @@ namespace SpookyStreet.UI
                 new Vector2(StripWidth, StripHeight));
             var vignette = question.Answered ? C01Vignettes.AnswerStripFor(question.Definition.Id) : null;
             float[] xs = { 0.17f, 0.50f, 0.83f };
+            var stitches = new Image[3];
             for (int p = 0; p < 3; p++)
             {
                 float x = (xs[p] - 0.5f) * StripWidth;
@@ -340,7 +345,7 @@ namespace SpookyStreet.UI
                 }
                 else
                 {
-                    UiFactory.StitchLayer(panel.transform, UiFactory.WithAlpha(Palette.HauntedPurple, 0.45f));
+                    stitches[p] = UiFactory.StitchLayer(panel.transform, PanelThread);
                 }
 
                 if (p < 2)
@@ -349,6 +354,7 @@ namespace SpookyStreet.UI
                         Palette.HauntedPurple, new Vector2(0.5f, 0.5f), new Vector2(x + StripWidth * 0.165f, 0f),
                         new Vector2(30f, 30f));
                     arrow.preserveAspect = true;
+                    arrow.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -90f); // the glyph points up
                 }
             }
 
@@ -357,14 +363,17 @@ namespace SpookyStreet.UI
                 AnswerStrips.Add(null);
                 StripButtons.Add(null);
                 AnswerLabels.Add(null);
+                _stitches.Add(null);
                 return;
             }
 
             var player = VignettePlayer.Create(strip, "Comic");
             player.CanRun = () => CanAnimate == null || CanAnimate();
             player.ReducedMotion = ReducedMotion;
+            player.SuppressRings = true; // the active panel's stitch turns orange instead (nv2_notebook)
             player.ShowStill(vignette, 0f);
             AnswerStrips.Add(player);
+            _stitches.Add(stitches);
             var tap = UiFactory.Panel(strip, "TapToPlay", new Color(0f, 0f, 0f, 0f));
             var button = tap.gameObject.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
@@ -373,8 +382,8 @@ namespace SpookyStreet.UI
 
             var answer = UiFactory.Label(page, "Answer", question.AnswerKey, 26, TextAnchor.MiddleCenter, Graphite,
                 UiFactory.BoldFont);
-            UiFactory.Place(answer.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -110f - StripHeight - 30f),
-                new Vector2(PageSize.x - 80f, 48f));
+            UiFactory.Place(answer.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -110f - StripHeight - 46f),
+                new Vector2(PageSize.x - 80f, 84f));
             answer.gameObject.SetActive(words);
             AnswerLabels.Add(answer);
         }
@@ -433,7 +442,7 @@ namespace SpookyStreet.UI
                         var eye = UiFactory.FeltDisc(sticker.transform, "WatchAgain", UiSpriteCatalog.FeltDiscNight,
                             Palette.CandyCornYellow, UiSpriteCatalog.IconExamine, Palette.WarmPaper, null,
                             UiFactory.MinTouchTarget, new Vector2(1f, 1f), new Vector2(-6f, -6f), 1f);
-                        eye.rectTransform.localScale = Vector3.one * 0.62f;
+                        eye.rectTransform.localScale = Vector3.one * 0.42f;
                         var eyeArt = eye.transform.Find("Icon").GetComponent<Image>();
                         var eyeSprite = PuppetAtlas.Get("pg.eye");
                         if (eyeSprite != null)
@@ -608,6 +617,11 @@ namespace SpookyStreet.UI
                 float away = Mathf.Clamp01(Mathf.Abs(x) / PageSpacing);
                 float s = Mathf.Lerp(1f, 0.86f, away);
                 page.localScale = new Vector3(s, s, 1f);
+                var group = page.GetComponent<CanvasGroup>();
+                if (group != null)
+                {
+                    group.alpha = Mathf.Lerp(1f, 0.45f, away); // neighbours peek as quiet paper
+                }
             }
         }
 
@@ -618,6 +632,26 @@ namespace SpookyStreet.UI
             {
                 _trackX = Mathf.Lerp(_trackX, target, 1f - Mathf.Exp(-14f * Time.unscaledDeltaTime));
                 LayoutPages();
+            }
+
+            // The comic's active panel gets the orange stitch (one panel at a time, as in the mock).
+            for (int i = 0; i < AnswerStrips.Count && i < _stitches.Count; i++)
+            {
+                var strip = AnswerStrips[i];
+                var stitches = _stitches[i];
+                if (strip == null || stitches == null)
+                {
+                    continue;
+                }
+
+                int active = strip.ActiveRingX < 0f ? -1 : Mathf.Clamp(Mathf.RoundToInt((strip.ActiveRingX - 0.17f) / 0.33f), 0, 2);
+                for (int p = 0; p < stitches.Length; p++)
+                {
+                    if (stitches[p] != null)
+                    {
+                        stitches[p].color = p == active ? Palette.JackOrange : PanelThread;
+                    }
+                }
             }
 
             for (int i = _wiggles.Count - 1; i >= 0; i--)

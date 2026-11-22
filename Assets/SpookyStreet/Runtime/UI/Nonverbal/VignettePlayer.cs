@@ -59,6 +59,15 @@ namespace SpookyStreet.UI.Nonverbal
         /// <summary>Gate for time (pause); null always runs.</summary>
         public Func<bool> CanRun { get; set; }
 
+        /// <summary>
+        /// The ring cue is shown by the owner instead of the stitched overlay (the notebook stitches the active
+        /// panel orange); <see cref="ActiveRingX"/> says where it is.
+        /// </summary>
+        public bool SuppressRings { get; set; }
+
+        /// <summary>Stage-normalized x of the running ring cue's target, or -1 when no ring runs.</summary>
+        public float ActiveRingX { get; private set; } = -1f;
+
         /// <summary>Reduced motion: beats become still poses with a cross-fade.</summary>
         public bool ReducedMotion { get; set; }
 
@@ -295,8 +304,19 @@ namespace SpookyStreet.UI.Nonverbal
         {
             VignetteSampler.ActiveCues(Current, t, _cues);
             int used = 0;
+            ActiveRingX = -1f;
             foreach (var cue in _cues)
             {
+                if (cue.Cue.Kind == CueKind.Ring && SuppressRings)
+                {
+                    if (TryTarget(cue.Cue.Target, size, out var ringAt, out _))
+                    {
+                        ActiveRingX = ringAt.x / size.x;
+                    }
+
+                    continue;
+                }
+
                 if (used >= OverlayCount)
                 {
                     break;

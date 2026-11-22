@@ -13,6 +13,28 @@ using UnityEngine.UI;
 namespace SpookyStreet.Case
 {
     /// <summary>
+    /// Where a memory replay happens: the camera pose, the ghost's route (empty: no ghost) and the mark that gets the
+    /// key ring (with a route) or the ⊘ stamp (without). Data, so the places can move (D24: the interior becomes its
+    /// own space) without touching the view.
+    /// </summary>
+    public readonly struct ReplayStaging
+    {
+        public ReplayStaging(Vector3 eye, Vector3 lookAt, Vector3[] route, Vector3 mark)
+        {
+            Eye = eye;
+            LookAt = lookAt;
+            Route = route ?? System.Array.Empty<Vector3>();
+            Mark = mark;
+        }
+
+        public Vector3 Eye { get; }
+        public Vector3 LookAt { get; }
+        public Vector3[] Route { get; }
+        public Vector3 Mark { get; }
+        public bool HasGhost => Route.Length >= 2;
+    }
+
+    /// <summary>
     /// The in-world memory replay (docs/nonverbal-ux.md §4, D23.2, D23.7): a fixed Cinemachine camera per
     /// <see cref="ReplayPlace"/> takes over like <see cref="BenchView"/> (0.35 s blend in, 1.8 s hold, 0.35 s back,
     /// all from <see cref="MemoryReplayPlayback"/>), ink letterbox bars slide in and a lilac pencil tint with a soft
@@ -40,13 +62,16 @@ namespace SpookyStreet.Case
         public const string AnyCameraLabel = "**ANY CAMERA**";
 
         private static readonly Color Lilac = new Color(0.62f, 0.52f, 0.86f, 1f);
-        private static readonly Color GhostTint = new Color(0.93f, 0.95f, 1f, 0.72f);
+        private static readonly Color GhostTint = new Color(1f, 1f, 1f, 0.9f);
 
         private GameInput _input;
         private CinemachineBrain _brain;
         private CinemachineBlenderSettings _blends;
         private CinemachineCamera _treehouseCamera;
         private CinemachineCamera _doorCamera;
+        private readonly System.Collections.Generic.Dictionary<ReplayPlace, ReplayStaging> _staging =
+            new System.Collections.Generic.Dictionary<ReplayPlace, ReplayStaging>();
+        private ReplayStaging _current;
         private CinemachineCamera _active;
         private RectTransform _overlay;
         private Image _tint;
@@ -95,6 +120,27 @@ namespace SpookyStreet.Case
         public static Vector3 FrontDoorCentre =>
             new Vector3(CaseStage.FrontDoor.X, CaseStage.FrontDoor.Y + 1.05f, CaseStage.FrontDoor.Z - 0.12f);
 
+        /// <summary>The default staging of case 01's places in the street layout.</summary>
+        public static ReplayStaging DefaultStaging(ReplayPlace place)
+        {
+            if (place == ReplayPlace.FrontDoor)
+            {
+                var seat = CaseStage.Find(CaseStage.PointBench).Position;
+                var benchEye = new Vector3(seat.X, CaseStage.BenchEyeHeight + 0.1f, seat.Z);
+                return new ReplayStaging(benchEye, FrontDoorCentre, null, FrontDoorCentre + Vector3.right * 0.2f);
+            }
+
+            return new ReplayStaging(new Vector3(-8.4f, 3.7f, 5.6f), new Vector3(-4.9f, 2.9f, 13.7f), TreehouseRoute(),
+                SideWindowCentre);
+        }
+
+        /// <summary>The staging used for <paramref name="place"/>.</summary>
+        public ReplayStaging StagingFor(ReplayPlace place) =>
+            _staging.TryGetValue(place, out var staging) ? staging : DefaultStaging(place);
+
+        /// <summary>Moves a place (camera, route, mark); takes effect from the next replay.</summary>
+        public void SetStaging(ReplayPlace place, ReplayStaging staging) => _staging[place] = staging;
+
         public static MemoryReplayView Create(Transform parent, GameInput input, Camera output, RectTransform canvasRoot)
         {
             var go = new GameObject("MemoryReplay");
@@ -103,12 +149,8 @@ namespace SpookyStreet.Case
             view._input = input;
             view._brain = output != null ? output.GetComponent<CinemachineBrain>() : null;
 
-            var balconyEye = new Vector3(-8.4f, 3.7f, 5.6f);
-            var balconyAt = new Vector3(-4.9f, 2.9f, 13.7f);
-            view._treehouseCamera = MakeCamera(go.transform, TreehouseCameraName, balconyEye, balconyAt);
-            var seat = CaseStage.Find(CaseStage.PointBench).Position;
-            var benchEye = new Vector3(seat.X, CaseStage.BenchEyeHeight + 0.1f, seat.Z);
-            view._doorCamera = MakeCamera(go.transform, FrontDoorCameraName, benchEye, FrontDoorCentre);
+            view._treehouseCamera = MakeCamera(go.transform, TreehouseCameraName);
+            view._doorCamera = MakeCamera(go.transform, FrontDoorCameraName);
 
             view.BuildOverlay(canvasRoot);
             view.BuildWorld(go.transform);
@@ -116,11 +158,10 @@ namespace SpookyStreet.Case
             return view;
         }
 
-        private static CinemachineCamera MakeCamera(Transform parent, string name, Vector3 eye, Vector3 at)
+        private static CinemachineCamera MakeCamera(Transform parent, string name)
         {
             var cameraObject = new GameObject(name);
             cameraObject.transform.SetParent(parent, false);
-            cameraObject.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(at - eye, Vector3.up));
             cameraObject.SetActive(false);
             var vcam = cameraObject.AddComponent<CinemachineCamera>();
             var lens = vcam.Lens;
@@ -179,9 +220,17 @@ namespace SpookyStreet.Case
 
         private void BuildWorld(Transform parent)
         {
-            _ghost = WorldSprite(parent, "JuneMemoryGhost", PuppetParts.JuneRun, GhostTint);
+            _ghost = WorldSprite(parent, "JuneMemoryGhost", GhostFrame(0), GhostTint);
             _ring = WorldSprite(parent, "MemoryKeyRing", PuppetParts.KeyRing, Color.white);
             _stamp = WorldSprite(parent, "MemoryNeverStamp", "pg.not", Color.white);
+        }
+
+        /// <summary>The pale paper ghost frame (falls back to June's run puppet when the extras are missing).</summary>
+        private static string GhostFrame(int frame)
+        {
+            var frames = PuppetAtlasLayout.JuneGhostFrames;
+            string id = frames[((frame % frames.Count) + frames.Count) % frames.Count];
+            return PuppetAtlasLayout.TryGet(id, out _) ? id : PuppetAtlas.FrameOf(PuppetParts.JuneRun, frame);
         }
 
         private static SpriteRenderer WorldSprite(Transform parent, string name, string part, Color tint)
@@ -214,9 +263,12 @@ namespace SpookyStreet.Case
             _started = Time.unscaledTime;
             _ghostClock = 0f;
             ConfigureBlends(reducedMotion);
+            _current = StagingFor(replay.Place);
             _active = replay.Place == ReplayPlace.FrontDoor ? _doorCamera : _treehouseCamera;
+            _active.transform.SetPositionAndRotation(_current.Eye,
+                Quaternion.LookRotation(_current.LookAt - _current.Eye, Vector3.up));
             _active.gameObject.SetActive(true);
-            _route = replay.Place == ReplayPlace.TreehouseWindow ? TreehouseRoute() : null;
+            _route = _current.HasGhost ? _current.Route : null;
             _overlay.gameObject.SetActive(true);
             _overlay.SetAsLastSibling();
             Step(0f);
@@ -352,7 +404,7 @@ namespace SpookyStreet.Case
         {
             var cam = Camera.main;
             Quaternion face = cam != null ? cam.transform.rotation : Quaternion.identity;
-            if (place == ReplayPlace.TreehouseWindow && _route != null)
+            if (_route != null)
             {
                 // Run 0..0.8 of the hold along the route, then pop into the window; the ring pulses on it.
                 float run = Mathf.Clamp01(progress / 0.8f);
@@ -363,7 +415,7 @@ namespace SpookyStreet.Case
                 _ghost.transform.SetPositionAndRotation(at, face);
                 SetWorldSize(_ghost, GhostHeight * Mathf.Lerp(1f, 0.55f, into));
                 int frame = run < 1f && progress < 1f ? (int)(_ghostClock * VignettePlayer.FlipbookFps) : 0;
-                _ghost.sprite = PuppetAtlas.Get(PuppetAtlas.FrameOf(PuppetParts.JuneRun, frame));
+                _ghost.sprite = PuppetAtlas.Get(GhostFrame(frame));
                 _ghost.color = UiFactory.WithAlpha(GhostTint, GhostTint.a * weight * (1f - into));
                 _ghost.flipX = cam != null && Vector3.Dot(cam.transform.right, _route[_route.Length - 1] - _route[0]) < 0f;
 
@@ -373,7 +425,7 @@ namespace SpookyStreet.Case
                 {
                     float pulse = 1f + 0.08f * Mathf.Sin(_ghostClock * 2f * Mathf.PI * 1.6f);
                     float pop = VignetteSampler.Apply(Ease.Back, Mathf.Clamp01((progress - 0.8f) * 6f));
-                    _ring.transform.SetPositionAndRotation(SideWindowCentre, face);
+                    _ring.transform.SetPositionAndRotation(_current.Mark, face);
                     SetWorldSize(_ring, 1.5f * pop * pulse);
                     _ring.color = UiFactory.WithAlpha(Color.white, weight);
                 }
@@ -391,7 +443,7 @@ namespace SpookyStreet.Case
             if (stamp)
             {
                 float size = Mathf.Lerp(1.6f, 1f, VignetteSampler.Apply(Ease.Out, Mathf.Min(1f, p * 3f)));
-                _stamp.transform.SetPositionAndRotation(FrontDoorCentre + Vector3.right * 0.2f,
+                _stamp.transform.SetPositionAndRotation(_current.Mark,
                     face * Quaternion.Euler(0f, 0f, VignetteSampler.Wiggle(p)));
                 SetWorldSize(_stamp, 0.95f * size);
                 _stamp.color = UiFactory.WithAlpha(Color.white, weight * Mathf.Min(1f, p * 4f));

@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import nonverbal_mock as N  # noqa: E402
 import nonverbal_v2_mock as V  # noqa: E402
 import ui_mock as U  # noqa: E402
-from nonverbal_mock import G, GRAPHITE, WOOD, WOOD_D  # noqa: E402
+from nonverbal_mock import G, GRAPHITE, INDIGO, WOOD, WOOD_D  # noqa: E402
 from ui_mock import BONE, BONE_D, CANDY, INK, ORANGE, PURPLE, Sprite  # noqa: E402
 
 ROOT = U.ROOT
@@ -214,6 +214,60 @@ def pictures_card():
     return sp
 
 
+def pointer_right():
+    """Bea's pointing hand, turned to point right (toward the clue on the stage)."""
+    sp = Sprite(CELL, CELL, 0)
+    g = G(sp, CELL / 2, CELL / 2, CELL * 0.86)
+    hand = [(-y, x) for x, y in N.hand_pts()]
+    g.shape(hand, BONE)
+    g.line([(0.12, 0.05), (-0.02, 0.06)], INK, 0.6)
+    g.line([(0.08, 0.15), (-0.04, 0.16)], INK, 0.6)
+    return sp
+
+
+def house_side():
+    """The side of the blue house as a wall section: indigo siding under a purple eave (the window is its own part)."""
+    sp = Sprite(CELL, CELL, 0)
+    g = G(sp, 0, 0, 1)
+    g.ow = 3.0
+    w, h = CELL, CELL
+    g.shape([(30, 34), (w - 30, 34), (w - 30, h - 8), (30, h - 8)], INDIGO)
+    for y in range(58, h - 12, 22):
+        sp.line([(34, y), (w - 34, y)], U.hexc("2C3550"), 3)
+    g.shape([(14, 40), (w / 2, 6), (w - 14, 40), (w - 14, 50), (w / 2, 18), (14, 50)], PURPLE)
+    return sp
+
+
+def june_ghost(phase):
+    """Memory ghost frame: June's run silhouette as pale translucent paper with a soft candy rim (D23.7)."""
+    im = V.june_puppet_sprite(phase, CELL, 0).render()
+    al = im.split()[3]
+    body = Image.new("RGBA", im.size, U.hexc("EEF2FF")[:3] + (0,))
+    body.putalpha(al.point(lambda v: int(v * 0.62)))
+    rim = al.filter(ImageFilter.MaxFilter(7))
+    rim = Image.fromarray(np.clip(np.asarray(rim, np.int16) - np.asarray(al, np.int16), 0, 255).astype(np.uint8))
+    rl = Image.new("RGBA", im.size, CANDY[:3] + (0,))
+    rl.putalpha(rim.point(lambda v: int(v * 0.9)))
+    return Image.alpha_composite(body, rl)
+
+
+def paper_bat():
+    """Hint trail bat: bone paper wings with an ink outline and a candy glow, so it reads against the night."""
+    sp = Sprite(CELL, CELL, 0)
+    c = CELL / 2
+    wing = [(-0.46, -0.06), (-0.3, -0.2), (-0.16, -0.08), (-0.06, -0.16), (0.0, -0.06), (0.06, -0.16),
+            (0.16, -0.08), (0.3, -0.2), (0.46, -0.06), (0.34, 0.02), (0.26, 0.12), (0.16, 0.04), (0.08, 0.12),
+            (0.0, 0.06), (-0.08, 0.12), (-0.16, 0.04), (-0.26, 0.12), (-0.34, 0.02)]
+    halo = Sprite(CELL, CELL, 0)
+    gh = G(halo, c, c, CELL * 0.92)
+    gh.shape(wing, CANDY[:3] + (120,), outline=False)
+    g = G(sp, c, c, CELL * 0.86)
+    g.shape(wing, BONE, kind="paper")
+    g.dot(-0.03, -0.09, 0.02, INK)
+    g.dot(0.03, -0.09, 0.02, INK)
+    return Image.alpha_composite(halo.render().filter(ImageFilter.GaussianBlur(5)), sp.render())
+
+
 def bubble_tail():
     """Bone-paper bubble tail pointing up; inked on its two slanted sides only (the card covers the base)."""
     sp = Sprite(CELL, CELL, 0)
@@ -236,6 +290,8 @@ SPECIAL = {
     "pg.june_run": (lambda: june_run(0.0), 1, 1, DEFAULT_HEIGHT, 0),
     "pg.pip_body": (pip_body, 1, 1, DEFAULT_HEIGHT, 0),
     "pg.bea_arm": (bea_arm, 1, 1, DEFAULT_HEIGHT, 0),
+    "pg.pointer": (pointer_right, 1, 1, DEFAULT_HEIGHT, 0),
+    "pg.house_side": (house_side, 1, 1, 1.0, 0),
 }
 
 EXTRAS = [
@@ -245,13 +301,19 @@ EXTRAS = [
     ("x.book", book_card, 1, 1, 1.0),
     ("x.pictures", pictures_card, 1, 1, 1.0),
     ("x.tail", bubble_tail, 1, 1, 1.0),
+    ("x.june_ghost_0", lambda: june_ghost(0.0), 1, 1, DEFAULT_HEIGHT),
+    ("x.june_ghost_1", lambda: june_ghost(0.25), 1, 1, DEFAULT_HEIGHT),
+    ("x.june_ghost_2", lambda: june_ghost(0.5), 1, 1, DEFAULT_HEIGHT),
+    ("x.june_ghost_3", lambda: june_ghost(0.75), 1, 1, DEFAULT_HEIGHT),
+    ("x.paper_bat", paper_bat, 1, 1, DEFAULT_HEIGHT),
 ]
 
-NO_SHADOW = {"pg.stage", "pg.memory", "pg.key_ring", "pg.puff", "pg.clock_hand", "x.tail"}
+NO_SHADOW = {"pg.stage", "pg.memory", "pg.key_ring", "pg.puff", "pg.clock_hand", "x.tail", "x.june_ghost_0",
+             "x.june_ghost_1", "x.june_ghost_2", "x.june_ghost_3", "x.paper_bat"}
 
 
 def render_cell(sp, shadow):
-    im = sp.render()
+    im = sp if isinstance(sp, Image.Image) else sp.render()
     if not shadow:
         return im
     a = im.split()[3]
@@ -369,6 +431,13 @@ namespace SpookyStreet.Core.Nonverbal
         public const string Book = "x.book";
         public const string Pictures = "x.pictures";
         public const string BubbleTail = "x.tail";
+        public const string PaperBat = "x.paper_bat";
+
+        /// <summary>The memory ghost's run frames (pale translucent paper with a candy rim).</summary>
+        public static readonly IReadOnlyList<string> JuneGhostFrames = new[]
+        {{
+            "x.june_ghost_0", "x.june_ghost_1", "x.june_ghost_2", "x.june_ghost_3",
+        }};
 
         public static readonly IReadOnlyList<PuppetRect> Parts = new[]
         {{

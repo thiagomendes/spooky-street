@@ -56,6 +56,8 @@ namespace SpookyStreet.Case
 
         public static bool ReducedMotion => AmbientMotion.ReducedMotion;
 
+        private const float CaptionDefaultRaise = 300f;
+
         public static NonverbalLayer Create(CaseDirector director, GameBootstrap game)
         {
             var layer = director.gameObject.AddComponent<NonverbalLayer>();
@@ -213,7 +215,7 @@ namespace SpookyStreet.Case
             }
 
             // Bea points at the side window June went in by; a missing clip does nothing (no error).
-            Vector3? aim = line.Speaker == Speaker.Bea ? MemoryReplayView.SideWindowCentre : (Vector3?)null;
+            Vector3? aim = line.Speaker == Speaker.Bea ? MemoryReplay.StagingFor(ReplayPlace.TreehouseWindow).Mark : (Vector3?)null;
             witness.PlayGesture(gesture, aim);
         }
 
@@ -408,6 +410,16 @@ namespace SpookyStreet.Case
 
         private void Update()
         {
+            // Raised captions sit just above the speech bubble (it is taller than the v1 card).
+            var dialogue = _director.Dialogue;
+            var captions = _director.Captions;
+            float raised = dialogue.IsOpen && dialogue.ShowsVignette ? dialogue.BubbleTop + 44f : CaptionDefaultRaise;
+            if (!Mathf.Approximately(captions.RaisedHeight, raised))
+            {
+                captions.RaisedHeight = raised;
+                captions.Raised = captions.Raised; // re-apply
+            }
+
             if (_flow.State != GameState.Playing || _director.ModalOpen || MemoryReplay.Active)
             {
                 return;

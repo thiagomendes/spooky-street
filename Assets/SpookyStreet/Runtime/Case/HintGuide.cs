@@ -17,8 +17,8 @@ namespace SpookyStreet.Case
     /// </summary>
     public sealed class HintGuide : MonoBehaviour
     {
-        public const float BatSize = 0.42f;
-        public const float StickerSize = 0.9f;
+        public const float BatSize = 0.75f;
+        public const float StickerSize = 1.5f;
         public const float ArcHeight = 1.6f;
 
         private readonly BatState[] _bats = new BatState[BatTrailSchedule.MaxConcurrentBats];
@@ -51,7 +51,7 @@ namespace SpookyStreet.Case
             go.transform.SetParent(parent, false);
             var guide = go.AddComponent<HintGuide>();
             guide._pip = pip;
-            var bat = PuppetAtlas.Get("pg.bat");
+            var bat = PuppetAtlas.Get(PuppetAtlasLayout.PaperBat) ?? PuppetAtlas.Get("pg.bat");
             for (int i = 0; i < guide._pool.Length; i++)
             {
                 guide._pool[i] = Billboard(go.transform, "PaperBat" + i, bat, 60);
@@ -217,7 +217,7 @@ namespace SpookyStreet.Case
             if (beacon)
             {
                 float pulse = 1f + 0.08f * Mathf.Sin(now * 2f * Mathf.PI * 1.2f);
-                _sticker.transform.SetPositionAndRotation(_goal + Vector3.up * (0.6f + 0.08f * Mathf.Sin(now * 2.2f)), face);
+                _sticker.transform.SetPositionAndRotation(_goal + Vector3.up * (1.1f + 0.08f * Mathf.Sin(now * 2.2f)), face);
                 SetSize(_sticker, StickerSize * pulse, 1f);
                 FitChild(_glyph, 0.8f);
                 FitChild(_ring, 1.25f);

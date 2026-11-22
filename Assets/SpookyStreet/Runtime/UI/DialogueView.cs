@@ -76,6 +76,9 @@ namespace SpookyStreet.UI
         /// <summary>The world camera for the tail.</summary>
         public Camera ViewCamera { get; set; }
 
+        /// <summary>Top of the speech bubble in the dialogue content (canvas units from the bottom).</summary>
+        public float BubbleTop => BubbleBottom + (_bubble != null ? _bubble.sizeDelta.y : BubbleSize.y);
+
         /// <summary>The puppet stage of the bubble.</summary>
         public VignettePlayer Vignette { get; private set; }
 

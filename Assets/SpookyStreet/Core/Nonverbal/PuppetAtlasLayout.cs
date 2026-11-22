@@ -50,6 +50,13 @@ namespace SpookyStreet.Core.Nonverbal
         public const string Book = "x.book";
         public const string Pictures = "x.pictures";
         public const string BubbleTail = "x.tail";
+        public const string PaperBat = "x.paper_bat";
+
+        /// <summary>The memory ghost's run frames (pale translucent paper with a candy rim).</summary>
+        public static readonly IReadOnlyList<string> JuneGhostFrames = new[]
+        {
+            "x.june_ghost_0", "x.june_ghost_1", "x.june_ghost_2", "x.june_ghost_3",
+        };
 
         public static readonly IReadOnlyList<PuppetRect> Parts = new[]
         {
@@ -60,7 +67,7 @@ namespace SpookyStreet.Core.Nonverbal
             new PuppetRect("pg.kit", 818, 1846, 200, 200, 0.85f, 0),
             new PuppetRect("pg.house", 1022, 1846, 200, 200, 0.85f, 0),
             new PuppetRect("pg.house_open", 1226, 1846, 200, 200, 0.85f, 0),
-            new PuppetRect("pg.house_side", 1430, 1846, 200, 200, 0.85f, 0),
+            new PuppetRect("pg.house_side", 1430, 1846, 200, 200, 1.00f, 0),
             new PuppetRect("pg.house_cut", 1634, 1846, 200, 200, 0.85f, 0),
             new PuppetRect("pg.window", 1838, 1846, 200, 200, 0.85f, 0),
             new PuppetRect("pg.june_window", 2, 1642, 200, 200, 0.85f, 0),
@@ -142,6 +149,11 @@ namespace SpookyStreet.Core.Nonverbal
             new PuppetRect("x.book", 1430, 214, 200, 200, 1.00f, 0),
             new PuppetRect("x.pictures", 1634, 214, 200, 200, 1.00f, 0),
             new PuppetRect("x.tail", 1838, 214, 200, 200, 1.00f, 0),
+            new PuppetRect("x.june_ghost_0", 2, 10, 200, 200, 0.85f, 0),
+            new PuppetRect("x.june_ghost_1", 206, 10, 200, 200, 0.85f, 0),
+            new PuppetRect("x.june_ghost_2", 410, 10, 200, 200, 0.85f, 0),
+            new PuppetRect("x.june_ghost_3", 614, 10, 200, 200, 0.85f, 0),
+            new PuppetRect("x.paper_bat", 818, 10, 200, 200, 0.85f, 0),
         };
 
         private static readonly Dictionary<string, PuppetRect> ById = Index();

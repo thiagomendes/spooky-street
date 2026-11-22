@@ -53,6 +53,16 @@ namespace SpookyStreet.Tests.Visual
             }
         }
 
+        /// <summary>Real-time wait: the title and pause screens stop game time.</summary>
+        private static IEnumerator WaitReal(float seconds)
+        {
+            float until = Time.realtimeSinceStartup + seconds;
+            while (Time.realtimeSinceStartup < until)
+            {
+                yield return null;
+            }
+        }
+
         private static IEnumerator Load()
         {
             yield return SceneManager.LoadSceneAsync("LanternLane", LoadSceneMode.Single);
@@ -80,6 +90,16 @@ namespace SpookyStreet.Tests.Visual
             Assert.IsTrue(layer.Guide.Active, "27_bat_trail: tier 2 should start the trail");
             yield return Wait(2.1f);
             Assert.Greater(layer.Guide.VisibleBats, 0, "27_bat_trail: bats should be flying");
+            foreach (var bat in layer.Guide.GetComponentsInChildren<SpriteRenderer>())
+            {
+                var cam = game.CameraRig.OutputCamera;
+                Debug.Log($"[NonverbalCapture] {bat.name} at {bat.transform.position} viewport " +
+                          $"{cam.WorldToViewportPoint(bat.transform.position)} scale {bat.transform.lossyScale} " +
+                          $"sprite {(bat.sprite != null ? bat.sprite.name : "null")} colour {bat.color} " +
+                          $"material {(bat.sharedMaterial != null ? bat.sharedMaterial.shader.name : "null")} " +
+                          $"layer {bat.gameObject.layer} mask {cam.cullingMask}");
+            }
+
             yield return Shot("27_bat_trail");
             layer.Guide.Stop();
             director.Captions.Clear();
@@ -108,8 +128,8 @@ namespace SpookyStreet.Tests.Visual
             var pip = game.Pip.transform;
             camera.transform.position = pip.position + pip.right * 0.9f + Vector3.up * 1.3f - pip.forward * 1.4f;
             camera.transform.LookAt(beaAt + Vector3.up * 1.05f);
-            float timeout = Time.realtimeSinceStartup + 6f;
-            while (director.Dialogue.Vignette.LocalTime < 2.7f && Time.realtimeSinceStartup < timeout)
+            float timeout = Time.realtimeSinceStartup + 20f;
+            while (director.Dialogue.Vignette.LocalTime < 2.95f && Time.realtimeSinceStartup < timeout)
             {
                 yield return null;
             }
@@ -155,7 +175,7 @@ namespace SpookyStreet.Tests.Visual
             yield return Load();
             var layer = GameBootstrap.Instance.Director.Nonverbal;
             Assert.IsTrue(layer.Menus.ChoiceOpen, "28_first_launch: the reading choice should be up on a first launch");
-            yield return Wait(0.3f);
+            yield return WaitReal(0.3f);
             yield return Shot("28_first_launch", layer.Menus.Canvas);
         }
     }
