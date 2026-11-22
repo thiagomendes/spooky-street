@@ -24,6 +24,7 @@ namespace SpookyStreet.Tests.Core
 
             public MotorStep Frame(MotorInput input)
             {
+                input.GroundDistance = Grounded ? 0f : Math.Max(1e-3f, Y); // the motor's downward probe
                 var step = MovementModel.Step(ref State, input, Grounded, Dt, Tuning);
                 Y += step.DeltaY;
                 if (Y <= 0f)
@@ -166,18 +167,42 @@ namespace SpookyStreet.Tests.Core
         }
 
         [Test]
-        public void HoldingAFreshPressInTheAirGlidesOnceTheBufferRunsOut()
+        public void AFreshPressHighUpGlidesAtOnceAndKeepsGliding()
         {
             var sim = new Sim(60f);
             sim.Y = 6f;
             sim.Grounded = false;
             sim.State.Grounded = false;
             sim.State.TimeSinceGrounded = 1f;
-            sim.State.VelocityY = -2f;
-            sim.Frame(new MotorInput { JumpPressed = true, JumpHeld = true });
-            Assert.IsFalse(sim.State.Gliding, "a fresh press is first a buffered jump");
-            sim.Run(sim.Tuning.JumpBufferTime + 0.02f, new MotorInput { JumpHeld = true });
-            Assert.IsTrue(sim.State.Gliding, "still held after the buffer, the cape spreads");
+            sim.State.VelocityY = -6f;
+            var first = sim.Frame(new MotorInput { JumpPressed = true, JumpHeld = true });
+            Assert.IsTrue(first.GlideStarted, "far from the ground a fresh hold spreads the cape at once");
+            for (int i = 0; i < 90; i++)
+            {
+                sim.Frame(new MotorInput { JumpHeld = true });
+                Assert.IsTrue(sim.State.Gliding, "a genuine hold keeps gliding past the buffer window");
+            }
+        }
+
+        [Test]
+        public void AFreshPressJustAboveTheGroundStaysAJumpNotAGlide()
+        {
+            var sim = new Sim(60f);
+            sim.Y = 0.6f; // ≈ 0.08 s above the ground at 7 m/s
+            sim.Grounded = false;
+            sim.State.Grounded = false;
+            sim.State.TimeSinceGrounded = 1f;
+            sim.State.VelocityY = -7f;
+            bool jumped = false;
+            for (int i = 0; i < 20 && !jumped; i++)
+            {
+                var step = sim.Frame(new MotorInput { JumpPressed = i == 0, JumpHeld = true });
+                Assert.IsFalse(sim.State.Gliding, "about to land: the press is a buffered jump");
+                jumped = step.Jumped;
+            }
+
+            Assert.IsTrue(jumped, "and it jumps on touchdown");
+            Assert.AreEqual(float.PositiveInfinity, MovementModel.TimeToGround(-5f, 0f, 25f), "unknown ground: far");
         }
 
         // --- Chain window and speed gate ----------------------------------------------------------

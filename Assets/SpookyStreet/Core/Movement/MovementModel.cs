@@ -26,6 +26,12 @@ namespace SpookyStreet.Core.Movement
         /// </summary>
         public bool InteractionAvailable;
 
+        /// <summary>
+        /// Metres of free air below Pip's feet while airborne (a downward probe), or 0 when unknown / no ground in
+        /// reach. Lets a press just before touchdown stay a buffered jump instead of spreading the cape.
+        /// </summary>
+        public float GroundDistance;
+
         /// <summary>Unit facing on world X/Z; aims a dive or roll started with almost no speed.</summary>
         public float FacingX;
 
@@ -316,12 +322,15 @@ namespace SpookyStreet.Core.Movement
             }
 
             // --- Bat-cape glide: Jump held while falling (after the apex) -------------------------
-            // A fresh press in the air is first a buffered jump: the cape waits until the buffer has run out, so a
-            // press just before touchdown (an early chain jump on touch, where every press is briefly a hold) never
-            // brakes the fall and misses the landing. A hold carried from take-off spreads the cape at the apex.
+            // A fresh press that will touch down within the jump buffer is a buffered (chain) jump, not a glide: on
+            // touch every press is briefly a hold, and spreading the cape there would brake the fall past the buffer
+            // and lose the jump. Higher up a fresh press glides at once, and a hold carried from take-off spreads the
+            // cape at the apex as before.
             bool pressPending = state.TimeSinceJumpPressed <= tuning.JumpBufferTime;
+            bool landingJump = pressPending && !state.Gliding &&
+                               TimeToGround(state.VelocityY, input.GroundDistance, tuning.Gravity) <= tuning.JumpBufferTime;
             bool wantGlide = !state.Grounded && input.JumpHeld && state.VelocityY <= 0f && !state.Diving &&
-                             !state.Rolling && !pressPending;
+                             !state.Rolling && !landingJump;
             if (wantGlide && !state.Gliding)
             {
                 state.Gliding = true;
@@ -383,6 +392,21 @@ namespace SpookyStreet.Core.Movement
             }
 
             return step;
+        }
+
+        /// <summary>
+        /// Seconds of free fall until <paramref name="groundDistance"/> metres are covered from vertical speed
+        /// <paramref name="velocityY"/>; infinite when the distance is unknown (≤ 0).
+        /// </summary>
+        public static float TimeToGround(float velocityY, float groundDistance, float gravity)
+        {
+            if (groundDistance <= 0f || gravity <= 0f)
+            {
+                return float.PositiveInfinity;
+            }
+
+            float down = Math.Max(0f, -velocityY);
+            return (-down + (float)Math.Sqrt(down * down + 2f * gravity * groundDistance)) / gravity;
         }
 
         /// <summary>Call when the controller reports a ceiling hit so upward speed is cancelled.</summary>

@@ -136,6 +136,7 @@ namespace SpookyStreet.Tests.Core
 
             public MotorStep Frame(MotorInput input)
             {
+                input.GroundDistance = Grounded ? 0f : Math.Max(1e-3f, Y); // the motor's downward probe
                 var step = MovementModel.Step(ref State, input, Grounded, Dt, Tuning);
                 Y += step.DeltaY;
                 Grounded = Y <= 0f;

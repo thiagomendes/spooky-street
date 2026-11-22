@@ -134,6 +134,10 @@ namespace SpookyStreet.Player
                 renderer.receiveShadows = false;
                 renderer.lightProbeUsage = LightProbeUsage.Off;
                 renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+                // Every pooled renderer carries a URP palette material from the start (even while inactive), so
+                // nothing can ever draw with the built-in default (magenta on device). Bursts swap it per piece.
+                renderer.sharedMaterial = _confettiMaterials[i % _confettiMaterials.Length];
+                filter.sharedMesh = _confettiMesh;
                 go.SetActive(false);
                 _pieces[i] = new Piece { Transform = go.transform, Filter = filter, Renderer = renderer };
             }

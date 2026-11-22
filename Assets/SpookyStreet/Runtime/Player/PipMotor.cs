@@ -150,6 +150,7 @@ namespace SpookyStreet.Player
                 JumpHeld = _input.ReadJumpHeld(),
                 UsePressed = _input.ConsumeUsePressed(),
                 InteractionAvailable = InteractionAvailable,
+                GroundDistance = _state.Grounded ? 0f : GroundDistanceBelow(),
                 FacingX = facing.x,
                 FacingZ = facing.z,
             };
@@ -190,6 +191,22 @@ namespace SpookyStreet.Player
             float reach = _safeGround.FallResetDepth + Mathf.Max(0f, transform.position.y - _safeGround.Anchor.y);
             return Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, reach + 0.1f, mask,
                 QueryTriggerInteraction.Ignore);
+        }
+
+        /// <summary>Probe reach: more than the jump buffer at terminal fall speed (0.15 s × 20 m/s).</summary>
+        private const float GroundProbeReach = 3.5f;
+
+        /// <summary>Air below the feet while airborne (0 when nothing is in reach): keeps a late press a jump.</summary>
+        private float GroundDistanceBelow()
+        {
+            int mask = Physics.DefaultRaycastLayers & ~(1 << gameObject.layer);
+            if (Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out RaycastHit hit,
+                    GroundProbeReach + 0.1f, mask, QueryTriggerInteraction.Ignore))
+            {
+                return Mathf.Max(1e-3f, hit.distance - 0.1f);
+            }
+
+            return 0f;
         }
 
         private void FaceVelocity(float dt)
