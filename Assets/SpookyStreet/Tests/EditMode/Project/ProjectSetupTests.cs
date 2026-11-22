@@ -32,7 +32,12 @@ namespace SpookyStreet.Tests.Project
             Assert.AreEqual(0.12f, tuning.decelerationTime, 1e-4f);
             Assert.AreEqual(1f, tuning.jumpApexHeight, 1e-4f);
             Assert.AreEqual(0.10f, tuning.coyoteTime, 1e-4f);
-            Assert.AreEqual(0.12f, tuning.jumpBufferTime, 1e-4f);
+            // Spec §5 starts the buffer at 0.12 s; the S000.6 feel pass (TestFlight 11.1 feedback) tuned it and the
+            // chain to what a thumb can hit on touch (docs/S000.6-moveset.md).
+            Assert.AreEqual(0.15f, tuning.jumpBufferTime, 1e-4f);
+            Assert.AreEqual(0.35f, tuning.chainJumpWindow, 1e-4f);
+            Assert.AreEqual(0.25f, tuning.chainJumpMinSpeedFraction, 1e-4f);
+            Assert.AreEqual(1.6f, tuning.jumpHoldApexHeight, 1e-4f);
             Assert.AreEqual(3.8f, tuning.cameraDistance, 1e-4f);
         }
 

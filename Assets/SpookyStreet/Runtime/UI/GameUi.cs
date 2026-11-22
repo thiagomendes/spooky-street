@@ -47,11 +47,15 @@ namespace SpookyStreet.UI
         private Vector2 _primarySlot;
         private Vector2 _secondarySlot;
         private float _promptStartDistance;
+        private MoveTipView _tips;
 
         public GameObject TitleScreen => _title;
         public GameObject Hud => _hud;
         public GameObject PauseScreen => _pause;
         public GameObject FirstPrompt => _prompt;
+
+        /// <summary>First-time moveset tips (paper tag near the Jump or Use disc).</summary>
+        public MoveTipView Tips => _tips;
         public Button NewGameButton => _newGameButton;
         public Button ResumeButton => _resumeButton;
         public Button ContinueButton => _continueButton;
@@ -59,7 +63,7 @@ namespace SpookyStreet.UI
 
         /// <summary>
         /// Contextual Use disc, shown in play: the interaction's verb when one is in range, otherwise "Roll" with the
-        /// roll glyph (Use rolls on the ground and dives in the air, spec §5 v1.2).
+        /// roll glyph on the ground and "Dive" in the air while a dive is available (spec §5 v1.2).
         /// </summary>
         public GameObject UseButton => _useButton;
 
@@ -126,6 +130,12 @@ namespace SpookyStreet.UI
             {
                 _prompt.SetActive(false);
             }
+
+            // One prompt at a time: no tip while the first "walk" prompt is up. Game time, so pause freezes it.
+            if (_tips != null && _flow.State == GameState.Playing)
+            {
+                _tips.Tick(Time.deltaTime, _prompt.activeSelf);
+            }
         }
 
         private void OnStateChanged(GameState previous, GameState current)
@@ -133,6 +143,11 @@ namespace SpookyStreet.UI
             if (previous == GameState.Title && current == GameState.Playing)
             {
                 ShowFirstPrompt();
+            }
+
+            if (current == GameState.Title && _tips != null)
+            {
+                _tips.HideNow();
             }
 
             Apply(current);
@@ -163,7 +178,9 @@ namespace SpookyStreet.UI
 
             var targets = _pip != null ? _pip.UseTargets : null;
             bool interact = targets != null && targets.HasTarget;
-            string key = interact ? targets.VerbKey ?? LocalizationKeys.HudUse : LocalizationKeys.HudRoll;
+            // In the air the moveset verb reads "Dive" while a dive is available, so Use's air move is discoverable.
+            string moveKey = _pip != null && _pip.CanDive ? LocalizationKeys.HudDive : LocalizationKeys.HudRoll;
+            string key = interact ? targets.VerbKey ?? LocalizationKeys.HudUse : moveKey;
             string icon = interact ? targets.IconName ?? UiSpriteCatalog.IconExamine : UiSpriteCatalog.IconRoll;
             if (_useVerb.Key != key)
             {
@@ -266,6 +283,10 @@ namespace SpookyStreet.UI
                 new Vector2(460f, 92f), _leftHanded ? 1.5f : -1.5f, UiFactory.PlayPaper);
             _prompt = tag.gameObject;
             _prompt.SetActive(false);
+
+            // First-time moveset tips: a paper tag above the Jump disc (hold, chain, glide) or the Use disc (dive).
+            _tips = MoveTipView.Create(_hud.transform, _pip, bottomCorner, MirrorOffset(new Vector2(-300f, 300f)),
+                MirrorOffset(new Vector2(-390f, 300f)), _leftHanded);
 
             _input.Touch = touch;
         }

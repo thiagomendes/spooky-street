@@ -158,15 +158,15 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void ChainResetsWhenPipLandsAndWaits()
         {
-            var (stages, _) = Chain(1f, 2, waitAfterLanding: 0.3f);
+            var (stages, _) = Chain(1f, 2, waitAfterLanding: 0.5f);
             CollectionAssert.AreEqual(new[] { 1, 1 }, stages);
         }
 
         [Test]
         public void ChainNeedsRunningSpeed()
         {
-            var (stages, _) = Chain(0.3f, 2);
-            CollectionAssert.AreEqual(new[] { 1, 1 }, stages, "1.2 m/s is below half of max speed");
+            var (stages, _) = Chain(0.15f, 2);
+            CollectionAssert.AreEqual(new[] { 1, 1 }, stages, "0.6 m/s is below a quarter of max speed");
         }
 
         [Test]
