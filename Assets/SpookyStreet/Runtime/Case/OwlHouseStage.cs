@@ -4,53 +4,62 @@ using SpookyStreet.Core.World;
 using SpookyStreet.Player;
 using SpookyStreet.World;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace SpookyStreet.Case
 {
     /// <summary>
-    /// The interior half's set (S002 interior wiring): spawns the treehouse-route models, the owl house interior and
-    /// the workshop mechanism at <see cref="CaseRouteLayout.Models"/>, builds every authored collider from
-    /// <see cref="CaseRouteLayout.Slabs"/> (walk slabs on the SafeGround layer), and each frame applies the cut-away
-    /// rule (<see cref="InteriorVisibility"/>): inside, or at the open door or June's window, the exterior body and
-    /// the door's dark recess card hide and the interior shows; the attic hides from a high camera while Pip is
-    /// downstairs. While Pip is inside, the shell's walls move to the Ignore Raycast layer so the camera boom passes
-    /// out through them and looks in through the culled near walls. Owns the front door (both leaves and the latch)
-    /// and the interior's practical lights.
+    /// The interior half's set (S002 interior wiring, house v3): spawns the treehouse-route models, the owl house
+    /// interior and the workshop mechanism at <see cref="CaseRouteLayout.Models"/> and builds every authored collider
+    /// from <see cref="CaseRouteLayout.Slabs"/> (walk slabs on the SafeGround layer).
+    /// <para>D24.1: the exterior <c>OwlHouse</c> keeps street scale, stays whole and solid, and shows lit window cards;
+    /// the rooms are the separate, closed <c>OwlHouseInterior</c> up the lane, reached through the thresholds
+    /// (<see cref="ThresholdTravel"/>). The interior (with the workshop mechanism and its lamps) is drawn only while Pip
+    /// or the camera is in it, or while a threshold crossing needs it; a shadow shroud keeps the moon out of its closed
+    /// rooms. Nothing is cut away during play: the attic is always drawn; only the workshop's near wall hides, for the
+    /// grille peek and the crank cutaway.</para>
+    /// Owns the front door: the exterior leaf (90° at most, art note), the inner leaf (100°) and the latch.
     /// </summary>
     public sealed class OwlHouseStage : MonoBehaviour
     {
-        public const float DoorOpenDegrees = 100f;
+        /// <summary>The exterior leaf swings into its shallow view box; past 90° it would pass through the box's side.</summary>
+        public const float DoorOpenDegrees = 90f;
+
+        public const float InnerDoorOpenDegrees = InteriorCamera.InnerDoorOpenDegrees;
         public const float LatchLiftDegrees = 38f;
         public const float LatchSeconds = 0.3f;
         public const float DoorSwingSeconds = 0.9f;
 
-        private readonly List<GameObject> _cameraClearWalls = new List<GameObject>();
         private readonly List<Light> _interiorLights = new List<Light>();
-        private Transform _body, _recess, _frontDoor, _innerDoor, _latch, _attic, _nookWall, _windowPane;
+        private Transform _body, _recess, _frontDoor, _innerDoor, _latch, _attic, _nookWall, _windowPane, _shroud;
         private Quaternion _frontRest, _innerRest, _latchRest;
         private Vector3 _latchAxis = Vector3.forward;
         private float _doorSign = -1f;
         private float _door, _doorTarget;
         private float _latchLift, _latchTarget;
         private GameObject _doorBlocker;
-        private int _wallLayer;
-        private int _ignoreLayer;
         private int _safeLayer;
-        private bool _wallsClear;
         private bool _nookOverride;
+        private bool _interiorShown = true;
 
         public Transform Interior { get; private set; }
         public Transform Mechanism { get; private set; }
         public Transform ClothSnag { get; private set; }
         public Transform SillSnag { get; private set; }
 
-        /// <summary>The cut-away state applied this frame.</summary>
-        public InteriorView View { get; private set; }
+        /// <summary>True while the interior is drawn this frame.</summary>
+        public bool InteriorShown => _interiorShown;
+
+        /// <summary>Keeps the interior drawn whatever Pip and the camera do (captures and tests).</summary>
+        public bool ForceInteriorVisible { get; set; }
 
         public bool DoorOpen => _doorTarget > 0.5f;
 
-        /// <summary>Degrees the front door is open (both leaves).</summary>
+        /// <summary>Degrees the exterior front door is open.</summary>
         public float DoorAngle => _door * DoorOpenDegrees;
+
+        /// <summary>Degrees the inner door is open.</summary>
+        public float InnerDoorAngle => _door * InnerDoorOpenDegrees;
 
         public bool LatchLifted => _latchTarget > 0.5f;
 
@@ -66,11 +75,8 @@ namespace SpookyStreet.Case
         public Transform Body => _body;
         public Transform RecessCard => _recess;
 
-        /// <summary>
-        /// Keeps the exterior body drawn even while the interior shows (the crank cutaway: its inset looks at the owl on
-        /// the roof from the street, while the nook camera inside sees through the body's outward-facing walls).
-        /// </summary>
-        public bool ForceBodyVisible { get; set; }
+        /// <summary>The ShadowsOnly box round the interior that keeps the moonlight out of its closed rooms.</summary>
+        public Transform Shroud => _shroud;
 
         /// <summary>Hides the workshop's near wall (the grille look and the crank cutaway).</summary>
         public bool NookWallHidden
@@ -97,13 +103,6 @@ namespace SpookyStreet.Case
 
         private void Build(EnvironmentDressing environment, MaterialLibrary materials)
         {
-            _wallLayer = 0;
-            _ignoreLayer = LayerMask.NameToLayer("Ignore Raycast");
-            if (_ignoreLayer < 0)
-            {
-                _ignoreLayer = 2;
-            }
-
             int safe = LayerMask.NameToLayer(SafeGroundTracker.SafeGroundLayerName);
             _safeLayer = safe >= 0 ? safe : 0;
             float yaw = environment != null ? environment.ModelYawCorrection : 0f;
@@ -164,7 +163,7 @@ namespace SpookyStreet.Case
             _nookWall = ModelKit.FindDeep(Interior, CaseRouteLayout.NookWall);
             SillSnag = ModelKit.FindDeep(Interior, CaseRouteLayout.SillSnag);
 
-            // June came in by her window: it stands open from the start.
+            // June came in by her window: it stands open from the start, onto its painted attic.
             if (_windowPane != null)
             {
                 _windowPane.gameObject.SetActive(false);
@@ -173,7 +172,8 @@ namespace SpookyStreet.Case
             if (_frontDoor != null)
             {
                 _frontRest = _frontDoor.rotation;
-                // Inward: the leaf's free edge (east of the hinge) swings into the house (+Z).
+                // Inward: the leaf's free edge (east of the hinge) swings into the house (+Z). The inner leaf swings
+                // into the hall the same way.
                 Vector3 leaf = Vector3.right;
                 _doorSign = (Quaternion.AngleAxis(45f, Vector3.up) * leaf).z > 0f ? 1f : -1f;
             }
@@ -185,7 +185,7 @@ namespace SpookyStreet.Case
 
             if (_latch != null)
             {
-                // The latch is on the inside of the door: it rides with the leaf once lifted.
+                // The latch is on the inside of the inner door: it rides with the leaf once lifted.
                 if (_innerDoor != null)
                 {
                     _latch.SetParent(_innerDoor, true);
@@ -198,8 +198,9 @@ namespace SpookyStreet.Case
 
             BuildColliders();
             BuildLights();
+            BuildShroud(materials);
             LogParts();
-            SetView(new InteriorView(false, false));
+            ShowInterior(false);
         }
 
         private void LogParts()
@@ -211,7 +212,7 @@ namespace SpookyStreet.Case
 
             string Where(Transform t) => t != null ? t.position.ToString("F2") : "missing";
             Debug.Log($"[OwlHouseStage] {ModelCount} models, {ColliderCount} colliders; body {Where(_body)}, " +
-                      $"recess {Where(_recess)}, front door {Where(_frontDoor)}, window pane {Where(_windowPane)}, " +
+                      $"front door {Where(_frontDoor)}, window pane {Where(_windowPane)}, interior {Where(Interior)}, " +
                       $"inner door {Where(_innerDoor)}, latch {Where(_latch)}, attic {Where(_attic)}, " +
                       $"nook wall {Where(_nookWall)}, sill snag {Where(SillSnag)}, mechanism {Where(Mechanism)}, " +
                       $"cloth {Where(ClothSnag)}");
@@ -229,12 +230,7 @@ namespace SpookyStreet.Case
                 }
 
                 var go = SlabCollider(root, slab);
-                go.layer = slab.Kind == SlabKind.Walk ? _safeLayer : _wallLayer;
-                if (slab.Kind == SlabKind.Wall && (slab.Group == SlabGroup.Shell || slab.Group == SlabGroup.Interior))
-                {
-                    _cameraClearWalls.Add(go);
-                }
-
+                go.layer = slab.Kind == SlabKind.Walk ? _safeLayer : 0;
                 if (slab.Name == CaseRouteLayout.DoorBlockerName)
                 {
                     _doorBlocker = go;
@@ -262,13 +258,25 @@ namespace SpookyStreet.Case
             return go;
         }
 
+        private static Vector3 InteriorPoint(float x, float y, float depth) =>
+            new Vector3(x, y, CaseRouteLayout.InteriorFrontZ + depth);
+
         private void BuildLights()
         {
-            AddLight("JuneLamp", new Vector3(-1.5f, CaseRouteLayout.LoftY + 1.0f, 15.0f), 6f, 2.2f);
-            AddLight("FoyerGlow", new Vector3(-0.4f, CaseRouteLayout.FloorY + 1.4f, 12.6f), 6.5f, 1.8f);
-            AddLight("WorkshopLamp", new Vector3(1.0f, CaseRouteLayout.FloorY + 1.1f, CaseRouteLayout.MechanismZ), 3.5f, 1.6f);
-            AddLight("NookLamp", new Vector3(2.4f, 1.6f, CaseRouteLayout.MechanismZ - 0.4f), 3f, 1.4f);
-            // The route lanterns (exterior: always on).
+            // The interior's practical lights (builder x and depth): the hall by the door and toward the stair, the stair
+            // bay, June's corner, the back of the attic, and the workshop nook.
+            AddLight("HallDoorGlow", InteriorPoint(0.2f, CaseRouteLayout.FloorY + 2.2f, 1.6f), 6.5f, 2.0f);
+            AddLight("HallStairGlow", InteriorPoint(-0.9f, CaseRouteLayout.FloorY + 2.4f, 4.4f), 6.5f, 1.7f);
+            AddLight("StairLamp", InteriorPoint(-2.85f, 3.4f, 6.2f), 5f, 1.5f);
+            AddLight("JuneLamp", InteriorPoint(-1.3f, CaseRouteLayout.LoftY + 1.6f, 2.2f), 6f, 2.0f);
+            AddLight("AtticBackLamp", InteriorPoint(1.4f, CaseRouteLayout.LoftY + 1.8f, 5.2f), 6f, 1.6f);
+            AddLight("NookLamp", InteriorPoint(2.85f, 1.7f, 4.2f), 3.2f, 1.4f);
+            // The treehouse cabin's lamp in the lookout bay (it is seamless on the maple: always on), so its closed
+            // roof reads as boards from inside rather than as the night.
+            CaseRouteLayout.CabinToWorld(CaseRouteLayout.CabinPlatX + 0.6f, CaseRouteLayout.CabinPlatY + 0.9f, out float cx,
+                out float cz);
+            AddLight("CabinLamp", new Vector3(cx, CaseRouteLayout.TreehouseY + 1.55f, cz), 3.2f, 1.3f, false);
+            // The route lantern (exterior: always on).
             AddLight("BridgeLantern", new Vector3(CaseRouteLayout.RoofMaxX - 0.1f, 4.2f, CaseRouteLayout.BridgeZ + 0.05f), 6f,
                 1.6f, false);
         }
@@ -289,6 +297,40 @@ namespace SpookyStreet.Case
             }
         }
 
+        /// <summary>
+        /// A box round the whole interior that only casts shadows: its walls and roof are single inward faces, which
+        /// cast none, so without it the moon would light the attic floor through the closed roof.
+        /// </summary>
+        private void BuildShroud(MaterialLibrary materials)
+        {
+            if (Interior == null)
+            {
+                return;
+            }
+
+            var shroud = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            shroud.name = "InteriorMoonShroud";
+            var collider = shroud.GetComponent<Collider>();
+            if (collider != null)
+            {
+                DestroyImmediate(collider);
+            }
+
+            shroud.transform.SetParent(transform, false);
+            shroud.transform.position = InteriorPoint(0f, 4.3f, 3.0f);
+            shroud.transform.rotation = Quaternion.identity;
+            shroud.transform.localScale = new Vector3(11.4f, 9.6f, 9.4f);
+            var renderer = shroud.GetComponent<MeshRenderer>();
+            renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
+            renderer.receiveShadows = false;
+            if (materials != null)
+            {
+                renderer.sharedMaterial = materials.Get(Palette.NightViolet);
+            }
+
+            _shroud = shroud.transform;
+        }
+
         /// <summary>Instantly shows the door latched or open (resume, new game, replay).</summary>
         public void SetDoor(bool open)
         {
@@ -299,7 +341,7 @@ namespace SpookyStreet.Case
             ApplyDoor();
         }
 
-        /// <summary>Lift the latch, then swing both leaves open together about the hinge.</summary>
+        /// <summary>Lift the latch, then swing both leaves open (the inner one into the hall, the outer into its box).</summary>
         public void OpenDoor()
         {
             _latchTarget = 1f;
@@ -309,15 +351,14 @@ namespace SpookyStreet.Case
         private void ApplyDoor()
         {
             float eased = _door * _door * (3f - 2f * _door);
-            var swing = Quaternion.AngleAxis(_doorSign * DoorOpenDegrees * eased, Vector3.up);
             if (_frontDoor != null)
             {
-                _frontDoor.rotation = swing * _frontRest;
+                _frontDoor.rotation = Quaternion.AngleAxis(_doorSign * DoorOpenDegrees * eased, Vector3.up) * _frontRest;
             }
 
             if (_innerDoor != null)
             {
-                _innerDoor.rotation = swing * _innerRest;
+                _innerDoor.rotation = Quaternion.AngleAxis(_doorSign * InnerDoorOpenDegrees * eased, Vector3.up) * _innerRest;
             }
 
             if (_latch != null)
@@ -331,7 +372,7 @@ namespace SpookyStreet.Case
             }
         }
 
-        /// <summary>Applies the cut-away rule for Pip and the camera this frame.</summary>
+        /// <summary>Animates the door and shows the interior while Pip or the camera is in it (or a crossing needs it).</summary>
         public void Tick(Vector3 pip, Vector3 camera)
         {
             float dt = Time.deltaTime;
@@ -349,54 +390,42 @@ namespace SpookyStreet.Case
                 }
             }
 
-            // D24: a lens inside the house never cuts the attic away (the interior camera keeps it out of the loft);
-            // only a high camera outside the shell still hides it.
-            bool lensInside = CaseRouteLayout.Inside(camera.x, camera.z);
-            SetView(InteriorVisibility.Decide(pip.x, pip.y, pip.z, lensInside ? float.MinValue : camera.y, DoorOpen, true));
-            bool inside = CaseRouteLayout.Inside(pip.x, pip.z) || View.ShowInterior;
-            if (inside != _wallsClear)
-            {
-                _wallsClear = inside;
-                foreach (var wall in _cameraClearWalls)
-                {
-                    wall.layer = inside ? _ignoreLayer : _wallLayer;
-                }
-            }
+            ShowInterior(ForceInteriorVisible || CaseRouteLayout.Inside(pip.x, pip.z) ||
+                         CaseRouteLayout.Inside(camera.x, camera.z));
         }
 
-        private void SetView(InteriorView view)
+        private void ShowInterior(bool show)
         {
-            View = view;
-            bool show = view.ShowInterior;
-            if (Interior != null && Interior.gameObject.activeSelf != show)
+            if (show == _interiorShown)
+            {
+                return;
+            }
+
+            _interiorShown = show;
+            if (Interior != null)
             {
                 Interior.gameObject.SetActive(show);
             }
 
-            if (Mechanism != null && Mechanism.gameObject.activeSelf != show)
+            if (Mechanism != null)
             {
                 Mechanism.gameObject.SetActive(show);
-            }
-
-            bool body = !show || ForceBodyVisible;
-            if (_body != null && _body.gameObject.activeSelf != body)
-            {
-                _body.gameObject.SetActive(body);
-            }
-
-            if (_recess != null && _recess.gameObject.activeSelf == show)
-            {
-                _recess.gameObject.SetActive(!show);
-            }
-
-            if (_attic != null && _attic.gameObject.activeSelf == view.HideAttic)
-            {
-                _attic.gameObject.SetActive(!view.HideAttic);
             }
 
             foreach (var light in _interiorLights)
             {
                 light.enabled = show;
+            }
+
+            // D24: nothing is cut away during play. The attic is always drawn; the exterior is always whole.
+            if (_attic != null && !_attic.gameObject.activeSelf)
+            {
+                _attic.gameObject.SetActive(true);
+            }
+
+            if (_body != null && !_body.gameObject.activeSelf)
+            {
+                _body.gameObject.SetActive(true);
             }
         }
     }

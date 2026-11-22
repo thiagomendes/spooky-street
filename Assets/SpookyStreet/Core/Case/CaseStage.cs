@@ -121,13 +121,13 @@ namespace SpookyStreet.Core.Case
             { CaseAnchors.BicycleCorner, new StagePoint(-5.6f, 0.1f, -0.4f) },
             { CaseAnchors.Bench, new StagePoint(6.4f, 0.1f, 1.4f) },
             { CaseAnchors.BluePorch, new StagePoint(0f, 0.7f, 10f) },
-            // Interior pass: the treehouse route and the three rooms (CaseRouteLayout).
+            // Interior pass: the treehouse route and, in the separate interior (house v3, D24.1), the three rooms.
             { CaseAnchors.SideYard, new StagePoint(-11.2f, 0.1f, 5.6f) },
             { CaseAnchors.Treehouse, new StagePoint(-6.6f, 2.45f, 13.4f) },
             { CaseAnchors.AtticSill, new StagePoint(-4.1f, 2.5f, CaseRouteLayout.BridgeZ) },
-            { CaseAnchors.Attic, new StagePoint(-1.3f, 2.55f, 14.0f) },
-            { CaseAnchors.Foyer, new StagePoint(-0.7f, 0.65f, 12.3f) },
-            { CaseAnchors.Workshop, new StagePoint(0.7f, 0.65f, 14.1f) },
+            { CaseAnchors.Attic, new StagePoint(-1.6f, 4.05f, CaseRouteLayout.InteriorFrontZ + 1.5f) },
+            { CaseAnchors.Foyer, new StagePoint(-0.8f, 0.65f, CaseRouteLayout.InteriorFrontZ + 1.9f) },
+            { CaseAnchors.Workshop, new StagePoint(1.45f, 0.65f, CaseRouteLayout.InteriorFrontZ + 4.6f) },
         };
 
         /// <summary>Anchors that exist on the stage (every anchor of the case since the interior pass).</summary>
@@ -165,9 +165,9 @@ namespace SpookyStreet.Core.Case
 
         /// <summary>
         /// The staged anchor nearest to (x, y, z): what an autosave records as the last safe anchor. Height counts
-        /// three times as much as plan distance, so the attic and the foyer (one above the other) never mix, and an
-        /// inside anchor is only chosen for a point inside the house shell (and an outside one for a point outside),
-        /// so a save on the porch never restores Pip behind the latched door.
+        /// three times as much as plan distance, so the attic and the hall (one above the other) never mix, and an
+        /// inside anchor is only chosen for a point in the interior (and an outside one for a point on the street),
+        /// so a save on the porch never restores Pip behind the latched door and an interior save restores inside.
         /// </summary>
         public static string NearestAnchor(float x, float y, float z)
         {

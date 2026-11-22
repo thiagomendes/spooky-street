@@ -20,7 +20,7 @@ namespace SpookyStreet.Tests.Core
             float total = CaseStage.JuneWalkSeconds;
             Assert.AreEqual(length, CaseStage.JuneWalkDistance(total), 1e-3f, "she ends on her mark");
             Assert.AreEqual(length, CaseStage.JuneWalkDistance(total + 5f), 1e-3f);
-            Assert.Less(total, 13.5f, "the walk stays short");
+            Assert.Less(total, 15.5f, "the walk stays short (house v3: down two flights of the bigger stair)");
 
             float previous = 0f;
             float fastest = 0f;

@@ -206,7 +206,7 @@ def _door_game(inner):
         b.part_fn = prev
         bm = bmesh.new()
         if CTX.split:
-            x, y, z = hw + 0.02, RECESS_CARD_Y, height + 0.02
+            x, y, z = hw + 0.02, oh.VIEW_DOOR + 0.004, height + 0.02  # kept for its name only, behind the hall view box
             bm.faces.new([bm.verts.new(p) for p in ((-x, y, 0.0), (x, y, 0.0), (x, y, z), (-x, y, z))])
             prev_part, b.part = b.part, "DoorRecessCard"
             b.add_bm(bm, P["ink"], None, 0.6, smooth=False)

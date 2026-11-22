@@ -3,39 +3,46 @@ using System.Collections.Generic;
 
 namespace SpookyStreet.Core.World
 {
-    /// <summary>Which part of the owl house Pip is in, for the interior camera profile.</summary>
+    /// <summary>Which enterable room Pip is in, for the interior camera profile.</summary>
     public enum InteriorRoom
     {
         None,
 
-        /// <summary>The ground floor: the entry bay and the low hall under the loft.</summary>
-        Foyer,
+        /// <summary>The owl house hall (ground floor of the interior).</summary>
+        Hall,
 
-        /// <summary>On the stair along the back wall.</summary>
+        /// <summary>On either flight of the stair or its landing.</summary>
         Stair,
 
-        /// <summary>On the loft (June's attic).</summary>
+        /// <summary>On the attic floor (June's attic).</summary>
         Attic,
 
         /// <summary>In June's dormer alcove, just inside the window.</summary>
         Alcove,
+
+        /// <summary>Inside the treehouse cabin (seamless on the maple, D24.1; child-sized round its trunk).</summary>
+        Cabin,
     }
 
     /// <summary>The boom a room asks for: length, shoulder rise above the pivot and the pitch range (degrees, down +).</summary>
     public readonly struct InteriorCameraProfile
     {
-        public InteriorCameraProfile(float distance, float rise, float minPitch, float maxPitch)
+        public InteriorCameraProfile(float distance, float rise, float minPitch, float maxPitch, float minDistance)
         {
             Distance = distance;
             Rise = rise;
             MinPitch = minPitch;
             MaxPitch = maxPitch;
+            MinDistance = minDistance;
         }
 
         public float Distance { get; }
         public float Rise { get; }
         public float MinPitch { get; }
         public float MaxPitch { get; }
+
+        /// <summary>The shortest boom that still frames Pip in this room.</summary>
+        public float MinDistance { get; }
     }
 
     /// <summary>What the interior camera solver is asked: where Pip is, how the player has turned the camera.</summary>
@@ -79,7 +86,7 @@ namespace SpookyStreet.Core.World
 
         public InteriorRoom Room { get; }
 
-        /// <summary>False outside the house: the normal follow camera applies.</summary>
+        /// <summary>False outside the rooms: the normal follow camera applies.</summary>
         public bool Active => Room != InteriorRoom.None;
 
         public float Distance { get; }
@@ -87,7 +94,7 @@ namespace SpookyStreet.Core.World
         public float YawOffset { get; }
         public float Rise { get; }
 
-        /// <summary>True when the boom is at least <see cref="InteriorCamera.MinDistance"/> with every sightline clear.</summary>
+        /// <summary>True when the boom is at least the room's minimum with every sightline clear.</summary>
         public bool Clear { get; }
 
         public float CameraX { get; }
@@ -100,15 +107,16 @@ namespace SpookyStreet.Core.World
     }
 
     /// <summary>
-    /// The owl house's indoor camera (S002 interior polish). Indoors the camera never leaves the rooms: it lives in the
-    /// house's air (<see cref="InAir"/>: the hall under the loft, the entry bay, the stairwell and the attic under its
-    /// roof) and never touches a solid (<see cref="Blockers"/>: every shell and interior collider slab plus the dressing
-    /// that has no collider: the loft's ceiling joists and bunting, the lanterns, the stair's closed side and
-    /// balustrade). Each room has a profile (a shorter boom, a lower shoulder under the 1.7 m hall ceiling, a pitch
-    /// range). <see cref="Solve"/> keeps the player's orbit when the boom fits; otherwise it searches pitch first, then
+    /// The indoor camera for every enterable room (D24): the owl house interior (house v3: hall, stair, attic and
+    /// alcove, a separate space up the lane) and the treehouse cabin on the maple. Indoors the camera never leaves the
+    /// room: it lives in the room's air (<see cref="InAir"/>) and never touches a solid (every interior and cabin
+    /// collider slab plus the dressing that has no collider: the hall's beams and lamps, the hanging bunting and
+    /// garlands, the drive shafts, the cabin's trunk). Each room has a profile (boom, shoulder, pitch range, shortest
+    /// boom). <see cref="Solve"/> keeps the player's orbit when the boom fits; otherwise it searches pitch first, then
     /// small yaw swings, then larger ones, for the longest boom with clear lines from the lens to Pip's head and chest
     /// (and the character being talked to). <see cref="ClearDistance"/> is the per-frame probe that shortens the boom
-    /// at once against anything in the way. Pure, so the whole house can be swept in EditMode.
+    /// at once against anything in the way. A lens in a room's air sees only that room's inner faces, so it never
+    /// shows the void. Pure, so every room can be swept in EditMode.
     /// </summary>
     public static class InteriorCamera
     {
@@ -118,8 +126,11 @@ namespace SpookyStreet.Core.World
         /// <summary>Sightlines are tested as thin capsules.</summary>
         public const float SightRadius = 0.03f;
 
-        /// <summary>The shortest boom that still frames all of Pip (1.1 m tall) in a 50° lens.</summary>
+        /// <summary>The shortest boom that still frames all of Pip (1.1 m tall) in a 50° lens (the cabin allows less).</summary>
         public const float MinDistance = 1.3f;
+
+        /// <summary>The cabin is a child-sized room round a trunk: a shorter boom still frames all of Pip from above.</summary>
+        public const float CabinMinDistance = 1.0f;
 
         /// <summary>Step of the probe along the boom.</summary>
         public const float Step = 0.08f;
@@ -132,14 +143,14 @@ namespace SpookyStreet.Core.World
         /// <summary>A talking partner's chest above the feet (June seated on her stool is lower than standing).</summary>
         public const float FocusHeight = 0.75f;
 
-        /// <summary>Under the loft: the joists hang to 2.23 m and the bunting to 2.17 m.</summary>
-        public const float HallCeilingY = 2.15f;
+        /// <summary>Highest lens centre under the hall ceiling (beams at 3.81 m, the loft underside at 3.86 m).</summary>
+        public const float HallCeilingY = 3.58f;
 
-        /// <summary>Garlands, the star lantern's cord and the collar ties hang above this in the attic.</summary>
-        public const float AtticTopY = 4.4f;
+        /// <summary>Highest lens centre in the attic: the star and owl lanterns hang to 6.65 m, collar ties at 7.2 m.</summary>
+        public const float AtticTopY = 6.4f;
 
-        /// <summary>Rafters, the wind-drive rod and the roof boards: keep this far below the ceiling slope.</summary>
-        public const float RoofMargin = 0.3f;
+        /// <summary>Keep the lens this far below the ceiling slope (rafters, the star strings under the low slopes).</summary>
+        public const float RoofMargin = 0.55f;
 
         /// <summary>
         /// Extra cost of a swing past 90°: the lens then looks back at Pip and the stick's directions flip, so a shorter
@@ -147,16 +158,25 @@ namespace SpookyStreet.Core.World
         /// </summary>
         public const float FacingPenalty = 6f;
 
+        /// <summary>The cabin is too small to insist on staying behind Pip: a swing past 90° costs this much there.</summary>
+        public const float CabinFacingPenalty = 1.5f;
+
         /// <summary>How far the shoulder may drop when the room is too tight at the profile's rise.</summary>
         public const float LowShoulder = 0.4f;
 
-        public const float AlcoveInnerX = CaseRouteLayout.InnerMinX + 0.96f;
-        public const float AlcoveCeilingY = 3.75f;
+        /// <summary>The dormer alcove reaches this far into the attic; its ceiling lens limit (eave 5.8 m).</summary>
+        public const float AlcoveInnerX = -2.5f;
+
+        public const float AlcoveCeilingY = 5.5f;
 
         private static readonly float[] YawSteps = { 0f, 25f, -25f, 50f, -50f, 75f, -75f, 105f, -105f, 135f, -135f, 165f, -165f, 180f };
 
         private static readonly Blocker[] FixedBlockers = BuildBlockers();
         private static readonly Blocker OpenDoorLeaf = BuildDoorLeaf();
+        private static readonly Blocker ClosedDoorLeaf = Blocker.FromSlab(CaseRouteLayout.Find(CaseRouteLayout.DoorBlockerName));
+
+        /// <summary>The inner door leaf as it stands: in the doorway while latched, swung into the hall once open.</summary>
+        private static Blocker Leaf(bool doorOpen) => doorOpen ? OpenDoorLeaf : ClosedDoorLeaf;
 
         /// <summary>Every solid the indoor camera avoids (door closed).</summary>
         public static IReadOnlyList<string> BlockerNames
@@ -175,9 +195,19 @@ namespace SpookyStreet.Core.World
 
         public static InteriorRoom RoomOf(float x, float y, float z)
         {
+            if (InCabin(x, y, z))
+            {
+                return InteriorRoom.Cabin;
+            }
+
             if (!CaseRouteLayout.Inside(x, z))
             {
                 return InteriorRoom.None;
+            }
+
+            if (OnStairPlan(x, z) && y > CaseRouteLayout.FloorY + 0.12f && y < CaseRouteLayout.LoftY - 0.25f)
+            {
+                return InteriorRoom.Stair;
             }
 
             if (y > CaseRouteLayout.LoftY - 0.3f)
@@ -185,67 +215,124 @@ namespace SpookyStreet.Core.World
                 return InAlcove(x, z) ? InteriorRoom.Alcove : InteriorRoom.Attic;
             }
 
-            if (OnStairFootprint(x, z) && y > CaseRouteLayout.FloorY + 0.15f)
-            {
-                return InteriorRoom.Stair;
-            }
-
-            return InteriorRoom.Foyer;
+            return InteriorRoom.Hall;
         }
 
         public static InteriorCameraProfile ProfileFor(InteriorRoom room)
         {
             switch (room)
             {
-                case InteriorRoom.Foyer:
-                    // A low shoulder and a near-level pitch keep the lens under the hall's joists at full length.
-                    return new InteriorCameraProfile(2.4f, 0.1f, -4f, 9f);
+                case InteriorRoom.Hall:
+                    // 3.26 m clear: the boom fits at full length from a near-level to a gently high view.
+                    return new InteriorCameraProfile(2.4f, 0.15f, -2f, 30f, MinDistance);
                 case InteriorRoom.Stair:
-                    // Look down over the balustrade from the stairwell; under the low loft behind the stair, from high above Pip.
-                    return new InteriorCameraProfile(2.2f, 0.2f, 10f, 66f);
+                    // Over the balustrade from the stairwell, which is open to the roof.
+                    return new InteriorCameraProfile(2.2f, 0.2f, 8f, 55f, MinDistance);
                 case InteriorRoom.Attic:
                 case InteriorRoom.Alcove:
-                    return new InteriorCameraProfile(2.2f, 0.15f, 2f, 40f);
+                    return new InteriorCameraProfile(2.2f, 0.15f, -4f, 40f, MinDistance);
+                case InteriorRoom.Cabin:
+                    // A child-sized room round the maple's trunk (house v3 §3.8): a short boom, the shoulder kept low.
+                    return new InteriorCameraProfile(1.2f, 0.05f, -6f, 45f, CabinMinDistance);
                 default:
-                    return new InteriorCameraProfile(0f, 0f, 0f, 0f);
+                    return new InteriorCameraProfile(0f, 0f, 0f, 0f, 0f);
             }
         }
 
         private static bool InAlcove(float x, float z) =>
-            x < AlcoveInnerX && Math.Abs(z - CaseRouteLayout.WindowZ) < (CaseRouteLayout.AlcoveMaxZ - CaseRouteLayout.AlcoveMinZ) * 0.5f;
+            x < AlcoveInnerX && Math.Abs(z - CaseRouteLayout.InnerWindowZ) <
+            (CaseRouteLayout.AlcoveMaxZ - CaseRouteLayout.AlcoveMinZ) * 0.5f - 0.05f;
 
-        private static bool OnStairFootprint(float x, float z) =>
-            x > CaseRouteLayout.StairBottomX - 0.05f && x < CaseRouteLayout.StairTopX + 0.05f &&
-            z > CaseRouteLayout.StairMinZ - 0.05f && z < CaseRouteLayout.StairMaxZ + 0.05f;
+        /// <summary>Over either flight or the landing (plan only).</summary>
+        private static bool OnStairPlan(float x, float z) =>
+            (x < CaseRouteLayout.StairBayX + 0.05f && z > CaseRouteLayout.StairFootZ - 0.05f) ||
+            (x < CaseRouteLayout.StairTopX + 0.1f && z > CaseRouteLayout.UpperFlightMinZ - 0.05f);
 
-        /// <summary>Stair tread height at <paramref name="x"/> (the floor before it, the loft after it).</summary>
-        public static float StairSurface(float x)
+        /// <summary>Pip's feet inside the treehouse cabin (between its walls, at deck height).</summary>
+        public static bool InCabin(float x, float y, float z)
         {
-            float t = (x - CaseRouteLayout.StairBottomX) / (CaseRouteLayout.StairTopX - CaseRouteLayout.StairBottomX);
-            t = Math.Max(0f, Math.Min(1f, t));
-            return CaseRouteLayout.FloorY + t * (CaseRouteLayout.LoftY - CaseRouteLayout.FloorY);
+            if (y < CaseRouteLayout.TreehouseY - 0.25f || y > CaseRouteLayout.TreehouseY + 1.2f)
+            {
+                return false;
+            }
+
+            CaseRouteLayout.WorldToCabin(x, z, out float cx, out float cy);
+            const float h = CaseRouteLayout.CabinHalf - 0.06f;
+            return Math.Abs(cx) < h && cy > -h && cy < CaseRouteLayout.CabinBayY - 0.06f;
+        }
+
+        /// <summary>Tread height of the stair at (x, z): the lower flight, the landing or the upper flight.</summary>
+        public static float StairSurface(float x, float z)
+        {
+            if (x >= CaseRouteLayout.StairBayX && z > CaseRouteLayout.UpperFlightMinZ - 0.05f)
+            {
+                return CaseRouteLayout.UpperFlightAt(x);
+            }
+
+            return CaseRouteLayout.LowerFlightAt(z);
         }
 
         /// <summary>Ceiling slope height at <paramref name="x"/> (the knee walls at the sides, the ridge at x = 0).</summary>
-        public static float RoofAt(float x)
-        {
-            float slope = (CaseRouteLayout.ApexY - CaseRouteLayout.KneeY) / CaseRouteLayout.InnerMaxX;
-            return CaseRouteLayout.KneeY + (CaseRouteLayout.InnerMaxX - Math.Abs(x)) * slope;
-        }
+        public static float RoofAt(float x) =>
+            CaseRouteLayout.KneeY + (CaseRouteLayout.InnerMaxX - Math.Abs(x)) * CaseRouteLayout.RoofSlope;
 
-        /// <summary>True when (x, y, z) is room air inside the house (walls and solids are tested by the blockers).</summary>
+        /// <summary>True when (x, y, z) is room air (walls and solids are tested by the blockers).</summary>
         public static bool InAir(float x, float y, float z)
         {
+            if (CaseRouteLayout.Inside(x, z))
+            {
+                return HouseAir(x, y, z);
+            }
+
+            return CabinAir(x, y, z);
+        }
+
+        private static bool HouseAir(float x, float y, float z)
+        {
+            // The two openings are air too, so a shoulder in the doorway or the window's reveal (Pip stepping into a
+            // threshold) still has a boom back into the room; beyond them are the closed, painted view boxes.
+            if (y > CaseRouteLayout.FloorY + 0.1f && y < CaseRouteLayout.DoorTopY - 0.1f &&
+                Math.Abs(x) < CaseRouteLayout.DoorHalfWidth && z > CaseRouteLayout.InteriorFrontZ - 0.1f &&
+                z <= CaseRouteLayout.InnerMinZ)
+            {
+                return true;
+            }
+
+            if (y > CaseRouteLayout.LoftY + 0.1f && y < CaseRouteLayout.SillY + CaseRouteLayout.WindowApex - 0.1f &&
+                x > -3.75f && x <= CaseRouteLayout.InnerMinX &&
+                Math.Abs(z - CaseRouteLayout.InnerWindowZ) < CaseRouteLayout.WindowHalfWidth)
+            {
+                return true;
+            }
+
             if (x < CaseRouteLayout.InnerMinX || x > CaseRouteLayout.InnerMaxX || z < CaseRouteLayout.InnerMinZ ||
                 z > CaseRouteLayout.InnerMaxZ || y < CaseRouteLayout.FloorY + 0.1f)
             {
                 return false;
             }
 
-            // The workshop nook (behind its partition, below the loft) is never a camera place.
-            if (x > CaseRouteLayout.NookX && z > CaseRouteLayout.NookMinZ && y < CaseRouteLayout.LoftY)
+            bool westWell = x < CaseRouteLayout.StairBayX && z > CaseRouteLayout.StairwellMinZ;
+            bool upperWell = !westWell && x < CaseRouteLayout.StairTopX && z > CaseRouteLayout.UpperFlightMinZ;
+            // Over a flight, the air starts above the treads (the space under the stair is boxed in).
+            if (westWell && z > CaseRouteLayout.StairFootZ && y < CaseRouteLayout.LowerFlightAt(z) + 0.15f)
             {
                 return false;
+            }
+
+            if (upperWell && y < CaseRouteLayout.UpperFlightAt(x) + 0.15f)
+            {
+                return false;
+            }
+
+            if (y < HallCeilingY)
+            {
+                // The hall and the stair bay; the workshop nook (behind its partition) is never a camera place.
+                return !(x > CaseRouteLayout.NookX && z > CaseRouteLayout.NookMinZ);
+            }
+
+            if (y < CaseRouteLayout.LoftY + 0.15f && !westWell && !upperWell)
+            {
+                return false; // the loft slab and the hall's beams
             }
 
             float top = Math.Min(AtticTopY, RoofAt(x) - RoofMargin);
@@ -255,6 +342,24 @@ namespace SpookyStreet.Core.World
             }
 
             return y <= top;
+        }
+
+        private static bool CabinAir(float x, float y, float z)
+        {
+            float h = y - CaseRouteLayout.TreehouseY;
+            if (h < 0.15f || h > CaseRouteLayout.CabinRidge)
+            {
+                return false;
+            }
+
+            CaseRouteLayout.WorldToCabin(x, z, out float cx, out float cy);
+            const float inner = CaseRouteLayout.CabinHalf - 0.04f;
+            if (Math.Abs(cx) > inner || cy < -inner || cy > CaseRouteLayout.CabinBayY - 0.04f)
+            {
+                return false;
+            }
+
+            return h <= CaseRouteLayout.CabinCeilingAt(cy) - 0.02f;
         }
 
         /// <summary>A camera sphere at (x, y, z) is in room air and touches no solid.</summary>
@@ -274,7 +379,7 @@ namespace SpookyStreet.Core.World
                 }
             }
 
-            return !doorOpen || !OpenDoorLeaf.OverlapsSphere(c, radius);
+            return !Leaf(doorOpen).OverlapsSphere(c, radius);
         }
 
         /// <summary>True when a sphere at (x, y, z) touches any indoor solid (room air is not checked).</summary>
@@ -289,7 +394,7 @@ namespace SpookyStreet.Core.World
                 }
             }
 
-            return doorOpen && OpenDoorLeaf.OverlapsSphere(c, radius);
+            return Leaf(doorOpen).OverlapsSphere(c, radius);
         }
 
         /// <summary>The first solid crossing the line from a to b, or null when the line is clear.</summary>
@@ -305,7 +410,8 @@ namespace SpookyStreet.Core.World
                 }
             }
 
-            return doorOpen && OpenDoorLeaf.HitsSegment(a, b, SightRadius) ? OpenDoorLeaf.Name : null;
+            var leaf = Leaf(doorOpen);
+            return leaf.HitsSegment(a, b, SightRadius) ? leaf.Name : null;
         }
 
         public static bool SightClear(float ax, float ay, float az, float bx, float by, float bz, bool doorOpen) =>
@@ -344,10 +450,12 @@ namespace SpookyStreet.Core.World
             float fz = 0f)
         {
             var scope = Near(new V(hx, hy, hz), maxDistance, hasFocus ? new V(fx, fy, fz) : (V?)null, doorOpen);
-            return Probe(scope, new V(hx, hy, hz), yaw, pitch, maxDistance, Targets(pipX, pipY, pipZ, hasFocus, fx, fy, fz));
+            float min = ProfileFor(RoomOf(pipX, pipY, pipZ)).MinDistance;
+            return Probe(scope, new V(hx, hy, hz), yaw, pitch, maxDistance, Targets(pipX, pipY, pipZ, hasFocus, fx, fy, fz),
+                min);
         }
 
-        /// <summary>Chooses the boom for this frame's request (see the class summary). Inactive outside the house.</summary>
+        /// <summary>Chooses the boom for this frame's request (see the class summary). Inactive outside the rooms.</summary>
         public static InteriorShot Solve(in InteriorCameraRequest request)
         {
             var room = RoomOf(request.PipX, request.PipY, request.PipZ);
@@ -357,6 +465,7 @@ namespace SpookyStreet.Core.World
             }
 
             var profile = ProfileFor(room);
+            float minDistance = profile.MinDistance;
             float rise = SafeRise(request.PipX, request.PipY, request.PipZ, request.PivotHeight, profile.Rise, request.DoorOpen);
             var hand = new V(request.PipX, request.PipY + request.PivotHeight + rise, request.PipZ);
             V? focus = request.HasFocus ? new V(request.FocusX, request.FocusY + FocusHeight, request.FocusZ) : (V?)null;
@@ -366,7 +475,7 @@ namespace SpookyStreet.Core.World
             float preferred = Clamp(request.Pitch, profile.MinPitch, profile.MaxPitch);
 
             // The player's own framing wins whenever it fits.
-            float d0 = Probe(scope, hand, request.Yaw, preferred, profile.Distance, targets);
+            float d0 = Probe(scope, hand, request.Yaw, preferred, profile.Distance, targets, minDistance);
             if (d0 >= profile.Distance - 1e-3f)
             {
                 return Shot(room, d0, preferred, 0f, rise, hand, request.Yaw, true);
@@ -383,6 +492,8 @@ namespace SpookyStreet.Core.World
             }
 
             // Candidates in order of their best possible score, so the search stops as soon as nothing can win.
+            // In the cabin every direction is close: a swing past 90° costs less than a cramped boom.
+            float facingPenalty = room == InteriorRoom.Cabin ? CabinFacingPenalty : FacingPenalty;
             var candidates = new List<(float Bound, int Hand, float Yaw, float Pitch)>();
             var yaws = new List<float>(YawSteps.Length + 1) { request.PreviousYawOffset };
             yaws.AddRange(YawSteps);
@@ -393,7 +504,7 @@ namespace SpookyStreet.Core.World
                     foreach (float pitch in Pitches(preferred, profile))
                     {
                         float bound = Math.Abs(pitch - preferred) * 0.06f + Math.Abs(yawOffset) * 0.05f +
-                                      (Math.Abs(yawOffset) > 90f ? FacingPenalty : 0f) +
+                                      (Math.Abs(yawOffset) > 90f ? facingPenalty : 0f) +
                                       Math.Abs(yawOffset - request.PreviousYawOffset) * 0.015f +
                                       (rise - hands[h].Rise) * 2f;
                         candidates.Add((bound, h, yawOffset, pitch));
@@ -402,6 +513,7 @@ namespace SpookyStreet.Core.World
             }
 
             candidates.Sort((x, y) => x.Bound.CompareTo(y.Bound));
+            float lengthWeight = 8f * 2.2f / Math.Max(0.5f, profile.Distance);
             foreach (var c in candidates)
             {
                 if (c.Bound >= bestScore)
@@ -409,11 +521,12 @@ namespace SpookyStreet.Core.World
                     break;
                 }
 
-                float d = Probe(scope, hands[c.Hand].Hand, request.Yaw + c.Yaw, c.Pitch, profile.Distance, targets);
-                float score = c.Bound + (profile.Distance - d) * 8f;
-                if (d < MinDistance)
+                float d = Probe(scope, hands[c.Hand].Hand, request.Yaw + c.Yaw, c.Pitch, profile.Distance, targets,
+                    minDistance);
+                float score = c.Bound + (profile.Distance - d) * lengthWeight;
+                if (d < minDistance)
                 {
-                    score += 100f + (MinDistance - d) * 50f;
+                    score += 100f + (minDistance - d) * 50f;
                 }
 
                 if (score < bestScore)
@@ -427,7 +540,7 @@ namespace SpookyStreet.Core.World
             }
 
             var bestHand = new V(request.PipX, request.PipY + request.PivotHeight + bestRise, request.PipZ);
-            return Shot(room, bestD, bestPitch, bestYaw, bestRise, bestHand, request.Yaw, bestD >= MinDistance);
+            return Shot(room, bestD, bestPitch, bestYaw, bestRise, bestHand, request.Yaw, bestD >= minDistance);
         }
 
         private static InteriorShot Shot(InteriorRoom room, float d, float pitch, float yawOffset, float rise, V hand,
@@ -467,7 +580,8 @@ namespace SpookyStreet.Core.World
             return hasFocus ? new[] { head, chest, new V(fx, fy + FocusHeight, fz) } : new[] { head, chest };
         }
 
-        private static float Probe(List<Blocker> scope, V hand, float yaw, float pitch, float maxDistance, V[] targets)
+        private static float Probe(List<Blocker> scope, V hand, float yaw, float pitch, float maxDistance, V[] targets,
+            float minDistance)
         {
             BackDirection(yaw, pitch, out float bx, out float by, out float bz);
             var back = new V(bx, by, bz);
@@ -499,7 +613,7 @@ namespace SpookyStreet.Core.World
             }
 
             // The talking partner only has to be in view where the lens ends up, not all along the boom.
-            for (float d = best; d >= MinDistance - 1e-4f; d -= Step)
+            for (float d = best; d >= minDistance - 1e-4f; d -= Step)
             {
                 if (Clear(scope, hand + back * d, targets, targets.Length))
                 {
@@ -556,9 +670,10 @@ namespace SpookyStreet.Core.World
                 }
             }
 
-            if (doorOpen && (OpenDoorLeaf.Centre - hand).Length <= r + OpenDoorLeaf.Bound)
+            var leaf = Leaf(doorOpen);
+            if ((leaf.Centre - hand).Length <= r + leaf.Bound)
             {
-                list.Add(OpenDoorLeaf);
+                list.Add(leaf);
             }
 
             return list;
@@ -571,73 +686,79 @@ namespace SpookyStreet.Core.World
             var list = new List<Blocker>();
             foreach (var slab in CaseRouteLayout.Slabs)
             {
-                if (slab.Group == SlabGroup.Reference || slab.Group == SlabGroup.Route ||
-                    slab.Name == CaseRouteLayout.DoorBlockerName)
+                bool house = slab.Group == SlabGroup.Interior && slab.Name != CaseRouteLayout.DoorBlockerName;
+                bool cabin = slab.Group == SlabGroup.Route && slab.Name.StartsWith("Cabin_", StringComparison.Ordinal);
+                if (house || cabin)
                 {
-                    continue;
+                    list.Add(Blocker.FromSlab(slab));
                 }
-
-                list.Add(Blocker.FromSlab(slab));
             }
 
             const float fy = CaseRouteLayout.FloorY;
             const float loft = CaseRouteLayout.LoftY;
-            const float minX = CaseRouteLayout.InnerMinX - 0.1f;
-            const float maxX = CaseRouteLayout.InnerMaxX + 0.1f;
-            const float maxZ = CaseRouteLayout.InnerMaxZ + 0.1f;
-            const float front = CaseRouteLayout.LoftFrontZ - 0.15f;
-            const float holeMinX = CaseRouteLayout.StairHoleMinX;
-            const float holeMaxX = CaseRouteLayout.StairTopX;
-            // The hall ceiling: the loft floor with its joists, fascia and bunting below it (no colliders there).
-            list.Add(Blocker.Box("Ceiling_West", minX, HallCeilingY, front, holeMinX, loft, maxZ));
-            list.Add(Blocker.Box("Ceiling_Middle", holeMinX, HallCeilingY, front, holeMaxX, loft, CaseRouteLayout.StairMinZ));
-            list.Add(Blocker.Box("Ceiling_East", holeMaxX, HallCeilingY, front, maxX, loft, maxZ));
-            // The stair's closed side and cupboard (a wedge under the treads) and its balustrade.
-            const float sx0 = CaseRouteLayout.StairBottomX;
-            const float sx1 = CaseRouteLayout.StairTopX;
-            float k = (loft - fy) / (sx1 - sx0);
-            list.Add(Blocker.UnderLine("Stair_Body", sx0 - 0.02f, sx1 + 0.05f, CaseRouteLayout.StairMinZ - 0.07f, maxZ,
-                fy - 0.5f, sx0, fy - 0.06f, k));
-            list.Add(Blocker.UnderLine("Stair_Balustrade", sx0 - 0.2f, sx1, CaseRouteLayout.StairMinZ - 0.1f,
-                CaseRouteLayout.StairMinZ + 0.16f, fy - 0.1f, sx0 - 0.1f, fy + 1.0f, k));
-            list.Add(Blocker.Box("Stair_Newel", sx0 - 0.2f, fy, CaseRouteLayout.StairMinZ - 0.05f, sx0 - 0.02f, fy + 1.2f,
-                CaseRouteLayout.StairMinZ + 0.16f));
-            // Hanging lights and paper stars in the entry bay and the attic, the drive shafts by the nook.
-            list.Add(Blocker.Box("OwlLantern", -0.3f, 4.0f, CaseRouteLayout.InnerMinZ - 0.1f, 0.3f, 6.5f, CaseRouteLayout.FrontZ + 1.2f));
-            Star(list, -1.5f, 4.2f, 11.6f);
-            Star(list, 1.35f, 4.6f, 11.8f);
-            Star(list, -0.75f, 5.3f, 12.1f);
-            Star(list, 1.9f, 3.5f, 11.5f);
-            Star(list, -2.1f, 3.4f, 11.9f);
-            list.Add(Blocker.Box("AtticStarLantern", -0.45f, 4.1f, 13.75f, 0.05f, 5.2f, 14.95f));
-            list.Add(Blocker.Box("WindDriveShaft", 2.03f, loft, 14.0f, 2.23f, 4.2f, 14.2f));
-            list.Add(Blocker.Box("PushRod", 1.83f, loft, 13.5f, 1.99f, 4.2f, 13.7f));
-            // Dressing near the walls and floor that a low lens could graze.
-            list.Add(Blocker.Box("JuneStool", -1.97f, loft, 14.83f, -1.53f, loft + 0.42f, 15.27f));
-            list.Add(Blocker.Box("Foyer_PegsAndHat", minX, fy, 12.8f, CaseRouteLayout.InnerMinX + 0.45f, fy + 1.4f, 14.0f));
-            list.Add(Blocker.Box("Foyer_Broom", 0.78f, fy, CaseRouteLayout.FrontZ + 0.1f, 1.12f, fy + 1.6f, CaseRouteLayout.FrontZ + 0.8f));
-            list.Add(Blocker.Box("Foyer_Crate", 0.82f, fy, 16.18f, 1.42f, fy + 0.4f, 16.72f));
-            list.Add(Blocker.Box("Pumpkins_Back", -2.75f, fy, 14.55f, -2.1f, fy + 0.42f, 15.5f));
-            list.Add(Blocker.Box("Pumpkin_Door", -1.3f, fy, 11.25f, -0.8f, fy + 0.32f, 11.75f));
+            // The hall: the two ceiling beams under the loft (3.81 m) are covered by HallCeilingY; what hangs lower:
+            // the bunting along the stair bay, the bat garland on the stair wall, the star lamp, the lamps by the door.
+            HouseBox(list, "Hall_Bunting", -2.14f, -1.97f, 3.15f, 5.45f, 3.5f, 3.9f);
+            HouseBox(list, "Hall_BatGarland", -1.95f, 0.1f, 5.25f, 5.5f, 3.25f, 3.65f);
+            HouseBox(list, "Hall_StarLamp", -0.25f, 0.25f, 2.75f, 3.25f, 3.3f, 3.9f);
+            HouseBox(list, "Hall_DoorLampWest", -1.35f, -0.95f, 0.1f, 0.4f, fy + 1.85f, fy + 2.35f);
+            HouseBox(list, "Hall_DoorLampEast", 0.95f, 1.35f, 0.1f, 0.4f, fy + 1.85f, fy + 2.35f);
+            // The attic: the drive shaft and the striped push rod up from the workshop, the lanterns.
+            HouseBox(list, "Attic_WindDriveShaft", 2.8f, 2.96f, 4.52f, 4.68f, loft, 6.1f);
+            HouseBox(list, "Attic_PushRod", 2.52f, 2.64f, 4.04f, 4.16f, loft, 6.1f);
+            HouseBox(list, "Attic_StarLantern", -0.42f, 0.02f, 2.2f, 2.64f, 6.6f, 7.3f);
+            HouseBox(list, "Attic_OwlLantern", -0.3f, 0.3f, 0.6f, 1.3f, 6.6f, 7.5f);
+            CabinSolids(list);
             return list.ToArray();
         }
 
-        private static void Star(List<Blocker> list, float x, float y, float z) =>
-            list.Add(Blocker.Box("PaperStar", x - 0.18f, y - 0.18f, z - 0.18f, x + 0.18f, 6.5f, z + 0.18f));
+        /// <summary>An interior box from builder x and depth ranges and world heights.</summary>
+        private static void HouseBox(List<Blocker> list, string name, float x0, float x1, float by0, float by1, float y0,
+            float y1) =>
+            list.Add(Blocker.Box(name, x0, y0, CaseRouteLayout.InteriorFrontZ + by0, x1, y1,
+                CaseRouteLayout.InteriorFrontZ + by1));
+
+        /// <summary>The cabin's trunk (leaning toward the fork), its box seat and the hanging lamp in the bay.</summary>
+        private static void CabinSolids(List<Blocker> list)
+        {
+            const float deck = CaseRouteLayout.TreehouseY;
+            for (int i = 0; i < 3; i++)
+            {
+                float y0 = deck + i * 0.8f;
+                float y1 = y0 + 0.8f;
+                CollisionRules.MapleTrunkAt((y0 + y1) * 0.5f, out float mx, out float mz);
+                CaseRouteLayout.CabinToWorld(mx, mz, out float x, out float z);
+                list.Add(Blocker.Box("Cabin_Trunk" + i, x - 0.34f, y0, z - 0.34f, x + 0.34f, y1, z + 0.34f));
+            }
+
+            CabinBox(list, "Cabin_Seat", 0.72f, -0.82f, 0.32f, 0f, 0.42f);
+            CabinBox(list, "Cabin_BayLamp", 0.85f, 1.53f, 0.14f, 0.75f, 1.4f);
+        }
+
+        private static void CabinBox(List<Blocker> list, string name, float cx, float cy, float half, float h0, float h1)
+        {
+            CaseRouteLayout.CabinToWorld(CaseRouteLayout.CabinPlatX + cx, CaseRouteLayout.CabinPlatY + cy, out float x,
+                out float z);
+            const float deck = CaseRouteLayout.TreehouseY;
+            list.Add(Blocker.Box(name, x - half, deck + h0, z - half, x + half, deck + h1, z + half));
+        }
 
         /// <summary>The inner door leaf swung 100° into the hall about its west hinge.</summary>
         private static Blocker BuildDoorLeaf()
         {
-            const double a = 100.0 * Math.PI / 180.0;
-            float hx = CaseRouteLayout.DoorHingeX;
-            float hz = CaseRouteLayout.FrontZ + 0.07f;
-            float len = CaseRouteLayout.DoorMaxX - CaseRouteLayout.DoorHingeX;
+            const double a = InnerDoorOpenDegrees * Math.PI / 180.0;
+            const float hx = CaseRouteLayout.DoorHingeX;
+            const float hz = CaseRouteLayout.InteriorFrontZ - 0.015f;
+            const float len = 1.1f;
             float ex = hx + (float)Math.Cos(a) * len;
             float ez = hz + (float)Math.Sin(a) * len;
             var slab = new StageSlab("InnerDoor_Open", SlabKind.Wall, SlabGroup.Interior, hx, CaseRouteLayout.DoorTopY, hz,
                 ex, CaseRouteLayout.DoorTopY, ez, 0.14f, CaseRouteLayout.DoorTopY - CaseRouteLayout.FloorY);
             return Blocker.FromSlab(slab);
         }
+
+        /// <summary>The inner door's swing once the latch is lifted (the exterior leaf stops at 90°, art note).</summary>
+        public const float InnerDoorOpenDegrees = 100f;
 
         private static float Clamp(float v, float min, float max) => v < min ? min : v > max ? max : v;
 
@@ -721,25 +842,6 @@ namespace SpookyStreet.Core.World
                 var offsets = new[] { x1, -x0, y1, -y0, z1, -z0 };
                 var centre = new V((x0 + x1) * 0.5f, (y0 + y1) * 0.5f, (z0 + z1) * 0.5f);
                 float bound = new V(x1 - x0, y1 - y0, z1 - z0).Length * 0.5f;
-                return new Blocker(name, normals, offsets, centre, bound);
-            }
-
-            /// <summary>
-            /// A box in x and z whose top is the line y = topAtX0 + slope (x − x0), cut off below at <paramref name="yMin"/>
-            /// (the stair's closed side under its treads, its balustrade along the rail line).
-            /// </summary>
-            public static Blocker UnderLine(string name, float xMin, float xMax, float zMin, float zMax, float yMin, float x0,
-                float topAtX0, float slope)
-            {
-                var top = new V(-slope, 1f, 0f);
-                float len = top.Length;
-                var n = top.Normalized;
-                float d = (topAtX0 - slope * x0) / len;
-                var normals = new[] { new V(1f, 0f, 0f), new V(-1f, 0f, 0f), new V(0f, -1f, 0f), new V(0f, 0f, 1f), new V(0f, 0f, -1f), n };
-                var offsets = new[] { xMax, -xMin, -yMin, zMax, -zMin, d };
-                float yTop = topAtX0 + slope * (xMax - x0);
-                var centre = new V((xMin + xMax) * 0.5f, (yMin + yTop) * 0.5f, (zMin + zMax) * 0.5f);
-                float bound = new V(xMax - xMin, yTop - yMin, zMax - zMin).Length * 0.5f;
                 return new Blocker(name, normals, offsets, centre, bound);
             }
 

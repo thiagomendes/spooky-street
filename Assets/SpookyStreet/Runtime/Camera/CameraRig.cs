@@ -229,6 +229,44 @@ namespace SpookyStreet.CameraSystem
             SnapPivot();
         }
 
+        /// <summary>
+        /// A cut to Pip's new place (a threshold crossing, D24.1): the orbit turns straight behind
+        /// <paramref name="yaw"/>, pitch, yaw swing, shoulder and boom jump to this frame's framing (the interior
+        /// overrides when they are set), the pivot snaps to Pip and Cinemachine forgets the previous frame, so no damping
+        /// trails across the cut.
+        /// </summary>
+        public void Cut(float yaw)
+        {
+            if (_orbit == null || _pip == null)
+            {
+                return;
+            }
+
+            _orbit.Snap(yaw);
+            _pitch = PitchOverride ?? _orbit.Pitch;
+            _yawOffset = YawOffsetTarget;
+            _height.Reset(_pip.transform.position.y);
+            if (_follow != null)
+            {
+                var shoulder = _follow.ShoulderOffset;
+                shoulder.y = RiseOverride ?? _tuning.shoulderRise;
+                _follow.ShoulderOffset = shoulder;
+                float wanted = DistanceOverride ?? _tuning.cameraDistance;
+                if (DistanceLimit.HasValue)
+                {
+                    wanted = Mathf.Min(wanted, DistanceLimit.Value);
+                }
+
+                _follow.CameraDistance = wanted;
+            }
+
+            SnapPivot();
+            if (VirtualCamera != null)
+            {
+                VirtualCamera.PreviousStateIsValid = false;
+            }
+        }
+
         /// <summary>Eases pitch, yaw swing, shoulder and boom toward this frame's framing (interior overrides or tuning).</summary>
         private void StepFraming(float dt)
         {

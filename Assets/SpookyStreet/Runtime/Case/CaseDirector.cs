@@ -64,6 +64,11 @@ namespace SpookyStreet.Case
         private readonly List<Renderer> _hiddenPip = new List<Renderer>();
         private int _baseObstacles;
         private int _indoorObstacles;
+        private Vector3 _lastPip;
+        private bool _hasLastPip;
+
+        /// <summary>A jump of Pip's position larger than this in one frame is a teleport: the camera cuts.</summary>
+        public const float TeleportCutDistance = 6f;
         private CaseWorldView _view = CaseWorldView.From(CaseState.Empty);
 
         public CaseState State { get; private set; } = CaseState.Empty;
@@ -92,11 +97,14 @@ namespace SpookyStreet.Case
         public BenchView Bench { get; private set; }
         public KnockBeat Knocks { get; private set; }
 
-        /// <summary>The interior half's set: route and interior models, colliders, cut-away, door (null without models).</summary>
+        /// <summary>The interior half's set: route and interior models, colliders, interior on or off, door (null without models).</summary>
         public OwlHouseStage House { get; private set; }
 
         /// <summary>The workshop mechanism and the rooftop owl (null without models).</summary>
         public WorkshopView Workshop { get; private set; }
+
+        /// <summary>The owl house thresholds and their paper page-turn (D24.1; null without models).</summary>
+        public ThresholdTravel Travel { get; private set; }
 
         /// <summary>June and Aunt Kit (null without models).</summary>
         public CaseCast Cast { get; private set; }
@@ -171,6 +179,11 @@ namespace SpookyStreet.Case
                 Workshop = WorkshopView.Create(transform, House.Mechanism, game.Environment.OwlPuppet);
                 Cast = CaseCast.Create(transform, game.Materials, _pip.transform);
                 Framing = new InteriorFraming(game.CameraRig);
+                Travel = ThresholdTravel.Create(transform, _pip);
+                Travel.DoorOpen = () => House.DoorOpen;
+                Travel.Started += OnCrossingStarted;
+                Travel.Moved += OnCrossingMoved;
+                Travel.Finished += OnCrossingFinished;
             }
 
             Cutaway = CutawayView.Create(transform, _camera, (RectTransform)UiCanvas.transform);
@@ -335,11 +348,12 @@ namespace SpookyStreet.Case
             _nookPeek = -1f;
             Cutaway.End(false);
             Finale.End();
+            Travel?.Cancel();
+            Travel?.ResetTracker();
             if (House != null)
             {
                 House.SetDoor(view.FrontDoor == DoorState.Open);
                 House.NookWallHidden = false;
-                House.ForceBodyVisible = false;
             }
 
             if (Workshop != null)
@@ -427,6 +441,9 @@ namespace SpookyStreet.Case
                     _continuing = false;
                 }
 
+                // A resume in the interior starts there, with the camera already in the room.
+                CutCamera();
+                Travel?.ResetTracker();
                 _walkedAtStart = _pip.DistanceWalked;
                 _onPorch = CaseStage.OnArrivalPorch(_pip.transform.position.x, _pip.transform.position.z);
                 _cooldown = InteractCooldown;
@@ -447,6 +464,7 @@ namespace SpookyStreet.Case
 
         private void ResetPresentation()
         {
+            Travel?.Cancel();
             Framing?.Release();
             CloseModals();
             Captions.Clear();
@@ -470,15 +488,53 @@ namespace SpookyStreet.Case
             return witness != null && witness.gameObject.activeInHierarchy ? witness.transform.position : (Vector3?)null;
         }
 
-        /// <summary>The interior half each frame: cut-away, door swing, camera indoors, the nook peek and the finale beat.</summary>
+        /// <summary>
+        /// Puts the camera straight behind Pip in Pip's place (a threshold crossing, a resume, a replay, any teleport):
+        /// the room's framing indoors, the follow camera outside, with nothing eased across the cut, so the lens never
+        /// travels through the void between the street and the interior.
+        /// </summary>
+        public void CutCamera()
+        {
+            var rig = _game.CameraRig;
+            if (rig == null)
+            {
+                return;
+            }
+
+            Vector3 pip = _pip.transform.position;
+            float yaw = _pip.transform.eulerAngles.y;
+            bool inside = CaseRouteLayout.Inside(pip.x, pip.z);
+            rig.ObstacleLayers = inside ? _indoorObstacles : _baseObstacles;
+            House?.Tick(pip, pip);
+            rig.Orbit.Snap(yaw);
+            if (Framing != null)
+            {
+                Framing.Snap(pip, House != null && House.DoorOpen);
+            }
+
+            rig.Cut(yaw);
+            _lastPip = pip;
+            _hasLastPip = true;
+        }
+
+        /// <summary>The interior half each frame: doors, interior on or off, camera indoors, the nook peek, the finale beat.</summary>
         private void TickStage(Vector3 pip, float dt)
         {
             if (House != null)
             {
+                if (_hasLastPip && (pip - _lastPip).sqrMagnitude > TeleportCutDistance * TeleportCutDistance)
+                {
+                    // Pip was moved far in one frame (a teleport): cut, never ease across.
+                    CutCamera();
+                }
+
+                _lastPip = pip;
+                _hasLastPip = true;
                 House.Tick(pip, _camera.transform.position);
+                Cast?.ShowJuneIndoors(House.InteriorShown);
                 bool inside = CaseRouteLayout.Inside(pip.x, pip.z);
                 var rig = _game.CameraRig;
-                rig.ObstacleLayers = inside || House.View.ShowInterior ? _indoorObstacles : _baseObstacles;
+                rig.ObstacleLayers = inside ? _indoorObstacles : _baseObstacles;
                 Framing.Tick(pip, House.DoorOpen, FocusPoint(), dt);
                 if (_nookPeek >= 0f && dt > 0f)
                 {
@@ -664,6 +720,11 @@ namespace SpookyStreet.Case
             _nookPeek = Mathf.Max(_nookPeek, seconds);
         }
 
+        /// <summary>The crank cutaway's eye and look-at (house v3 §3.4, interior builder (0.30, 4.90, 2.10) → (2.90, 4.50, 1.50)).</summary>
+        public static Vector3 CutawayEye => new Vector3(0.3f, 2.1f, CaseRouteLayout.InteriorFrontZ + 4.9f);
+
+        public static Vector3 CutawayLookAt => new Vector3(2.9f, 1.5f, CaseRouteLayout.InteriorFrontZ + 4.5f);
+
         /// <summary>The 4 s skippable cutaway: cam, taps and linkage in the nook, the owl bowing in the inset.</summary>
         private void PlayCutaway()
         {
@@ -672,19 +733,19 @@ namespace SpookyStreet.Case
                 return;
             }
 
-            Vector3 mechanism = House.Mechanism != null ? ModelKit.RendererBounds(House.Mechanism.gameObject).center
-                : new Vector3(CaseRouteLayout.MechanismX + 0.6f, 1.1f, CaseRouteLayout.MechanismZ);
-            Vector3 eye = new Vector3(CaseRouteLayout.NookX - 1.3f, 1.55f, CaseRouteLayout.MechanismZ + 1.15f);
+            // House v3 §3.4: from the hall, over the partition into the nook with its near wall hidden.
+            Vector3 eye = CutawayEye;
+            Vector3 mechanism = CutawayLookAt;
+            // The inset still looks at the rooftop owl on the street: the interior is a separate place (D24.1).
             Vector3 owl = Workshop.Owl != null ? ModelKit.RendererBounds(Workshop.Owl.gameObject).center
                 : new Vector3(0f, 7f, CaseRouteLayout.FrontZ);
             Vector3 owlEye = owl + new Vector3(1.8f, -0.6f, -4.2f);
             House.NookWallHidden = true;
-            House.ForceBodyVisible = true;
             _nookPeek = -1f;
             Bench.End();
             SetModal(true);
             SetPipHidden(true);
-            Cutaway.Play(eye, mechanism + new Vector3(0f, -0.2f, 0f), owlEye, owl, OnCutawayEnded);
+            Cutaway.Play(eye, mechanism, owlEye, owl, OnCutawayEnded);
         }
 
         private void SetPipHidden(bool hidden)
@@ -720,7 +781,6 @@ namespace SpookyStreet.Case
             if (House != null)
             {
                 House.NookWallHidden = false;
-                House.ForceBodyVisible = false;
             }
 
             SetModal(false);
@@ -853,6 +913,44 @@ namespace SpookyStreet.Case
             }
         }
 
+        // ------------------------------------------------------------------------------------------ thresholds
+
+        /// <summary>The page starts to turn: input is ignored and the HUD steps aside until it has gone.</summary>
+        private void OnCrossingStarted(ThresholdEnd leaving)
+        {
+            Bench.End();
+            _game.Controls.SetGameplayEnabled(false);
+            _reenableFrame = -1;
+            _hudGroup.alpha = 0f;
+            _hudGroup.blocksRaycasts = false;
+            _hudGroup.interactable = false;
+        }
+
+        /// <summary>Under the page: Pip is already at the arrival point; the camera cuts into the new place.</summary>
+        private void OnCrossingMoved(ThresholdEnd leaving, ThresholdEnd arriving)
+        {
+            CutCamera();
+            if (Debug.isDebugBuild)
+            {
+                Debug.Log($"[CaseDirector] Crossed {leaving} -> {arriving} at {_pip.transform.position:F2}, " +
+                          $"camera {(Framing != null && Framing.Active ? Framing.Shot.ToString() : "outdoor")}");
+            }
+        }
+
+        /// <summary>The page has gone: the player has control again (the arrival zones report on the next frame).</summary>
+        private void OnCrossingFinished(ThresholdEnd arrived)
+        {
+            if (_modal)
+            {
+                return;
+            }
+
+            _reenableFrame = Time.frameCount + 1;
+            _hudGroup.alpha = 1f;
+            _hudGroup.blocksRaycasts = true;
+            _hudGroup.interactable = true;
+        }
+
         // -------------------------------------------------------------------------------------------- notebook
 
         public void OpenNotebook()
@@ -881,6 +979,8 @@ namespace SpookyStreet.Case
             CaseStage.TryGetAnchor(CaseAnchors.ArrivalPorch, out var porch);
             _pip.Teleport(new Vector3(porch.X, porch.Y, porch.Z));
             _pip.transform.rotation = Quaternion.identity;
+            CutCamera();
+            Travel?.ResetTracker();
             _walkedAtStart = _pip.DistanceWalked;
             _onPorch = true;
         }
@@ -925,9 +1025,9 @@ namespace SpookyStreet.Case
             SetPipHidden(false);
             if (House != null)
             {
-                House.ForceBodyVisible = false;
                 House.NookWallHidden = false;
             }
+
             if (_modal)
             {
                 SetModal(false);
@@ -961,8 +1061,15 @@ namespace SpookyStreet.Case
             }
 
             Vector3 pip = _pip.transform.position;
+            if (Travel != null)
+            {
+                Travel.Tick(dt, !_modal);
+                pip = _pip.transform.position;
+            }
+
+            bool crossing = Travel != null && Travel.Active;
             TickStage(pip, dt);
-            if (!_modal)
+            if (!_modal && !crossing)
             {
                 if (CaseStage.ShouldHearKnocks(State, _pip.DistanceWalked - _walkedAtStart, pip.z))
                 {
@@ -996,7 +1103,7 @@ namespace SpookyStreet.Case
                 _onPorch = onPorch;
             }
 
-            Targets.Suspended = _modal || _cooldown > 0f;
+            Targets.Suspended = _modal || _cooldown > 0f || crossing;
             Targets.Tick(pip, _camera.transform.forward);
             var target = Targets.HasTarget ? Targets.Current : null;
             Prompt.Track(_camera, target != null ? CaseUseTargets.MarkerOf(target) : (Vector3?)null,

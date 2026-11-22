@@ -1,9 +1,9 @@
 {
  "OwlHouse": {
-  "triangles": 25603,
+  "triangles": 25897,
   "children": {
    "AtticWindow_Glow": {
-    "triangles": 108,
+    "triangles": 142,
     "pivot": [
      0.0,
      0.0,
@@ -50,6 +50,14 @@
      0.0
     ]
    },
+   "RoomCard_Glow": {
+    "triangles": 260,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
    "SideWindowPane": {
     "triangles": 88,
     "pivot": [
@@ -77,7 +85,7 @@
    }
   },
   "atlas": "OwlHouse",
-  "px_per_m": 70
+  "px_per_m": 69
  },
  "OwlHouseDressing": {
   "triangles": 8815,

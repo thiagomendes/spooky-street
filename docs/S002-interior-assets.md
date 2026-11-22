@@ -1,5 +1,9 @@
 # S002: interior, workshop mechanism and treehouse routes (assets only)
 
+> **Superseded in part (D24 / D24.1):** the owl house interior, the exterior's openings and the treehouse cabin were
+> rebuilt in `docs/S002-house-v3.md`. The interior is now a free-standing, closed model; the numbers below describe
+> the first version.
+
 Branch `feature/s002-interior`. Original Blender-script assets for the spaces the first case needs (spec §2–§4).
 No C# changed; nothing is placed in the game yet.
 
