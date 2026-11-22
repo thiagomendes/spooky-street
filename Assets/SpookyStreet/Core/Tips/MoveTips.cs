@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using SpookyStreet.Core.Movement;
+using SpookyStreet.Core.Nonverbal;
 
 namespace SpookyStreet.Core.Tips
 {
@@ -20,6 +21,12 @@ namespace SpookyStreet.Core.Tips
 
         /// <summary>"Use in the air to dive": the first time Pip is airborne after having rolled.</summary>
         Dive,
+
+        /// <summary>"Jump to bounce off the wall!": the first wall slide that goes on without a kick (S003).</summary>
+        WallJump,
+
+        /// <summary>"Jump to climb up!": the first ledge hang that goes on without a climb (S003).</summary>
+        LedgeClimb,
     }
 
     /// <summary>Where "already shown" is remembered. Ids are stable strings, never display text.</summary>
@@ -51,7 +58,23 @@ namespace SpookyStreet.Core.Tips
                 case MoveTip.ChainJump: return "move.chain_jump";
                 case MoveTip.Glide: return "move.glide";
                 case MoveTip.Dive: return "move.dive";
+                case MoveTip.WallJump: return "move.wall_jump";
+                case MoveTip.LedgeClimb: return "move.ledge_climb";
                 default: return null;
+            }
+        }
+
+        /// <summary>
+        /// The control a tip names, for its glyph per control scheme (D25): the Jump control for the jump, chain, glide,
+        /// wall and ledge tips (held for the high jump), the Use control for the dive.
+        /// </summary>
+        public static ControlPrompt Prompt(MoveTip tip)
+        {
+            switch (tip)
+            {
+                case MoveTip.HoldJump: return ControlPrompt.HoldJump;
+                case MoveTip.Dive: return ControlPrompt.Use;
+                default: return ControlPrompt.Jump;
             }
         }
     }
@@ -179,12 +202,22 @@ namespace SpookyStreet.Core.Tips
     /// cape; performed by spreading the cape.</item>
     /// <item>Dive: shown when Pip is airborne (past coyote time, no dive yet) after at least one roll; performed
     /// by a dive.</item>
+    /// <item>Wall jump (S003): shown once a wall slide has lasted <see cref="WallHintSlideSeconds"/> without a kick;
+    /// performed by a kick off a wall.</item>
+    /// <item>Ledge climb (S003): shown once a hang has lasted <see cref="LedgeHintHangSeconds"/>; performed by climbing
+    /// up.</item>
     /// </list>
     /// </summary>
     public sealed class MoveTipCoach
     {
         /// <summary>Downward speed (m/s) past the apex at which the glide tip triggers (≈ 0.1 s of falling).</summary>
         public const float GlideHintFallSpeed = 2.5f;
+
+        /// <summary>Seconds of sliding before the wall-jump tip (a child who kicks at once never needs it).</summary>
+        public const float WallHintSlideSeconds = 0.3f;
+
+        /// <summary>Seconds of hanging before the climb tip.</summary>
+        public const float LedgeHintHangSeconds = 0.35f;
 
         private bool _inJumpAir;
         private bool _releasedEarly;
@@ -232,6 +265,26 @@ namespace SpookyStreet.Core.Tips
             if (step.RollStarted)
             {
                 _hasRolled = true;
+            }
+
+            if (step.WallJumped)
+            {
+                Scheduler.Performed(MoveTip.WallJump);
+            }
+
+            if (step.ClimbStarted)
+            {
+                Scheduler.Performed(MoveTip.LedgeClimb);
+            }
+
+            if (state.WallSliding && state.WallTime >= WallHintSlideSeconds)
+            {
+                Scheduler.TryShow(MoveTip.WallJump);
+            }
+
+            if (state.Hanging && state.HangTime >= LedgeHintHangSeconds)
+            {
+                Scheduler.TryShow(MoveTip.LedgeClimb);
             }
 
             if (state.Grounded)

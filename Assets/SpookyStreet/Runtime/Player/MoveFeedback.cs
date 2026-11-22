@@ -10,7 +10,8 @@ namespace SpookyStreet.Player
     /// Paper effects that make the moveset readable (S000.6 feel pass, rules in <see cref="MoveFeedbackRules"/>):
     /// a confetti-and-star burst at Pip's feet on the 2nd and 3rd chained jumps, short paper speed streaks on a
     /// dive, a dust puff when a dive lands in its roll, and an upward star puff with a vertical speed line when a
-    /// held jump's boost engages (the high jump). Craft style: double-sided paper pieces in palette
+    /// held jump's boost engages (the high jump), a paper puff off the wall on a wall kick and a small dust puff at
+    /// the hands when Pip catches a ledge (S003). Craft style: double-sided paper pieces in palette
     /// colours, candy-corn stars as the bright highlight. Cheap on mobile: one fixed pool of
     /// <see cref="PoolSize"/> small unlit quads built once (no particle system, no transparency, no shadows, no
     /// allocations per frame); a full pool recycles its oldest piece. Runs on game time, so pause freezes every
@@ -219,6 +220,70 @@ namespace SpookyStreet.Player
             {
                 BoostPuff(_motor.transform.position);
                 Record(MoveBursts.BoostPuff);
+            }
+
+            if ((bursts & MoveBursts.WallKickPuff) != 0)
+            {
+                var kick = new Vector3(state.KickNormalX, 0f, state.KickNormalZ);
+                WallKickPuff(_motor.LastKickPoint, kick.sqrMagnitude > 1e-4f ? kick.normalized : -forward);
+                Record(MoveBursts.WallKickPuff);
+            }
+
+            if ((bursts & MoveBursts.LedgeGrabDust) != 0)
+            {
+                var face = new Vector3(state.HangNormalX, 0f, state.HangNormalZ);
+                GrabDust(_motor.LastGrabPoint, face.sqrMagnitude > 1e-4f ? face.normalized : -forward);
+                Record(MoveBursts.LedgeGrabDust);
+            }
+        }
+
+        /// <summary>
+        /// Wall kick (S003): paper confetti and candy-corn stars burst off the wall where Pip's feet pushed, spraying
+        /// out along the wall's normal and fanning across its face, so the kick reads as a push off the boards.
+        /// </summary>
+        private void WallKickPuff(Vector3 point, Vector3 normal)
+        {
+            Vector3 along = Vector3.Cross(Vector3.up, normal);
+            int count = MoveFeedbackRules.PieceCount(MoveBursts.WallKickPuff);
+            for (int i = 0; i < count; i++)
+            {
+                float t = count > 1 ? i / (count - 1f) - 0.5f : 0f;
+                bool star = i % 3 == 0;
+                ref Piece p = ref Take(star ? Kind.Star : Kind.Confetti);
+                p.Position = point + normal * 0.04f + along * (t * 0.3f) + Vector3.down * Range(0.1f, 0.35f);
+                p.Velocity = normal * Range(1.2f, 2.0f) + along * (t * Range(1.6f, 2.4f)) +
+                             Vector3.up * Range(0.2f, 1.0f);
+                p.Axis = new Vector3(Range(-1f, 1f), Range(-1f, 1f), Range(-1f, 1f)).normalized;
+                if (p.Axis.sqrMagnitude < 0.01f)
+                {
+                    p.Axis = Vector3.up;
+                }
+
+                p.Rotation = Quaternion.AngleAxis(Range(0f, 360f), p.Axis);
+                p.Spin = Range(360f, 720f);
+                p.Size = star ? Range(0.07f, 0.095f) : Range(0.06f, 0.08f);
+                p.Life = Range(0.45f, 0.65f);
+                p.Renderer.sharedMaterial = star ? _starMaterial : _confettiMaterials[i % _confettiMaterials.Length];
+            }
+        }
+
+        /// <summary>Ledge catch (S003): a few small felt dust puffs where the hands meet the edge, drifting off it.</summary>
+        private void GrabDust(Vector3 edge, Vector3 normal)
+        {
+            Vector3 along = Vector3.Cross(Vector3.up, normal);
+            int count = MoveFeedbackRules.PieceCount(MoveBursts.LedgeGrabDust);
+            for (int i = 0; i < count; i++)
+            {
+                float t = count > 1 ? i / (count - 1f) - 0.5f : 0f;
+                ref Piece p = ref Take(Kind.Puff);
+                p.Position = edge + normal * 0.05f + along * (t * 0.35f) + Vector3.up * 0.03f;
+                p.Velocity = along * (t * Range(0.8f, 1.2f)) + normal * Range(0.2f, 0.4f) + Vector3.up * Range(0.1f, 0.3f);
+                p.Rotation = Quaternion.identity;
+                p.Axis = Vector3.forward;
+                p.Spin = Range(-90f, 90f);
+                p.Size = Range(0.1f, 0.15f);
+                p.Life = Range(0.32f, 0.42f);
+                p.Renderer.sharedMaterial = _puffMaterials[i % _puffMaterials.Length];
             }
         }
 

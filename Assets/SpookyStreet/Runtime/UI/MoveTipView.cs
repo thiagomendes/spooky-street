@@ -1,7 +1,9 @@
 using SpookyStreet.App;
 using SpookyStreet.Core.Art;
 using SpookyStreet.Core.Localization;
+using SpookyStreet.Controls;
 using SpookyStreet.Core.Movement;
+using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.Core.Tips;
 using SpookyStreet.Localization;
 using SpookyStreet.Player;
@@ -13,7 +15,8 @@ namespace SpookyStreet.UI
 {
     /// <summary>
     /// First-time moveset tips (S000.6 feel pass) on a paper tag just above the control they name: the Jump disc
-    /// for hold, chain and glide, the Use disc for the dive. Which tip and when is the engine-free
+    /// for hold, chain, glide, wall jump and ledge climb, the Use disc for the dive. The tag leads with the control's
+    /// glyph in the current scheme (D25): the disc's ink icon on touch, the lit face button or the key cap otherwise. Which tip and when is the engine-free
     /// <see cref="MoveTipCoach"/>/<see cref="TipScheduler"/>; this view only shows the current one. The tag never
     /// takes input (no raycast targets), flutters in like a paper card (a plain cross-fade with reduced motion) and
     /// drops away when the tip times out or its move is performed. Game time: frozen while paused.
@@ -30,6 +33,7 @@ namespace SpookyStreet.UI
         private CanvasGroup _group;
         private LocalizedText _text;
         private Image _icon;
+        private ControlGlyphView _glyph;
         private Vector2 _jumpSlot;
         private Vector2 _useSlot;
         private Vector2 _slot;
@@ -47,6 +51,12 @@ namespace SpookyStreet.UI
         /// <summary>The tip currently on the tag, including while it fades out.</summary>
         public MoveTip Shown => _shown;
 
+        /// <summary>The control-scheme glyph on the tag (hidden on touch, where the disc icon shows).</summary>
+        public ControlGlyphView Glyph => _glyph;
+
+        /// <summary>The touch icon on the tag (hidden while a gamepad or keyboard glyph shows).</summary>
+        public Image Icon => _icon;
+
         public static string KeyFor(MoveTip tip)
         {
             switch (tip)
@@ -55,6 +65,8 @@ namespace SpookyStreet.UI
                 case MoveTip.ChainJump: return LocalizationKeys.TipChainJump;
                 case MoveTip.Glide: return LocalizationKeys.TipGlide;
                 case MoveTip.Dive: return LocalizationKeys.TipDive;
+                case MoveTip.WallJump: return LocalizationKeys.TipWallJump;
+                case MoveTip.LedgeClimb: return LocalizationKeys.TipLedgeClimb;
                 default: return null;
             }
         }
@@ -79,6 +91,9 @@ namespace SpookyStreet.UI
             // tag's highlight, so it reads as "new" (ui-language: candy tags mark new things).
             var icon = UiFactory.Sprite(tag.transform, "Icon", UiFactory.Baked(UiSpriteCatalog.IconJump),
                 UiFactory.Ink, new Vector2(0f, 0.5f), new Vector2(46f, 0f), new Vector2(56f, 56f));
+            // D25: on a gamepad or keyboard the tag shows that scheme's glyph (lit face button, key cap) in the icon's
+            // place; on touch the on-screen disc's own ink icon stays.
+            var glyph = ControlGlyphView.Create(tag.transform, "Glyph", new Vector2(0f, 0.5f), new Vector2(46f, 0f), 56f);
             var strip = UiFactory.Sprite(tag.transform, "CandyStitch", null,
                 Palette.CandyCornYellow, new Vector2(0.5f, 0f), new Vector2(0f, 12f), new Vector2(440f, 6f));
             strip.raycastTarget = false;
@@ -97,6 +112,7 @@ namespace SpookyStreet.UI
             view._group = group;
             view._text = tag.GetComponentInChildren<LocalizedText>(true);
             view._icon = icon;
+            view._glyph = glyph;
             view._jumpSlot = jumpSlot;
             view._restAngle = leftHanded ? -RestAngle : RestAngle;
             view._useSlot = useSlot;
@@ -106,6 +122,7 @@ namespace SpookyStreet.UI
                 pip.Stepped += view.OnMotorStep;
             }
 
+            ControlSchemeTracker.Changed += view.OnSchemeChanged;
             tag.gameObject.SetActive(false);
             return view;
         }
@@ -183,13 +200,35 @@ namespace SpookyStreet.UI
         {
             _shown = tip;
             _showTime = 0f;
-            _slot = tip == MoveTip.Dive ? _useSlot : _jumpSlot;
+            _slot = MoveTipIds.Prompt(tip) == ControlPrompt.Use ? _useSlot : _jumpSlot;
             _tag.anchoredPosition = _slot;
             _tag.localRotation = Quaternion.Euler(0f, 0f, _restAngle);
             _text.SetKey(KeyFor(tip));
             _icon.sprite = UiFactory.Baked(tip == MoveTip.Dive ? UiSpriteCatalog.IconRoll : UiSpriteCatalog.IconJump);
+            ShowGlyph(tip);
             _group.alpha = 0f;
             _tag.gameObject.SetActive(true);
+        }
+
+        /// <summary>The tip's control in the current scheme (D25): the touch icon, or the gamepad or keyboard glyph.</summary>
+        private void ShowGlyph(MoveTip tip)
+        {
+            ControlScheme scheme = ControlSchemeTracker.Current;
+            ControlGlyph glyph = ControlGlyphs.For(scheme, MoveTipIds.Prompt(tip));
+            if (_glyph != null)
+            {
+                _glyph.Show(glyph);
+            }
+
+            _icon.gameObject.SetActive(glyph.IsTouch || _glyph == null);
+        }
+
+        private void OnSchemeChanged(ControlScheme scheme)
+        {
+            if (_shown != MoveTip.None)
+            {
+                ShowGlyph(_shown);
+            }
         }
 
         private void OnMotorStep(MotorStep step)
@@ -206,6 +245,8 @@ namespace SpookyStreet.UI
             {
                 _pip.Stepped -= OnMotorStep;
             }
+
+            ControlSchemeTracker.Changed -= OnSchemeChanged;
         }
 
         private static float EaseOutBack(float t)
