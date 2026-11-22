@@ -61,12 +61,42 @@ namespace SpookyStreet.World
         private float[] _batSize;
         private float _moonRadius;
         private Material _domeMaterial;
+        private Renderer _dome;
+        private bool _hidden;
         private Material _streakMaterial;
         private Mesh _streakMesh;
         private Vector3[] _streakVertices;
         private GameObject _streak;
         private int _seenStars;
         private float _starAzimuth;
+
+        /// <summary>
+        /// True while the sky is not drawn: the camera is in the closed owl house interior (D24.1), part of which lies
+        /// beyond the dome's opaque, depth-writing sphere, so a lens indoors would otherwise see the dome cut through
+        /// the rooms as a flat purple wall (TestFlight 23). Nothing of the sky can be seen from inside the shell.
+        /// </summary>
+        public bool Hidden
+        {
+            get => _hidden;
+            set
+            {
+                if (_hidden == value)
+                {
+                    return;
+                }
+
+                _hidden = value;
+                if (_dome != null)
+                {
+                    _dome.forceRenderingOff = value;
+                }
+
+                foreach (var piece in GetComponentsInChildren<Renderer>(true))
+                {
+                    piece.forceRenderingOff = value;
+                }
+            }
+        }
 
         /// <summary>True when the sky shaders are in use; false on the URP Unlit fallback.</summary>
         public bool Crafted { get; private set; }
@@ -233,6 +263,7 @@ namespace SpookyStreet.World
 
         private void Construct(MaterialLibrary materials, Renderer dome)
         {
+            _dome = dome;
             Schedule = new SkySchedule(Seed);
             Vector3 centre = GreyboxBuilder.SkyDomeCentre;
             _moonRadius = Atmosphere.MoonDiameter * 0.5f;

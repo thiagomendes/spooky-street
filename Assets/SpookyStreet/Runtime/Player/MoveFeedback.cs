@@ -287,6 +287,24 @@ namespace SpookyStreet.Player
             }
         }
 
+        /// <summary>
+        /// A small paper dust puff at <paramref name="feet"/> (the interior safety net sets Pip down with one where
+        /// Pip was and one where Pip lands). Skipped with reduced motion, like every burst.
+        /// </summary>
+        public void Puff(Vector3 feet)
+        {
+            if (AmbientMotion.ReducedMotion)
+            {
+                return;
+            }
+
+            Dust(feet + Vector3.up * 0.05f);
+            PuffsPlayed++;
+        }
+
+        /// <summary>Safety-net puffs played since creation (tests).</summary>
+        public int PuffsPlayed { get; private set; }
+
         private void Record(MoveBursts burst)
         {
             BurstsPlayed++;

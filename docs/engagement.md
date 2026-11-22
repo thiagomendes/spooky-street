@@ -1,4 +1,4 @@
-# Engagement: why children come back (proposal, pending owner approval)
+# Engagement: why children come back (approved 2026-11-22, D27)
 
 Owner (2026-11-22, translated): "We need to think about strategies to keep players engaged in the game." Spooky
 Street is a **premium, paid-once children's game** aimed at the Apple Kids category. Engagement here means a child
@@ -20,7 +20,9 @@ Street is a **premium, paid-once children's game** aimed at the Apple Kids categ
 5. **The notebook as a scrapbook.** Solved questions keep their comics; each case closes with a case page (the
    porch shot, the child's stickers, the friends made). The notebook becomes the trophy shelf of the season.
 6. **Seeds and gentle cliffhangers.** Each final card shows the next seed (a puppet in Kit's photo lights up, a sketch
-   page hints at a place). Curiosity, not a countdown.
+   page hints at a place), often as a short seed cutscene (`narrative-bible.md` §5). Curiosity, not a countdown.
+   The season finale resolves its spine fully and then leaves a few open threads (`world-and-cases.md` §4.1): the
+   child ends happy and wanting more, and nothing in the game ever sells that "more".
 7. **Revisits with new moves (metroidvania-lite).** Ledge grab and wall jump, taught in later places, open secrets in
    old ones: a rooftop paper bat, a Players' crest, a hidden sketch. Never a required clue of an old case.
 8. **Collectibles with meaning.** The 30 paper bats per place (spec §4) teach routes and vantage points. Every 10
@@ -79,14 +81,14 @@ Report sample sizes and limits; no telemetry substitutes for watching.
 | 9 | Seeds on the final card (troupe photo, crest) | S | arc | with 1 (art) and case 02 |
 | 10 | Dialogue portraits that act | M | character | polish, S004 |
 
-## 5. Open questions for the owner
+## 5. Owner answers (decided 2026-11-22, D27: the docs' recommendations; questions kept for the record)
 
 1. **Costume pieces for Pip as bat rewards?** (a) Yes, cosmetic only, visible in play and on the title. (b) Sketch
-   pages only. **Recommend (a):** children love dressing Pip, and it costs one modular costume slot per reward.
-2. **Parent progress page.** (a) Build it with settings (S004). (b) Skip for now. **Recommend (a):** it is small and
+   pages only. **Decided (a):** children love dressing Pip, and it costs one modular costume slot per reward.
+2. **Parent progress page.** (a) Build it with settings (S004). (b) Skip for now. **Decided (a):** it is small and
    it is what makes a paid kids' game trusted.
 3. **Future paid content.** (a) Each new season is a separate paid-once update or app, bought by a parent outside
-   play. (b) One price includes all future cases. **Recommend** deciding after case 01's playtest; either way no
-   purchase ever appears inside the child's flow.
-4. **Chapter stops.** (a) Soft stops with a warm goodbye card and autosave. (b) No explicit stops. **Recommend (a):**
+   play. (b) One price includes all future cases. **Decided as recommended: defer** until after case 01's
+   playtest; either way no purchase ever appears inside the child's flow.
+4. **Chapter stops.** (a) Soft stops with a warm goodbye card and autosave. (b) No explicit stops. **Decided (a):**
    it supports bedtime and short sessions without any timer.
