@@ -104,8 +104,9 @@ namespace SpookyStreet.Tests.Visual
             yield return Wait(0.4f);
             var pipAt = new Vector3(-2.35f, 2.55f, 13.85f);
             game.Pip.Teleport(pipAt);
+            // Look a little right of June, so she sits left of Pip in the shoulder view.
             var june = CaseStage.JuneAttic.Position;
-            Face(pipAt, new Vector3(june.X, june.Y, june.Z));
+            Face(pipAt, new Vector3(june.X + 1.1f, june.Y, june.Z - 0.45f));
             yield return Wait(2.2f);
             Assert.IsTrue(director.State.Has(CaseFact.EnteredByWindow), "19: entered by the window");
             Assert.IsTrue(director.House.View.ShowInterior, "19: the interior shows");
@@ -139,7 +140,7 @@ namespace SpookyStreet.Tests.Visual
             // 21: the finale from the arrival sightline: Kit at her booth, June beside her, the reopening lines.
             game.Pip.Teleport(new Vector3(0f, 0.7f, -13.4f));
             Face(new Vector3(0f, 0.7f, -13.4f), new Vector3(0f, 0.7f, 0f));
-            yield return Wait(1.3f);
+            yield return Wait(1.5f);
             Assert.IsTrue(director.State.Has(CaseFact.CaseClosed), "21: case closed");
             Assert.IsTrue(director.FinalePlaying, "21: the finale framing holds");
             yield return Shot("21_finale");

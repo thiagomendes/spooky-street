@@ -26,7 +26,8 @@ namespace SpookyStreet.Core.World
         /// <summary>Inside the house: foyer floor, stair, loft, rails, partition, furniture.</summary>
         Interior,
 
-        /// <summary>Already built elsewhere (the porch deck): listed so the route checks see it; not built here.</summary>
+        /// <summary>Built elsewhere (the porch deck; the awning from its CollisionRules recipe): listed so the route
+        /// checks see it; not built by the case.</summary>
         Reference,
     }
 
@@ -365,7 +366,7 @@ namespace SpookyStreet.Core.World
             new RoutePoint("yard", CrateX, 0f, CrateZ - 1.0f),
             new RoutePoint("crate", CrateX, CrateSize, CrateZ),
             new RoutePoint("awning low", AwningX, AwningLowY, AwningWallZ - AwningRun + 0.1f),
-            new RoutePoint("awning high", AwningX, 1.95f, AwningWallZ - 0.4f),
+            new RoutePoint("awning high", AwningX, 1.92f, AwningWallZ - 0.45f),
             new RoutePoint("shed roof", AwningX, TreehouseY, RoofMinZ + 0.4f),
         };
 
@@ -470,9 +471,10 @@ namespace SpookyStreet.Core.World
             }
 
             // ---- Skilled ascent: the awning slope and its wall slice (the crate fits its own bounds). ----
-            Walk(s, "Awning_Slope", SlabGroup.Route, AwningX, AwningLowY, AwningWallZ - AwningRun, AwningX, AwningHighY,
+            // Built from the Awning's CollisionRules recipe; listed here for the route checks.
+            Walk(s, "Awning_Slope", SlabGroup.Reference, AwningX, AwningLowY, AwningWallZ - AwningRun, AwningX, AwningHighY,
                 AwningWallZ - 0.06f, AwningWidth, 0.08f);
-            Wall(s, "Awning_Wall", SlabGroup.Route, AwningX - 1.3f, AwningWallTopY, AwningWallZ + 0.04f, AwningX + 1.3f,
+            Wall(s, "Awning_Wall", SlabGroup.Reference, AwningX - 1.3f, AwningWallTopY, AwningWallZ + 0.04f, AwningX + 1.3f,
                 AwningWallTopY, AwningWallZ + 0.04f, 0.16f, AwningWallTopY);
 
             // ---- Treehouse cabin walls on the platform (the deck itself belongs to the street set). ----

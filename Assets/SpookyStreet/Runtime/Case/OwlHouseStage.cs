@@ -128,7 +128,13 @@ namespace SpookyStreet.Case
                 }
 
                 ModelCount++;
-                if (placement.Collider == PlacementCollider.Bounds)
+                // The collision audit decides first (Crate, Awning); the rest keep their placement's kind or are
+                // carried by the slabs below.
+                if (CollisionRules.TryGet(placement.Model, out var recipe))
+                {
+                    ModelColliders.Apply(instance, recipe, placement.Yaw + yaw);
+                }
+                else if (placement.Collider == PlacementCollider.Bounds)
                 {
                     ModelKit.AddBoundsCollider(instance);
                 }

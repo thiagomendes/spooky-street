@@ -316,6 +316,9 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(director.State.Has(CaseFact.CaseClosed), "closure on the arrival porch");
             Assert.IsTrue(director.FinalePlaying, "the finale frames the booth from the arrival sightline");
             Assert.IsTrue(cast.Kit.gameObject.activeSelf, "Kit at her booth");
+            Assert.AreEqual("OpenBooth", cast.Kit.Avatar.OneShot, "Kit opens her booth");
+            Assert.IsFalse(director.Dialogue.IsOpen, "the reopening plays before the card");
+            yield return Wait(FinaleView.IntroSeconds + 0.3f);
             Assert.AreEqual(Speaker.June, director.Dialogue.CurrentLine.Speaker);
             Assert.AreEqual(Lines.JuneResolve, director.Dialogue.CurrentLine.Key);
             Assert.Less(Vector3.Distance(cast.June.transform.position, At(CaseStage.JunePorch.Position)), 0.2f);
@@ -391,7 +394,7 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Use(CaseStage.PointCrank, new Vector3(0.75f, CaseRouteLayout.FloorY, 14.2f));
             Assert.AreEqual(CaseOutcome.CrankGap, director.LastStep.Outcome);
             Assert.AreEqual(facts, director.State.Count, "no fact from the early crank");
-            Assert.AreEqual(Lines.CaptionCrankGap, director.Captions.CurrentKey);
+            CollectionAssert.Contains(director.LastStep.Lines, new ScriptLine(Speaker.Caption, Lines.CaptionCrankGap));
             Assert.IsFalse(director.Cutaway.Active, "no cutaway without the flag");
             yield return Wait(MechanismMotion.GapCycleSeconds + 0.1f);
             Assert.AreEqual(1, workshop.KnocksThisCycle, "a single tap");
@@ -419,6 +422,7 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Frames(3);
             Assert.IsTrue(director.State.Has(CaseFact.CaseClosed));
             Assert.IsFalse(director.State.Has(CaseFact.ExaminedCloth), "the cloth stays discoverable after closure");
+            yield return Wait(FinaleView.IntroSeconds + 0.3f);
             yield return SkipDialogue();
 
             // Back to the bench after the solve: optional evidence still works.
@@ -460,7 +464,9 @@ namespace SpookyStreet.Tests.PlayMode
             yield return ReloadAndContinue();
             Assert.IsTrue(Director.State.Has(CaseFact.EnteredByWindow));
             Assert.IsTrue(Director.State.Has(CaseFact.AtticFirst));
-            AssertPipAtAnchor(CaseAnchors.AtticSill);
+            // The last safe ground was the bridge end or, once Pip landed inside, the attic floor.
+            Assert.That(Director.AnchorId, Is.EqualTo(CaseAnchors.AtticSill).Or.EqualTo(CaseAnchors.Attic));
+            AssertPipAtAnchor(Director.AnchorId);
             Assert.AreEqual(0f, Director.House.DoorAngle, 0.1f, "door still latched");
             Assert.AreEqual(JunePlacement.Attic, Director.Cast.JuneMark, "June still in the attic");
             Assert.IsFalse(Director.Workshop.ArmLinked);

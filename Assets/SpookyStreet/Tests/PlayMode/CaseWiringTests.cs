@@ -407,6 +407,7 @@ namespace SpookyStreet.Tests.PlayMode
             }
 
             Assert.IsTrue(director.State.Has(CaseFact.CaseClosed));
+            yield return Wait(FinaleView.IntroSeconds + 0.3f); // the reopening plays before its lines
             director.Dialogue.Skip();
             yield return Frames(2);
 

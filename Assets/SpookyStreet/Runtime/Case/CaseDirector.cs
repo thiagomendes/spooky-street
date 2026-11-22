@@ -59,6 +59,9 @@ namespace SpookyStreet.Case
         private bool _finaleLines;
         private float _finaleHold = -1f;
         private float _nookPeek = -1f;
+        private float _finaleIntro = -1f;
+        private IReadOnlyList<ScriptLine> _finaleIntroLines;
+        private readonly List<Renderer> _hiddenPip = new List<Renderer>();
         private int _baseObstacles;
         private int _indoorObstacles;
         private CaseWorldView _view = CaseWorldView.From(CaseState.Empty);
@@ -316,6 +319,8 @@ namespace SpookyStreet.Case
             _juneWalkPending = false;
             _finaleLines = false;
             _finaleHold = -1f;
+            _finaleIntro = -1f;
+            _finaleIntroLines = null;
             _nookPeek = -1f;
             Cutaway.End(false);
             Finale.End();
@@ -424,6 +429,8 @@ namespace SpookyStreet.Case
             Finale.End();
             _finaleLines = false;
             _finaleHold = -1f;
+            _finaleIntro = -1f;
+            _finaleIntroLines = null;
         }
 
         /// <summary>The interior half each frame: cut-away, door swing, camera indoors, the nook peek and the finale beat.</summary>
@@ -444,6 +451,26 @@ namespace SpookyStreet.Case
                     if (_nookPeek < 0f && !Cutaway.Active)
                     {
                         House.NookWallHidden = false;
+                    }
+                }
+            }
+
+            if (_finaleIntro >= 0f && dt > 0f)
+            {
+                _finaleIntro -= dt;
+                if (_finaleIntro < 0f)
+                {
+                    var lines = _finaleIntroLines;
+                    _finaleIntroLines = null;
+                    if (lines != null && lines.Count > 0)
+                    {
+                        PlayLines(CaseAction.Of(CaseActionKind.ArriveAtPorch), lines);
+                    }
+                    else
+                    {
+                        SetModal(false);
+                        _finaleLines = false;
+                        _finaleHold = FinaleView.HoldAfterLines;
                     }
                 }
             }
@@ -477,7 +504,15 @@ namespace SpookyStreet.Case
             }
 
             Stage(action, step);
-            PlayLines(action, step.Lines);
+            if (step.ClosedCase && _finaleIntro >= 0f)
+            {
+                // The reopening first plays without the card; its lines follow (TickStage).
+                _finaleIntroLines = step.Lines;
+            }
+            else
+            {
+                PlayLines(action, step.Lines);
+            }
             Stepped?.Invoke(step);
             return step;
         }
@@ -604,7 +639,7 @@ namespace SpookyStreet.Case
 
             Vector3 mechanism = House.Mechanism != null ? ModelKit.RendererBounds(House.Mechanism.gameObject).center
                 : new Vector3(CaseRouteLayout.MechanismX + 0.6f, 1.1f, CaseRouteLayout.MechanismZ);
-            Vector3 eye = new Vector3(CaseRouteLayout.NookX - 1.35f, 1.55f, CaseRouteLayout.MechanismZ - 1.15f);
+            Vector3 eye = new Vector3(CaseRouteLayout.NookX - 1.3f, 1.55f, CaseRouteLayout.MechanismZ + 1.15f);
             Vector3 owl = Workshop.Owl != null ? ModelKit.RendererBounds(Workshop.Owl.gameObject).center
                 : new Vector3(0f, 7f, CaseRouteLayout.FrontZ);
             Vector3 owlEye = owl + new Vector3(1.8f, -0.6f, -4.2f);
@@ -613,11 +648,40 @@ namespace SpookyStreet.Case
             _nookPeek = -1f;
             Bench.End();
             SetModal(true);
-            Cutaway.Play(eye, mechanism + new Vector3(0f, -0.1f, 0f), owlEye, owl, OnCutawayEnded);
+            SetPipHidden(true);
+            Cutaway.Play(eye, mechanism + new Vector3(0f, -0.2f, 0f), owlEye, owl, OnCutawayEnded);
+        }
+
+        private void SetPipHidden(bool hidden)
+        {
+            if (hidden)
+            {
+                foreach (var renderer in _pip.GetComponentsInChildren<Renderer>())
+                {
+                    if (renderer.enabled)
+                    {
+                        renderer.enabled = false;
+                        _hiddenPip.Add(renderer);
+                    }
+                }
+
+                return;
+            }
+
+            foreach (var renderer in _hiddenPip)
+            {
+                if (renderer != null)
+                {
+                    renderer.enabled = true;
+                }
+            }
+
+            _hiddenPip.Clear();
         }
 
         private void OnCutawayEnded()
         {
+            SetPipHidden(false);
             if (House != null)
             {
                 House.NookWallHidden = false;
@@ -637,6 +701,8 @@ namespace SpookyStreet.Case
             Finale.Begin();
             _finaleLines = true;
             _finaleHold = -1f;
+            _finaleIntro = FinaleView.IntroSeconds;
+            SetModal(true);
         }
 
         private void PlayLines(CaseAction action, IReadOnlyList<ScriptLine> lines)
@@ -818,6 +884,7 @@ namespace SpookyStreet.Case
             Notebook.Cancel();
             Notice.Hide();
             Cutaway.End(false);
+            SetPipHidden(false);
             if (House != null)
             {
                 House.ForceBodyVisible = false;

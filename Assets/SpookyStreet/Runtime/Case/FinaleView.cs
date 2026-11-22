@@ -12,7 +12,13 @@ namespace SpookyStreet.Case
     /// </summary>
     public sealed class FinaleView : MonoBehaviour
     {
-        public const float FieldOfView = 24f;
+        public const float FieldOfView = 26f;
+
+        /// <summary>
+        /// The reopening plays without the speech card first (Kit opens her booth, June waves, the owl bows), so the
+        /// card never hides the porch the shot is about; then the lines play over it.
+        /// </summary>
+        public const float IntroSeconds = 3f;
 
         /// <summary>The shot holds this long after the last line before the notebook opens.</summary>
         public const float HoldAfterLines = 1.6f;

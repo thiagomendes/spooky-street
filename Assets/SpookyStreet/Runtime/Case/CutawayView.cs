@@ -67,7 +67,12 @@ namespace SpookyStreet.Case
             _vcam.Lens = lens;
             _brain = output != null ? output.GetComponent<CinemachineBrain>() : null;
 
-            _insetTexture = new RenderTexture(512, 320, 16, RenderTextureFormat.ARGB32) { name = "OwlInset" };
+            // No render target without a graphics device (batchmode -nographics PlayMode runs).
+            if (SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null)
+            {
+                _insetTexture = new RenderTexture(512, 320, 16, RenderTextureFormat.ARGB32) { name = "OwlInset" };
+            }
+
             var insetObject = new GameObject("OwlInsetCamera");
             insetObject.transform.SetParent(transform, false);
             _inset = insetObject.AddComponent<Camera>();
@@ -174,6 +179,11 @@ namespace SpookyStreet.Case
         /// <summary>Renders the owl inset now (each frame while active; tests call it before a capture).</summary>
         public void RenderInset()
         {
+            if (_insetTexture == null)
+            {
+                return;
+            }
+
             var request = new RenderPipeline.StandardRequest { destination = _insetTexture };
             if (RenderPipeline.SupportsRenderRequest(_inset, request))
             {

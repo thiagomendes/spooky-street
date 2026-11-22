@@ -51,7 +51,7 @@ namespace SpookyStreet.Core.Case
 
         /// <summary>The finale restages the arrival sightline: arrival porch eye height, looking at the booth (spec §4).</summary>
         public static readonly StagePoint FinaleEye = new StagePoint(0.35f, 1.75f, -13.6f);
-        public static readonly StagePoint FinaleLookAt = new StagePoint(0f, 2.4f, CaseRouteLayout.FrontZ - 0.6f);
+        public static readonly StagePoint FinaleLookAt = new StagePoint(0f, 4.0f, CaseRouteLayout.FrontZ - 0.6f);
 
         /// <summary>
         /// June's walk from her stool down the stair to her foyer mark (presentation only; only the mark persists).
