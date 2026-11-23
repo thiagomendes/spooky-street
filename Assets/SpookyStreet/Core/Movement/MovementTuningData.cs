@@ -141,6 +141,97 @@ namespace SpookyStreet.Core.Movement
         /// <summary>How fast the stick can bend a dive's direction (degrees per second).</summary>
         public float DiveTurnRateDegrees = 90f;
 
+        // --- Wall slide and wall jump (S003; only on surfaces marked WallJump) -------------------
+
+        /// <summary>Pip's capsule radius (PipMovementTuning.radius): contact distances are measured from her surface.</summary>
+        public float BodyRadius = 0.28f;
+
+        /// <summary>A marked wall counts as touched while its face is within the radius plus this (metres).</summary>
+        public float WallContactSlack = 0.12f;
+
+        /// <summary>A slide needs at least this much air under Pip's feet, so a hop into a wall never sticks to it.</summary>
+        public float WallSlideMinFeetHeight = 0.35f;
+
+        /// <summary>The stick or Pip's motion must point this much into the wall (cosine × speed fraction) to start a slide.</summary>
+        public float WallSlideIntoMin = 0.3f;
+
+        /// <summary>First seconds of a slide, when Pip grips and slows right down (the slide reads as a catch).</summary>
+        public float WallSlideGripTime = 0.2f;
+
+        /// <summary>Fall speed during the grip (m/s).</summary>
+        public float WallSlideGripSpeed = 0.6f;
+
+        /// <summary>Fall speed cap of the slide (m/s): the WallSlide clip is authored at about 1.5 m/s.</summary>
+        public float WallSlideSpeed = 1.5f;
+
+        /// <summary>Upward deceleration that brakes a faster fall into the slide (m/s²).</summary>
+        public float WallSlideBrakeDeceleration = 30f;
+
+        /// <summary>Seconds the stick must point away from the wall before Pip lets go (a brush of the thumb does not).</summary>
+        public float WallSlideReleaseTime = 0.25f;
+
+        /// <summary>A wall jump rises this high above the kick under plain gravity (metres).</summary>
+        public float WallJumpHeight = 1.2f;
+
+        /// <summary>Horizontal speed away from the wall at the kick (m/s; a little above the run).</summary>
+        public float WallJumpAwaySpeed = 4.5f;
+
+        /// <summary>Seconds after leaving a wall (or touching it without sliding) in which Jump still kicks off it.</summary>
+        public float WallJumpCoyoteTime = 0.2f;
+
+        /// <summary>Seconds after a kick with reduced air control, so a stick still held at the wall does not cancel it.</summary>
+        public float WallJumpControlLockTime = 0.25f;
+
+        /// <summary>Fraction of ground acceleration during the control lock.</summary>
+        public float WallJumpLockedAirControl = 0.15f;
+
+        // --- Ledge grab and climb (S003; only on surfaces marked Ledge) ---------------------------
+
+        /// <summary>Height of the hands above the feet while hanging: the LedgeHang clip's left hand grips at 1.27 m.</summary>
+        public float LedgeHangHandHeight = 1.27f;
+
+        /// <summary>Pip's centre hangs this far out from the face (her radius, the skin and a little air).</summary>
+        public float LedgeHangWallOffset = 0.34f;
+
+        /// <summary>The catch window reaches this far below the hanging hand height (Pip rose a little short).</summary>
+        public float LedgeGrabReachBelow = 0.35f;
+
+        /// <summary>The catch window reaches this far above the hanging hand height (Pip is already falling past).</summary>
+        public float LedgeGrabReachAbove = 0.3f;
+
+        /// <summary>The edge may be this far beyond Pip's surface and still be caught (metres).</summary>
+        public float LedgeGrabReachForward = 0.35f;
+
+        /// <summary>No catch while rising faster than this (m/s): a jump past a ledge reaches its top first.</summary>
+        public float LedgeGrabMaxRiseSpeed = 1.5f;
+
+        /// <summary>Hanging needs at least this much air under the feet (otherwise Pip would stand, not hang).</summary>
+        public float LedgeMinHangClearance = 0.15f;
+
+        /// <summary>Seconds of the generous snap onto the hang spot.</summary>
+        public float LedgeSnapTime = 0.1f;
+
+        /// <summary>Seconds of the climb up from the hang onto the top.</summary>
+        public float LedgeClimbTime = 0.4f;
+
+        /// <summary>Share of the climb spent rising; the rest steps over the edge.</summary>
+        public float LedgeClimbRiseFraction = 0.6f;
+
+        /// <summary>The climb ends with Pip's centre this far in from the edge (metres).</summary>
+        public float LedgeClimbInset = 0.4f;
+
+        /// <summary>The climb lifts the feet this much above the top before stepping over it (metres).</summary>
+        public float LedgeClimbLift = 0.06f;
+
+        /// <summary>Seconds the stick must be pulled down or away before Pip drops.</summary>
+        public float LedgeDropHoldTime = 0.1f;
+
+        /// <summary>Speed away from the wall when Pip lets go (m/s), so she clears the ledge as she falls.</summary>
+        public float LedgeDropPushSpeed = 1f;
+
+        /// <summary>Seconds after a drop before any ledge can be caught again.</summary>
+        public float LedgeRegrabDelay = 0.4f;
+
         public float AccelerationRate => MaxSpeed / Math.Max(AccelerationTime, 0.0001f);
 
         public float DecelerationRate => MaxSpeed / Math.Max(DecelerationTime, 0.0001f);

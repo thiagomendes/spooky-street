@@ -36,6 +36,18 @@ namespace SpookyStreet.Core.Movement
         public float FacingX;
 
         public float FacingZ;
+
+        /// <summary>World height of Pip's feet (the same-wall rule compares it with the last kick).</summary>
+        public float FeetY;
+
+        /// <summary>Raw stick forward/back in screen space (+1 up, −1 down): pulling down drops from a ledge.</summary>
+        public float StickY;
+
+        /// <summary>The nearest marked wall beside Pip (S003); Hit false when none.</summary>
+        public WallProbe Wall;
+
+        /// <summary>The nearest marked ledge in front of Pip (S003); Hit false when none.</summary>
+        public LedgeProbe Ledge;
     }
 
     /// <summary>What a press of Use does this frame (interaction first, then the moveset).</summary>
@@ -117,14 +129,84 @@ namespace SpookyStreet.Core.Movement
         /// <summary>Horizontal speed held during the current roll or dive (m/s).</summary>
         public float MoveSpeed;
 
+        // --- Wall slide and wall jump (S003) ---------------------------------------------------------
+
+        /// <summary>Sliding down a marked wall: the fall is capped and Pip faces the wall.</summary>
+        public bool WallSliding;
+
+        /// <summary>Outward normal of the wall of the slide, or of the last wall touched (coyote kick).</summary>
+        public float WallNormalX;
+
+        public float WallNormalZ;
+
+        /// <summary>Seconds into the current slide.</summary>
+        public float WallTime;
+
+        /// <summary>Seconds since Pip last touched a usable marked wall (infinite before the first touch).</summary>
+        public float TimeSinceWall;
+
+        /// <summary>Seconds the stick has pointed away from the wall during the slide.</summary>
+        public float WallAwayTime;
+
+        /// <summary>Seconds of reduced air control left after a kick.</summary>
+        public float WallJumpLockLeft;
+
+        /// <summary>Kicked off a wall since the last landing; the normal and feet height of that kick.</summary>
+        public bool KickedWall;
+
+        public float KickNormalX;
+        public float KickNormalZ;
+        public float KickFeetY;
+
+        // --- Ledge grab, hang and climb (S003) ------------------------------------------------------
+
+        /// <summary>Hanging from a marked ledge (no gravity; Jump climbs, down or away drops).</summary>
+        public bool Hanging;
+
+        /// <summary>Seconds since the catch.</summary>
+        public float HangTime;
+
+        /// <summary>Outward normal of the ledge's face (Pip faces the opposite way).</summary>
+        public float HangNormalX;
+
+        public float HangNormalZ;
+
+        /// <summary>Displacement of the snap onto the hang spot still to apply, and its seconds left.</summary>
+        public float SnapX;
+
+        public float SnapY;
+        public float SnapZ;
+        public float SnapTimeLeft;
+
+        /// <summary>Climbing up from the hang onto the top.</summary>
+        public bool Climbing;
+
+        /// <summary>Seconds into the climb.</summary>
+        public float ClimbElapsed;
+
+        /// <summary>Seconds the stick has been pulled down or away while hanging.</summary>
+        public float DropHoldTime;
+
+        /// <summary>Seconds before a ledge can be caught again (after a drop).</summary>
+        public float LedgeRegrabLeft;
+
         public static MotorState Initial => new MotorState
         {
             Grounded = true,
             TimeSinceGrounded = 0f,
             TimeSinceJumpPressed = float.PositiveInfinity,
             TimeSinceLanded = float.PositiveInfinity,
+            TimeSinceWall = float.PositiveInfinity,
             MoveDirZ = 1f,
         };
+
+        /// <summary>Pip is held by a wall or a ledge and should face it (toward −normal).</summary>
+        public bool FacingWall => WallSliding || Hanging || Climbing;
+
+        /// <summary>The outward normal of the surface Pip faces while <see cref="FacingWall"/>.</summary>
+        public float FacedNormalX => WallSliding ? WallNormalX : HangNormalX;
+
+        public float FacedNormalZ => WallSliding ? WallNormalZ : HangNormalZ;
 
         public float HorizontalSpeed => (float)Math.Sqrt(VelocityX * VelocityX + VelocityZ * VelocityZ);
 
@@ -139,9 +221,11 @@ namespace SpookyStreet.Core.Movement
         /// <summary>The hold boost is driving Pip up right now (high jump thrust).</summary>
         public bool Boosting => InJump && !JumpReleased && !Diving && BoostTimeLeft > 0f && BoostDelayLeft <= 0f;
 
-        /// <summary>Use would dive now (airborne past coyote time, no dive yet this airtime, not rolling).</summary>
+        /// <summary>Use would dive now (airborne past coyote time, no dive yet this airtime, not rolling, not held by a
+        /// wall or a ledge).</summary>
         public bool CanDive(MovementTuningData tuning) =>
-            !Grounded && TimeSinceGrounded > tuning.CoyoteTime && !Diving && !DiveUsed && !Rolling;
+            !Grounded && TimeSinceGrounded > tuning.CoyoteTime && !Diving && !DiveUsed && !Rolling && !WallSliding &&
+            !Hanging && !Climbing;
     }
 
     /// <summary>Displacement for this frame, to be passed to the character controller, plus what happened.</summary>
@@ -172,6 +256,27 @@ namespace SpookyStreet.Core.Movement
 
         /// <summary>Use went to the contextual interaction this frame (the motor did nothing with it).</summary>
         public bool Interacted;
+
+        /// <summary>A wall slide began this frame (S003).</summary>
+        public bool WallSlideStarted;
+
+        /// <summary>The wall slide ended this frame (landing, the wall ended, a kick, or the stick pulled away).</summary>
+        public bool WallSlideEnded;
+
+        /// <summary>Pip kicked off a wall this frame.</summary>
+        public bool WallJumped;
+
+        /// <summary>Pip caught a ledge this frame.</summary>
+        public bool LedgeGrabbed;
+
+        /// <summary>Pip let go of a ledge this frame (down or away).</summary>
+        public bool LedgeDropped;
+
+        /// <summary>The climb up from a hang began this frame.</summary>
+        public bool ClimbStarted;
+
+        /// <summary>The climb finished this frame: Pip stands on the top.</summary>
+        public bool ClimbEnded;
     }
 
     /// <summary>
@@ -179,9 +284,10 @@ namespace SpookyStreet.Core.Movement
     /// constant acceleration within a frame, so the same input produces the same trajectory at
     /// 30 and 60 fps (spec §5 "consistent time semantics").
     /// Moveset (spec §5 v1.2), all on Jump and Use: variable jump height, chain jump, bat-cape glide, ground
-    /// roll and air dive. Wall slide/jump and ledge grab need climbable geometry and are not here yet: they
-    /// would add a state flag beside <see cref="MotorState.Gliding"/>, a probe result in
-    /// <see cref="MotorInput"/> and their own branch in the vertical integration, like the glide.
+    /// roll and air dive. S003 adds the wall slide and wall jump (<see cref="MotorState.WallSliding"/>, a capped fall
+    /// in the vertical integration like the glide, and a kick away from the wall) and the ledge grab (hang, climb,
+    /// drop), driven by the probe results in <see cref="MotorInput.Wall"/> and <see cref="MotorInput.Ledge"/>. Only
+    /// marked surfaces count; the rules are in <see cref="ClimbRules"/>.
     /// </summary>
     public static class MovementModel
     {
@@ -209,7 +315,8 @@ namespace SpookyStreet.Core.Movement
                 return !state.Rolling && state.RollCooldownLeft <= 0f && fastEnough ? UseAction.Roll : UseAction.None;
             }
 
-            return !state.Diving && !state.DiveUsed && !state.Rolling ? UseAction.Dive : UseAction.None;
+            bool held = state.WallSliding || state.Hanging || state.Climbing;
+            return !state.Diving && !state.DiveUsed && !state.Rolling && !held ? UseAction.Dive : UseAction.None;
         }
 
         public static MotorStep Step(ref MotorState state, MotorInput input, bool groundedAtFrameStart, float deltaTime,
@@ -226,6 +333,14 @@ namespace SpookyStreet.Core.Movement
                 return step;
             }
 
+            state.LedgeRegrabLeft = Math.Max(0f, state.LedgeRegrabLeft - deltaTime);
+            if (state.Hanging || state.Climbing)
+            {
+                // Held by a ledge: no gravity, no moveset; Jump climbs, down or away drops (S003).
+                StepHold(ref state, ref step, input, deltaTime, tuning);
+                return step;
+            }
+
             // --- Grounding, landing, coyote and buffer timers ------------------------------------
             bool wasGrounded = state.Grounded;
             if (groundedAtFrameStart && state.VelocityY <= 0f)
@@ -234,6 +349,15 @@ namespace SpookyStreet.Core.Movement
                 state.TimeSinceGrounded = 0f;
                 state.InJump = false;
                 state.DiveUsed = false;
+                state.KickedWall = false;
+                state.WallJumpLockLeft = 0f;
+                state.TimeSinceWall = float.PositiveInfinity;
+                if (state.WallSliding)
+                {
+                    state.WallSliding = false;
+                    step.WallSlideEnded = true;
+                }
+
                 if (!wasGrounded)
                 {
                     step.Landed = true;
@@ -318,6 +442,28 @@ namespace SpookyStreet.Core.Movement
                 step.ChainStage = stage;
             }
 
+            // --- Wall contact and wall jump (S003: only marked walls) --------------------------------
+            state.WallJumpLockLeft = Math.Max(0f, state.WallJumpLockLeft - deltaTime);
+            bool wallUsable = !state.Grounded && !step.Jumped && ClimbRules.WallUsable(state, input, tuning);
+            if (wallUsable)
+            {
+                state.TimeSinceWall = 0f;
+                state.WallNormalX = input.Wall.NormalX;
+                state.WallNormalZ = input.Wall.NormalZ;
+            }
+            else if (!state.Grounded)
+            {
+                state.TimeSinceWall += deltaTime;
+            }
+
+            bool kickBuffered = state.TimeSinceJumpPressed <= tuning.JumpBufferTime;
+            bool nearWall = state.WallSliding || state.TimeSinceWall <= tuning.WallJumpCoyoteTime;
+            if (kickBuffered && nearWall && !state.Grounded && !step.Jumped && !state.Rolling &&
+                !ClimbRules.SameWallAboveKick(state, state.WallNormalX, state.WallNormalZ, input.FeetY))
+            {
+                KickOffWall(ref state, ref step, input, tuning);
+            }
+
             state.TimeSinceJumpPressed += deltaTime;
             if (!input.JumpHeld)
             {
@@ -328,6 +474,14 @@ namespace SpookyStreet.Core.Movement
             {
                 // A tap (or a hold let go) gets no more boost: the rest of the rise is plain gravity.
                 state.BoostTimeLeft = 0f;
+            }
+
+            // --- Ledge grab (S003: only marked ledges): Pip catches the edge and hangs --------------
+            if (!step.Jumped && !step.WallJumped && ClimbRules.CanGrabLedge(state, input, tuning))
+            {
+                GrabLedge(ref state, ref step, input, tuning);
+                ApplySnap(ref state, ref step, deltaTime);
+                return step;
             }
 
             // --- Use: interaction first, then roll (ground) or dive (air) ------------------------
@@ -361,6 +515,33 @@ namespace SpookyStreet.Core.Movement
                 }
             }
 
+            // --- Wall slide: falling against a marked wall caps the fall (S003) --------------------
+            if (state.WallSliding)
+            {
+                bool away = input.MoveX * state.WallNormalX + input.MoveZ * state.WallNormalZ >= 0.5f;
+                state.WallAwayTime = away ? state.WallAwayTime + deltaTime : 0f;
+                bool keep = wallUsable && !state.Diving && state.WallAwayTime < tuning.WallSlideReleaseTime;
+                if (keep)
+                {
+                    state.WallTime += deltaTime;
+                }
+                else
+                {
+                    state.WallSliding = false;
+                    step.WallSlideEnded = true;
+                }
+            }
+            else if (!step.Jumped && !step.WallJumped && ClimbRules.CanStartWallSlide(state, input, tuning))
+            {
+                state.WallSliding = true;
+                state.WallTime = 0f;
+                state.WallAwayTime = 0f;
+                state.Diving = false; // a dive into a climbable wall becomes a slide
+                state.BoostTimeLeft = 0f;
+                state.HangTimeLeft = 0f;
+                step.WallSlideStarted = true;
+            }
+
             // --- Bat-cape glide: Jump held while falling (after the apex and its hang) ---------------
             // A fresh press that will touch down within the jump buffer is a buffered (chain) jump, not a glide: on
             // touch every press is briefly a hold, and spreading the cape there would brake the fall past the buffer
@@ -372,7 +553,7 @@ namespace SpookyStreet.Core.Movement
                                TimeToGround(state.VelocityY, input.GroundDistance, tuning.Gravity) <= tuning.JumpBufferTime;
             bool pastApexHang = !state.InJump || state.FallTime >= tuning.ApexHangTime - 1e-5f;
             bool wantGlide = !state.Grounded && input.JumpHeld && state.VelocityY <= 0f && !state.Diving &&
-                             !state.Rolling && !landingJump && pastApexHang;
+                             !state.Rolling && !landingJump && pastApexHang && !state.WallSliding;
             if (wantGlide && !state.Gliding)
             {
                 state.Gliding = true;
@@ -397,6 +578,28 @@ namespace SpookyStreet.Core.Movement
             else
             {
                 Accelerate(ref state, input, deltaTime, tuning, ref step);
+            }
+
+            if (state.WallSliding)
+            {
+                // Pip holds on: the stick cannot pull her off the wall before the release time lets her go.
+                float outSpeed = state.VelocityX * state.WallNormalX + state.VelocityZ * state.WallNormalZ;
+                if (outSpeed > 0f)
+                {
+                    state.VelocityX -= state.WallNormalX * outSpeed;
+                    state.VelocityZ -= state.WallNormalZ * outSpeed;
+                }
+
+                float outStep = step.DeltaX * state.WallNormalX + step.DeltaZ * state.WallNormalZ;
+                if (outStep > 0f)
+                {
+                    step.DeltaX -= state.WallNormalX * outStep;
+                    step.DeltaZ -= state.WallNormalZ * outStep;
+                }
+
+                // A gentle push into the wall keeps the contact while the thumb rests (touch players let go).
+                step.DeltaX -= state.WallNormalX * WallHugSpeed * deltaTime;
+                step.DeltaZ -= state.WallNormalZ * WallHugSpeed * deltaTime;
             }
 
             // --- Vertical: exact piecewise constant-acceleration integration ----------------------
@@ -435,7 +638,8 @@ namespace SpookyStreet.Core.Movement
             float v = state.VelocityY;
             float time = deltaTime;
             float g = tuning.Gravity;
-            float terminal = state.Gliding ? -tuning.GlideFallSpeed : -tuning.MaxFallSpeed;
+            float terminal = state.WallSliding ? -ClimbRules.SlideSpeedLimit(state.WallTime, tuning)
+                : state.Gliding ? -tuning.GlideFallSpeed : -tuning.MaxFallSpeed;
             dy = 0f;
             for (int guard = 0; guard < 8 && time > 0f; guard++)
             {
@@ -493,12 +697,182 @@ namespace SpookyStreet.Core.Movement
                 }
 
                 float fall = time;
-                float fallRate = v >= terminal ? g : state.Gliding ? tuning.GlideBrakeDeceleration : g;
+                float fallRate = v >= terminal ? g
+                    : state.WallSliding ? tuning.WallSlideBrakeDeceleration
+                    : state.Gliding ? tuning.GlideBrakeDeceleration : g;
                 dy += Approach(ref v, terminal, fallRate, ref time, true);
                 state.FallTime += fall;
             }
 
             return v;
+        }
+
+        /// <summary>Speed (m/s) of the small push into the wall during a slide.</summary>
+        private const float WallHugSpeed = 0.5f;
+
+        private static void KickOffWall(ref MotorState state, ref MotorStep step, MotorInput input,
+            MovementTuningData tuning)
+        {
+            if (state.WallSliding)
+            {
+                state.WallSliding = false;
+                step.WallSlideEnded = true;
+            }
+
+            if (state.Gliding)
+            {
+                state.Gliding = false;
+                step.GlideEnded = true;
+            }
+
+            ClimbRules.KickVelocity(state.WallNormalX, state.WallNormalZ, tuning, out float vx, out float vy, out float vz);
+            state.VelocityX = vx;
+            state.VelocityY = vy;
+            state.VelocityZ = vz;
+            state.Diving = false;
+            state.InJump = true;
+            state.JumpReleased = false;
+            state.BoostDelayLeft = 0f;
+            state.BoostTimeLeft = 0f;
+            state.Boosted = false;
+            state.HangTimeLeft = 0f;
+            state.FallTime = 0f;
+            state.ChainStage = 0;
+            state.TimeSinceJumpPressed = float.PositiveInfinity;
+            state.TimeSinceWall = float.PositiveInfinity;
+            state.WallJumpLockLeft = tuning.WallJumpControlLockTime;
+            state.KickedWall = true;
+            state.KickNormalX = state.WallNormalX;
+            state.KickNormalZ = state.WallNormalZ;
+            state.KickFeetY = input.FeetY;
+            step.WallJumped = true;
+        }
+
+        private static void GrabLedge(ref MotorState state, ref MotorStep step, MotorInput input,
+            MovementTuningData tuning)
+        {
+            if (state.WallSliding)
+            {
+                state.WallSliding = false;
+                step.WallSlideEnded = true;
+            }
+
+            if (state.Gliding)
+            {
+                state.Gliding = false;
+                step.GlideEnded = true;
+            }
+
+            ClimbRules.HangSnap(input.Ledge, tuning, out state.SnapX, out state.SnapY, out state.SnapZ);
+            state.SnapTimeLeft = Math.Max(1e-3f, tuning.LedgeSnapTime);
+            state.Hanging = true;
+            state.HangTime = 0f;
+            state.HangNormalX = input.Ledge.NormalX;
+            state.HangNormalZ = input.Ledge.NormalZ;
+            state.DropHoldTime = 0f;
+            state.VelocityX = 0f;
+            state.VelocityY = 0f;
+            state.VelocityZ = 0f;
+            state.Diving = false;
+            state.InJump = false;
+            state.BoostTimeLeft = 0f;
+            state.Boosted = false;
+            state.HangTimeLeft = 0f;
+            state.TimeSinceJumpPressed = float.PositiveInfinity;
+            step.LedgeGrabbed = true;
+        }
+
+        /// <summary>Moves Pip along the rest of the snap onto the hang spot, spread evenly over the snap time.</summary>
+        private static void ApplySnap(ref MotorState state, ref MotorStep step, float deltaTime)
+        {
+            if (state.SnapTimeLeft <= 0f)
+            {
+                return;
+            }
+
+            float share = Math.Min(1f, deltaTime / state.SnapTimeLeft);
+            step.DeltaX += state.SnapX * share;
+            step.DeltaY += state.SnapY * share;
+            step.DeltaZ += state.SnapZ * share;
+            state.SnapX -= state.SnapX * share;
+            state.SnapY -= state.SnapY * share;
+            state.SnapZ -= state.SnapZ * share;
+            state.SnapTimeLeft = share >= 1f ? 0f : state.SnapTimeLeft - deltaTime;
+        }
+
+        /// <summary>Applies whatever is left of the snap at once (the hang ends before it finished).</summary>
+        private static void FinishSnap(ref MotorState state, ref MotorStep step)
+        {
+            step.DeltaX += state.SnapX;
+            step.DeltaY += state.SnapY;
+            step.DeltaZ += state.SnapZ;
+            state.SnapX = 0f;
+            state.SnapY = 0f;
+            state.SnapZ = 0f;
+            state.SnapTimeLeft = 0f;
+        }
+
+        /// <summary>One step while hanging or climbing: the snap, then Jump climbs, down or away drops.</summary>
+        private static void StepHold(ref MotorState state, ref MotorStep step, MotorInput input, float deltaTime,
+            MovementTuningData tuning)
+        {
+            state.VelocityX = 0f;
+            state.VelocityY = 0f;
+            state.VelocityZ = 0f;
+            state.Grounded = false;
+            state.TimeSinceGrounded += deltaTime;
+            if (!input.JumpHeld)
+            {
+                state.JumpReleased = true;
+            }
+
+            if (state.Climbing)
+            {
+                ClimbRules.ClimbProgress(state.ClimbElapsed, tuning, out float rise0, out float forward0);
+                state.ClimbElapsed += deltaTime;
+                ClimbRules.ClimbProgress(state.ClimbElapsed, tuning, out float rise1, out float forward1);
+                ClimbRules.ClimbTarget(state.HangNormalX, state.HangNormalZ, tuning, out float tx, out float ty,
+                    out float tz);
+                step.DeltaX = tx * (forward1 - forward0);
+                step.DeltaY = ty * (rise1 - rise0);
+                step.DeltaZ = tz * (forward1 - forward0);
+                if (state.ClimbElapsed >= tuning.LedgeClimbTime - 1e-5f)
+                {
+                    state.Climbing = false;
+                    state.LedgeRegrabLeft = tuning.LedgeRegrabDelay;
+                    step.ClimbEnded = true;
+                }
+
+                return;
+            }
+
+            state.HangTime += deltaTime;
+            if (input.JumpPressed)
+            {
+                FinishSnap(ref state, ref step);
+                state.Hanging = false;
+                state.Climbing = true;
+                state.ClimbElapsed = 0f;
+                state.TimeSinceJumpPressed = float.PositiveInfinity;
+                step.ClimbStarted = true;
+                return;
+            }
+
+            ApplySnap(ref state, ref step, deltaTime);
+            state.DropHoldTime = ClimbRules.WantsDrop(input, state.HangNormalX, state.HangNormalZ)
+                ? state.DropHoldTime + deltaTime
+                : 0f;
+            if (state.DropHoldTime >= tuning.LedgeDropHoldTime)
+            {
+                FinishSnap(ref state, ref step);
+                state.Hanging = false;
+                state.DropHoldTime = 0f;
+                state.VelocityX = state.HangNormalX * tuning.LedgeDropPushSpeed;
+                state.VelocityZ = state.HangNormalZ * tuning.LedgeDropPushSpeed;
+                state.LedgeRegrabLeft = tuning.LedgeRegrabDelay;
+                state.TimeSinceJumpPressed = float.PositiveInfinity;
+                step.LedgeDropped = true;
+            }
         }
 
         /// <summary>
@@ -541,7 +915,8 @@ namespace SpookyStreet.Core.Movement
             float rate = speedingUp ? tuning.AccelerationRate : tuning.DecelerationRate;
             if (!state.Grounded)
             {
-                rate *= state.Gliding ? tuning.GlideAirControl : tuning.AirControl;
+                rate *= state.WallJumpLockLeft > 0f ? tuning.WallJumpLockedAirControl
+                    : state.Gliding ? tuning.GlideAirControl : tuning.AirControl;
             }
 
             float maxDelta = rate * deltaTime;

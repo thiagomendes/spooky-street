@@ -315,6 +315,29 @@ namespace SpookyStreet.UI
             ShowKey(key);
         }
 
+        /// <summary>
+        /// Drops the captions of sounds heard from a place (those with a direction source) from the strip and its
+        /// queue: after a threshold crossing they belong to the place Pip left (D26: captions describe what Pip
+        /// perceives, and the street's knocks are not heard in the owl house's rooms).
+        /// </summary>
+        public void DropSounds()
+        {
+            int count = _queue.Count;
+            for (int i = 0; i < count; i++)
+            {
+                var entry = _queue.Dequeue();
+                if (entry.Source == null)
+                {
+                    _queue.Enqueue(entry);
+                }
+            }
+
+            if (_current != null && _current.Source != null)
+            {
+                Next();
+            }
+        }
+
         public void Clear()
         {
             _queue.Clear();

@@ -54,6 +54,7 @@ namespace SpookyStreet.Player
         private float _phase;
         private readonly SquashPulse _squash = new SquashPulse();
         private float _holdStretch;
+        private float _hangLean;
 
         public Transform Body => _body;
 
@@ -260,6 +261,9 @@ namespace SpookyStreet.Player
             return go.transform;
         }
 
+        /// <summary>How far the hang lean has eased in (0 off, 1 full), for tests and diagnostics.</summary>
+        public float HangLean { get; private set; }
+
         /// <summary>Current squash value (negative = stretched tall), for tests and diagnostics.</summary>
         public float SquashValue { get; private set; }
 
@@ -270,6 +274,18 @@ namespace SpookyStreet.Player
             if (step.Jumped)
             {
                 _squash.Kick(MoveFeedbackRules.TakeOffStretch(step.ChainStage));
+            }
+            else if (step.WallJumped)
+            {
+                _squash.Kick(MoveFeedbackRules.WallKickStretch);
+            }
+            else if (step.LedgeGrabbed)
+            {
+                _squash.Kick(MoveFeedbackRules.LedgeCatchSquash);
+            }
+            else if (step.WallSlideStarted)
+            {
+                _squash.Kick(MoveFeedbackRules.WallGripSquash);
             }
             else if (step.DiveStarted)
             {
@@ -318,9 +334,19 @@ namespace SpookyStreet.Player
             SquashPulse.ToScale(SquashValue, out float wide, out float tall);
             _body.localScale = new Vector3(wide, tall, wide);
 
+            // Hanging from a ledge (S003): the body leans toward the wall about the feet and slides in a little, so the
+            // LedgeHang clip's raised hand meets the edge while the chest stays clear of the face.
+            bool hanging = _motor != null && _motor.Hanging;
+            _hangLean = Mathf.MoveTowards(_hangLean, hanging ? 1f : 0f, MoveFeedbackRules.HangLeanRate * Time.deltaTime);
+            HangLean = _hangLean;
+            Vector3 leanShift = Vector3.forward * (MoveFeedbackRules.HangShift * _hangLean);
+            Quaternion lean = Quaternion.Euler(MoveFeedbackRules.HangLeanDegrees * _hangLean, 0f, 0f);
+
             // The imported model's clips carry breathing, gait and antenna motion.
             if (UsesModel)
             {
+                _body.localPosition = leanShift;
+                _body.localRotation = lean;
                 return;
             }
 
@@ -334,8 +360,8 @@ namespace SpookyStreet.Player
             float t = Time.time;
             float idle = Mathf.Sin(t * idleBobHz * Mathf.PI * 2f) * idleBobFraction * 1.15f * (1f - _gait);
             float step = Mathf.Abs(Mathf.Sin(_phase)) * stepBob * _gait;
-            _body.localPosition = new Vector3(0f, idle + step, 0f);
-            _body.localRotation = Quaternion.Euler(4f * _gait, 0f, Mathf.Sin(_phase * 0.5f) * stepRollDegrees * _gait);
+            _body.localPosition = new Vector3(0f, idle + step, 0f) + leanShift;
+            _body.localRotation = lean * Quaternion.Euler(4f * _gait, 0f, Mathf.Sin(_phase * 0.5f) * stepRollDegrees * _gait);
 
             for (int i = 0; i < _antennae.Length; i++)
             {

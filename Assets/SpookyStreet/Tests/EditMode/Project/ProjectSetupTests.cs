@@ -53,6 +53,20 @@ namespace SpookyStreet.Tests.Project
             Assert.AreEqual(tuning.jumpBoostSpeed, data.JumpBoostSpeed, 1e-6f, "ToData carries the boost");
             Assert.AreEqual(tuning.apexHangTime, data.ApexHangTime, 1e-6f, "ToData carries the apex hang");
             Assert.AreEqual(tuning.chainJumpThirdTapScale, data.ChainJumpThirdTapScale, 1e-6f, "ToData carries tap scales");
+            // S003 wall slide, wall jump and ledge grab (docs/S003-wall-ledge.md): the asset matches the Core defaults.
+            var core = new SpookyStreet.Core.Movement.MovementTuningData();
+            Assert.AreEqual(1.5f, tuning.wallSlideSpeed, 1e-4f);
+            Assert.AreEqual(1.2f, tuning.wallJumpHeight, 1e-4f);
+            Assert.AreEqual(4.5f, tuning.wallJumpAwaySpeed, 1e-4f);
+            Assert.AreEqual(0.2f, tuning.wallJumpCoyoteTime, 1e-4f);
+            Assert.AreEqual(1.27f, tuning.ledgeHangHandHeight, 1e-4f);
+            Assert.AreEqual(0.34f, tuning.ledgeHangWallOffset, 1e-4f);
+            Assert.AreEqual(core.WallSlideGripSpeed, data.WallSlideGripSpeed, 1e-6f, "ToData carries the slide");
+            Assert.AreEqual(core.WallJumpLockedAirControl, data.WallJumpLockedAirControl, 1e-6f, "ToData carries the kick");
+            Assert.AreEqual(core.LedgeGrabReachBelow, data.LedgeGrabReachBelow, 1e-6f, "ToData carries the catch window");
+            Assert.AreEqual(core.LedgeClimbTime, data.LedgeClimbTime, 1e-6f, "ToData carries the climb");
+            Assert.AreEqual(core.LedgeRegrabDelay, data.LedgeRegrabDelay, 1e-6f, "ToData carries the drop");
+            Assert.AreEqual(tuning.radius, data.BodyRadius, 1e-6f, "the body radius is the capsule's");
             Assert.AreEqual(3.8f, tuning.cameraDistance, 1e-4f);
         }
 
