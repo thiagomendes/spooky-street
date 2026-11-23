@@ -1,0 +1,464 @@
+{
+ "pip": [
+  {
+   "clip": "neutral_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "neutral",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "neutral_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "neutral",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "happy_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "happy",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "happy_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "happy",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "surprised_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "surprised",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "surprised_t2",
+   "direction_read_aloud": false,
+   "real_words": [
+    "woah"
+   ],
+   "emotion_heard": "surprised",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "thinking_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "thinking",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "thinking_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "thinking",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "whisper_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "whisper",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "whisper_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "whisper",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  }
+ ],
+ "bea": [
+  {
+   "clip": "neutral_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "neutral",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "neutral_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "neutral",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "happy_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "happy",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "happy_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "happy",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "surprised_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "surprised",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "surprised_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "surprised",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "thinking_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "thinking",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "thinking_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "thinking",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "whisper_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "whispering",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "whisper_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "whispering",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  }
+ ],
+ "vale": [
+  {
+   "clip": "neutral_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "neutral",
+   "matches_emotion": true,
+   "naturalness": 9,
+   "problems": ""
+  },
+  {
+   "clip": "neutral_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "neutral",
+   "matches_emotion": true,
+   "naturalness": 9,
+   "problems": ""
+  },
+  {
+   "clip": "happy_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "happy",
+   "matches_emotion": true,
+   "naturalness": 9,
+   "problems": ""
+  },
+  {
+   "clip": "happy_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "happy",
+   "matches_emotion": true,
+   "naturalness": 9,
+   "problems": ""
+  },
+  {
+   "clip": "surprised_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "surprised",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "surprised_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "surprised",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "thinking_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "thinking",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "thinking_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "thinking",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "whisper_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "whisper",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "whisper_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "whisper",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  }
+ ],
+ "june": [
+  {
+   "clip": "neutral_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "neutral",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "neutral_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "neutral",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "happy_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "happy",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "happy_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "happy",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "surprised_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "surprised",
+   "matches_emotion": true,
+   "naturalness": 9,
+   "problems": ""
+  },
+  {
+   "clip": "surprised_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "surprised",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "thinking_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "thoughtful",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "thinking_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "thoughtful",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "whisper_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "whispering",
+   "matches_emotion": true,
+   "naturalness": 9,
+   "problems": ""
+  },
+  {
+   "clip": "whisper_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "whispering",
+   "matches_emotion": true,
+   "naturalness": 9,
+   "problems": ""
+  }
+ ],
+ "kit": [
+  {
+   "clip": "neutral_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "neutral theatrical",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "neutral_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "neutral",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "happy_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "happy",
+   "matches_emotion": true,
+   "naturalness": 9,
+   "problems": ""
+  },
+  {
+   "clip": "happy_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "happy",
+   "matches_emotion": true,
+   "naturalness": 9,
+   "problems": ""
+  },
+  {
+   "clip": "surprised_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "surprised",
+   "matches_emotion": true,
+   "naturalness": 9,
+   "problems": ""
+  },
+  {
+   "clip": "surprised_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "surprised",
+   "matches_emotion": true,
+   "naturalness": 9,
+   "problems": ""
+  },
+  {
+   "clip": "thinking_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "thoughtful",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "thinking_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "thoughtful",
+   "matches_emotion": true,
+   "naturalness": 8,
+   "problems": ""
+  },
+  {
+   "clip": "whisper_t1",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "whispering",
+   "matches_emotion": true,
+   "naturalness": 9,
+   "problems": ""
+  },
+  {
+   "clip": "whisper_t2",
+   "direction_read_aloud": false,
+   "real_words": [],
+   "emotion_heard": "whispering",
+   "matches_emotion": true,
+   "naturalness": 9,
+   "problems": ""
+  }
+ ]
+}

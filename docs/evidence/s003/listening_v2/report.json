@@ -1,0 +1,2614 @@
+{
+ "tts_model": "gemini-3.8-flash-tts",
+ "music_models": [
+  "lyria-3-clip-preview",
+  "lyria-3-pro-preview"
+ ],
+ "api_calls": {
+  "total": 154,
+  "by_kind_and_model": {
+   "listen:gemini-3.8-flash": 53,
+   "music:lyria-3-clip-preview": 12,
+   "music:lyria-3-pro-preview": 9,
+   "tts:gemini-2.5-pro-preview-tts": 1,
+   "tts:gemini-3.8-flash-tts": 79
+  },
+  "log": "calls.jsonl (one line per HTTP request, including probes, auditions and errors)"
+ },
+ "voices": {
+  "pip": {
+   "name": "Pip",
+   "voice": "Laomedeia",
+   "files": {
+    "phrases": [
+     {
+      "file": "audio/voice_pip_neutral_p2.mp3",
+      "duration_s": 0.818
+     },
+     {
+      "file": "audio/voice_pip_neutral_p4.mp3",
+      "duration_s": 1.759
+     },
+     {
+      "file": "audio/voice_pip_neutral_p6.mp3",
+      "duration_s": 2.971
+     }
+    ],
+    "emotions": [
+     {
+      "emotion": "neutral",
+      "file": "audio/voice_pip_neutral_p4.mp3"
+     },
+     {
+      "emotion": "happy",
+      "file": "audio/voice_pip_happy_p4.mp3"
+     },
+     {
+      "emotion": "surprised",
+      "file": "audio/voice_pip_surprised_p4.mp3"
+     },
+     {
+      "emotion": "thinking",
+      "file": "audio/voice_pip_thinking_p4.mp3"
+     },
+     {
+      "emotion": "whisper",
+      "file": "audio/voice_pip_whisper_p4.mp3"
+     }
+    ],
+    "sequenced": [
+     {
+      "file": "audio/voice_pip_seq1_neutral.mp3",
+      "caption": "Hmm… a knock? Where did that come from?"
+     },
+     {
+      "file": "audio/voice_pip_seq2_surprised.mp3",
+      "caption": "Three knocks! The owl bowed!"
+     }
+    ]
+   },
+   "spectrogram": "spectrograms/voice_pip.png",
+   "meta": {
+    "f0_median_hz": 399.2,
+    "speed": 1.85,
+    "lufs_min": -19.06,
+    "lufs_max": -19.0,
+    "tp_max": -1.31,
+    "failures": []
+   },
+   "build": {
+    "target_f0_hz": 400.0,
+    "formant_follow": 0.5,
+    "shifts_st": {
+     "pip/neutral_t1": 10.0,
+     "pip/neutral_t2": 10.0,
+     "pip/happy_t1": 1.12,
+     "pip/happy_t2": 3.24,
+     "pip/surprised_t1": 6.12,
+     "pip/surprised_t2": 6.62,
+     "pip/thinking_t1": 3.48,
+     "pip/thinking_t2": 3.01,
+     "pip/whisper_t1": 10.0,
+     "pip/whisper_t2": 10.0
+    },
+    "bank": {
+     "neutral": 16,
+     "happy": 16,
+     "surprised": 16,
+     "thinking": 16,
+     "whisper": 14
+    },
+    "f0_range_st": 11.9
+   },
+   "takes_built": {
+    "neutral": [
+     {
+      "name": "neutral_p1",
+      "duration_s": 0.645,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.05,
+      "f0_hz": 345.8,
+      "failures": []
+     },
+     {
+      "name": "neutral_p2",
+      "duration_s": 0.818,
+      "lufs": -19.0,
+      "true_peak_dbtp": -5.55,
+      "f0_hz": 342.7,
+      "failures": []
+     },
+     {
+      "name": "neutral_p3",
+      "duration_s": 1.399,
+      "lufs": -19.0,
+      "true_peak_dbtp": -5.25,
+      "f0_hz": 334.0,
+      "failures": []
+     },
+     {
+      "name": "neutral_p4",
+      "duration_s": 1.759,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.88,
+      "f0_hz": 384.3,
+      "failures": []
+     },
+     {
+      "name": "neutral_p5",
+      "duration_s": 2.374,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.68,
+      "f0_hz": 356.2,
+      "failures": []
+     },
+     {
+      "name": "neutral_p6",
+      "duration_s": 2.971,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.54,
+      "f0_hz": 333.2,
+      "failures": []
+     }
+    ],
+    "happy": [
+     {
+      "name": "happy_p1",
+      "duration_s": 0.58,
+      "lufs": -19.0,
+      "true_peak_dbtp": -7.31,
+      "f0_hz": 466.1,
+      "failures": []
+     },
+     {
+      "name": "happy_p2",
+      "duration_s": 0.793,
+      "lufs": -19.0,
+      "true_peak_dbtp": -5.28,
+      "f0_hz": 370.9,
+      "failures": []
+     },
+     {
+      "name": "happy_p3",
+      "duration_s": 1.256,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.48,
+      "f0_hz": 416.3,
+      "failures": []
+     },
+     {
+      "name": "happy_p4",
+      "duration_s": 1.777,
+      "lufs": -19.0,
+      "true_peak_dbtp": -5.18,
+      "f0_hz": 386.4,
+      "failures": []
+     },
+     {
+      "name": "happy_p5",
+      "duration_s": 2.326,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.32,
+      "f0_hz": 412.0,
+      "failures": []
+     },
+     {
+      "name": "happy_p6",
+      "duration_s": 3.071,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.68,
+      "f0_hz": 452.8,
+      "failures": []
+     }
+    ],
+    "surprised": [
+     {
+      "name": "surprised_p1",
+      "duration_s": 0.625,
+      "lufs": -19.0,
+      "true_peak_dbtp": -6.91,
+      "f0_hz": 414.8,
+      "failures": []
+     },
+     {
+      "name": "surprised_p2",
+      "duration_s": 0.959,
+      "lufs": -19.0,
+      "true_peak_dbtp": -5.87,
+      "f0_hz": 478.0,
+      "failures": []
+     },
+     {
+      "name": "surprised_p3",
+      "duration_s": 1.319,
+      "lufs": -19.0,
+      "true_peak_dbtp": -6.78,
+      "f0_hz": 468.4,
+      "failures": []
+     },
+     {
+      "name": "surprised_p4",
+      "duration_s": 1.741,
+      "lufs": -19.0,
+      "true_peak_dbtp": -6.59,
+      "f0_hz": 483.0,
+      "failures": []
+     },
+     {
+      "name": "surprised_p5",
+      "duration_s": 2.513,
+      "lufs": -19.0,
+      "true_peak_dbtp": -6.07,
+      "f0_hz": 478.7,
+      "failures": []
+     },
+     {
+      "name": "surprised_p6",
+      "duration_s": 2.999,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.86,
+      "f0_hz": 469.5,
+      "failures": []
+     }
+    ],
+    "thinking": [
+     {
+      "name": "thinking_p1",
+      "duration_s": 0.585,
+      "lufs": -19.0,
+      "true_peak_dbtp": -6.94,
+      "f0_hz": 263.4,
+      "failures": []
+     },
+     {
+      "name": "thinking_p2",
+      "duration_s": 0.829,
+      "lufs": -19.0,
+      "true_peak_dbtp": -6.22,
+      "f0_hz": 321.5,
+      "failures": []
+     },
+     {
+      "name": "thinking_p3",
+      "duration_s": 1.331,
+      "lufs": -19.0,
+      "true_peak_dbtp": -7.02,
+      "f0_hz": 339.0,
+      "failures": []
+     },
+     {
+      "name": "thinking_p4",
+      "duration_s": 1.735,
+      "lufs": -19.0,
+      "true_peak_dbtp": -6.13,
+      "f0_hz": 336.5,
+      "failures": []
+     },
+     {
+      "name": "thinking_p5",
+      "duration_s": 2.417,
+      "lufs": -19.0,
+      "true_peak_dbtp": -6.03,
+      "f0_hz": 374.3,
+      "failures": []
+     },
+     {
+      "name": "thinking_p6",
+      "duration_s": 2.844,
+      "lufs": -19.0,
+      "true_peak_dbtp": -5.49,
+      "f0_hz": 376.4,
+      "failures": []
+     }
+    ],
+    "whisper": [
+     {
+      "name": "whisper_p1",
+      "duration_s": 0.503,
+      "lufs": -19.0,
+      "true_peak_dbtp": -7.0,
+      "f0_hz": 524.3,
+      "failures": []
+     },
+     {
+      "name": "whisper_p2",
+      "duration_s": 0.76,
+      "lufs": -19.06,
+      "true_peak_dbtp": -1.31,
+      "f0_hz": 369.2,
+      "failures": []
+     },
+     {
+      "name": "whisper_p3",
+      "duration_s": 1.316,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.09,
+      "f0_hz": 496.9,
+      "failures": []
+     },
+     {
+      "name": "whisper_p4",
+      "duration_s": 1.702,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.18,
+      "f0_hz": 469.9,
+      "failures": []
+     },
+     {
+      "name": "whisper_p5",
+      "duration_s": 2.373,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.75,
+      "f0_hz": 481.0,
+      "failures": []
+     },
+     {
+      "name": "whisper_p6",
+      "duration_s": 2.99,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.78,
+      "f0_hz": 486.4,
+      "failures": []
+     }
+    ]
+   },
+   "sequenced": [
+    {
+     "name": "seq1_neutral",
+     "emotion": "neutral",
+     "caption": "Hmm… a knock? Where did that come from?",
+     "syllables": 3,
+     "failures": [],
+     "duration_s": 0.481,
+     "channels": 1,
+     "lufs": -19.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -19.0,
+     "sample_peak_db": -6.91,
+     "true_peak_dbtp": -6.91,
+     "dc_offset": -2e-06,
+     "clipped_samples": 0,
+     "sub_bass_db": -75.2,
+     "spectral_centroid_hz": 526,
+     "edge_level": 0.0
+    },
+    {
+     "name": "seq2_surprised",
+     "emotion": "surprised",
+     "caption": "Three knocks! The owl bowed!",
+     "syllables": 3,
+     "failures": [],
+     "duration_s": 0.55,
+     "channels": 1,
+     "lufs": -19.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -18.34,
+     "sample_peak_db": -3.52,
+     "true_peak_dbtp": -3.52,
+     "dc_offset": 1e-06,
+     "clipped_samples": 0,
+     "sub_bass_db": -70.9,
+     "spectral_centroid_hz": 801,
+     "edge_level": 0.0
+    }
+   ]
+  },
+  "bea": {
+   "name": "Bea",
+   "voice": "Zephyr",
+   "files": {
+    "phrases": [
+     {
+      "file": "audio/voice_bea_neutral_p2.mp3",
+      "duration_s": 0.832
+     },
+     {
+      "file": "audio/voice_bea_neutral_p4.mp3",
+      "duration_s": 1.779
+     },
+     {
+      "file": "audio/voice_bea_neutral_p6.mp3",
+      "duration_s": 2.926
+     }
+    ],
+    "emotions": [
+     {
+      "emotion": "neutral",
+      "file": "audio/voice_bea_neutral_p4.mp3"
+     },
+     {
+      "emotion": "happy",
+      "file": "audio/voice_bea_happy_p4.mp3"
+     },
+     {
+      "emotion": "surprised",
+      "file": "audio/voice_bea_surprised_p4.mp3"
+     },
+     {
+      "emotion": "thinking",
+      "file": "audio/voice_bea_thinking_p4.mp3"
+     },
+     {
+      "emotion": "whisper",
+      "file": "audio/voice_bea_whisper_p4.mp3"
+     }
+    ],
+    "sequenced": [
+     {
+      "file": "audio/voice_bea_seq1_neutral.mp3",
+      "caption": "I saw June's silver cape go in. Right there!"
+     },
+     {
+      "file": "audio/voice_bea_seq2_happy.mp3",
+      "caption": "Three knocks, three bows! I'm putting an owl on my bike."
+     }
+    ]
+   },
+   "spectrogram": "spectrograms/voice_bea.png",
+   "meta": {
+    "f0_median_hz": 409.2,
+    "speed": 2.15,
+    "lufs_min": -19.03,
+    "lufs_max": -19.0,
+    "tp_max": -1.29,
+    "failures": []
+   },
+   "build": {
+    "target_f0_hz": 450.0,
+    "formant_follow": 0.55,
+    "shifts_st": {
+     "bea/neutral_t1": 10.0,
+     "bea/neutral_t2": 10.0,
+     "bea/happy_t1": 10.0,
+     "bea/happy_t2": 9.48,
+     "bea/surprised_t1": 10.0,
+     "bea/surprised_t2": 7.76,
+     "bea/thinking_t1": 7.44,
+     "bea/thinking_t2": 10.0,
+     "bea/whisper_t1": 10.0,
+     "bea/whisper_t2": 10.0
+    },
+    "bank": {
+     "neutral": 16,
+     "happy": 16,
+     "surprised": 16,
+     "thinking": 16,
+     "whisper": 14
+    },
+    "f0_range_st": 12.9
+   },
+   "takes_built": {
+    "neutral": [
+     {
+      "name": "neutral_p1",
+      "duration_s": 0.621,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.22,
+      "f0_hz": 422.6,
+      "failures": []
+     },
+     {
+      "name": "neutral_p2",
+      "duration_s": 0.832,
+      "lufs": -19.02,
+      "true_peak_dbtp": -1.33,
+      "f0_hz": 338.2,
+      "failures": []
+     },
+     {
+      "name": "neutral_p3",
+      "duration_s": 1.308,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.6,
+      "f0_hz": 407.8,
+      "failures": []
+     },
+     {
+      "name": "neutral_p4",
+      "duration_s": 1.779,
+      "lufs": -19.01,
+      "true_peak_dbtp": -1.32,
+      "f0_hz": 399.8,
+      "failures": []
+     },
+     {
+      "name": "neutral_p5",
+      "duration_s": 2.428,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.47,
+      "f0_hz": 362.1,
+      "failures": []
+     },
+     {
+      "name": "neutral_p6",
+      "duration_s": 2.926,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.58,
+      "f0_hz": 377.4,
+      "failures": []
+     }
+    ],
+    "happy": [
+     {
+      "name": "happy_p1",
+      "duration_s": 0.63,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.39,
+      "f0_hz": 464.6,
+      "failures": []
+     },
+     {
+      "name": "happy_p2",
+      "duration_s": 0.911,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.34,
+      "f0_hz": 483.3,
+      "failures": []
+     },
+     {
+      "name": "happy_p3",
+      "duration_s": 1.307,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.0,
+      "f0_hz": 469.2,
+      "failures": []
+     },
+     {
+      "name": "happy_p4",
+      "duration_s": 1.794,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.56,
+      "f0_hz": 468.5,
+      "failures": []
+     },
+     {
+      "name": "happy_p5",
+      "duration_s": 2.24,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.72,
+      "f0_hz": 464.1,
+      "failures": []
+     },
+     {
+      "name": "happy_p6",
+      "duration_s": 2.234,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.31,
+      "f0_hz": 466.5,
+      "failures": []
+     }
+    ],
+    "surprised": [
+     {
+      "name": "surprised_p1",
+      "duration_s": 0.602,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.01,
+      "f0_hz": 634.1,
+      "failures": []
+     },
+     {
+      "name": "surprised_p2",
+      "duration_s": 0.985,
+      "lufs": -19.01,
+      "true_peak_dbtp": -1.34,
+      "f0_hz": 321.0,
+      "failures": []
+     },
+     {
+      "name": "surprised_p3",
+      "duration_s": 1.223,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.17,
+      "f0_hz": 367.4,
+      "failures": []
+     },
+     {
+      "name": "surprised_p4",
+      "duration_s": 1.79,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.02,
+      "f0_hz": 517.1,
+      "failures": []
+     },
+     {
+      "name": "surprised_p5",
+      "duration_s": 2.314,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.51,
+      "f0_hz": 437.1,
+      "failures": []
+     },
+     {
+      "name": "surprised_p6",
+      "duration_s": 2.772,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.16,
+      "f0_hz": 470.5,
+      "failures": []
+     }
+    ],
+    "thinking": [
+     {
+      "name": "thinking_p1",
+      "duration_s": 0.477,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.99,
+      "f0_hz": 376.2,
+      "failures": []
+     },
+     {
+      "name": "thinking_p2",
+      "duration_s": 0.871,
+      "lufs": -19.01,
+      "true_peak_dbtp": -1.36,
+      "f0_hz": 301.6,
+      "failures": []
+     },
+     {
+      "name": "thinking_p3",
+      "duration_s": 1.276,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.26,
+      "f0_hz": 385.6,
+      "failures": []
+     },
+     {
+      "name": "thinking_p4",
+      "duration_s": 1.775,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.35,
+      "f0_hz": 398.4,
+      "failures": []
+     },
+     {
+      "name": "thinking_p5",
+      "duration_s": 2.372,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.62,
+      "f0_hz": 373.7,
+      "failures": []
+     },
+     {
+      "name": "thinking_p6",
+      "duration_s": 2.805,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.12,
+      "f0_hz": 395.6,
+      "failures": []
+     }
+    ],
+    "whisper": [
+     {
+      "name": "whisper_p1",
+      "duration_s": 0.613,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.49,
+      "f0_hz": 421.8,
+      "failures": []
+     },
+     {
+      "name": "whisper_p2",
+      "duration_s": 0.935,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.69,
+      "f0_hz": 396.6,
+      "failures": []
+     },
+     {
+      "name": "whisper_p3",
+      "duration_s": 1.333,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.45,
+      "f0_hz": 401.2,
+      "failures": []
+     },
+     {
+      "name": "whisper_p4",
+      "duration_s": 1.708,
+      "lufs": -19.03,
+      "true_peak_dbtp": -1.29,
+      "f0_hz": 419.3,
+      "failures": []
+     },
+     {
+      "name": "whisper_p5",
+      "duration_s": 1.916,
+      "lufs": -19.02,
+      "true_peak_dbtp": -1.32,
+      "f0_hz": 418.3,
+      "failures": []
+     },
+     {
+      "name": "whisper_p6",
+      "duration_s": 1.914,
+      "lufs": -19.01,
+      "true_peak_dbtp": -1.32,
+      "f0_hz": 410.7,
+      "failures": []
+     }
+    ]
+   },
+   "sequenced": [
+    {
+     "name": "seq1_neutral",
+     "emotion": "neutral",
+     "caption": "I saw June's silver cape go in. Right there!",
+     "syllables": 6,
+     "failures": [],
+     "duration_s": 0.72,
+     "channels": 1,
+     "lufs": -19.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -17.62,
+     "sample_peak_db": -3.2,
+     "true_peak_dbtp": -3.2,
+     "dc_offset": 1e-06,
+     "clipped_samples": 0,
+     "sub_bass_db": -64.7,
+     "spectral_centroid_hz": 774,
+     "edge_level": 0.0
+    },
+    {
+     "name": "seq2_happy",
+     "emotion": "happy",
+     "caption": "Three knocks, three bows! I'm putting an owl on my bike.",
+     "syllables": 6,
+     "failures": [],
+     "duration_s": 0.82,
+     "channels": 1,
+     "lufs": -19.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -17.26,
+     "sample_peak_db": -3.31,
+     "true_peak_dbtp": -3.3,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -73.3,
+     "spectral_centroid_hz": 873,
+     "edge_level": 0.0
+    }
+   ]
+  },
+  "vale": {
+   "name": "Mr. Vale",
+   "voice": "Sadaltager",
+   "files": {
+    "phrases": [
+     {
+      "file": "audio/voice_vale_neutral_p2.mp3",
+      "duration_s": 0.856
+     },
+     {
+      "file": "audio/voice_vale_neutral_p4.mp3",
+      "duration_s": 1.82
+     },
+     {
+      "file": "audio/voice_vale_neutral_p6.mp3",
+      "duration_s": 2.98
+     }
+    ],
+    "emotions": [
+     {
+      "emotion": "neutral",
+      "file": "audio/voice_vale_neutral_p4.mp3"
+     },
+     {
+      "emotion": "happy",
+      "file": "audio/voice_vale_happy_p4.mp3"
+     },
+     {
+      "emotion": "surprised",
+      "file": "audio/voice_vale_surprised_p4.mp3"
+     },
+     {
+      "emotion": "thinking",
+      "file": "audio/voice_vale_thinking_p4.mp3"
+     },
+     {
+      "emotion": "whisper",
+      "file": "audio/voice_vale_whisper_p4.mp3"
+     }
+    ],
+    "sequenced": [
+     {
+      "file": "audio/voice_vale_seq1_neutral.mp3",
+      "caption": "That front door? I could see it from my bench. It stayed shut."
+     },
+     {
+      "file": "audio/voice_vale_seq2_thinking.mp3",
+      "caption": "It's open now, though. Well, well."
+     }
+    ]
+   },
+   "spectrogram": "spectrograms/voice_vale.png",
+   "meta": {
+    "f0_median_hz": 158.0,
+    "speed": 1.4,
+    "lufs_min": -19.05,
+    "lufs_max": -19.0,
+    "tp_max": -1.33,
+    "failures": []
+   },
+   "build": {
+    "target_f0_hz": 125.0,
+    "formant_follow": 0.0,
+    "shifts_st": {
+     "vale/neutral_t1": 1.56,
+     "vale/neutral_t2": 0.83,
+     "vale/happy_t1": 3.06,
+     "vale/happy_t2": 2.38,
+     "vale/surprised_t1": -5.43,
+     "vale/surprised_t2": -5.25,
+     "vale/thinking_t1": -4.77,
+     "vale/thinking_t2": -2.84,
+     "vale/whisper_t1": 1.56,
+     "vale/whisper_t2": 1.56
+    },
+    "bank": {
+     "neutral": 16,
+     "happy": 16,
+     "surprised": 16,
+     "thinking": 16,
+     "whisper": 16
+    },
+    "f0_range_st": 18.5
+   },
+   "takes_built": {
+    "neutral": [
+     {
+      "name": "neutral_p1",
+      "duration_s": 0.625,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.37,
+      "f0_hz": 191.9,
+      "failures": []
+     },
+     {
+      "name": "neutral_p2",
+      "duration_s": 0.856,
+      "lufs": -19.0,
+      "true_peak_dbtp": -6.05,
+      "f0_hz": 328.0,
+      "failures": []
+     },
+     {
+      "name": "neutral_p3",
+      "duration_s": 1.31,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.85,
+      "f0_hz": 187.5,
+      "failures": []
+     },
+     {
+      "name": "neutral_p4",
+      "duration_s": 1.82,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.39,
+      "f0_hz": 176.0,
+      "failures": []
+     },
+     {
+      "name": "neutral_p5",
+      "duration_s": 2.375,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.06,
+      "f0_hz": 128.3,
+      "failures": []
+     },
+     {
+      "name": "neutral_p6",
+      "duration_s": 2.98,
+      "lufs": -19.05,
+      "true_peak_dbtp": -1.36,
+      "f0_hz": 152.0,
+      "failures": []
+     }
+    ],
+    "happy": [
+     {
+      "name": "happy_p1",
+      "duration_s": 0.5,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.48,
+      "f0_hz": 168.0,
+      "failures": []
+     },
+     {
+      "name": "happy_p2",
+      "duration_s": 0.915,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.51,
+      "f0_hz": 137.3,
+      "failures": []
+     },
+     {
+      "name": "happy_p3",
+      "duration_s": 1.183,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.32,
+      "f0_hz": 153.8,
+      "failures": []
+     },
+     {
+      "name": "happy_p4",
+      "duration_s": 1.704,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.39,
+      "f0_hz": 163.5,
+      "failures": []
+     },
+     {
+      "name": "happy_p5",
+      "duration_s": 2.401,
+      "lufs": -19.01,
+      "true_peak_dbtp": -1.37,
+      "f0_hz": 145.2,
+      "failures": []
+     },
+     {
+      "name": "happy_p6",
+      "duration_s": 3.078,
+      "lufs": -19.03,
+      "true_peak_dbtp": -1.36,
+      "f0_hz": 169.1,
+      "failures": []
+     }
+    ],
+    "surprised": [
+     {
+      "name": "surprised_p1",
+      "duration_s": 0.48,
+      "lufs": -19.03,
+      "true_peak_dbtp": -1.39,
+      "f0_hz": 136.3,
+      "failures": []
+     },
+     {
+      "name": "surprised_p2",
+      "duration_s": 0.71,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.81,
+      "f0_hz": 190.3,
+      "failures": []
+     },
+     {
+      "name": "surprised_p3",
+      "duration_s": 1.334,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.64,
+      "f0_hz": 230.2,
+      "failures": []
+     },
+     {
+      "name": "surprised_p4",
+      "duration_s": 1.885,
+      "lufs": -19.03,
+      "true_peak_dbtp": -1.34,
+      "f0_hz": 151.2,
+      "failures": []
+     },
+     {
+      "name": "surprised_p5",
+      "duration_s": 2.275,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.37,
+      "f0_hz": 230.4,
+      "failures": []
+     },
+     {
+      "name": "surprised_p6",
+      "duration_s": 3.034,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.83,
+      "f0_hz": 162.3,
+      "failures": []
+     }
+    ],
+    "thinking": [
+     {
+      "name": "thinking_p1",
+      "duration_s": 0.63,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.84,
+      "f0_hz": 234.6,
+      "failures": []
+     },
+     {
+      "name": "thinking_p2",
+      "duration_s": 0.867,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.73,
+      "f0_hz": 112.9,
+      "failures": []
+     },
+     {
+      "name": "thinking_p3",
+      "duration_s": 1.38,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.19,
+      "f0_hz": 124.1,
+      "failures": []
+     },
+     {
+      "name": "thinking_p4",
+      "duration_s": 1.933,
+      "lufs": -19.01,
+      "true_peak_dbtp": -1.37,
+      "f0_hz": 125.4,
+      "failures": []
+     },
+     {
+      "name": "thinking_p5",
+      "duration_s": 2.373,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.36,
+      "f0_hz": 180.8,
+      "failures": []
+     },
+     {
+      "name": "thinking_p6",
+      "duration_s": 2.988,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.75,
+      "f0_hz": 136.3,
+      "failures": []
+     }
+    ],
+    "whisper": [
+     {
+      "name": "whisper_p1",
+      "duration_s": 0.53,
+      "lufs": -19.0,
+      "true_peak_dbtp": -6.26,
+      "f0_hz": 136.5,
+      "failures": []
+     },
+     {
+      "name": "whisper_p2",
+      "duration_s": 0.937,
+      "lufs": -19.0,
+      "true_peak_dbtp": -5.58,
+      "f0_hz": 195.5,
+      "failures": []
+     },
+     {
+      "name": "whisper_p3",
+      "duration_s": 1.289,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.23,
+      "f0_hz": 137.5,
+      "failures": []
+     },
+     {
+      "name": "whisper_p4",
+      "duration_s": 1.816,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.54,
+      "f0_hz": 175.6,
+      "failures": []
+     },
+     {
+      "name": "whisper_p5",
+      "duration_s": 2.3,
+      "lufs": -19.01,
+      "true_peak_dbtp": -1.33,
+      "f0_hz": 143.4,
+      "failures": []
+     },
+     {
+      "name": "whisper_p6",
+      "duration_s": 2.876,
+      "lufs": -19.03,
+      "true_peak_dbtp": -1.36,
+      "f0_hz": 142.6,
+      "failures": []
+     }
+    ]
+   },
+   "sequenced": [
+    {
+     "name": "seq1_neutral",
+     "emotion": "neutral",
+     "caption": "That front door? I could see it from my bench. It stayed shut.",
+     "syllables": 7,
+     "failures": [],
+     "duration_s": 1.631,
+     "channels": 1,
+     "lufs": -19.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -16.65,
+     "sample_peak_db": -1.87,
+     "true_peak_dbtp": -1.86,
+     "dc_offset": 1.3e-05,
+     "clipped_samples": 0,
+     "sub_bass_db": -45.2,
+     "spectral_centroid_hz": 683,
+     "edge_level": 0.0
+    },
+    {
+     "name": "seq2_thinking",
+     "emotion": "thinking",
+     "caption": "It's open now, though. Well, well.",
+     "syllables": 3,
+     "failures": [],
+     "duration_s": 0.725,
+     "channels": 1,
+     "lufs": -19.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -17.28,
+     "sample_peak_db": -1.4,
+     "true_peak_dbtp": -1.38,
+     "dc_offset": -3.9e-05,
+     "clipped_samples": 0,
+     "sub_bass_db": -44.3,
+     "spectral_centroid_hz": 530,
+     "edge_level": 0.0
+    }
+   ]
+  },
+  "june": {
+   "name": "June",
+   "voice": "Achernar",
+   "files": {
+    "phrases": [
+     {
+      "file": "audio/voice_june_neutral_p2.mp3",
+      "duration_s": 0.955
+     },
+     {
+      "file": "audio/voice_june_neutral_p4.mp3",
+      "duration_s": 1.795
+     },
+     {
+      "file": "audio/voice_june_neutral_p6.mp3",
+      "duration_s": 3.014
+     }
+    ],
+    "emotions": [
+     {
+      "emotion": "neutral",
+      "file": "audio/voice_june_neutral_p4.mp3"
+     },
+     {
+      "emotion": "happy",
+      "file": "audio/voice_june_happy_p4.mp3"
+     },
+     {
+      "emotion": "surprised",
+      "file": "audio/voice_june_surprised_p4.mp3"
+     },
+     {
+      "emotion": "thinking",
+      "file": "audio/voice_june_thinking_p4.mp3"
+     },
+     {
+      "emotion": "whisper",
+      "file": "audio/voice_june_whisper_p4.mp3"
+     }
+    ],
+    "sequenced": [
+     {
+      "file": "audio/voice_june_seq1_whisper.mp3",
+      "caption": "I came down here to find the knocks. They're under the floor somewhere."
+     },
+     {
+      "file": "audio/voice_june_seq2_happy.mp3",
+      "caption": "There! It just needed two hands."
+     }
+    ]
+   },
+   "spectrogram": "spectrograms/voice_june.png",
+   "meta": {
+    "f0_median_hz": 367.7,
+    "speed": 1.9,
+    "lufs_min": -19.1,
+    "lufs_max": -19.0,
+    "tp_max": -1.05,
+    "failures": []
+   },
+   "build": {
+    "target_f0_hz": 370.0,
+    "formant_follow": 0.45,
+    "shifts_st": {
+     "june/neutral_t1": 10.0,
+     "june/neutral_t2": 10.0,
+     "june/happy_t1": 8.9,
+     "june/happy_t2": 2.77,
+     "june/surprised_t1": 2.26,
+     "june/surprised_t2": 10.0,
+     "june/thinking_t1": 5.44,
+     "june/thinking_t2": 3.53,
+     "june/whisper_t1": 10.0,
+     "june/whisper_t2": 10.0
+    },
+    "bank": {
+     "neutral": 15,
+     "happy": 16,
+     "surprised": 16,
+     "thinking": 16,
+     "whisper": 16
+    },
+    "f0_range_st": 11.3
+   },
+   "takes_built": {
+    "neutral": [
+     {
+      "name": "neutral_p1",
+      "duration_s": 0.545,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.71,
+      "f0_hz": 304.8,
+      "failures": []
+     },
+     {
+      "name": "neutral_p2",
+      "duration_s": 0.955,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.32,
+      "f0_hz": 267.8,
+      "failures": []
+     },
+     {
+      "name": "neutral_p3",
+      "duration_s": 1.183,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.38,
+      "f0_hz": 368.8,
+      "failures": []
+     },
+     {
+      "name": "neutral_p4",
+      "duration_s": 1.795,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.25,
+      "f0_hz": 366.6,
+      "failures": []
+     },
+     {
+      "name": "neutral_p5",
+      "duration_s": 2.365,
+      "lufs": -19.1,
+      "true_peak_dbtp": -1.05,
+      "f0_hz": 322.8,
+      "failures": []
+     },
+     {
+      "name": "neutral_p6",
+      "duration_s": 3.014,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.07,
+      "f0_hz": 357.6,
+      "failures": []
+     }
+    ],
+    "happy": [
+     {
+      "name": "happy_p1",
+      "duration_s": 0.567,
+      "lufs": -19.0,
+      "true_peak_dbtp": -5.79,
+      "f0_hz": 402.9,
+      "failures": []
+     },
+     {
+      "name": "happy_p2",
+      "duration_s": 0.837,
+      "lufs": -19.0,
+      "true_peak_dbtp": -5.55,
+      "f0_hz": 396.3,
+      "failures": []
+     },
+     {
+      "name": "happy_p3",
+      "duration_s": 1.302,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.11,
+      "f0_hz": 379.0,
+      "failures": []
+     },
+     {
+      "name": "happy_p4",
+      "duration_s": 1.709,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.97,
+      "f0_hz": 390.2,
+      "failures": []
+     },
+     {
+      "name": "happy_p5",
+      "duration_s": 2.392,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.9,
+      "f0_hz": 401.8,
+      "failures": []
+     },
+     {
+      "name": "happy_p6",
+      "duration_s": 2.94,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.67,
+      "f0_hz": 395.1,
+      "failures": []
+     }
+    ],
+    "surprised": [
+     {
+      "name": "surprised_p1",
+      "duration_s": 0.552,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.3,
+      "f0_hz": 333.7,
+      "failures": []
+     },
+     {
+      "name": "surprised_p2",
+      "duration_s": 0.845,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.96,
+      "f0_hz": 303.5,
+      "failures": []
+     },
+     {
+      "name": "surprised_p3",
+      "duration_s": 1.345,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.25,
+      "f0_hz": 302.3,
+      "failures": []
+     },
+     {
+      "name": "surprised_p4",
+      "duration_s": 1.708,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.55,
+      "f0_hz": 337.0,
+      "failures": []
+     },
+     {
+      "name": "surprised_p5",
+      "duration_s": 2.331,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.09,
+      "f0_hz": 478.8,
+      "failures": []
+     },
+     {
+      "name": "surprised_p6",
+      "duration_s": 1.584,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.75,
+      "f0_hz": 424.0,
+      "failures": []
+     }
+    ],
+    "thinking": [
+     {
+      "name": "thinking_p1",
+      "duration_s": 0.695,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.25,
+      "f0_hz": 343.8,
+      "failures": []
+     },
+     {
+      "name": "thinking_p2",
+      "duration_s": 0.88,
+      "lufs": -19.1,
+      "true_peak_dbtp": -1.16,
+      "f0_hz": 328.4,
+      "failures": []
+     },
+     {
+      "name": "thinking_p3",
+      "duration_s": 1.384,
+      "lufs": -19.0,
+      "true_peak_dbtp": -5.06,
+      "f0_hz": 342.4,
+      "failures": []
+     },
+     {
+      "name": "thinking_p4",
+      "duration_s": 1.797,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.02,
+      "f0_hz": 344.2,
+      "failures": []
+     },
+     {
+      "name": "thinking_p5",
+      "duration_s": 2.289,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.45,
+      "f0_hz": 362.9,
+      "failures": []
+     },
+     {
+      "name": "thinking_p6",
+      "duration_s": 2.987,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.32,
+      "f0_hz": 346.9,
+      "failures": []
+     }
+    ],
+    "whisper": [
+     {
+      "name": "whisper_p1",
+      "duration_s": 0.705,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.73,
+      "f0_hz": 492.0,
+      "failures": []
+     },
+     {
+      "name": "whisper_p2",
+      "duration_s": 0.93,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.6,
+      "f0_hz": 425.3,
+      "failures": []
+     },
+     {
+      "name": "whisper_p3",
+      "duration_s": 1.259,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.01,
+      "f0_hz": 425.2,
+      "failures": []
+     },
+     {
+      "name": "whisper_p4",
+      "duration_s": 1.809,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.33,
+      "f0_hz": 493.4,
+      "failures": []
+     },
+     {
+      "name": "whisper_p5",
+      "duration_s": 2.352,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.8,
+      "f0_hz": 468.1,
+      "failures": []
+     },
+     {
+      "name": "whisper_p6",
+      "duration_s": 2.993,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.68,
+      "f0_hz": 513.5,
+      "failures": []
+     }
+    ]
+   },
+   "sequenced": [
+    {
+     "name": "seq1_whisper",
+     "emotion": "whisper",
+     "caption": "I came down here to find the knocks. They're under the floor somewhere.",
+     "syllables": 6,
+     "failures": [],
+     "duration_s": 0.998,
+     "channels": 1,
+     "lufs": -19.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -17.33,
+     "sample_peak_db": -4.69,
+     "true_peak_dbtp": -4.62,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -69.9,
+     "spectral_centroid_hz": 6337,
+     "edge_level": 0.0
+    },
+    {
+     "name": "seq2_happy",
+     "emotion": "happy",
+     "caption": "There! It just needed two hands.",
+     "syllables": 5,
+     "failures": [],
+     "duration_s": 0.561,
+     "channels": 1,
+     "lufs": -19.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -18.38,
+     "sample_peak_db": -5.32,
+     "true_peak_dbtp": -5.32,
+     "dc_offset": 1e-06,
+     "clipped_samples": 0,
+     "sub_bass_db": -58.3,
+     "spectral_centroid_hz": 809,
+     "edge_level": 0.0
+    }
+   ]
+  },
+  "kit": {
+   "name": "Aunt Kit",
+   "voice": "Sulafat",
+   "files": {
+    "phrases": [
+     {
+      "file": "audio/voice_kit_neutral_p2.mp3",
+      "duration_s": 0.952
+     },
+     {
+      "file": "audio/voice_kit_neutral_p4.mp3",
+      "duration_s": 1.827
+     },
+     {
+      "file": "audio/voice_kit_neutral_p6.mp3",
+      "duration_s": 2.949
+     }
+    ],
+    "emotions": [
+     {
+      "emotion": "neutral",
+      "file": "audio/voice_kit_neutral_p4.mp3"
+     },
+     {
+      "emotion": "happy",
+      "file": "audio/voice_kit_happy_p4.mp3"
+     },
+     {
+      "emotion": "surprised",
+      "file": "audio/voice_kit_surprised_p4.mp3"
+     },
+     {
+      "emotion": "thinking",
+      "file": "audio/voice_kit_thinking_p4.mp3"
+     },
+     {
+      "emotion": "whisper",
+      "file": "audio/voice_kit_whisper_p4.mp3"
+     }
+    ],
+    "sequenced": [
+     {
+      "file": "audio/voice_kit_seq1_neutral.mp3",
+      "caption": "First show of the night. Best seats are on the porch."
+     },
+     {
+      "file": "audio/voice_kit_seq2_happy.mp3",
+      "caption": "My old owl is bowing again. Thank you, both of you."
+     }
+    ]
+   },
+   "spectrogram": "spectrograms/voice_kit.png",
+   "meta": {
+    "f0_median_hz": 282.7,
+    "speed": 1.65,
+    "lufs_min": -19.03,
+    "lufs_max": -19.0,
+    "tp_max": -1.34,
+    "failures": []
+   },
+   "build": {
+    "target_f0_hz": 245.0,
+    "formant_follow": 0.3,
+    "shifts_st": {
+     "kit/neutral_t1": 3.55,
+     "kit/neutral_t2": 3.05,
+     "kit/happy_t1": -2.61,
+     "kit/happy_t2": 0.84,
+     "kit/surprised_t1": -1.62,
+     "kit/surprised_t2": -0.63,
+     "kit/thinking_t1": -5.32,
+     "kit/thinking_t2": -3.13,
+     "kit/whisper_t1": 3.55,
+     "kit/whisper_t2": 3.55
+    },
+    "bank": {
+     "neutral": 16,
+     "happy": 16,
+     "surprised": 16,
+     "thinking": 16,
+     "whisper": 16
+    },
+    "f0_range_st": 13.1
+   },
+   "takes_built": {
+    "neutral": [
+     {
+      "name": "neutral_p1",
+      "duration_s": 0.488,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.92,
+      "f0_hz": 232.6,
+      "failures": []
+     },
+     {
+      "name": "neutral_p2",
+      "duration_s": 0.952,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.82,
+      "f0_hz": 224.9,
+      "failures": []
+     },
+     {
+      "name": "neutral_p3",
+      "duration_s": 1.245,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.06,
+      "f0_hz": 251.8,
+      "failures": []
+     },
+     {
+      "name": "neutral_p4",
+      "duration_s": 1.827,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.79,
+      "f0_hz": 255.0,
+      "failures": []
+     },
+     {
+      "name": "neutral_p5",
+      "duration_s": 2.348,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.49,
+      "f0_hz": 288.4,
+      "failures": []
+     },
+     {
+      "name": "neutral_p6",
+      "duration_s": 2.949,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.87,
+      "f0_hz": 244.6,
+      "failures": []
+     }
+    ],
+    "happy": [
+     {
+      "name": "happy_p1",
+      "duration_s": 0.601,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.16,
+      "f0_hz": 340.7,
+      "failures": []
+     },
+     {
+      "name": "happy_p2",
+      "duration_s": 0.85,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.79,
+      "f0_hz": 323.8,
+      "failures": []
+     },
+     {
+      "name": "happy_p3",
+      "duration_s": 1.265,
+      "lufs": -19.0,
+      "true_peak_dbtp": -5.81,
+      "f0_hz": 256.7,
+      "failures": []
+     },
+     {
+      "name": "happy_p4",
+      "duration_s": 1.685,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.23,
+      "f0_hz": 323.4,
+      "failures": []
+     },
+     {
+      "name": "happy_p5",
+      "duration_s": 2.442,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.25,
+      "f0_hz": 299.2,
+      "failures": []
+     },
+     {
+      "name": "happy_p6",
+      "duration_s": 3.144,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.52,
+      "f0_hz": 278.6,
+      "failures": []
+     }
+    ],
+    "surprised": [
+     {
+      "name": "surprised_p1",
+      "duration_s": 0.605,
+      "lufs": -19.0,
+      "true_peak_dbtp": -5.28,
+      "f0_hz": 264.9,
+      "failures": []
+     },
+     {
+      "name": "surprised_p2",
+      "duration_s": 1.02,
+      "lufs": -19.0,
+      "true_peak_dbtp": -7.12,
+      "f0_hz": 312.7,
+      "failures": []
+     },
+     {
+      "name": "surprised_p3",
+      "duration_s": 1.26,
+      "lufs": -19.0,
+      "true_peak_dbtp": -6.98,
+      "f0_hz": 301.6,
+      "failures": []
+     },
+     {
+      "name": "surprised_p4",
+      "duration_s": 1.781,
+      "lufs": -19.0,
+      "true_peak_dbtp": -5.33,
+      "f0_hz": 276.8,
+      "failures": []
+     },
+     {
+      "name": "surprised_p5",
+      "duration_s": 2.402,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.72,
+      "f0_hz": 311.2,
+      "failures": []
+     },
+     {
+      "name": "surprised_p6",
+      "duration_s": 2.973,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.85,
+      "f0_hz": 286.8,
+      "failures": []
+     }
+    ],
+    "thinking": [
+     {
+      "name": "thinking_p1",
+      "duration_s": 0.613,
+      "lufs": -19.0,
+      "true_peak_dbtp": -6.41,
+      "f0_hz": 275.8,
+      "failures": []
+     },
+     {
+      "name": "thinking_p2",
+      "duration_s": 0.858,
+      "lufs": -19.03,
+      "true_peak_dbtp": -1.34,
+      "f0_hz": 243.0,
+      "failures": []
+     },
+     {
+      "name": "thinking_p3",
+      "duration_s": 1.203,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.63,
+      "f0_hz": 255.9,
+      "failures": []
+     },
+     {
+      "name": "thinking_p4",
+      "duration_s": 1.728,
+      "lufs": -19.0,
+      "true_peak_dbtp": -5.55,
+      "f0_hz": 193.5,
+      "failures": []
+     },
+     {
+      "name": "thinking_p5",
+      "duration_s": 2.303,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.67,
+      "f0_hz": 244.7,
+      "failures": []
+     },
+     {
+      "name": "thinking_p6",
+      "duration_s": 3.094,
+      "lufs": -19.01,
+      "true_peak_dbtp": -1.37,
+      "f0_hz": 229.8,
+      "failures": []
+     }
+    ],
+    "whisper": [
+     {
+      "name": "whisper_p1",
+      "duration_s": 0.515,
+      "lufs": -19.0,
+      "true_peak_dbtp": -4.24,
+      "f0_hz": 312.2,
+      "failures": []
+     },
+     {
+      "name": "whisper_p2",
+      "duration_s": 0.78,
+      "lufs": -19.0,
+      "true_peak_dbtp": -3.12,
+      "f0_hz": 291.1,
+      "failures": []
+     },
+     {
+      "name": "whisper_p3",
+      "duration_s": 1.277,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.53,
+      "f0_hz": 412.3,
+      "failures": []
+     },
+     {
+      "name": "whisper_p4",
+      "duration_s": 1.752,
+      "lufs": -19.0,
+      "true_peak_dbtp": -2.31,
+      "f0_hz": 310.7,
+      "failures": []
+     },
+     {
+      "name": "whisper_p5",
+      "duration_s": 2.264,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.44,
+      "f0_hz": 317.8,
+      "failures": []
+     },
+     {
+      "name": "whisper_p6",
+      "duration_s": 3.015,
+      "lufs": -19.0,
+      "true_peak_dbtp": -1.39,
+      "f0_hz": 289.5,
+      "failures": []
+     }
+    ]
+   },
+   "sequenced": [
+    {
+     "name": "seq1_neutral",
+     "emotion": "neutral",
+     "caption": "First show of the night. Best seats are on the porch.",
+     "syllables": 5,
+     "failures": [],
+     "duration_s": 1.065,
+     "channels": 1,
+     "lufs": -19.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -17.64,
+     "sample_peak_db": -2.2,
+     "true_peak_dbtp": -2.2,
+     "dc_offset": -0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -57.7,
+     "spectral_centroid_hz": 609,
+     "edge_level": 0.0
+    },
+    {
+     "name": "seq2_happy",
+     "emotion": "happy",
+     "caption": "My old owl is bowing again. Thank you, both of you.",
+     "syllables": 6,
+     "failures": [],
+     "duration_s": 1.31,
+     "channels": 1,
+     "lufs": -19.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -17.18,
+     "sample_peak_db": -1.99,
+     "true_peak_dbtp": -1.98,
+     "dc_offset": -1e-06,
+     "clipped_samples": 0,
+     "sub_bass_db": -69.6,
+     "spectral_centroid_hz": 614,
+     "edge_level": 0.0
+    }
+   ]
+  }
+ },
+ "music": [
+  {
+   "id": "music_street_theme",
+   "title": "Street theme",
+   "title_pt": "Tema da rua",
+   "kind": "loop",
+   "model": "lyria-3-pro-preview",
+   "listen_pt": "O motivo da batida (curta, curta, longa) logo no começo; aconchegante e curioso, nunca assustador; a emenda do loop não deve 'pular'.",
+   "purpose_pt": "Música da rua enquanto a criança explora o bairro.",
+   "options": [
+    {
+     "name": "music_street_theme_s101",
+     "seed": 101,
+     "source_s": 180.79,
+     "bpm": 76.1,
+     "key": "D major",
+     "loop_start_s": 58.501,
+     "loop_end_s": 134.283,
+     "bars": 32,
+     "beats_per_bar": 3,
+     "seam_similarity": 0.9573,
+     "duration_s": 75.781,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -15.45,
+     "sample_peak_db": -7.51,
+     "true_peak_dbtp": -7.5,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -50.9,
+     "spectral_centroid_hz": 616,
+     "loop_seam_jump": 0.0124,
+     "limiter_db": 0.0,
+     "failures": [],
+     "file": "audio/music_street_theme_s101.mp3",
+     "note_pt": "Valsa de livro de histórias: pizzicato, celesta e madeiras, a mais 'feltro e papel'. Combina com a Exploração opção 1.",
+     "seam_file": "audio/music_street_theme_s101_seam.mp3",
+     "spectrogram": "spectrograms/music_street_theme.png"
+    },
+    {
+     "name": "music_street_theme_s303",
+     "seed": 303,
+     "source_s": 180.38,
+     "bpm": 75.0,
+     "key": "F major",
+     "loop_start_s": 74.48,
+     "loop_end_s": 132.086,
+     "bars": 24,
+     "beats_per_bar": 3,
+     "seam_similarity": 0.9243,
+     "duration_s": 57.606,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -17.35,
+     "sample_peak_db": -7.94,
+     "true_peak_dbtp": -7.94,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -55.9,
+     "spectral_centroid_hz": 526,
+     "loop_seam_jump": 0.0075,
+     "limiter_db": 0.0,
+     "failures": [],
+     "file": "audio/music_street_theme_s303.mp3",
+     "note_pt": "Mais 'detetive na ponta dos pés', em fá/ré menor; um pouco mais desenho animado clássico.",
+     "seam_file": "audio/music_street_theme_s303_seam.mp3",
+     "spectrogram": "spectrograms/music_street_theme.png"
+    },
+    {
+     "name": "music_street_theme_s202",
+     "seed": 202,
+     "source_s": 179.17,
+     "bpm": 75.0,
+     "key": "F# minor",
+     "loop_start_s": 83.28,
+     "loop_end_s": 160.081,
+     "bars": 24,
+     "beats_per_bar": 4,
+     "seam_similarity": 0.9003,
+     "duration_s": 76.801,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -16.22,
+     "sample_peak_db": -7.62,
+     "true_peak_dbtp": -7.61,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -46.7,
+     "spectral_centroid_hz": 560,
+     "loop_seam_jump": 0.0051,
+     "limiter_db": 0.0,
+     "failures": [],
+     "file": "audio/music_street_theme_s202.mp3",
+     "note_pt": "A mais doce e nostálgica; tem um acordeão (não pedido) que puxa para feira de vila.",
+     "seam_file": "audio/music_street_theme_s202_seam.mp3",
+     "spectrogram": "spectrograms/music_street_theme.png"
+    }
+   ],
+   "all_options": [
+    {
+     "name": "music_street_theme_s101",
+     "seed": 101,
+     "source_s": 180.79,
+     "bpm": 76.1,
+     "key": "D major",
+     "loop_start_s": 58.501,
+     "loop_end_s": 134.283,
+     "bars": 32,
+     "beats_per_bar": 3,
+     "seam_similarity": 0.9573,
+     "duration_s": 75.781,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -15.45,
+     "sample_peak_db": -7.51,
+     "true_peak_dbtp": -7.5,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -50.9,
+     "spectral_centroid_hz": 616,
+     "loop_seam_jump": 0.0124,
+     "limiter_db": 0.0,
+     "failures": []
+    },
+    {
+     "name": "music_street_theme_s202",
+     "seed": 202,
+     "source_s": 179.17,
+     "bpm": 75.0,
+     "key": "F# minor",
+     "loop_start_s": 83.28,
+     "loop_end_s": 160.081,
+     "bars": 24,
+     "beats_per_bar": 4,
+     "seam_similarity": 0.9003,
+     "duration_s": 76.801,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -16.22,
+     "sample_peak_db": -7.62,
+     "true_peak_dbtp": -7.61,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -46.7,
+     "spectral_centroid_hz": 560,
+     "loop_seam_jump": 0.0051,
+     "limiter_db": 0.0,
+     "failures": []
+    },
+    {
+     "name": "music_street_theme_s303",
+     "seed": 303,
+     "source_s": 180.38,
+     "bpm": 75.0,
+     "key": "F major",
+     "loop_start_s": 74.48,
+     "loop_end_s": 132.086,
+     "bars": 24,
+     "beats_per_bar": 3,
+     "seam_similarity": 0.9243,
+     "duration_s": 57.606,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -17.35,
+     "sample_peak_db": -7.94,
+     "true_peak_dbtp": -7.94,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -55.9,
+     "spectral_centroid_hz": 526,
+     "loop_seam_jump": 0.0075,
+     "limiter_db": 0.0,
+     "failures": []
+    }
+   ]
+  },
+  {
+   "id": "music_exploration",
+   "title": "Exploration",
+   "title_pt": "Exploração",
+   "kind": "loop",
+   "model": "lyria-3-pro-preview",
+   "listen_pt": "Mais leve e espaçada que o tema; deve ficar 'por baixo' dos sons do jogo sem cansar; emenda do loop.",
+   "purpose_pt": "Fundo musical discreto durante o jogo livre.",
+   "options": [
+    {
+     "name": "music_exploration_s111",
+     "seed": 111,
+     "source_s": 181.24,
+     "bpm": 75.1,
+     "key": "A major",
+     "loop_start_s": 53.669,
+     "loop_end_s": 130.469,
+     "bars": 24,
+     "beats_per_bar": 4,
+     "seam_similarity": 0.9896,
+     "duration_s": 76.8,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -15.44,
+     "sample_peak_db": -4.53,
+     "true_peak_dbtp": -4.52,
+     "dc_offset": -0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -63.5,
+     "spectral_centroid_hz": 380,
+     "loop_seam_jump": 0.0074,
+     "limiter_db": 0.0,
+     "failures": [],
+     "file": "audio/music_exploration_s111.mp3",
+     "note_pt": "Variação leve da opção 1 do tema (mesma família, tonalidade vizinha); deixa espaço para os efeitos.",
+     "seam_file": "audio/music_exploration_s111_seam.mp3",
+     "spectrogram": "spectrograms/music_exploration.png"
+    },
+    {
+     "name": "music_exploration_s333",
+     "seed": 333,
+     "source_s": 178.86,
+     "bpm": 75.1,
+     "key": "Eb major",
+     "loop_start_s": 41.648,
+     "loop_end_s": 105.647,
+     "bars": 20,
+     "beats_per_bar": 4,
+     "seam_similarity": 0.924,
+     "duration_s": 63.999,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -15.54,
+     "sample_peak_db": -7.31,
+     "true_peak_dbtp": -7.31,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -63.4,
+     "spectral_centroid_hz": 469,
+     "loop_seam_jump": 0.0018,
+     "limiter_db": 0.0,
+     "failures": [],
+     "file": "audio/music_exploration_s333.mp3",
+     "note_pt": "Investigação discreta, combina com a opção 2 do tema; um pouco mais seca.",
+     "seam_file": "audio/music_exploration_s333_seam.mp3",
+     "spectrogram": "spectrograms/music_exploration.png"
+    },
+    {
+     "name": "music_exploration_s222",
+     "seed": 222,
+     "source_s": 181.89,
+     "bpm": 75.0,
+     "key": "C major",
+     "loop_start_s": 79.259,
+     "loop_end_s": 156.055,
+     "bars": 24,
+     "beats_per_bar": 4,
+     "seam_similarity": 0.9773,
+     "duration_s": 76.797,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -16.23,
+     "sample_peak_db": -3.16,
+     "true_peak_dbtp": -3.15,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -56.4,
+     "spectral_centroid_hz": 469,
+     "loop_seam_jump": 0.0089,
+     "limiter_db": 0.0,
+     "failures": [],
+     "file": "audio/music_exploration_s222.mp3",
+     "note_pt": "Calma e espaçada, mas com menos identidade própria.",
+     "seam_file": "audio/music_exploration_s222_seam.mp3",
+     "spectrogram": "spectrograms/music_exploration.png"
+    }
+   ],
+   "all_options": [
+    {
+     "name": "music_exploration_s111",
+     "seed": 111,
+     "source_s": 181.24,
+     "bpm": 75.1,
+     "key": "A major",
+     "loop_start_s": 53.669,
+     "loop_end_s": 130.469,
+     "bars": 24,
+     "beats_per_bar": 4,
+     "seam_similarity": 0.9896,
+     "duration_s": 76.8,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -15.44,
+     "sample_peak_db": -4.53,
+     "true_peak_dbtp": -4.52,
+     "dc_offset": -0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -63.5,
+     "spectral_centroid_hz": 380,
+     "loop_seam_jump": 0.0074,
+     "limiter_db": 0.0,
+     "failures": []
+    },
+    {
+     "name": "music_exploration_s222",
+     "seed": 222,
+     "source_s": 181.89,
+     "bpm": 75.0,
+     "key": "C major",
+     "loop_start_s": 79.259,
+     "loop_end_s": 156.055,
+     "bars": 24,
+     "beats_per_bar": 4,
+     "seam_similarity": 0.9773,
+     "duration_s": 76.797,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -16.23,
+     "sample_peak_db": -3.16,
+     "true_peak_dbtp": -3.15,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -56.4,
+     "spectral_centroid_hz": 469,
+     "loop_seam_jump": 0.0089,
+     "limiter_db": 0.0,
+     "failures": []
+    },
+    {
+     "name": "music_exploration_s333",
+     "seed": 333,
+     "source_s": 178.86,
+     "bpm": 75.1,
+     "key": "Eb major",
+     "loop_start_s": 41.648,
+     "loop_end_s": 105.647,
+     "bars": 20,
+     "beats_per_bar": 4,
+     "seam_similarity": 0.924,
+     "duration_s": 63.999,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -15.54,
+     "sample_peak_db": -7.31,
+     "true_peak_dbtp": -7.31,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -63.4,
+     "spectral_centroid_hz": 469,
+     "loop_seam_jump": 0.0018,
+     "limiter_db": 0.0,
+     "failures": []
+    }
+   ]
+  },
+  {
+   "id": "music_case_closed",
+   "title": "Case-closed sting",
+   "title_pt": "Caso resolvido (vinheta)",
+   "kind": "sting",
+   "model": "lyria-3-clip-preview",
+   "listen_pt": "Calor e resolução: deve soar como 'conseguimos!', terminando num acorde maior que se apaga suave.",
+   "purpose_pt": "Toca quando o caso é fechado (carimbo 'Caso resolvido').",
+   "options": [
+    {
+     "name": "music_case_closed_s121",
+     "seed": 121,
+     "source_s": 30.77,
+     "bpm": 95.9,
+     "cut_start_s": 25.296,
+     "cut_end_s": 30.75,
+     "ending_key": "Eb major",
+     "transposed_st": -1,
+     "final_key": "D major",
+     "duration_s": 5.778,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -16.02,
+     "sample_peak_db": -7.04,
+     "true_peak_dbtp": -7.04,
+     "dc_offset": -0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -65.4,
+     "spectral_centroid_hz": 599,
+     "edge_level": 0.0,
+     "limiter_db": 0.0,
+     "failures": [],
+     "file": "audio/music_case_closed_s121.mp3",
+     "note_pt": "Charmosa e cintilante, termina num acorde que soa até o fim.",
+     "spectrogram": "spectrograms/music_case_closed.png"
+    },
+    {
+     "name": "music_case_closed_s242",
+     "seed": 242,
+     "source_s": 29.52,
+     "bpm": 95.8,
+     "cut_start_s": 23.344,
+     "cut_end_s": 29.5,
+     "ending_key": "C major",
+     "transposed_st": 2,
+     "final_key": "D major",
+     "duration_s": 5.484,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -15.88,
+     "sample_peak_db": -6.91,
+     "true_peak_dbtp": -6.79,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -68.8,
+     "spectral_centroid_hz": 671,
+     "edge_level": 0.0,
+     "limiter_db": 0.0,
+     "failures": [],
+     "file": "audio/music_case_closed_s242.mp3",
+     "note_pt": "Alegre, de flauta e clarinete, bem 'mistério resolvido' leve.",
+     "spectrogram": "spectrograms/music_case_closed.png"
+    },
+    {
+     "name": "music_case_closed_s484",
+     "seed": 484,
+     "source_s": 30.77,
+     "bpm": 120.9,
+     "cut_start_s": 24.165,
+     "cut_end_s": 30.75,
+     "ending_key": "G minor",
+     "transposed_st": 2,
+     "final_key": "A minor",
+     "duration_s": 5.866,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -18.06,
+     "sample_peak_db": -8.65,
+     "true_peak_dbtp": -8.65,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -71.3,
+     "spectral_centroid_hz": 751,
+     "edge_level": 0.0,
+     "limiter_db": 0.0,
+     "failures": [],
+     "file": "audio/music_case_closed_s484.mp3",
+     "note_pt": "A mais grandiosa (orquestra cheia): talvez para o fim da temporada.",
+     "spectrogram": "spectrograms/music_case_closed.png"
+    }
+   ],
+   "all_options": [
+    {
+     "name": "music_case_closed_s121",
+     "seed": 121,
+     "source_s": 30.77,
+     "bpm": 95.9,
+     "cut_start_s": 25.296,
+     "cut_end_s": 30.75,
+     "ending_key": "Eb major",
+     "transposed_st": -1,
+     "final_key": "D major",
+     "duration_s": 5.778,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -16.02,
+     "sample_peak_db": -7.04,
+     "true_peak_dbtp": -7.04,
+     "dc_offset": -0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -65.4,
+     "spectral_centroid_hz": 599,
+     "edge_level": 0.0,
+     "limiter_db": 0.0,
+     "failures": []
+    },
+    {
+     "name": "music_case_closed_s242",
+     "seed": 242,
+     "source_s": 29.52,
+     "bpm": 95.8,
+     "cut_start_s": 23.344,
+     "cut_end_s": 29.5,
+     "ending_key": "C major",
+     "transposed_st": 2,
+     "final_key": "D major",
+     "duration_s": 5.484,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -15.88,
+     "sample_peak_db": -6.91,
+     "true_peak_dbtp": -6.79,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -68.8,
+     "spectral_centroid_hz": 671,
+     "edge_level": 0.0,
+     "limiter_db": 0.0,
+     "failures": []
+    },
+    {
+     "name": "music_case_closed_s484",
+     "seed": 484,
+     "source_s": 30.77,
+     "bpm": 120.9,
+     "cut_start_s": 24.165,
+     "cut_end_s": 30.75,
+     "ending_key": "G minor",
+     "transposed_st": 2,
+     "final_key": "A minor",
+     "duration_s": 5.866,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -18.06,
+     "sample_peak_db": -8.65,
+     "true_peak_dbtp": -8.65,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -71.3,
+     "spectral_centroid_hz": 751,
+     "edge_level": 0.0,
+     "limiter_db": 0.0,
+     "failures": []
+    }
+   ]
+  },
+  {
+   "id": "music_reveal",
+   "title": "Cutscene reveal",
+   "title_pt": "Revelação (cena)",
+   "kind": "reveal",
+   "model": "lyria-3-clip-preview",
+   "listen_pt": "Sensação de 'ahá!': começa em suspense suave e abre num acorde maior luminoso; nada de susto.",
+   "purpose_pt": "Cena da revelação depois de uma dedução certa.",
+   "options": [
+    {
+     "name": "music_reveal_s131",
+     "seed": 131,
+     "source_s": 30.43,
+     "bpm": 119.7,
+     "cut_start_s": 12.123,
+     "cut_end_s": 30.4,
+     "ending_key": "Bb major",
+     "transposed_st": -1,
+     "final_key": "A major",
+     "duration_s": 19.364,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -16.18,
+     "sample_peak_db": -8.13,
+     "true_peak_dbtp": -8.12,
+     "dc_offset": -0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -71.1,
+     "spectral_centroid_hz": 1083,
+     "edge_level": 0.0,
+     "limiter_db": 0.0,
+     "failures": [],
+     "file": "audio/music_reveal_s131.mp3",
+     "note_pt": "Celesta e harpa abrindo em cordas e sopros: maravilhamento de livro de histórias.",
+     "spectrogram": "spectrograms/music_reveal.png"
+    },
+    {
+     "name": "music_reveal_s524",
+     "seed": 524,
+     "source_s": 30.75,
+     "bpm": 95.6,
+     "cut_start_s": 15.152,
+     "cut_end_s": 30.7,
+     "ending_key": "Bb major",
+     "transposed_st": -1,
+     "final_key": "A major",
+     "duration_s": 16.472,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -15.45,
+     "sample_peak_db": -6.61,
+     "true_peak_dbtp": -6.59,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -64.9,
+     "spectral_centroid_hz": 652,
+     "edge_level": 0.0,
+     "limiter_db": 0.0,
+     "failures": [],
+     "file": "audio/music_reveal_s524.mp3",
+     "note_pt": "Começa curiosa e abre num ré maior caloroso.",
+     "spectrogram": "spectrograms/music_reveal.png"
+    },
+    {
+     "name": "music_reveal_s262",
+     "seed": 262,
+     "source_s": 30.77,
+     "bpm": 90.1,
+     "cut_start_s": 19.525,
+     "cut_end_s": 30.75,
+     "ending_key": "Eb major",
+     "transposed_st": -1,
+     "final_key": "D major",
+     "duration_s": 11.892,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -15.08,
+     "sample_peak_db": -7.24,
+     "true_peak_dbtp": -7.23,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -72.2,
+     "spectral_centroid_hz": 750,
+     "edge_level": 0.0,
+     "limiter_db": 0.0,
+     "failures": [],
+     "file": "audio/music_reveal_s262.mp3",
+     "note_pt": "Mais curta e doce (cerca de 12 s), de caixinha de música.",
+     "spectrogram": "spectrograms/music_reveal.png"
+    }
+   ],
+   "all_options": [
+    {
+     "name": "music_reveal_s131",
+     "seed": 131,
+     "source_s": 30.43,
+     "bpm": 119.7,
+     "cut_start_s": 12.123,
+     "cut_end_s": 30.4,
+     "ending_key": "Bb major",
+     "transposed_st": -1,
+     "final_key": "A major",
+     "duration_s": 19.364,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -16.18,
+     "sample_peak_db": -8.13,
+     "true_peak_dbtp": -8.12,
+     "dc_offset": -0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -71.1,
+     "spectral_centroid_hz": 1083,
+     "edge_level": 0.0,
+     "limiter_db": 0.0,
+     "failures": []
+    },
+    {
+     "name": "music_reveal_s262",
+     "seed": 262,
+     "source_s": 30.77,
+     "bpm": 90.1,
+     "cut_start_s": 19.525,
+     "cut_end_s": 30.75,
+     "ending_key": "Eb major",
+     "transposed_st": -1,
+     "final_key": "D major",
+     "duration_s": 11.892,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -15.08,
+     "sample_peak_db": -7.24,
+     "true_peak_dbtp": -7.23,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -72.2,
+     "spectral_centroid_hz": 750,
+     "edge_level": 0.0,
+     "limiter_db": 0.0,
+     "failures": []
+    },
+    {
+     "name": "music_reveal_s524",
+     "seed": 524,
+     "source_s": 30.75,
+     "bpm": 95.6,
+     "cut_start_s": 15.152,
+     "cut_end_s": 30.7,
+     "ending_key": "Bb major",
+     "transposed_st": -1,
+     "final_key": "A major",
+     "duration_s": 16.472,
+     "channels": 2,
+     "lufs": -20.0,
+     "lufs_method": "bs1770",
+     "momentary_max_lufs": -15.45,
+     "sample_peak_db": -6.61,
+     "true_peak_dbtp": -6.59,
+     "dc_offset": 0.0,
+     "clipped_samples": 0,
+     "sub_bass_db": -64.9,
+     "spectral_centroid_hz": 652,
+     "edge_level": 0.0,
+     "limiter_db": 0.0,
+     "failures": []
+    }
+   ]
+  }
+ ],
+ "failures": []
+}
