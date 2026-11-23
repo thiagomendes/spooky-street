@@ -68,6 +68,12 @@ namespace SpookyStreet.App
         /// <summary>The approved sound effects wired to play (S003): steps, moves, clue sounds, UI taps, the night bed.</summary>
         public GameAudio Audio { get; private set; }
 
+        /// <summary>Language packs and the launch language (S004 D1).</summary>
+        public LanguageController Languages { get; private set; }
+
+        /// <summary>The language screen (title globe, pause globe).</summary>
+        public LanguageScreen LanguageScreen { get; private set; }
+
         private void Awake()
         {
             // Last loaded scene wins; a reload (tests, "back to title" later) replaces the previous instance.
@@ -130,7 +136,38 @@ namespace SpookyStreet.App
             Adopt(Director.gameObject);
             Audio = GameAudio.Create(this);
             Adopt(Audio.gameObject);
+            CreateLanguages();
             ApplySuspension(Flow.State);
+        }
+
+        /// <summary>
+        /// Language packs (S004 D1): the launch language (choice, else device, else English), the language screen on
+        /// the title's globe and the pause card, and its parent gate (the case's nonverbal menus) for downloads.
+        /// </summary>
+        private void CreateLanguages()
+        {
+            string directory = Director != null ? Director.SaveDirectory : null;
+            Languages = LanguageController.Create(transform, directory, () => Audio != null ? Audio.Preferences : null,
+                p =>
+                {
+                    if (Audio != null)
+                    {
+                        Audio.SetPreferences(p);
+                    }
+                });
+            LanguageScreen = LanguageScreen.Create(null, Languages, passed =>
+            {
+                var menus = Director != null && Director.Nonverbal != null ? Director.Nonverbal.Menus : null;
+                if (menus == null)
+                {
+                    return false;
+                }
+
+                menus.RequireParent(passed);
+                return true;
+            });
+            Adopt(LanguageScreen.gameObject);
+            Ui.OpenLanguages = LanguageScreen.Open;
         }
 
         private void Adopt(GameObject root)

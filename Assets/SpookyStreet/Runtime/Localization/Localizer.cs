@@ -30,6 +30,12 @@ namespace SpookyStreet.Localization
 
         public static string Format(string key, params object[] args) => Catalog.Format(key, args);
 
+        /// <summary>The plural form for <paramref name="count"/> (schema 2), formatted with <paramref name="args"/>.</summary>
+        public static string Plural(string key, long count, params object[] args) => Catalog.Plural(key, count, args);
+
+        /// <summary>The active language's locale, e.g. "en" or "qps-ploc".</summary>
+        public static string ActiveLocale => Catalog.Active.Locale;
+
         public static void Initialize()
         {
             var asset = Resources.Load<TextAsset>(BundledEnglishResource);
@@ -49,7 +55,11 @@ namespace SpookyStreet.Localization
             s_catalog.MissingKey += key => Debug.LogWarning("[Localization] Missing key: " + key);
         }
 
-        /// <summary>Development helper: cycles English ↔ pseudo-language to check +35% layouts.</summary>
+        /// <summary>
+        /// Development and test helper: cycles English ↔ an in-memory pseudo-language to check +35% layouts. The
+        /// language screen (<see cref="LanguageController"/>) is the player's path; it switches to the downloaded
+        /// pseudo pack instead.
+        /// </summary>
         public static void TogglePseudo()
         {
             var catalog = Catalog;

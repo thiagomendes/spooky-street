@@ -13,4 +13,5 @@ run yamllint -c .yamllint.yml .github
 if command -v ruby > /dev/null; then run ruby -c ios/fastlane/Fastfile; fi
 run dotnet test tools/core-tests --nologo
 run python3 -m unittest discover -s tools/audio/tests -t tools/audio
+run python3 tools/l10n/l10n.py check
 echo "All local checks passed."

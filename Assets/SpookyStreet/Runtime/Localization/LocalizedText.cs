@@ -12,6 +12,7 @@ namespace SpookyStreet.Localization
 
         private Text _text;
         private Func<object[]> _arguments;
+        private Func<long> _count;
 
         public string Key => key;
 
@@ -19,6 +20,16 @@ namespace SpookyStreet.Localization
         {
             key = newKey;
             _arguments = arguments;
+            _count = null;
+            Refresh();
+        }
+
+        /// <summary>A count-dependent key (schema 2 plural forms): the form follows <paramref name="count"/>.</summary>
+        public void SetPlural(string newKey, Func<long> count, Func<object[]> arguments)
+        {
+            key = newKey;
+            _arguments = arguments;
+            _count = count;
             Refresh();
         }
 
@@ -31,6 +42,12 @@ namespace SpookyStreet.Localization
 
             if (_text == null || string.IsNullOrEmpty(key))
             {
+                return;
+            }
+
+            if (_count != null)
+            {
+                _text.text = Localizer.Plural(key, _count(), _arguments != null ? _arguments() : new object[0]);
                 return;
             }
 

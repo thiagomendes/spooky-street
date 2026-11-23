@@ -1,0 +1,7 @@
+{
+  "configVersion": 1,
+  "catalogUrl": "https://thiagomendes.github.io/spooky-street/packs/catalog.json",
+  "builtIn": [
+    { "locale": "pt-BR", "nativeName": "Português (Brasil)", "resource": "Localization/pt-BR" }
+  ]
+}

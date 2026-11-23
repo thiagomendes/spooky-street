@@ -67,6 +67,15 @@ namespace SpookyStreet.UI
         public Button ContinueButton => _continueButton;
         public Button PauseButton => _pauseButton;
 
+        /// <summary>The title's globe pill (language screen).</summary>
+        public Button LanguageButton { get; private set; }
+
+        /// <summary>The pause card's globe disc (language screen).</summary>
+        public Button PauseLanguageButton { get; private set; }
+
+        /// <summary>Opens the language screen (set by the language controller at boot).</summary>
+        public System.Action OpenLanguages { get; set; }
+
         /// <summary>
         /// Contextual Use disc, shown in play: the interaction's verb when one is in range, otherwise "Roll" with the
         /// roll glyph on the ground and "Dive" in the air while a dive is available (spec §5 v1.2).
@@ -427,11 +436,9 @@ namespace SpookyStreet.UI
                     () => new object[] { Application.version, buildInfo.Identifier });
             }
 
-            // No settings disc yet: there is no settings screen to open (no dead buttons).
-            if (Debug.isDebugBuild)
-            {
-                BuildLanguagePill(content);
-            }
+            // The globe pill opens the language screen (S004 D1), in every build: English, the built-in languages
+            // and, behind the parent gate, downloads.
+            LanguageButton = BuildLanguagePill(content, () => OpenLanguages?.Invoke());
         }
 
         /// <summary>
@@ -448,12 +455,12 @@ namespace SpookyStreet.UI
             rect.sizeDelta = hasSave ? new Vector2(360f, 96f) : new Vector2(440f, 112f);
         }
 
-        /// <summary>Development-only pseudo-locale switch: a small paper pill with a globe, bottom-right.</summary>
-        private static void BuildLanguagePill(Transform parent)
+        /// <summary>The language screen's opener: a small paper pill with a globe and the current language, bottom-right.</summary>
+        private static Button BuildLanguagePill(Transform parent, UnityEngine.Events.UnityAction open)
         {
             var size = new Vector2(380f, 96f);
             var pill = UiFactory.SecondaryButton(parent, "LanguageToggleDev", null, Vector2.right,
-                new Vector2(-size.x * 0.5f - 36f, 72f), size, Localizer.TogglePseudo, UiSpriteCatalog.IconGlobe);
+                new Vector2(-size.x * 0.5f - 36f, 72f), size, open, UiSpriteCatalog.IconGlobe);
             pill.transform.localRotation = Quaternion.Euler(0f, 0f, -1f);
             var label = pill.GetComponent<CraftButton>().Label;
             label.fontSize = 28;
@@ -461,6 +468,7 @@ namespace SpookyStreet.UI
             label.alignment = TextAnchor.MiddleLeft;
             label.gameObject.AddComponent<LocalizedText>().SetKey(LocalizationKeys.TitleLanguageToggle,
                 () => new object[] { Localizer.Catalog.Active.NativeName });
+            return pill;
         }
 
         private void BuildPause(Transform canvas)
@@ -481,6 +489,15 @@ namespace SpookyStreet.UI
                 new Vector2(0f, -200f), new Vector2(440f, 112f), () => _flow.Resume(), UiSpriteCatalog.IconPlay);
             UiFactory.SecondaryButton(card.transform, "BackToTitleButton", LocalizationKeys.PauseBackToTitle, top,
                 new Vector2(0f, -340f), new Vector2(400f, 96f), () => _flow.QuitToTitle());
+
+            // Top-left globe (the settings gear takes the top-right corner): the language screen, no gate to switch.
+            var globe = UiFactory.FeltDisc(card.transform, "LanguageButton", UiSpriteCatalog.FeltDiscNight,
+                Palette.WarmPaper, UiSpriteCatalog.IconGlobe, Palette.WarmPaper, null, UiFactory.SystemDiscDiameter,
+                new Vector2(0f, 1f), new Vector2(30f, -30f), 1f);
+            PauseLanguageButton = globe.gameObject.AddComponent<Button>();
+            PauseLanguageButton.targetGraphic = globe;
+            PauseLanguageButton.transition = Selectable.Transition.None;
+            PauseLanguageButton.onClick.AddListener(() => OpenLanguages?.Invoke());
         }
     }
 }

@@ -374,7 +374,7 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(1, recap.FilledDots, "chapter 1: nothing answered yet");
             int found = N.Found(state, true).Count;
             Assert.AreEqual(System.Math.Min(found, ContinueRecap.MaxStickerIcons), recap.StickerIds.Count);
-            CollectionAssert.Contains(recap.Texts.ToList(), Localizer.Format(recap.Recap.StickersKey, found));
+            CollectionAssert.Contains(recap.Texts.ToList(), Localizer.Plural(recap.Recap.StickersKey, found, found));
             AssertNoAnswerText(recap);
 
             // Continue resumes at that place; back on the title the recap follows the save.
