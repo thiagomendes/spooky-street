@@ -446,6 +446,11 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(3.0f, top, 0.05f);
             Vector3 n = Vector3.zero;
             yield return StandBesideLamp(head, v => n = v);
+            // The earlier move tips count as learned, so none of them (or its cooldown) holds back the climb tip.
+            foreach (var learned in new[] { MoveTip.HoldJump, MoveTip.ChainJump, MoveTip.Glide, MoveTip.Dive })
+            {
+                game.Ui.Tips.Scheduler.Performed(learned);
+            }
 
             // A tap falls short.
             yield return TapJump();
@@ -468,7 +473,7 @@ namespace SpookyStreet.Tests.PlayMode
             JumpUp();
             StopSteering();
             Assert.IsTrue(pip.Hanging, "the high jump catches the lamp arm");
-            yield return Wait(0.3f);
+            yield return Wait(0.5f);
             Vector3 feet = pip.transform.position;
             Assert.AreEqual(top - pip.TuningData.LedgeHangHandHeight, feet.y, 0.06f, "hands on the top");
             float out_ = Vector3.Dot(feet - head.bounds.ClosestPoint(feet), n);
