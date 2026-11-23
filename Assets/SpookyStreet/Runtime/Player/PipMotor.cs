@@ -211,6 +211,13 @@ namespace SpookyStreet.Player
             travelled.y = 0f;
             DistanceWalked += travelled.magnitude;
 
+            if (step.WallJumped)
+            {
+                // The kick turns her around at once: the WallKick clip pushes off a wall that is behind her.
+                transform.rotation = Quaternion.LookRotation(
+                    new Vector3(_state.KickNormalX, 0f, _state.KickNormalZ), Vector3.up);
+            }
+
             FaceVelocity(dt);
             LastStep = step;
             Stepped?.Invoke(step);

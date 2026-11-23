@@ -686,6 +686,46 @@ namespace SpookyStreet.Tests.Core
             air.VerticalSpeed = 0f;
             Assert.AreEqual(PipPose.LedgeHang, tracker.Step(air, 0.5f));
         }
+
+        [Test]
+        public void TheClimbCountsAsGroundSoNoAirPoseOrLandingFollowsIt([Values(30f, 60f)] float fps)
+        {
+            float dt = 1f / fps;
+            var tracker = new PipPoseTracker();
+            tracker.Step(new PipPoseInput { Grounded = true }, dt);
+            var hang = new PipPoseInput { Grounded = false, LedgeHanging = true };
+            for (float t = 0f; t < 1f; t += dt)
+            {
+                Assert.AreEqual(PipPose.LedgeHang, tracker.Step(hang, dt));
+            }
+
+            // The climb: the LedgeClimb clip plays over it and ends standing, so nothing airborne shows under it.
+            var climb = new PipPoseInput { Grounded = false, Climbing = true };
+            for (float t = 0f; t < 0.4f; t += dt)
+            {
+                Assert.AreEqual(PipPose.Locomotion, tracker.Step(climb, dt));
+                Assert.IsFalse(tracker.Landed);
+                Assert.IsFalse(tracker.TookOff);
+            }
+
+            // She is let go a few centimetres above the top and settles onto it: still no air pose and no landing.
+            var settle = new PipPoseInput { Grounded = false, VerticalSpeed = -0.5f };
+            Assert.AreEqual(PipPose.Locomotion, tracker.Step(settle, dt));
+            Assert.AreEqual(PipPose.Locomotion, tracker.Step(settle, dt));
+            Assert.AreEqual(PipPose.Locomotion, tracker.Step(new PipPoseInput { Grounded = true }, dt));
+            Assert.IsFalse(tracker.Landed, "the climb ends on her feet: no landing squat on top");
+
+            // A drop from a hang is a fall as before.
+            tracker.Step(hang, dt);
+            var fall = new PipPoseInput { Grounded = false, VerticalSpeed = -4f };
+            PipPose pose = PipPose.Locomotion;
+            for (float t = 0f; t < 0.3f; t += dt)
+            {
+                pose = tracker.Step(fall, dt);
+            }
+
+            Assert.AreEqual(PipPose.Fall, pose);
+        }
     }
 
 }

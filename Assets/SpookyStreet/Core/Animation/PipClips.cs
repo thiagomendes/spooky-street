@@ -22,10 +22,20 @@ namespace SpookyStreet.Core.Animation
         public const string Roll = "Roll";
         public const string Interact = "Interact";
 
+        /// <summary>Kick off a wall that is behind Pip (S003); ends on the JumpAir pose.</summary>
+        public const string WallKick = "WallKick";
+
+        /// <summary>Catching a ledge (S003); ends on <see cref="LedgeHang"/> frame 0.</summary>
+        public const string LedgeGrab = "LedgeGrab";
+
+        /// <summary>Pulling up and over a ledge in place, timed to the motor's climb (S003); ends on Idle frame 0.</summary>
+        public const string LedgeClimb = "LedgeClimb";
+
         /// <summary>Every clip the game knows, in a stable order (the animator's mixer inputs follow it).</summary>
         public static readonly string[] All =
         {
             Idle, Walk, Run, JumpStart, JumpAir, Fall, Land, Glide, WallSlide, LedgeHang, Roll, Interact,
+            WallKick, LedgeGrab, LedgeClimb,
         };
 
         /// <summary>Clips that cycle; everything else plays once and holds its last frame.</summary>
@@ -67,7 +77,8 @@ namespace SpookyStreet.Core.Animation
 
         /// <summary>
         /// The clip to try next when <paramref name="clipName"/> is missing, or null when nothing stands in
-        /// (one-shots and Land are simply skipped). Chains always end at <see cref="Idle"/> or null.
+        /// (one-shots and Land are simply skipped; a missing wall kick or climb replays the take-off, as before those
+        /// clips existed; a missing catch goes straight to the hang). Chains always end at <see cref="Idle"/> or null.
         /// </summary>
         public static string Fallback(string clipName)
         {
@@ -81,6 +92,8 @@ namespace SpookyStreet.Core.Animation
                 case Glide: return Fall;
                 case WallSlide: return Fall;
                 case LedgeHang: return Idle;
+                case WallKick: return JumpStart;
+                case LedgeClimb: return JumpStart;
                 default: return null;
             }
         }

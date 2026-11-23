@@ -33,6 +33,12 @@ namespace SpookyStreet.Core.Animation
 
         /// <summary>Pip kicked off a wall this frame (S003): the take-off plays again, as for a jump.</summary>
         public bool Kicked;
+
+        /// <summary>
+        /// Pip is climbing from a hang onto a ledge (S003). The LedgeClimb clip carries her to her feet, so the climb
+        /// counts as ground: no air pose shows through it and stepping onto the top plays no landing.
+        /// </summary>
+        public bool Climbing;
     }
 
     /// <summary>Idle/walk/run weights; they always sum to 1.</summary>
@@ -105,6 +111,17 @@ namespace SpookyStreet.Core.Animation
             Landed = false;
             if (deltaTime <= 0f)
             {
+                return Pose;
+            }
+
+            if (input.Climbing)
+            {
+                _airTime = 0f;
+                _startTimer = 0f;
+                _landTimer = 0f;
+                _jumped = false;
+                _wasGrounded = true;
+                Pose = PipPose.Locomotion;
                 return Pose;
             }
 
