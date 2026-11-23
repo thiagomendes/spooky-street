@@ -102,6 +102,9 @@ That change is frozen here and is the owner's call.
   - the climb plays `JumpStart` as a one-shot timed to the climb, then `Land` on top.
 
   The Blender clip list is in `tools/blender/export/pip_anims.py` `CLIPS`. A `LedgeGrab` catch clip would also help.
+
+  Later: `WallKick`, `LedgeGrab` and `LedgeClimb` now exist, `LedgeHang` was re-authored and the hang lean was
+  removed. See `docs/S003-pip-climb-clips.md`.
 - **Tips** (`MoveTips`, shown once ever):
 
   | Tip | Text | Shown when |

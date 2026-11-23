@@ -23,7 +23,7 @@ namespace SpookyStreet.Tests.Core
         public void LoopingClipsMatchTheExportContract()
         {
             var loops = new[] { "Idle", "Walk", "Run", "JumpAir", "Fall", "Glide", "WallSlide", "LedgeHang" };
-            var once = new[] { "JumpStart", "Land", "Roll", "Interact" };
+            var once = new[] { "JumpStart", "Land", "Roll", "Interact", "WallKick", "LedgeGrab", "LedgeClimb" };
             foreach (var name in loops)
             {
                 Assert.IsTrue(PipClips.IsLooping(name), name);
@@ -37,8 +37,14 @@ namespace SpookyStreet.Tests.Core
 
             Assert.IsFalse(PipClips.IsLooping("Take 001"));
             CollectionAssert.AreEquivalent(loops, PipClips.Looping);
-            CollectionAssert.AreEquivalent(new List<string>(loops) { "JumpStart", "Land", "Roll", "Interact" },
-                PipClips.All);
+            var all = new List<string>(loops);
+            all.AddRange(once);
+            CollectionAssert.AreEquivalent(all, PipClips.All);
+            // The animator's mixer inputs follow this order, so the S003 clips were added at the end.
+            Assert.AreEqual("Interact", PipClips.All[11]);
+            Assert.AreEqual("WallKick", PipClips.All[12]);
+            Assert.AreEqual("LedgeGrab", PipClips.All[13]);
+            Assert.AreEqual("LedgeClimb", PipClips.All[14]);
         }
 
         [Test]
@@ -68,6 +74,30 @@ namespace SpookyStreet.Tests.Core
             Assert.AreEqual("Idle", PipClips.Resolve("Glide", present.Contains));
             Assert.IsNull(PipClips.Resolve("Roll", present.Contains));
             Assert.IsNull(PipClips.Resolve("Land", present.Contains));
+        }
+
+        [Test]
+        public void WallAndLedgeClipsStandInAsBeforeTheyExisted()
+        {
+            // Without the S003 clips the take-off stands in for the kick and the climb (here through its own
+            // stand-in, JumpAir), and a catch goes straight to the hang.
+            var present = new HashSet<string> { "Idle", "JumpAir", "LedgeHang" };
+            Assert.AreEqual("JumpAir", PipClips.Resolve(PipClips.WallKick, present.Contains));
+            Assert.AreEqual("JumpAir", PipClips.Resolve(PipClips.LedgeClimb, present.Contains));
+            Assert.IsNull(PipClips.Resolve(PipClips.LedgeGrab, present.Contains));
+            present.Add("JumpStart");
+            Assert.AreEqual("JumpStart", PipClips.Resolve(PipClips.WallKick, present.Contains));
+            present.Add("WallKick");
+            present.Add("LedgeGrab");
+            present.Add("LedgeClimb");
+            Assert.AreEqual("WallKick", PipClips.Resolve(PipClips.WallKick, present.Contains));
+            Assert.AreEqual("LedgeGrab", PipClips.Resolve(PipClips.LedgeGrab, present.Contains));
+            Assert.AreEqual("LedgeClimb", PipClips.Resolve(PipClips.LedgeClimb, present.Contains));
+            foreach (var name in new[] { PipClips.WallKick, PipClips.LedgeGrab, PipClips.LedgeClimb })
+            {
+                Assert.IsTrue(PipClips.IsKnown("Pip_Rig|" + name), name);
+                Assert.IsFalse(PipClips.IsLooping("Pip_Rig|" + name), name + " plays once");
+            }
         }
     }
 
