@@ -184,3 +184,23 @@ press, not the tap. Stickers are not buttons. The page arrows tap and also flip 
   closed" card has none.
 - **Music and voices:** the `MusicVol` and `VoiceVol` sliders work but nothing plays on those buses yet.
 - **No real AudioMixer asset:** the rig is the code-built mixer from S003. There is no reverb send for the indoor rooms.
+- **Run 113 rig test:** the rig test once read the bed 6 dB below the expected trim. That is the size of the voice
+  duck, as if `VoiceActive` were true with no voice playing; the cause was not confirmed. The test now checks the
+  trim relative to the bed's open level and passes. Worth a look on device once voices are wired.
+
+## CI evidence
+
+- **Run 45097129045** (commit `a63909b`, main `6e78392` merged in): green.
+  - Static checks: passed.
+  - Unity EditMode: 556/556, including `AudioWiringTests` 11/11, `AudioCatalogTests` 11/11, `AudioImportTests` 4/4
+    and `WallLedgeTests` 39/39.
+  - Unity PlayMode: 103/103, including `GameAudioTests` 6/6, `AudioRigTests` 8/8, `DeductionNotebookTests` 4/4 and
+    `WallLedgeTests` 8/8 (with the wall-move sound checks).
+  - Visual: 11/11.
+- **Earlier failures, fixed in later commits:**
+  - **Run 113** (`d1b87e6`): three test-timing faults.
+    - Pip slid one more stride after the stick was released.
+    - The held Jump reads released after a resume, so the glide can end.
+    - The bed's trim check is now relative.
+  - **Run 45093136131** (`c287dce`): the notebook opened on the page the test meant to turn to.
+- Local: `./tools/check-local.sh` passes, with 528 core tests and 24 audio pipeline tests.
