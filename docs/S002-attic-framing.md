@@ -107,7 +107,7 @@ of the door.
 - `CaptionStrip.DropSounds` runs under the page at every crossing. It drops captions that carry a direction source
   (sounds heard from a place). Captions of what Pip sees are kept.
 - `CaptionPerception` (Core): if the knocks first come due while Pip is already indoors (for example a save resumed
-  inside), they are captioned as the **floor hum** ("[The floor hums: knock, knock… knock]"), pointing at the
+  inside), they are captioned as the **floor hum** ("[The floor shakes: knock, knock… knock]"), pointing at the
   workshop below. The story beat is unchanged: `HeardKnocks` is still gained once and raises "Where are the knocks
   coming from?". No new string; `mystery-first.md` already makes the floor hum the indoor perception of the knocks.
 

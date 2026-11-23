@@ -28,8 +28,10 @@ namespace SpookyStreet.Core.Nonverbal
     }
 
     /// <summary>
-    /// Case 01 vignette data (docs/nonverbal-ux.md §3, §5). D23.3 staged it: first the four key Bea/Vale lines, June's
-    /// resolve line and the three notebook answer strips (this file); S002 then gave every other line its vignette
+    /// Case 01 vignette data (docs/nonverbal-ux.md §3, §5; D26 spoiler pass in S002.5a: witnesses show only what they
+    /// perceived, no "this matters" ring and no check stamp in case content, and the notebook's answer comic is built
+    /// from the child's own stickers in the view instead of a fixed strip). D23.3 staged it: first the four key Bea/Vale
+    /// lines and June's resolve line (this file); S002 then gave every other line its vignette
     /// (<c>C01Vignettes.Lines.cs</c>), so every <see cref="CaseScript"/> line key maps to one and no line keeps the v1
     /// fallback. Coordinates are stage-normalized (see <see cref="PuppetPose"/>); parts marked as flipbooks
     /// (<see cref="PuppetParts.JuneRun"/>) cycle their frames in the view while the track moves.
@@ -41,12 +43,7 @@ namespace SpookyStreet.Core.Nonverbal
         public const string ValeDoorShut = "vg.vale.door_shut";
         public const string ValeWasShut = "vg.vale.was_shut";
         public const string JuneResolve = "vg.june.resolve";
-        public const string NotebookEntry = "vg.notebook.q_entry";
-        public const string NotebookSource = "vg.notebook.q_source";
-        public const string NotebookMoved = "vg.notebook.q_moved";
 
-        /// <summary>Speech vignettes loop until the player taps next; notebook strips play twice and stop (§5).</summary>
-        public const int NotebookLoops = 2;
 
         /// <summary>The first five key lines (owner decision D23.3), each with its own approved choreography.</summary>
         public static readonly IReadOnlyList<string> KeyLineKeys = new[]
@@ -62,13 +59,6 @@ namespace SpookyStreet.Core.Nonverbal
         private static readonly Dictionary<string, Vignette> ById = Index();
 
         private static readonly Dictionary<string, string> LineToVignette = BuildLineMap();
-
-        private static readonly Dictionary<string, string> QuestionToStrip = new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            { CaseNotebook.QuestionEntry, NotebookEntry },
-            { CaseNotebook.QuestionSource, NotebookSource },
-            { CaseNotebook.QuestionMoved, NotebookMoved },
-        };
 
         /// <summary>
         /// The line table: one entry per <see cref="CaseScript.AllLineKeys"/>, in script order, with its vignette or
@@ -90,16 +80,11 @@ namespace SpookyStreet.Core.Nonverbal
             return new LineVisual(lineKey, LineToVignette.TryGetValue(lineKey, out string id) ? id : null);
         }
 
-        /// <summary>The animated answer strip of a notebook question (played on tap once answered).</summary>
-        public static Vignette AnswerStripFor(string questionId) =>
-            questionId != null && QuestionToStrip.TryGetValue(questionId, out string id) ? Get(id) : null;
-
         private static Vignette[] BuildAll()
         {
             var all = new List<Vignette>
             {
                 BuildBeaSawCape(), BuildBeaDoorOpen(), BuildValeDoorShut(), BuildValeWasShut(), BuildJuneResolve(),
-                BuildNotebookEntry(), BuildNotebookSource(), BuildNotebookMoved(),
             };
             all.AddRange(BuildLineVignettes());
             return all.ToArray();
@@ -148,62 +133,50 @@ namespace SpookyStreet.Core.Nonverbal
         // ------------------------------------------------------------------------------------------- speech
 
         /// <summary>
-        /// "I saw June's silver cape go in. Right there!" June runs across the bridge (one moving part), pops into
-        /// the window (puff, the window lights with her inside), Bea's hand points and the key ring pulses.
+        /// "Something silver flashed up high, by the side of the house!" (D26, mf_bea_testimony): only what Bea saw. A
+        /// silver glint streaks high over the hedge toward the roof and is gone; then her eye, then a "?". No June, no
+        /// lit window, no pointing hand, no ring.
         /// </summary>
         private static Vignette BuildBeaSawCape()
         {
-            const float winX = 0.86f, winY = 0.52f;
-            return new Vignette(BeaSawCape, 3.6f, 0,
-                Beats(0.2f, 1.7f, 1.7f, 2.1f, 2.2f, 3.6f),
+            return new Vignette(BeaSawCape, 4.0f, 0,
+                Beats(0.4f, 1.5f, 2.0f, 2.4f, 2.8f, 3.4f),
                 new[]
                 {
-                    Still("treehouse", "treehouse", 0.10f, 0.58f, 1.0f),
-                    Still("bridge", "bridge", 0.44f, 0.34f, 1.0f),
-                    Still("wall", "house_side", 0.88f, 0.50f, 1.1f),
-                    Still("window", "window", winX, winY, 0.8f),
-                    Track("window_lit", "june_window",
-                        K(1.95f, winX, winY, 0.8f, 0f, 0f),
-                        K(2.10f, winX, winY, 0.8f, 0f, 1f, Ease.Out)),
-                    Track("june", PuppetParts.JuneRun,
-                        K(0.20f, 0.14f, 0.46f, 0.7f, 0f, 0f),
-                        K(0.45f, 0.20f, 0.46f, 1.0f, 0f, 1f, Ease.Back),
-                        K(1.70f, 0.74f, 0.42f, 1.0f, 0f, 1f, Ease.InOut),
-                        K(1.95f, winX, winY, 0.45f, 0f, 0f, Ease.Out)),
-                    Track("hand", "pointer",
-                        K(2.20f, 0.55f, winY, 1.0f, 0f, 0f),
-                        K(2.60f, 0.70f, winY, 1.0f, 0f, 1f, Ease.Back)),
+                    Still("treehouse", "treehouse", 0.14f, 0.56f, 0.95f),
+                    Still("wall", "house_side", 0.78f, 0.50f, 1.1f),
+                    Still("hedge", "hedge", 0.28f, 0.22f, 1.7f),
+                    Still("hedge2", "hedge", 0.62f, 0.22f, 1.7f),
+                    Still("hedge3", "hedge", 0.94f, 0.22f, 1.7f),
+                    Track("flash", PuppetParts.Sparkle,
+                        K(0.40f, 0.26f, 0.70f, 0.30f, 0f, 0f),
+                        K(0.55f, 0.30f, 0.71f, 0.55f, 0f, 1f, Ease.Out),
+                        K(1.20f, 0.62f, 0.74f, 0.45f, 90f, 1f, Ease.InOut),
+                        K(1.50f, 0.70f, 0.75f, 0.25f, 140f, 0f, Ease.InOut)),
+                    Pop("eye", "eye", 2.0f, 0.46f, 0.56f, 0.9f),
+                    Pop("what", "question", 2.8f, 0.60f, 0.66f, 0.6f),
                 },
-                new[]
-                {
-                    new VignetteCue(1.95f, CueKind.Puff, "window_lit", 0.4f),
-                    new VignetteCue(2.20f, CueKind.Gesture, null, 0f, "Point"),
-                    new VignetteCue(2.50f, CueKind.Ring, "window_lit", 1.1f),
-                });
+                new VignetteCue[0]);
         }
 
         /// <summary>
-        /// "The door's open now? I saw June's cape go in by the side, long before that." Inside the pencil-cloud
-        /// memory frame, beats 1–2 of the saw-cape vignette replay; then Bea nods.
+        /// "The door's open now? That silver flash was long before." Inside the pencil-cloud memory frame the silver
+        /// glint streaks over the hedge again and is gone; then Bea nods. No June, no window.
         /// </summary>
         private static Vignette BuildBeaDoorOpen()
         {
-            const float winX = 0.80f, winY = 0.52f;
             return new Vignette(BeaDoorOpen, 3.4f, 0,
-                Beats(0.2f, 1.6f, 1.6f, 2.0f, 2.2f, 3.2f),
+                Beats(0.2f, 1.6f, 2.2f, 3.2f),
                 new[]
                 {
                     Still("memory", "memory", 0.55f, 0.50f, 1.0f),
-                    Still("treehouse", "treehouse", 0.22f, 0.56f, 0.8f),
-                    Still("bridge", "bridge", 0.50f, 0.36f, 0.8f),
-                    Still("window", "window", winX, winY, 0.65f),
-                    Track("window_lit", "june_window",
-                        K(1.60f, winX, winY, 0.65f, 0f, 0f),
-                        K(1.80f, winX, winY, 0.65f, 0f, 1f, Ease.Out)),
-                    Track("june", PuppetParts.JuneRun,
-                        K(0.20f, 0.26f, 0.46f, 0.8f, 0f, 1f),
-                        K(1.40f, 0.70f, 0.44f, 0.8f, 0f, 1f, Ease.InOut),
-                        K(1.60f, winX, winY, 0.4f, 0f, 0f, Ease.Out)),
+                    Still("hedge", "hedge", 0.45f, 0.34f, 1.2f),
+                    Still("hedge2", "hedge", 0.72f, 0.34f, 1.2f),
+                    Track("flash", PuppetParts.Sparkle,
+                        K(0.20f, 0.36f, 0.62f, 0.3f, 0f, 0f),
+                        K(0.35f, 0.40f, 0.63f, 0.5f, 0f, 1f, Ease.Out),
+                        K(1.30f, 0.74f, 0.66f, 0.4f, 120f, 1f, Ease.InOut),
+                        K(1.60f, 0.80f, 0.67f, 0.2f, 160f, 0f, Ease.InOut)),
                     Track("bea", "bea",
                         K(0f, 0.07f, 0.50f, 0.9f, 0f, 1f),
                         K(2.20f, 0.07f, 0.50f, 0.9f, 0f, 1f),
@@ -212,10 +185,7 @@ namespace SpookyStreet.Core.Nonverbal
                         K(2.95f, 0.07f, 0.47f, 0.9f, -10f, 1f, Ease.Out),
                         K(3.20f, 0.07f, 0.50f, 0.9f, 0f, 1f, Ease.InOut)),
                 },
-                new[]
-                {
-                    new VignetteCue(1.60f, CueKind.Puff, "window_lit", 0.4f),
-                });
+                new VignetteCue[0]);
         }
 
         /// <summary>
@@ -303,101 +273,7 @@ namespace SpookyStreet.Core.Nonverbal
                 cues.ToArray());
         }
 
-        // ------------------------------------------------------------------------------------------- notebook
-
-        private const float P1 = 0.17f, P2 = 0.50f, P3 = 0.83f, PY = 0.50f;
-
-        /// <summary>How did June get inside? Treehouse → bridge → window: June runs panel to panel, the window lights.</summary>
-        private static Vignette BuildNotebookEntry()
-        {
-            return new Vignette(NotebookEntry, 3.2f, NotebookLoops,
-                Beats(0.3f, 1.9f, 1.9f, 2.2f, 2.4f, 2.9f),
-                new[]
-                {
-                    Still("panel1", "treehouse", P1, PY, 0.8f),
-                    Still("panel2", "bridge", P2, PY, 0.8f),
-                    Still("panel3", "window", P3, PY, 0.8f),
-                    Track("lit", "june_window",
-                        K(1.90f, P3, PY, 0.8f, 0f, 0f),
-                        K(2.10f, P3, PY, 0.8f, 0f, 1f, Ease.Out)),
-                    Track("june", PuppetParts.JuneRun,
-                        K(0.30f, P1 - 0.05f, PY - 0.1f, 0.6f, 0f, 1f),
-                        K(1.75f, P3 - 0.03f, PY - 0.1f, 0.6f, 0f, 1f, Ease.InOut),
-                        K(1.90f, P3, PY, 0.35f, 0f, 0f, Ease.Out)),
-                    Check(2.40f),
-                },
-                new[]
-                {
-                    new VignetteCue(0.30f, CueKind.Ring, "panel1", 0.6f),
-                    new VignetteCue(0.90f, CueKind.Ring, "panel2", 0.6f),
-                    new VignetteCue(1.50f, CueKind.Ring, "panel3", 0.8f),
-                    new VignetteCue(2.40f, CueKind.Stamp, "check", 0.5f),
-                });
-        }
-
-        /// <summary>Where are the knocks coming from? The floor hums, the eye looks through the grille, the cam turns.</summary>
-        private static Vignette BuildNotebookSource()
-        {
-            return new Vignette(NotebookSource, 3.2f, NotebookLoops,
-                Beats(0.2f, 0.8f, 0.9f, 1.5f, 1.6f, 2.9f),
-                new[]
-                {
-                    Still("panel1", "floor_hum", P1, PY, 0.8f),
-                    Still("panel2", "grille", P2, PY, 0.8f),
-                    Track("eye", "eye",
-                        K(0.90f, P2 - 0.12f, PY + 0.05f, 0.4f, 0f, 0f),
-                        K(1.50f, P2, PY + 0.05f, 0.5f, 0f, 1f, Ease.Out)),
-                    Track("cam", "cam",
-                        K(0f, P3, PY, 0.8f, 0f, 1f),
-                        K(1.60f, P3, PY, 0.8f, 0f, 1f),
-                        K(2.40f, P3, PY, 0.8f, -180f, 1f, Ease.InOut)),
-                    Check(2.50f),
-                },
-                new[]
-                {
-                    new VignetteCue(0.20f, CueKind.Knock, "panel1", 0.6f),
-                    new VignetteCue(0.80f, CueKind.Ring, "panel2", 0.8f),
-                    new VignetteCue(1.60f, CueKind.Ring, "cam", 0.8f),
-                    new VignetteCue(2.50f, CueKind.Stamp, "check", 0.4f),
-                });
-        }
-
-        /// <summary>What did the knocking move? The crank turns, the arm connects, the owl bows.</summary>
-        private static Vignette BuildNotebookMoved()
-        {
-            return new Vignette(NotebookMoved, 3.2f, NotebookLoops,
-                Beats(0.2f, 1.0f, 1.0f, 1.5f, 1.5f, 2.9f),
-                new[]
-                {
-                    Track("crank", "crank",
-                        K(0f, P1, PY, 0.8f, 0f, 1f),
-                        K(0.20f, P1, PY, 0.8f, 0f, 1f),
-                        K(1.00f, P1, PY, 0.8f, -360f, 1f, Ease.InOut)),
-                    Track("arm", "arm",
-                        K(0f, P2 - 0.08f, PY, 0.8f, 0f, 1f),
-                        K(1.00f, P2 - 0.08f, PY, 0.8f, 0f, 1f),
-                        K(1.50f, P2, PY, 0.8f, 0f, 1f, Ease.Back)),
-                    Track("owl", "owl",
-                        K(0f, P3, PY, 0.8f, 0f, 1f),
-                        K(1.50f, P3, PY, 0.8f, 0f, 1f),
-                        K(1.80f, P3, PY - 0.03f, 0.8f, -25f, 1f, Ease.Out),
-                        K(2.10f, P3, PY, 0.8f, 0f, 1f, Ease.InOut)),
-                    Check(2.40f),
-                },
-                new[]
-                {
-                    new VignetteCue(0.20f, CueKind.Ring, "crank", 0.8f),
-                    new VignetteCue(1.00f, CueKind.Ring, "arm", 0.5f),
-                    new VignetteCue(1.50f, CueKind.Ring, "owl", 0.7f),
-                    new VignetteCue(2.40f, CueKind.Stamp, "check", 0.5f),
-                });
-        }
-
         // ------------------------------------------------------------------------------------------- helpers
-
-        private static VignetteTrack Check(float t) => Track("check", "check",
-            K(t, 0.92f, 0.82f, 1.6f, -8f, 0f),
-            K(t + 0.25f, 0.92f, 0.82f, 1.0f, -8f, 1f, Ease.Out));
 
         private static VignetteBeat[] Beats(params float[] bounds)
         {

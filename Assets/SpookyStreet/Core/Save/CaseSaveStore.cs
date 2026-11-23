@@ -28,6 +28,9 @@ namespace SpookyStreet.Core.Save
         /// <summary>Restored case state (empty when there is nothing to continue).</summary>
         public CaseState State => Data != null ? Data.ToState() : CaseState.Empty;
 
+        /// <summary>The child's saved right sets (empty when there is nothing to continue).</summary>
+        public CaseAnswers Answers => Data != null ? Data.ToAnswers() : CaseAnswers.Empty;
+
         /// <summary>The validated safe anchor to place Pip at (unknown → plaza).</summary>
         public string AnchorId => Data != null ? Data.AnchorId : CaseAnchors.Start;
 
@@ -81,14 +84,17 @@ namespace SpookyStreet.Core.Save
         /// Autosave (on fact change, closure and safe transitions). Returns false, writing nothing, while a newer
         /// save is being preserved.
         /// </summary>
-        public bool Save(CaseState state, string anchorId)
+        public bool Save(CaseState state, string anchorId) => Save(state, anchorId, null);
+
+        /// <summary>Autosave with the child's right sets (written when a question is solved).</summary>
+        public bool Save(CaseState state, string anchorId, CaseAnswers answers)
         {
             if (_slot.WritesBlocked)
             {
                 return false;
             }
 
-            _slot.Write(CaseSaveCodec.Serialize(CaseSaveData.FromState(state, anchorId)));
+            _slot.Write(CaseSaveCodec.Serialize(CaseSaveData.FromState(state, anchorId, answers)));
             return true;
         }
 

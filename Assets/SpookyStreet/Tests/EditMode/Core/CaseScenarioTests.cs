@@ -8,7 +8,10 @@ namespace SpookyStreet.Tests.Core
     /// <summary>The spec §8 case checks that can run engine-free.</summary>
     public class CaseScenarioTests
     {
-        /// <summary>CASE-01: both witnesses → bench → cloth → attic → foyer → cam → crank → porch.</summary>
+        /// <summary>
+        /// CASE-01: both witnesses → bench → cloth → attic → sill (the entry deduction) → June → foyer → cam (the source
+        /// deduction) → arm → crank (the moved deduction) → porch: the show and the "Case closed" stamp together.
+        /// </summary>
         public static CasePlaythrough PlayCanonical()
         {
             var play = new CasePlaythrough();
@@ -19,12 +22,15 @@ namespace SpookyStreet.Tests.Core
             play.Do(CaseActionKind.ExamineCloth);
             play.Do(CaseActionKind.EnterAttic);
             play.Do(CaseActionKind.ExamineSill);
+            play.Do(CaseAction.Solve(CaseNotebook.QuestionEntry, new[] { CaseNotebook.ValeDoor, CaseNotebook.Cloth, CaseNotebook.SillSnag }));
             play.Talk(Speaker.June);
             play.Do(CaseActionKind.EnterFoyer);
             play.Do(CaseActionKind.LiftLatch);
             play.Do(CaseActionKind.ExamineGrille);
+            play.Do(CaseAction.Solve(CaseNotebook.QuestionSource, new[] { CaseNotebook.FloorHum, CaseNotebook.WoodenPiece }));
             play.Do(CaseActionKind.LinkArm);
             play.Do(CaseActionKind.TurnCrank);
+            play.Do(CaseAction.Solve(CaseNotebook.QuestionMoved, new[] { CaseNotebook.LooseArm, CaseNotebook.OwlBooth }));
             play.Do(CaseActionKind.ArriveAtPorch);
             return play;
         }
@@ -34,6 +40,7 @@ namespace SpookyStreet.Tests.Core
         {
             var play = PlayCanonical();
             Assert.IsTrue(play.State.Has(CaseFact.CaseClosed));
+            Assert.IsTrue(play.State.Has(CaseFact.CaseStamped), "all three solved before the porch: stamped with the show");
             Assert.IsFalse(play.State.Has(CaseFact.AtticFirst), "witnesses came first");
 
             CollectionAssert.AreEqual(new[] { Lines.BeaSawCape }, play.LinesOf(Speaker.Bea));
@@ -43,9 +50,10 @@ namespace SpookyStreet.Tests.Core
             CollectionAssert.AreEqual(new[] { Lines.KitFirstShow }, play.LinesOf(Speaker.Kit));
 
             var page = CaseNotebook.Build(play.State);
+            Assert.AreEqual(3, page.Questions.Count);
             foreach (var question in page.Questions)
             {
-                Assert.IsTrue(question.Answered, question.QuestionKey);
+                Assert.IsTrue(question.Solved, question.QuestionKey);
             }
 
             Assert.IsNotNull(page.FinalCard);
@@ -57,10 +65,10 @@ namespace SpookyStreet.Tests.Core
 
             CollectionAssert.AreEqual(new[]
             {
-                "c01.note.knocks", "c01.note.bea", "c01.note.vale", "c01.note.bench", "c01.note.cloth", CaseNotebook.QuestionEntry,
-                "c01.note.sill", "c01.note.june", CaseNotebook.QuestionSource, CaseNotebook.QuestionMoved,
+                CaseNotebook.BeaFlash, CaseNotebook.ValeDoor, CaseNotebook.BenchView, CaseNotebook.Cloth, CaseNotebook.SillSnag,
+                CaseNotebook.FloorHum, CaseNotebook.WoodenPiece, CaseNotebook.LooseArm, CaseNotebook.OwlBooth,
             }, ids, "the final card lists what this player found, in order");
-            Assert.AreEqual(CaseNotebook.Entries.Count, page.FinalCard.Total);
+            Assert.AreEqual(CaseNotebook.Stickers.Count, page.FinalCard.Total);
 
             var world = CaseWorldView.From(play.State);
             Assert.AreEqual(DoorState.Open, world.FrontDoor);
@@ -93,6 +101,17 @@ namespace SpookyStreet.Tests.Core
             play.Talk(Speaker.June);
             play.Do(CaseActionKind.ArriveAtPorch);
             Assert.IsTrue(play.State.Has(CaseFact.CaseClosed));
+            Assert.IsFalse(play.State.Has(CaseFact.CaseStamped), "the show plays; the stamp waits for the deductions");
+            CollectionAssert.AreEqual(new[] { Lines.KitFirstShow, Lines.KitAsk }, play.LinesOf(Speaker.Kit));
+            // The cloth was skipped: Bea's flash covers the hidden side, the sill snag the silver up high.
+            play.Do(CaseActionKind.ExamineSill);
+            play.Do(CaseAction.Solve(CaseNotebook.QuestionSource, new[] { CaseNotebook.WoodenPiece, CaseNotebook.FloorHum }));
+            play.Do(CaseAction.Solve(CaseNotebook.QuestionMoved, new[] { CaseNotebook.OwlBooth, CaseNotebook.LooseArm }));
+            Assert.IsFalse(play.State.Has(CaseFact.CaseStamped));
+            play.Do(CaseAction.Solve(CaseNotebook.QuestionEntry,
+                new[] { CaseNotebook.BeaFlash, CaseNotebook.SillSnag, CaseNotebook.ValeDoor }));
+            Assert.IsTrue(play.State.Has(CaseFact.CaseStamped), "the last deduction stamps the case");
+            play.Talk(Speaker.Kit);
 
             // Return to the bench after solving: missing clues stay discoverable after closure.
             var bench = play.Do(CaseActionKind.SitOnBench);
@@ -116,9 +135,10 @@ namespace SpookyStreet.Tests.Core
             var canonical = PlayCanonical();
             var mine = CaseNotebook.Build(play.State);
             var theirs = CaseNotebook.Build(canonical.State);
+            Assert.AreEqual(theirs.Questions.Count, mine.Questions.Count);
             for (int i = 0; i < mine.Questions.Count; i++)
             {
-                Assert.IsTrue(mine.Questions[i].Answered);
+                Assert.IsTrue(mine.Questions[i].Solved);
                 Assert.AreEqual(theirs.Questions[i].AnswerKey, mine.Questions[i].AnswerKey);
             }
 
@@ -182,19 +202,15 @@ namespace SpookyStreet.Tests.Core
             Assert.IsTrue(CaseSightlines.IsVisible(0f, 2.4f, 0f, 0f, 2.4f, 10f, hedge));
             Assert.IsTrue(CaseSightlines.IsVisible(3f, 1.0f, 0f, 3f, 0.2f, 10f, hedge), "beside the hedge");
 
-            // Both accounts are true and both end up in the notebook beside the entry question.
+            // Both accounts are true and both end up as stickers in the shared tray.
             var state = PlayCanonical().State;
-            var entry = CaseNotebook.Build(state).Questions[0];
             var found = new List<string>();
-            foreach (var note in entry.Annotations)
+            foreach (var sticker in CaseNotebook.Build(state).Tray)
             {
-                if (note.Found)
-                {
-                    found.Add(note.Id);
-                }
+                found.Add(sticker.Id);
             }
 
-            CollectionAssert.IsSubsetOf(new[] { "c01.note.bea", "c01.note.vale", "c01.note.bench" }, found);
+            CollectionAssert.IsSubsetOf(new[] { CaseNotebook.BeaFlash, CaseNotebook.ValeDoor, CaseNotebook.BenchView }, found);
         }
     }
 }

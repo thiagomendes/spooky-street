@@ -55,7 +55,25 @@ namespace SpookyStreet.Tests.Core
             return keys;
         }
 
-        /// <summary>Every action the world can send, including each conversation partner.</summary>
+        /// <summary>One right set per question, from the stickers of the canonical play (the notebook sends these).</summary>
+        public static IEnumerable<CaseAction> RightSets()
+        {
+            yield return CaseAction.Solve(CaseNotebook.QuestionSource, new[] { CaseNotebook.FloorHum, CaseNotebook.WoodenPiece });
+            yield return CaseAction.Solve(CaseNotebook.QuestionEntry,
+                new[] { CaseNotebook.ValeDoor, CaseNotebook.Cloth, CaseNotebook.SillSnag });
+            yield return CaseAction.Solve(CaseNotebook.QuestionMoved, new[] { CaseNotebook.OwlBooth, CaseNotebook.LooseArm });
+        }
+
+        /// <summary>Solves every raised question whose right set the child has found (the canonical deductions).</summary>
+        public void SolveAll()
+        {
+            foreach (var solve in RightSets())
+            {
+                Do(solve);
+            }
+        }
+
+        /// <summary>Every action the world can send, including each conversation partner and the notebook's deductions.</summary>
         public static IEnumerable<CaseAction> AllActions()
         {
             foreach (CaseActionKind kind in System.Enum.GetValues(typeof(CaseActionKind)))
@@ -65,6 +83,13 @@ namespace SpookyStreet.Tests.Core
                     foreach (var speaker in new[] { Speaker.Bea, Speaker.Vale, Speaker.June, Speaker.Kit })
                     {
                         yield return CaseAction.Talk(speaker);
+                    }
+                }
+                else if (kind == CaseActionKind.Solve)
+                {
+                    foreach (var solve in RightSets())
+                    {
+                        yield return solve;
                     }
                 }
                 else

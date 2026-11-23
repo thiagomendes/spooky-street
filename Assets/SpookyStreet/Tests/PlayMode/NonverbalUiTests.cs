@@ -96,11 +96,11 @@ namespace SpookyStreet.Tests.PlayMode
                 Lines.JuneLatchReminder, Lines.JuneLatchThanks, Lines.JuneListenFloor, Lines.JuneGoOutside,
                 Lines.JuneResolve, Lines.JuneClosed,
             }),
-            (Speaker.Kit, new[] { Lines.KitFirstShow, Lines.KitThanks }),
+            (Speaker.Kit, new[] { Lines.KitFirstShow, Lines.KitThanks, Lines.KitAsk }),
             (Speaker.Pip, new[]
             {
                 Lines.ExamineStreamer, Lines.ExamineCloth, Lines.ExamineSill, Lines.ExamineDoorStuck, Lines.ExamineBowl,
-                Lines.ExamineBowlSweet,
+                Lines.ExamineBowlSweet, Lines.ExamineOwlPanel,
             }),
         };
 
@@ -158,80 +158,53 @@ namespace SpookyStreet.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator AMemoryReplayPlaysOnceAndNotAgainAfterAReload()
+        public IEnumerator MemoryReplaysNeverAutoPlayAndOnlyHazyOnesAreOffered()
         {
+            // D26 §7: the first hearing only offers the memory in the notebook; nothing auto-plays, and Bea's
+            // replay (which still re-enacts June's route) stays withheld until it is restaged as a hazy flash.
             yield return StartGame();
             var director = Director;
             var replay = director.Nonverbal.MemoryReplay;
             yield return TalkToBeaAndDismiss();
-            Assert.IsTrue(replay.Active, "the first hearing of Bea's key line replays her memory");
-            Assert.AreEqual(MemoryReplays.BeaSawCape, replay.Last.Id);
-            Assert.IsTrue(director.Nonverbal.Progress.Seen.Contains(MemoryReplays.BeaSawCape), "marked before playing");
-            Assert.IsTrue(GameBootstrap.Instance.Controls.GameplayEnabled, "a replay never takes the controls");
-            yield return Wait(1.0f);
-            Assert.Greater(replay.Weight, 0.9f, "the memory look is up during the hold");
-            Assert.IsTrue(replay.Ghost.gameObject.activeSelf, "June's paper ghost runs the route");
-            yield return Wait(2.2f);
-            Assert.IsFalse(replay.Active, "the replay ends by itself (≤ 2.7 s)");
-
-            // Same line again in this save: no replay.
-            director.Dialogue.Play(new[] { new ScriptLine(Speaker.Bea, Lines.BeaSawCape) });
-            yield return Frames(2);
-            director.Dialogue.Advance();
-            yield return Frames(3);
-            Assert.IsFalse(replay.Active);
-            Assert.AreEqual(1, replay.PlayCount);
-
-            // Reload: the seen set comes back with the save.
-            yield return LoadGame();
-            var game = GameBootstrap.Instance;
-            game.Ui.ContinueButton.onClick.Invoke();
-            yield return Wait(0.6f);
-            var restored = game.Director;
-            Assert.IsTrue(restored.State.Has(CaseFact.BeaSpoke));
-            Assert.IsTrue(restored.Nonverbal.Progress.Seen.Contains(MemoryReplays.BeaSawCape), "seen survives a reload");
-            restored.Dialogue.Play(new[] { new ScriptLine(Speaker.Bea, Lines.BeaSawCape) });
-            yield return Frames(2);
-            restored.Dialogue.Advance();
-            yield return Frames(3);
-            Assert.IsFalse(restored.Nonverbal.MemoryReplay.Active, "not again after a reload");
-            Assert.AreEqual(0, restored.Nonverbal.MemoryReplay.PlayCount);
-        }
-
-        [UnityTest]
-        public IEnumerator SkippingTheReplayBlendsBackAndKeepsTheFact()
-        {
-            yield return StartGame();
-            var director = Director;
-            var replay = director.Nonverbal.MemoryReplay;
-            yield return TalkToBeaAndDismiss();
-            Assert.IsTrue(replay.Active);
             yield return Wait(0.5f);
-            replay.SkipButton.onClick.Invoke();
-            Assert.IsTrue(replay.Playback == null || replay.Playback.WasSkipped || replay.Playback.IsDone);
-            yield return Wait(0.5f);
-            Assert.IsFalse(replay.Active, "skip blends back at once");
-            Assert.IsTrue(director.State.Has(CaseFact.BeaSpoke), "the clue never depends on the replay");
-            Assert.IsTrue(director.Nonverbal.Progress.Seen.Contains(MemoryReplays.BeaSawCape), "a skipped replay counts as seen");
+            Assert.IsFalse(replay.Active, "no auto-play after Bea's line");
+            Assert.AreEqual(0, replay.PlayCount);
+            Assert.IsTrue(director.Nonverbal.Progress.Seen.Contains(MemoryReplays.BeaSawCape), "offered on first hearing");
 
-            // The notebook offers it again on demand (the eye on Bea's sticker), without marking anything.
+            director.Perform(CaseAction.Talk(Speaker.Vale));
+            yield return Wait(0.3f);
+            director.Dialogue.Skip();
+            yield return Frames(3);
+            Assert.IsFalse(replay.Active, "no auto-play after Vale's line either");
+
             director.OpenNotebook();
             yield return Frames(2);
-            Assert.AreEqual(1, director.Notebook.ReplayEyes.Count, "Bea's sticker offers her memory");
-            director.Notebook.ReplayEyes[0].onClick.Invoke();
+            var notebook = director.Notebook;
+            notebook.ShowPage(notebook.PageQuestions.IndexOf(CaseNotebook.Question(CaseNotebook.QuestionEntry)));
             yield return Frames(2);
-            Assert.IsFalse(director.Notebook.IsOpen);
-            Assert.IsTrue(replay.Active, "the eye replays the memory");
-            replay.Skip();
+            Assert.AreEqual(1, notebook.ReplayEyes.Count, "only Vale's sticker offers its memory");
+            Assert.IsNotNull(notebook.TraySticker(CaseNotebook.ValeDoor).transform.Find("WatchAgain"));
+            Assert.IsNull(notebook.TraySticker(CaseNotebook.BeaFlash).transform.Find("WatchAgain"));
+            notebook.ReplayEyes[0].onClick.Invoke();
+            yield return Frames(2);
+            Assert.IsFalse(notebook.IsOpen);
+            Assert.IsTrue(replay.Active, "the eye replays the memory on demand");
+            Assert.AreEqual(MemoryReplays.ValeDoorShut, replay.Last.Id);
+            yield return Wait(0.5f);
+            replay.SkipButton.onClick.Invoke();
+            yield return Wait(0.5f);
+            Assert.IsFalse(replay.Active, "skip blends back at once");
+            Assert.IsTrue(director.State.Has(CaseFact.ValeSpoke), "the clue never depends on the replay");
         }
 
         [UnityTest]
-        public IEnumerator TheNotebookCarouselPlaysItsComics()
+        public IEnumerator TheNotebookCarouselHasOnePagePerRaisedQuestionAndNoAnswers()
         {
             yield return StartGame();
             var director = Director;
             director.Perform(CaseAction.Of(CaseActionKind.HearKnocks));
             director.Perform(CaseAction.Of(CaseActionKind.EnterAttic));
+            director.Perform(CaseAction.Talk(Speaker.June));
             if (director.Dialogue.IsOpen)
             {
                 director.Dialogue.Skip();
@@ -241,23 +214,21 @@ namespace SpookyStreet.Tests.PlayMode
             director.OpenNotebook();
             yield return Frames(3);
             var notebook = director.Notebook;
-            Assert.AreEqual(3, notebook.PageCount, "one page per question");
+            Assert.AreEqual(2, notebook.PageCount, "the knocks and June raised two questions; the workshop has not asked yet");
             Assert.AreEqual(0, notebook.CurrentPage);
-            Assert.IsNotNull(notebook.AnswerStrips[0], "the entry question is answered: its comic is drawn");
-            Assert.IsNull(notebook.AnswerStrips[1], "unknown answers are dashed panels");
-            var strip = notebook.AnswerStrips[0];
-            Assert.IsFalse(strip.Running, "the comic rests until tapped");
-            Assert.IsTrue(notebook.PlayStrip(0));
-            yield return Wait(1.0f);
-            Assert.IsTrue(strip.Running, "tapping the answer plays it");
-            Assert.AreEqual(C01Vignettes.NotebookEntry, strip.Current.Id);
-            Assert.Greater(strip.LocalTime, 0.5f);
-            yield return Wait(strip.Current.Length * C01Vignettes.NotebookLoops + 0.3f);
-            Assert.IsTrue(strip.Finished, "it plays twice and holds the end");
-
+            Assert.IsNull(notebook.AnswerLabels[1], "entering the attic no longer answers how June got in (D26)");
+            Assert.AreEqual(0, notebook.ComicPanels.Count, "no comic before the child solves");
+            Assert.IsNull(notebook.FoundStamp);
             notebook.ShowPage(1);
             yield return Frames(2);
             Assert.AreEqual(1, notebook.CurrentPage, "the carousel moves to the next question");
+            Assert.AreEqual(3, notebook.Slots.Count, "three empty slots, all the same shape");
+            foreach (var slot in notebook.Slots)
+            {
+                Assert.AreEqual(notebook.Slots[0].rectTransform.sizeDelta, slot.rectTransform.sizeDelta);
+                Assert.AreEqual(0, slot.GetComponentsInChildren<SpookyStreet.UI.NotebookSticker>().Length, "nothing placed for the child");
+            }
+
             notebook.Close();
         }
 

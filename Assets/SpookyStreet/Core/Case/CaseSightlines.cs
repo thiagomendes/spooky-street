@@ -146,6 +146,7 @@ namespace SpookyStreet.Core.Case
                 case CaseActionKind.ExamineCandyBowl:
                     return Verbs.Look;
                 case CaseActionKind.TryFrontDoor:
+                case CaseActionKind.ExamineOwlPanel:
                     return Verbs.Open;
                 case CaseActionKind.LiftLatch:
                     return Verbs.Lift;

@@ -33,13 +33,28 @@ namespace SpookyStreet.Tests.Core
         }
 
         [Test]
-        public void PlaysTheFirstTimeAKeyLineIsHeard()
+        public void NeverAutoPlaysTheFirstHearingOnlyOffersItInTheNotebook()
         {
-            var decision = MemoryReplayPolicy.OnLineDismissed(Lines.BeaSawCape, None, false, false);
-            Assert.IsTrue(decision.Play);
-            Assert.IsTrue(decision.MarkSeen);
-            Assert.AreEqual(MemoryReplays.BeaSawCape, decision.Replay.Id);
-            Assert.AreEqual(ReplayPlace.TreehouseWindow, decision.Replay.Place);
+            // D26 §7: memory replays are on demand only.
+            foreach (var replay in MemoryReplays.All)
+            {
+                var decision = MemoryReplayPolicy.OnLineDismissed(replay.LineKey, None, false, false);
+                Assert.AreEqual(ReplayDecisionKind.OnDemandOnly, decision.Kind, replay.Id);
+                Assert.IsFalse(decision.Play);
+                Assert.IsTrue(decision.MarkSeen);
+            }
+
+            Assert.AreEqual(ReplayPlace.TreehouseWindow, MemoryReplays.Get(MemoryReplays.BeaSawCape).Place);
+        }
+
+        [Test]
+        public void BeasRouteReplaysStayWithheldUntilRestagedAsAHazyMemory()
+        {
+            var all = new HashSet<string> { MemoryReplays.BeaSawCape, MemoryReplays.BeaDoorOpen, MemoryReplays.ValeDoorShut };
+            var state = CaseState.FromFacts(new[] { CaseFact.BeaSpoke, CaseFact.ValeSpoke });
+            Assert.AreEqual(0, MemoryReplayPolicy.OnDemandFor(CaseNotebook.BeaFlash, state, all).Count,
+                "June's ghost running into the window would answer the entry question");
+            Assert.AreEqual(1, MemoryReplayPolicy.OnDemandFor(CaseNotebook.ValeDoor, state, all).Count);
         }
 
         [Test]
@@ -72,22 +87,22 @@ namespace SpookyStreet.Tests.Core
                 Assert.IsTrue(decision.MarkSeen, "the first-hearing chance has passed; the notebook can play it");
             }
 
-            Assert.IsTrue(MemoryReplayPolicy.AvailableOnDemand(MemoryReplays.Get(MemoryReplays.BeaDoorOpen),
-                CaseState.Empty, new HashSet<string> { MemoryReplays.BeaDoorOpen }));
+            Assert.IsTrue(MemoryReplayPolicy.AvailableOnDemand(MemoryReplays.Get(MemoryReplays.ValeWasShut),
+                CaseState.Empty, new HashSet<string> { MemoryReplays.ValeWasShut }));
         }
 
         [Test]
         public void NotebookOffersSeenReplaysAndFactProvenOnesPerSticker()
         {
-            var state = CaseState.FromFacts(new[] { CaseFact.BeaSpoke });
-            var bea = MemoryReplayPolicy.OnDemandFor("c01.note.bea", state, None);
-            Assert.AreEqual(1, bea.Count, "a save from before this feature still offers Bea's replay");
-            Assert.AreEqual(MemoryReplays.BeaSawCape, bea[0].Id);
-            Assert.AreEqual(0, MemoryReplayPolicy.OnDemandFor("c01.note.vale", state, None).Count);
+            var state = CaseState.FromFacts(new[] { CaseFact.ValeSpoke });
+            var vale = MemoryReplayPolicy.OnDemandFor(CaseNotebook.ValeDoor, state, None);
+            Assert.AreEqual(1, vale.Count, "a save from before this feature still offers Vale's replay");
+            Assert.AreEqual(MemoryReplays.ValeDoorShut, vale[0].Id);
+            Assert.AreEqual(0, MemoryReplayPolicy.OnDemandFor(CaseNotebook.BeaFlash, state, None).Count);
 
-            var seen = new HashSet<string> { MemoryReplays.BeaDoorOpen };
-            CollectionAssert.AreEqual(new[] { MemoryReplays.BeaSawCape, MemoryReplays.BeaDoorOpen },
-                new List<MemoryReplayDefinition>(MemoryReplayPolicy.OnDemandFor("c01.note.bea", state, seen)).ConvertAll(r => r.Id));
+            var seen = new HashSet<string> { MemoryReplays.ValeWasShut };
+            CollectionAssert.AreEqual(new[] { MemoryReplays.ValeDoorShut, MemoryReplays.ValeWasShut },
+                new List<MemoryReplayDefinition>(MemoryReplayPolicy.OnDemandFor(CaseNotebook.ValeDoor, state, seen)).ConvertAll(r => r.Id));
             Assert.IsFalse(MemoryReplayPolicy.AvailableOnDemand(null, state, seen));
         }
 

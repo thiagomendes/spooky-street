@@ -29,14 +29,23 @@ namespace SpookyStreet.Core.Localization
             public const string NewGameConfirm = "ui.title.new_game_confirm";
             public const string NewGameConfirmYes = "ui.title.new_game_confirm_yes";
             public const string NewGameConfirmNo = "ui.title.new_game_confirm_no";
-            public const string TagKnocks = "c01.notebook.tag_knocks";
             public const string TagBea = "c01.notebook.tag_bea";
             public const string TagVale = "c01.notebook.tag_vale";
             public const string TagBench = "c01.notebook.tag_bench";
             public const string TagStreamer = "c01.notebook.tag_streamer";
             public const string TagCloth = "c01.notebook.tag_cloth";
             public const string TagSill = "c01.notebook.tag_sill";
-            public const string TagJune = "c01.notebook.tag_june";
+            public const string TagDoor = "c01.notebook.tag_door";
+            public const string TagHum = "c01.notebook.tag_hum";
+            public const string TagPiece = "c01.notebook.tag_piece";
+            public const string TagOwlPanel = "c01.notebook.tag_owl_panel";
+            public const string TagOwlBooth = "c01.notebook.tag_owl_booth";
+            public const string TagArm = "c01.notebook.tag_arm";
+            public const string NotebookSlot = "ui.notebook.slot";
+            public const string NotebookOutstanding = "ui.notebook.outstanding";
+            public const string NotebookSetAside = "ui.notebook.set_aside";
+            public const string NotebookPlace = "ui.notebook.place";
+            public const string NotebookThinking = "ui.notebook.thinking";
             public const string TagSweet = "c01.notebook.tag_sweet";
 
             public static readonly string[] All =
@@ -61,15 +70,24 @@ namespace SpookyStreet.Core.Localization
                 NewGameConfirm,
                 NewGameConfirmYes,
                 NewGameConfirmNo,
-                TagKnocks,
                 TagBea,
                 TagVale,
                 TagBench,
                 TagStreamer,
                 TagCloth,
                 TagSill,
-                TagJune,
+                TagDoor,
+                TagHum,
+                TagPiece,
+                TagOwlPanel,
+                TagOwlBooth,
+                TagArm,
                 TagSweet,
+                NotebookSlot,
+                NotebookOutstanding,
+                NotebookSetAside,
+                NotebookPlace,
+                NotebookThinking,
             };
         }
     }
