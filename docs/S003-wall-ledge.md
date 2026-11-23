@@ -164,8 +164,19 @@ That change is frozen here and is the owner's call.
   The existing moveset tests run unchanged.
 - **Frames:** `50_wall_slide` and `51_ledge_hang`.
 
-## Evidence
+## Evidence (CI run 116, commit 5f717e3, software GL; not a device)
 
-Pending: this branch's CI run (Unity EditMode, PlayMode and Visual, and the frames).
+- **Tests:** EditMode 532/532 (`WallLedgeTests` 39/39, `TraversalMarkTests` 11/11, `ProjectSetupTests` 5/5),
+  PlayMode 92/92 (`WallLedgeTests` 8/8, and the existing `MovesetTests`, `MovesetFeelTests` and `CollisionTests` all
+  pass), Visual 11/11. Core (dotnet, local, after merging main): 508/508.
+- **Chain** (PlayMode log): 5 kicks between the rig's walls, feet 5.80 m above the floor.
+- **Frames** (S002.5a took 45–49, so these are 50 and 51):
+  - `docs/evidence/s003/50_wall_slide_run116.jpg`: Pip in the WallSlide pose against the shed's west side, cape up,
+    with the wall tip fading in (its glyph is the keyboard's Space key cap). Readable, but the pocket under the
+    treehouse is dark: there is no light on that side of the shed.
+  - `docs/evidence/s003/51_ledge_hang_run116.jpg`: Pip hanging from the lamp arm, hand on the edge and body leaning in,
+    with the "Jump to climb up!" tip and its Space glyph.
+- **Earlier runs:** 105 failed one PlayMode test (the stick stayed pushed after the tap); 109 failed the climb-tip
+  check (the hold tip's cooldown) and the slide frame (captured too late). Both are fixed.
 
 Not verified: the feel on a phone. That needs a TestFlight build after the merge.
