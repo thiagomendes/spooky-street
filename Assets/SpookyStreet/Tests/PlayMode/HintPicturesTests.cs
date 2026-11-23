@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using NUnit.Framework;
 using SpookyStreet.App;
 using SpookyStreet.Case;
@@ -19,10 +20,11 @@ using PromptKeys = SpookyStreet.Core.Localization.LocalizationKeys.ControlPrompt
 namespace SpookyStreet.Tests.PlayMode
 {
     /// <summary>
-    /// The hint pictures in the running game (S002 hints close, docs/nonverbal-ux.md §6, D23.4, D25): a tier-1 press
-    /// sparkles the target and a witness looks at it; a tier-3 press shows the ghost hand on touch and the key glyph
-    /// on a keyboard; neither shows without a press while the Helper is off. Also the per-scheme parent gate line,
-    /// the dialogue's next and skip glyphs and the memory replay's skip name. Fresh temporary save folder per test.
+    /// The hint pictures in the running game (retiered by S002.5b, D26 §6, D25): a tier-1 press breezes leaves toward
+    /// the area and warms it while a witness glances there; tier 2 circles the area with bats; neither sits on the clue
+    /// object; tier 3 only demonstrates a move where one blocks (the ghost hand on touch, the glyph otherwise); nothing
+    /// shows without a press while the Helper is off. Also the per-scheme parent gate line, the dialogue's next and
+    /// skip glyphs and the memory replay's skip name. Fresh temporary save folder per test.
     /// </summary>
     public class HintPicturesTests : InputTestFixture
     {
@@ -91,8 +93,43 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Wait(1.2f);
         }
 
+        /// <summary>The bench and the way in are found: the hint leads up the side yard; Pip stands by the crate.</summary>
+        private static IEnumerator StandByTheCrate()
+        {
+            var game = GameBootstrap.Instance;
+            Director.Perform(CaseAction.Of(CaseActionKind.HearKnocks));
+            Director.Perform(CaseAction.Of(CaseActionKind.SitOnBench));
+            Director.Bench.End();
+            yield return Wait(0.2f);
+            Director.Captions.Clear();
+            Assert.AreEqual(CaseObjective.FindWayIn, CaseHints.ObjectiveFor(Director.State));
+            var yard = SpookyStreet.Core.World.CaseRouteLayout.SkilledAscent[0];
+            game.Pip.Teleport(new Vector3(yard.X, 0.1f, yard.Z));
+            game.CameraRig.Orbit.RequestRecenter();
+            yield return Wait(0.8f);
+        }
+
+        /// <summary>Every Use target's marker point (what a hint must never sit on).</summary>
+        private static float NearestTarget(Vector3 at, out string id)
+        {
+            float best = float.MaxValue;
+            id = null;
+            foreach (var point in CaseStage.AllPoints)
+            {
+                var marker = new Vector3(point.Position.X, point.Position.Y + point.MarkerHeight, point.Position.Z);
+                float d = Vector3.Distance(marker, at);
+                if (d < best)
+                {
+                    best = d;
+                    id = point.Id;
+                }
+            }
+
+            return best;
+        }
+
         [UnityTest]
-        public IEnumerator ATierOnePressSparklesTheTargetAndAWitnessLooksAtIt()
+        public IEnumerator ATierOnePressBreezesTowardTheAreaAndAWitnessGlancesThere()
         {
             yield return StartGame();
             yield return FaceVale();
@@ -101,50 +138,124 @@ namespace SpookyStreet.Tests.PlayMode
             layer.RadioButton.onClick.Invoke();
             yield return Frames(3);
             var guide = layer.Guide;
-            Assert.IsTrue(guide.SparkleActive, "tier 1 sparkles");
-            Assert.AreEqual(CaseObjective.CheckView, guide.SparkleObjective);
-            Assert.Greater(guide.VisibleFlecks, 0, "star flecks are drawn");
-            Assert.LessOrEqual(guide.VisibleFlecks, HintPresentation.SparkleFlecks);
-            Assert.IsTrue(HintPresentation.TryTarget(CaseObjective.CheckView, out var bench, out _));
-            Assert.Less(Vector3.Distance(guide.SparkleTarget, new Vector3(bench.X, bench.Y, bench.Z)), 0.01f,
-                "the sparkle sits on the bench");
+            Assert.IsTrue(guide.BreezeActive, "tier 1 nudges");
+            Assert.AreEqual(CaseObjective.CheckView, guide.BreezeObjective);
+            var area = HintAreas.For(CaseObjective.CheckView);
+            Assert.AreSame(area, guide.BreezeArea, "the breeze points to the bench's area");
+            yield return Wait(0.9f);
+            Assert.Greater(guide.VisibleLeaves, 0, "leaves ride the breeze");
+            Assert.LessOrEqual(guide.VisibleLeaves, HintPresentation.BreezeLeaves);
+            Assert.IsTrue(guide.GlowVisible, "a warm glow rises over the area");
+            var centre = new Vector3(area.Centre.X, area.Centre.Y, area.Centre.Z);
+            Assert.Less(Vector3.Distance(new Vector3(guide.GlowCentre.x, centre.y, guide.GlowCentre.z), centre), 0.01f,
+                "the glow lies over the area's centre");
+            Assert.AreEqual(area.Radius, guide.GlowRadius, 1e-3f, "and covers the whole area");
             Assert.IsNotNull(layer.HintBadge, "the hint line carries a picture");
             Assert.IsTrue(layer.HintBadge.gameObject.activeInHierarchy, "the badge shows while the hint line is up");
             Assert.AreEqual(SpookyStreet.Core.Art.UiSpriteCatalog.HintStar, layer.HintBadgePicture.sprite.name,
-                "tier 1's picture is the star");
+                "tier 1's badge picture is still the star");
             Assert.IsFalse(guide.Active, "tier 1 has no bat trail");
-            Assert.IsFalse(layer.Demo.Active, "tier 1 has no ghost demo");
+            Assert.IsFalse(layer.Demo.Active, "tier 1 has no demo");
 
-            Assert.IsNotNull(guide.Looker, "a witness in view turns to look");
+            Assert.IsNotNull(guide.Looker, "a witness in view glances toward the area");
             Assert.IsTrue(guide.Looker.LookingAtPoint);
-            Assert.Less(Vector3.Distance(guide.Looker.LookPoint, guide.SparkleTarget), 0.01f);
+            Assert.Less(Vector3.Distance(guide.Looker.LookPoint, centre + Vector3.up * HintPresentation.AreaLift), 0.01f,
+                "toward the area, not at the bench");
             yield return Wait(HintPresentation.LookSeconds + 0.4f);
-            Assert.IsFalse(guide.Looker.LookingAtPoint, "the look lasts about 2 s");
+            Assert.IsFalse(guide.Looker.LookingAtPoint, "the glance lasts about 2 s");
 
-            // Meeting the objective stops the sparkle.
+            // Meeting the objective stops the nudge.
             Director.Perform(CaseAction.Of(CaseActionKind.SitOnBench));
             yield return Frames(2);
-            Assert.IsFalse(guide.SparkleActive, "the sparkle stops when the objective changes");
-            Assert.AreEqual(0, guide.VisibleFlecks);
+            Assert.IsFalse(guide.BreezeActive, "the nudge stops when the objective changes");
+            Assert.AreEqual(0, guide.VisibleLeaves);
+            Assert.IsFalse(guide.GlowVisible);
             Director.Bench.End();
         }
 
         [UnityTest]
-        public IEnumerator ATierThreePressShowsTheGhostHandOnTouch()
+        public IEnumerator TheTierOneAndTwoVisualsNeverSitOnTheClueObject()
+        {
+            yield return StartGame();
+            yield return FaceVale();
+            var layer = Director.Nonverbal;
+            var guide = layer.Guide;
+            layer.RadioButton.onClick.Invoke(); // tier 1: breeze and glow
+            float until = Time.time + HintPresentation.BreezeSeconds - 0.5f;
+            int swirlFrames = 0;
+            while (Time.time < until)
+            {
+                yield return null;
+                Assert.GreaterOrEqual(NearestTarget(guide.GlowCentre, out string id), HintAreas.MinClearance - 0.1f,
+                    "the glow's centre is clear of " + id);
+                if (guide.SwirlingLeaves > 0)
+                {
+                    swirlFrames++;
+                }
+            }
+
+            Assert.Greater(swirlFrames, 0, "the leaves settle into their swirl over the area");
+
+            layer.RadioButton.onClick.Invoke(); // tier 2: the bats circle the area
+            Assert.IsTrue(guide.Active);
+            Assert.IsFalse(guide.BreezeActive, "the nudge gives way to the trail");
+            int circling = 0;
+            until = Time.time + 6f;
+            while (Time.time < until)
+            {
+                yield return null;
+                for (int i = 0; i < guide.VisibleBats; i++)
+                {
+                    if (!guide.BatCircling(i))
+                    {
+                        continue;
+                    }
+
+                    circling++;
+                    var at = guide.BatPosition(i);
+                    Assert.GreaterOrEqual(NearestTarget(at, out string id), HintPresentation.MinMarkerClearance - 0.15f,
+                        $"a circling bat at {at} sits on the {id} target");
+                    var goal = guide.Goal;
+                    float plan = new Vector2(at.x - goal.x, at.z - goal.z).magnitude;
+                    Assert.AreEqual(guide.TrailArea.Radius * HintPresentation.TrailRingFactor, plan, 0.05f,
+                        "circling bats keep to the area's ring");
+                }
+            }
+
+            Assert.Greater(circling, 0, "the bats circled the area");
+            Assert.AreEqual(0, GameObject.FindObjectsByType<SpriteRenderer>(FindObjectsSortMode.None)
+                .Count(r => r.gameObject.activeInHierarchy && r.name == "GoalSticker"), "no goal sticker names the object");
+        }
+
+        [UnityTest]
+        public IEnumerator TierThreeOnlyDemonstratesAMoveWhereOneBlocks()
         {
             yield return StartGame();
             ControlSchemeTracker.Override = ControlScheme.Touch;
+            yield return FaceVale();
             var layer = Director.Nonverbal;
             layer.RadioButton.onClick.Invoke();
             layer.RadioButton.onClick.Invoke();
-            Assert.IsFalse(layer.Demo.Active, "tiers 1 and 2 have no ghost demo");
-            layer.RadioButton.onClick.Invoke(); // tier 3: show me
-            Assert.IsTrue(layer.Demo.Active, "tier 3 starts the demonstration");
-            Assert.IsFalse(layer.Guide.SparkleActive);
+            Assert.AreEqual(HintTier.Location, Director.NextHintTier, "no move blocks the bench: two pips");
+            layer.RadioButton.onClick.Invoke();
+            Assert.IsFalse(layer.Demo.Active, "never a Use demo on the bench");
+            Assert.IsTrue(layer.Guide.Active, "the third press flies the trail again");
+            Assert.AreEqual(Director.Captions.CurrentKey, CaseHints.HintFor(CaseObjective.CheckView, HintTier.Location));
+
+            // By the crate on the side-yard climb, the third tier demonstrates the hop.
+            yield return StandByTheCrate();
+            layer.RadioButton.onClick.Invoke();
+            layer.RadioButton.onClick.Invoke();
+            Assert.AreEqual(HintTier.Action, Director.NextHintTier, "a move blocks here: the third pip lights");
+            layer.RadioButton.onClick.Invoke();
+            Assert.IsTrue(layer.Demo.Active, "tier 3 demonstrates the move");
+            Assert.AreEqual(HintMove.Jump, layer.Demo.Demo);
+            Assert.AreEqual(Director.Captions.CurrentKey, SpookyStreet.Core.Localization.LocalizationKeys.Hints.MoveJump);
+            Assert.IsFalse(layer.Guide.BreezeActive);
             Assert.IsFalse(layer.Guide.Active);
             yield return Wait(0.6f);
             Assert.AreEqual(ControlScheme.Touch, layer.Demo.Scheme);
-            Assert.IsTrue(layer.Demo.HandVisible, "the translucent hand demonstrates on the real control");
+            Assert.IsTrue(layer.Demo.HandVisible, "the translucent hand taps the Jump disc");
             Assert.Less(layer.Demo.Hand.color.a, 1f, "the hand is translucent");
             Assert.IsFalse(layer.Demo.GlyphVisible, "no button glyph on touch");
             yield return Wait(HintPresentation.DemoLoops * HintPresentation.DemoLoopSeconds);
@@ -156,6 +267,7 @@ namespace SpookyStreet.Tests.PlayMode
         {
             yield return StartGame();
             ControlSchemeTracker.Override = ControlScheme.KeyboardMouse;
+            yield return StandByTheCrate();
             var layer = Director.Nonverbal;
             for (int i = 0; i < 3; i++)
             {
@@ -169,34 +281,34 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(GlyphShape.Key, layer.Demo.Glyph.Glyph.Shape);
             Assert.IsFalse(string.IsNullOrEmpty(layer.Demo.Glyph.KeyLabel), "the key cap names the key");
 
-            // The radio stays on tier 3: a press with a gamepad shows a lit button or the stick, never a hand.
+            // The radio stays on tier 3: a press with a gamepad shows the lit Jump button, never a hand.
             ControlSchemeTracker.Override = ControlScheme.Gamepad;
             layer.RadioButton.onClick.Invoke();
             yield return Wait(0.4f);
             Assert.IsTrue(layer.Demo.GlyphVisible);
             Assert.IsFalse(layer.Demo.HandVisible);
-            var shape = layer.Demo.Glyph.Glyph.Shape;
-            Assert.IsTrue(shape == GlyphShape.PadFace || shape == GlyphShape.PadStick, shape.ToString());
+            Assert.AreEqual(GlyphShape.PadFace, layer.Demo.Glyph.Glyph.Shape);
         }
 
         [UnityTest]
-        public IEnumerator NeitherShowsWithoutAPressWhileHelperIsOff()
+        public IEnumerator NothingShowsWithoutAPressWhileHelperIsOffAndTheHelperOnlyNudges()
         {
             yield return StartGame();
             var layer = Director.Nonverbal;
             Assert.IsFalse(layer.Settings.HelperAutoHints, "Helper is off by default");
             layer.AddStallForTests(NonverbalSettings.AutoHintStallSeconds * 3f);
             yield return Wait(0.5f);
-            Assert.IsFalse(layer.Guide.SparkleActive, "no sparkle without a press");
-            Assert.IsFalse(layer.Demo.Active, "no ghost demo without a press");
+            Assert.IsFalse(layer.Guide.BreezeActive, "no nudge without a press");
+            Assert.IsFalse(layer.Demo.Active, "no demo without a press");
             Assert.IsFalse(layer.Guide.Active, "no bat trail without a press");
 
-            // With the Helper on, a long stall may show "look here" and "show me" once.
+            // With the Helper on, a long stall may offer the tier-1 nudge once, never a demo (D26 §6).
             layer.Settings.HelperAutoHints = true;
             layer.AddStallForTests(NonverbalSettings.AutoHintStallSeconds);
             yield return Frames(3);
-            Assert.IsTrue(layer.Demo.Active, "the Helper shows the demonstration after a stall");
-            Assert.IsTrue(layer.Guide.SparkleActive, "and the sparkle");
+            Assert.IsTrue(layer.Guide.BreezeActive, "the Helper offers the nudge after a stall");
+            Assert.IsFalse(layer.Demo.Active, "and never a demonstration");
+            Assert.IsFalse(layer.Guide.Active, "or the trail");
             layer.Settings.HelperAutoHints = false;
         }
 

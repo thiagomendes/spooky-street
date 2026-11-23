@@ -1,6 +1,7 @@
 using SpookyStreet.App;
 using SpookyStreet.Controls;
 using SpookyStreet.Core.Art;
+using SpookyStreet.Core.Case;
 using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.UI;
 using UnityEngine;
@@ -9,12 +10,12 @@ using UnityEngine.UI;
 namespace SpookyStreet.Case
 {
     /// <summary>
-    /// The tier-3 "show me" hint (docs/nonverbal-ux.md §6, D23.4, D25). On touch a translucent bone-paper ghost hand
-    /// demonstrates the action on the real HUD control: it taps the Use disc, holds the Jump disc while a candy ring
-    /// fills (the high jump), or presses the stick and drags it toward the goal and holds. With a gamepad or a
-    /// keyboard there is no hand: the bound button or key glyph (<see cref="ControlGlyphs"/>) pulses above the same
-    /// control, with the stick knob or the key toward the goal for a push. It plays <see cref="HintPresentation.DemoLoops"/>
-    /// loops per radio press (or Helper stall), never takes input and stops when the objective changes. Game time.
+    /// The tier-3 hint (D26 §6, retiered by S002.5b; D25 glyphs): it only demonstrates a move, never Use on a clue. On
+    /// touch a translucent bone-paper ghost hand shows the move on the real Jump disc: a tap for the hop, the wall
+    /// kick and the climb up from a ledge, a hold while a candy ring fills for the high jump and the glide. With a
+    /// gamepad or a keyboard there is no hand: the bound button or key glyph (<see cref="ControlGlyphs"/>) pulses above
+    /// the same control, filling its ring for a held move. It plays <see cref="HintPresentation.DemoLoops"/> loops per
+    /// radio press, never takes input and stops when the objective changes. Game time.
     /// </summary>
     public sealed class HintGhostDemo : MonoBehaviour
     {
@@ -33,7 +34,7 @@ namespace SpookyStreet.Case
 
         public bool Active => _started >= 0f;
 
-        public HintDemo Demo { get; private set; }
+        public HintMove Demo { get; private set; }
 
         public ControlScheme Scheme { get; private set; }
 
@@ -81,19 +82,22 @@ namespace SpookyStreet.Case
         }
 
         /// <summary>
-        /// Starts the demonstration of <paramref name="demo"/> for the active control scheme.
-        /// <paramref name="screenDirection"/> is the goal's direction on screen (x right, y up) for a push.
+        /// Starts the demonstration of <paramref name="move"/> for the active control scheme.
+        /// <paramref name="screenDirection"/> is where the move leads on screen (x right, y up); the hand leans that way.
         /// </summary>
-        public void Play(HintDemo demo, Vector2 screenDirection)
+        public void Play(HintMove move, Vector2 screenDirection)
         {
-            Demo = demo;
+            if (move == HintMove.None)
+            {
+                Stop();
+                return;
+            }
+
+            Demo = move;
             Scheme = ControlSchemeTracker.Current;
             _moveDirection = screenDirection.sqrMagnitude > 0.0001f ? screenDirection.normalized : Vector2.up;
-            _target = FindTarget(demo);
-            var glyph = demo == HintDemo.Move && Scheme == ControlScheme.KeyboardMouse
-                ? ControlGlyphs.MoveKey(_moveDirection.x, _moveDirection.y)
-                : ControlGlyphs.For(Scheme, HintPresentation.PromptFor(demo));
-            _glyph.Show(glyph);
+            _target = FindTarget();
+            _glyph.Show(ControlGlyphs.For(Scheme, HintPresentation.PromptFor(move)));
             _started = Time.time;
             _root.gameObject.SetActive(true);
             _root.SetAsLastSibling();
@@ -109,13 +113,8 @@ namespace SpookyStreet.Case
             }
         }
 
-        /// <summary>The HUD control the demo is about (the stick's rest base for a push).</summary>
-        private RectTransform FindTarget(HintDemo demo)
-        {
-            string path = demo == HintDemo.Use ? "UseButton" : demo == HintDemo.HoldJump ? "JumpButton"
-                : "StickZone/StickVisuals/StickBase";
-            return _hud.Find(path) as RectTransform;
-        }
+        /// <summary>The HUD control every move uses: the Jump disc.</summary>
+        private RectTransform FindTarget() => _hud.Find("JumpButton") as RectTransform;
 
         /// <summary>The control's centre in this overlay's local space.</summary>
         private Vector2 TargetCentre()
@@ -179,25 +178,18 @@ namespace SpookyStreet.Case
             Vector2 fingertip = centre + Vector2.Lerp(rest, Vector2.zero, approach);
             float press = 0f;
             float ring = 0f;
-            switch (Demo)
+            bool held = HintPresentation.Holds(Demo);
+            if (held)
             {
-                case HintDemo.Use:
-                    // A quick tap: down at 0.55 s, up at 0.8 s.
-                    press = Window(t, 0.5f, 0.85f);
-                    ring = press > 0f ? 1f : 0f;
-                    break;
-                case HintDemo.HoldJump:
-                    // Down at 0.5 s and held while the candy ring fills, up at 1.6 s.
-                    press = Window(t, 0.45f, 1.6f);
-                    ring = Mathf.Clamp01((t - 0.5f) / 1.0f) * (t < 1.6f ? 1f : 0f);
-                    break;
-                default:
-                    // Press the stick, drag toward the goal and hold, then let go.
-                    press = Window(t, 0.45f, 1.7f);
-                    float drag = Smooth(Mathf.Clamp01((t - 0.6f) / 0.45f)) * (t < 1.7f ? 1f : 0f);
-                    fingertip += _moveDirection * (size * 0.38f * drag);
-                    ring = 0f;
-                    break;
+                // Down at 0.5 s and held while the candy ring fills, up at 1.6 s.
+                press = Window(t, 0.45f, 1.6f);
+                ring = Mathf.Clamp01((t - 0.5f) / 1.0f) * (t < 1.6f ? 1f : 0f);
+            }
+            else
+            {
+                // A quick tap: down at 0.55 s, up at 0.8 s.
+                press = Window(t, 0.5f, 0.85f);
+                ring = press > 0f ? 1f : 0f;
             }
 
             var hand = _hand.rectTransform;
@@ -209,7 +201,7 @@ namespace SpookyStreet.Case
             hand.localScale = new Vector3(fromAbove ? -k : k, k, 1f);
             _hand.color = UiFactory.WithAlpha(UiFactory.PlayPaper, HandAlpha * alpha);
             _targetRing.gameObject.SetActive(ring > 0f);
-            _targetRing.fillAmount = Demo == HintDemo.Use ? 1f : ring;
+            _targetRing.fillAmount = held ? ring : 1f;
             _targetRing.color = UiFactory.WithAlpha(Palette.CandyCornYellow, 0.9f * alpha);
         }
 

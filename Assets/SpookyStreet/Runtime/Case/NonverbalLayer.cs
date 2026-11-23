@@ -47,6 +47,9 @@ namespace SpookyStreet.Case
 
         public HintGuide Guide { get; private set; }
 
+        /// <summary>The diegetic clue attractions in the world (S002.5b).</summary>
+        public ClueAttractionView Attractions { get; private set; }
+
         /// <summary>The tier-3 "show me" demonstration over the HUD (ghost hand on touch, glyphs otherwise).</summary>
         public HintGhostDemo Demo { get; private set; }
 
@@ -85,6 +88,8 @@ namespace SpookyStreet.Case
             MemoryReplay.Ended += RestoreHud;
             Guide = HintGuide.Create(director.transform, game.Pip.transform);
             Guide.DoorOpen = () => director.House != null && director.House.DoorOpen;
+            Guide.ReducedMotion = () => ReducedMotion;
+            Attractions = ClueAttractionView.Create(director, game);
             Menus = NonverbalMenus.Create(director.transform);
             Menus.Settings = Settings;
             Menus.SettingsChanged = SaveSettings;
@@ -300,14 +305,16 @@ namespace SpookyStreet.Case
         public void OnHintGiven(HintTier tier, CaseState state)
         {
             var objective = CaseHints.ObjectiveFor(state);
-            ShowHint(HintPresentation.For(HintTrigger.RadioPress, tier, Settings), objective);
-            ShowHintBadge(tier, CaseHints.HintFor(objective, tier, state));
+            var move = tier == HintTier.Action ? _director.HintMoveAt(objective) : HintMove.None;
+            var shown = tier == HintTier.Action && move == HintMove.None ? HintTier.Location : tier;
+            ShowHint(HintPresentation.For(HintTrigger.RadioPress, tier, Settings, 0f, move), objective, move);
+            ShowHintBadge(shown, CaseHints.HintFor(objective, tier, state, move));
             _stall = 0f;
             RefreshPips();
         }
 
-        /// <summary>Plays a hint's pictures (docs/nonverbal-ux.md §6); every other hint picture stops.</summary>
-        private void ShowHint(HintVisuals visuals, CaseObjective objective)
+        /// <summary>Plays a hint's pictures (D26 §6: areas and moves only); every other hint picture stops.</summary>
+        private void ShowHint(HintVisuals visuals, CaseObjective objective, HintMove move)
         {
             if (visuals.BatTrail)
             {
@@ -318,18 +325,18 @@ namespace SpookyStreet.Case
                 Guide.Stop();
             }
 
-            if (visuals.Sparkle)
+            if (visuals.Breeze)
             {
-                Guide.StartSparkle(objective);
+                Guide.StartBreeze(objective);
             }
             else
             {
-                Guide.StopSparkle();
+                Guide.StopBreeze();
             }
 
-            if (visuals.GhostDemo)
+            if (visuals.MoveDemo)
             {
-                PlayDemo(objective);
+                PlayDemo(objective, move);
             }
             else
             {
@@ -408,26 +415,22 @@ namespace SpookyStreet.Case
         private void StopHintPictures()
         {
             Guide.Stop();
-            Guide.StopSparkle();
+            Guide.StopBreeze();
             Demo.Stop();
         }
 
-        /// <summary>The tier-3 demonstration for the objective, from where Pip is.</summary>
-        private void PlayDemo(CaseObjective objective)
+        /// <summary>The tier-3 move demonstration where Pip stands (never Use, D26 §6).</summary>
+        private void PlayDemo(CaseObjective objective, HintMove move)
         {
             Vector3 pip = _game.Pip.transform.position;
-            bool door = _director.House != null && _director.House.DoorOpen;
-            if (!HintPresentation.TryTarget(objective, pip.x, pip.z, door, out var target, out _))
+            var spot = HintMoves.SpotFor(objective, pip.x, pip.y, pip.z);
+            if (move == HintMove.None || spot == null)
             {
                 Demo.Stop();
                 return;
             }
 
-            string pointId = HintPresentation.PointIdFor(objective);
-            var current = _director.Targets != null && _director.Targets.HasTarget ? _director.Targets.Current : null;
-            bool inRange = pointId != null && current != null && current.Id == pointId;
-            var demo = HintPresentation.DemoFor(pip.x, pip.y, pip.z, target, inRange);
-            Demo.Play(demo, ScreenDirection(new Vector3(target.X, target.Y, target.Z) - pip));
+            Demo.Play(move, ScreenDirection(new Vector3(spot.Toward.X, spot.Toward.Y, spot.Toward.Z) - pip));
         }
 
         /// <summary>A world offset as a direction on screen (x right, y forward/up), from the gameplay camera.</summary>
@@ -569,19 +572,19 @@ namespace SpookyStreet.Case
                 return;
             }
 
-            // Helper (opt-in, off by default): "look here" and "show me" may show by themselves after a long stall,
-            // once per objective. With the Helper off nothing shows without a radio press.
+            // Helper (opt-in, off by default): after a long stall it may offer the tier-1 nudge by itself, once per
+            // objective; never the trail, a demo or the musing (D26 §6). With the Helper off nothing shows unasked.
             _stall += Time.deltaTime;
             var objective = CaseHints.ObjectiveFor(_director.State);
-            var visuals = HintPresentation.For(HintTrigger.HelperStall, HintTier.Action, Settings, _stall);
+            var visuals = HintPresentation.For(HintTrigger.HelperStall, HintTier.Observation, Settings, _stall);
             if (visuals.Any && _autoShownFor != objective)
             {
                 _autoShownFor = objective;
                 _stall = 0f;
-                string key = CaseHints.HintFor(objective, HintTier.Action, _director.State);
+                string key = CaseHints.HintFor(objective, HintTier.Observation, _director.State);
                 _director.Captions.ShowNow(key);
-                ShowHint(visuals, objective);
-                ShowHintBadge(HintTier.Action, key);
+                ShowHint(visuals, objective, HintMove.None);
+                ShowHintBadge(HintTier.Observation, key);
             }
         }
     }

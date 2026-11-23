@@ -14,35 +14,46 @@ using NvKeys = SpookyStreet.Core.Localization.LocalizationKeys.NonverbalUi;
 namespace SpookyStreet.Case
 {
     /// <summary>
-    /// Where a memory replay happens: the camera pose, the ghost's route (empty: no ghost) and the mark that gets the
-    /// key ring (with a route) or the ⊘ stamp (without). Data, so the places can move (D24: the interior becomes its
-    /// own space) without touching the view.
+    /// Where a memory replay happens: the camera pose, an optional ghost route (empty: no ghost), an optional blur
+    /// streak (what a witness glimpsed: a silver smear high up, S002.5b) and the mark the witness points at. Data, so
+    /// the places can move (D24: the interior becomes its own space) without touching the view. D26: no key ring and
+    /// no ⊘ stamp are ever drawn in a memory.
     /// </summary>
     public readonly struct ReplayStaging
     {
-        public ReplayStaging(Vector3 eye, Vector3 lookAt, Vector3[] route, Vector3 mark)
+        public ReplayStaging(Vector3 eye, Vector3 lookAt, Vector3[] route, Vector3 mark, Vector3[] streak = null)
         {
             Eye = eye;
             LookAt = lookAt;
             Route = route ?? System.Array.Empty<Vector3>();
             Mark = mark;
+            Streak = streak ?? System.Array.Empty<Vector3>();
         }
 
         public Vector3 Eye { get; }
         public Vector3 LookAt { get; }
         public Vector3[] Route { get; }
         public Vector3 Mark { get; }
+
+        /// <summary>The blur streak's path (empty: none).</summary>
+        public Vector3[] Streak { get; }
+
         public bool HasGhost => Route.Length >= 2;
+
+        public bool HasStreak => Streak.Length >= 2;
     }
 
     /// <summary>
-    /// The in-world memory replay (docs/nonverbal-ux.md §4, D23.2, D23.7): a fixed Cinemachine camera per
-    /// <see cref="ReplayPlace"/> takes over like <see cref="BenchView"/> (0.35 s blend in, 1.8 s hold, 0.35 s back,
-    /// all from <see cref="MemoryReplayPlayback"/>), ink letterbox bars slide in and a lilac pencil tint with a soft
-    /// vignette covers the world, both driven by <see cref="MemoryReplayPlayback.Weight"/>. June's memory ghost is
-    /// the flat paper cut-out path of D23.7 (her running puppet from the PuppetAtlas, pale translucent, billboarded
-    /// and flipbooked) moving along the real route from the treehouse balcony over the bridge into the side window,
-    /// which then gets the pulsing orange key ring; at the front door the ⊘ stamp thumps onto the real door.
+    /// The in-world memory replay (docs/nonverbal-ux.md §4, D23.2, D23.7, restaged for D26 §7 by S002.5b): a fixed
+    /// Cinemachine camera per <see cref="ReplayPlace"/> takes over like <see cref="BenchView"/> (0.35 s blend in,
+    /// 1.8 s hold, 0.35 s back, all from <see cref="MemoryReplayPlayback"/>), ink letterbox bars slide in and a lilac
+    /// pencil tint with a soft vignette covers the world, both driven by <see cref="MemoryReplayPlayback.Weight"/>.
+    /// Memories are hazy and partial, and only on demand from the witness's sticker in the notebook:
+    /// <list type="bullet">
+    /// <item>Bea's: from her spot on the plaza, through a milky haze, the camera drifts toward the side of the house;
+    /// a silver streak smears across high above the hedge and is gone by the roof. No June, no window entry, no ring.</item>
+    /// <item>Vale's: the camera holds on the shut front door from his bench. No ⊘ in the world.</item>
+    /// </list>
     /// Any tap, Use, Jump or stick push skips (blends back from where it is). It never touches time scale or
     /// gameplay input and never records anything: the line already recorded its clue. Game time, so pause freezes it.
     /// </summary>
@@ -81,9 +92,11 @@ namespace SpookyStreet.Case
         private RectTransform _bottomBar;
         private Image _skipRing;
         private SpriteRenderer _ghost;
-        private SpriteRenderer _ring;
-        private SpriteRenderer _stamp;
+        private readonly SpriteRenderer[] _streak = new SpriteRenderer[StreakEchoes];
+        private Image _haze;
         private Vector3[] _route;
+        private Vector3[] _streakPath;
+        private bool _reduced;
         private float _started;
         private float _ghostClock;
 
@@ -106,6 +119,21 @@ namespace SpookyStreet.Case
 
         public SpriteRenderer Ghost => _ghost;
 
+        /// <summary>The silver blur streak of a hazy memory (Bea's), and its fading echoes.</summary>
+        public SpriteRenderer Streak => _streak[0];
+
+        /// <summary>The streak is drawn this frame (tests).</summary>
+        public bool StreakVisible => _streak[0] != null && _streak[0].gameObject.activeSelf;
+
+        /// <summary>The streak has been drawn at some point of the current or last replay (tests).</summary>
+        public bool StreakShown { get; private set; }
+
+        /// <summary>The milky haze over a hazy memory (0 clear, up to <see cref="HazeAlpha"/>).</summary>
+        public float Haze => _haze != null ? _haze.color.a : 0f;
+
+        public const float HazeAlpha = 0.24f;
+        public const int StreakEchoes = 4;
+
         public CinemachineCamera ActiveCamera => _active;
 
         public event Action Ended;
@@ -116,6 +144,17 @@ namespace SpookyStreet.Case
             new Vector3(CaseRouteLayout.BridgeStartX, CaseRouteLayout.TreehouseY + 0.05f, CaseRouteLayout.BridgeZ),
             new Vector3(CaseRouteLayout.BridgeEndX, CaseRouteLayout.ExteriorSillY, CaseRouteLayout.BridgeZ),
             new Vector3(CaseRouteLayout.ExteriorWindowX - 0.15f, CaseRouteLayout.ExteriorSillY + 0.35f, CaseRouteLayout.ExteriorWindowZ),
+        };
+
+        /// <summary>
+        /// Bea's glimpse (D26 §7, mf_bea_testimony): a silver smear high above the hedge, by the side of the house,
+        /// from the treehouse side toward the roof, where it is gone. It never reaches the window.
+        /// </summary>
+        public static Vector3[] BeaStreak() => new[]
+        {
+            new Vector3(-6.6f, 3.55f, 13.9f),
+            new Vector3(-5.2f, 3.95f, 14.0f),
+            new Vector3(-3.9f, 4.25f, 14.1f),
         };
 
         public static Vector3 SideWindowCentre =>
@@ -134,8 +173,11 @@ namespace SpookyStreet.Case
                 return new ReplayStaging(benchEye, FrontDoorCentre, null, FrontDoorCentre + Vector3.right * 0.2f);
             }
 
-            return new ReplayStaging(new Vector3(-8.4f, 3.7f, 5.6f), new Vector3(-4.9f, 2.9f, 13.7f), TreehouseRoute(),
-                SideWindowCentre);
+            // From Bea's own spot on the plaza, at her eye height, toward the side of the house above the hedge.
+            var bea = CaseStage.Find(CaseStage.PointBea).Position;
+            var streak = BeaStreak();
+            return new ReplayStaging(new Vector3(bea.X + 0.3f, 1.45f, bea.Z + 0.2f), new Vector3(-4.9f, 3.6f, 13.8f), null,
+                streak[streak.Length - 1], streak);
         }
 
         /// <summary>The staging used for <paramref name="place"/>.</summary>
@@ -157,6 +199,7 @@ namespace SpookyStreet.Case
             view._doorCamera = MakeCamera(go.transform, FrontDoorCameraName);
 
             view.BuildOverlay(canvasRoot);
+            view.BuildHaze();
             view.BuildWorld(go.transform);
             view.SetLook(0f);
             return view;
@@ -232,8 +275,20 @@ namespace SpookyStreet.Case
         private void BuildWorld(Transform parent)
         {
             _ghost = WorldSprite(parent, "JuneMemoryGhost", GhostFrame(0), GhostTint);
-            _ring = WorldSprite(parent, "MemoryKeyRing", PuppetParts.KeyRing, Color.white);
-            _stamp = WorldSprite(parent, "MemoryNeverStamp", "pg.not", Color.white);
+            var smear = StreakSprite();
+            for (int i = 0; i < _streak.Length; i++)
+            {
+                _streak[i] = WorldSprite(parent, i == 0 ? "MemoryBlurStreak" : "MemoryBlurEcho" + i, null, Color.white);
+                _streak[i].sprite = smear;
+                _streak[i].sortingOrder = 50 - i;
+            }
+        }
+
+        /// <summary>A pale milky veil over the whole view for a hazy memory, under the letterbox.</summary>
+        private void BuildHaze()
+        {
+            _haze = UiFactory.Panel(_overlay, "MemoryHaze", UiFactory.WithAlpha(Palette.WarmPaper, 0f), raycast: false);
+            _haze.rectTransform.SetSiblingIndex(1);
         }
 
         /// <summary>The pale paper ghost frame (falls back to June's run puppet when the extras are missing).</summary>
@@ -280,6 +335,9 @@ namespace SpookyStreet.Case
                 Quaternion.LookRotation(_current.LookAt - _current.Eye, Vector3.up));
             _active.gameObject.SetActive(true);
             _route = _current.HasGhost ? _current.Route : null;
+            _streakPath = _current.HasStreak ? _current.Streak : null;
+            StreakShown = false;
+            _reduced = reducedMotion;
             _overlay.gameObject.SetActive(true);
             _overlay.SetAsLastSibling();
             Step(0f);
@@ -310,8 +368,16 @@ namespace SpookyStreet.Case
             SetLook(0f);
             _overlay.gameObject.SetActive(false);
             _ghost.gameObject.SetActive(false);
-            _ring.gameObject.SetActive(false);
-            _stamp.gameObject.SetActive(false);
+            foreach (var s in _streak)
+            {
+                s.gameObject.SetActive(false);
+            }
+
+            if (_haze != null)
+            {
+                _haze.color = UiFactory.WithAlpha(Palette.WarmPaper, 0f);
+            }
+
             if (was && notify)
             {
                 Ended?.Invoke();
@@ -400,7 +466,13 @@ namespace SpookyStreet.Case
 
         private void SetLook(float w)
         {
-            _tint.color = UiFactory.WithAlpha(Lilac, 0.26f * w);
+            bool hazy = Playback != null && _streakPath != null;
+            _tint.color = UiFactory.WithAlpha(Lilac, (hazy ? 0.34f : 0.26f) * w);
+            if (_haze != null)
+            {
+                _haze.color = UiFactory.WithAlpha(Palette.WarmPaper, hazy ? HazeAlpha * w : 0f);
+            }
+
             _vignette.color = UiFactory.WithAlpha(Palette.NightViolet, 0.7f * w);
             _topBar.sizeDelta = new Vector2(0f, BarHeight * w);
             _bottomBar.sizeDelta = new Vector2(0f, BarHeight * w);
@@ -415,49 +487,91 @@ namespace SpookyStreet.Case
         {
             var cam = Camera.main;
             Quaternion face = cam != null ? cam.transform.rotation : Quaternion.identity;
-            if (_route != null)
+            StageStreak(progress, weight, cam);
+            if (_active != null && _streakPath != null && !_reduced)
             {
-                // Run 0..0.8 of the hold along the route, then pop into the window; the ring pulses on it.
-                float run = Mathf.Clamp01(progress / 0.8f);
-                float into = Mathf.Clamp01((progress - 0.8f) / 0.2f);
-                Vector3 at = PathAt(_route, run);
-                at.y += GhostHeight * 0.5f + 0.06f * Mathf.Abs(Mathf.Sin(_ghostClock * 14f)) * (1f - into);
-                _ghost.gameObject.SetActive(weight > 0.05f && into < 1f);
-                _ghost.transform.SetPositionAndRotation(at, face);
-                SetWorldSize(_ghost, GhostHeight * Mathf.Lerp(1f, 0.55f, into));
-                int frame = run < 1f && progress < 1f ? (int)(_ghostClock * VignettePlayer.FlipbookFps) : 0;
-                _ghost.sprite = PuppetAtlas.Get(GhostFrame(frame));
-                _ghost.color = UiFactory.WithAlpha(GhostTint, GhostTint.a * weight * (1f - into));
-                _ghost.flipX = cam != null && Vector3.Dot(cam.transform.right, _route[_route.Length - 1] - _route[0]) < 0f;
+                // The memory is hazy: the view drifts a little toward the house, as if remembering, never settling.
+                Vector3 drift = new Vector3(0.18f * progress, 0.06f * Mathf.Sin(_ghostClock * 1.3f), 0.12f * progress);
+                _active.transform.SetPositionAndRotation(_current.Eye + drift,
+                    Quaternion.LookRotation(_current.LookAt - (_current.Eye + drift), Vector3.up));
+            }
 
-                bool ring = progress >= 0.8f && weight > 0.05f;
-                _ring.gameObject.SetActive(ring);
-                if (ring)
-                {
-                    float pulse = 1f + 0.08f * Mathf.Sin(_ghostClock * 2f * Mathf.PI * 1.6f);
-                    float pop = VignetteSampler.Apply(Ease.Back, Mathf.Clamp01((progress - 0.8f) * 6f));
-                    _ring.transform.SetPositionAndRotation(_current.Mark, face);
-                    SetWorldSize(_ring, 1.5f * pop * pulse);
-                    _ring.color = UiFactory.WithAlpha(Color.white, weight);
-                }
-
-                _stamp.gameObject.SetActive(false);
+            if (_route == null)
+            {
+                // The front door from the bench (Vale): the door simply stays shut; nothing is stamped on it (D26).
+                _ghost.gameObject.SetActive(false);
                 return;
             }
 
-            // Front door: the door stays shut; late in the hold ⊘ thumps onto it and wiggles to a stop.
-            _ghost.gameObject.SetActive(false);
-            _ring.gameObject.SetActive(false);
-            float p = Mathf.Clamp01((progress - 0.45f) / 0.45f);
-            bool stamp = progress >= 0.45f && weight > 0.05f;
-            _stamp.gameObject.SetActive(stamp);
-            if (stamp)
+            // A staged ghost route (none of case 01's memories use one since S002.5b): the paper cut-out runs it and
+            // fades; no ring marks where it went.
+            float run = Mathf.Clamp01(progress / 0.8f);
+            float into = Mathf.Clamp01((progress - 0.8f) / 0.2f);
+            Vector3 at = PathAt(_route, run);
+            at.y += GhostHeight * 0.5f + 0.06f * Mathf.Abs(Mathf.Sin(_ghostClock * 14f)) * (1f - into);
+            _ghost.gameObject.SetActive(weight > 0.05f && into < 1f);
+            _ghost.transform.SetPositionAndRotation(at, face);
+            SetWorldSize(_ghost, GhostHeight * Mathf.Lerp(1f, 0.55f, into));
+            int frame = run < 1f && progress < 1f ? (int)(_ghostClock * VignettePlayer.FlipbookFps) : 0;
+            _ghost.sprite = PuppetAtlas.Get(GhostFrame(frame));
+            _ghost.color = UiFactory.WithAlpha(GhostTint, GhostTint.a * weight * (1f - into));
+            _ghost.flipX = cam != null && Vector3.Dot(cam.transform.right, _route[_route.Length - 1] - _route[0]) < 0f;
+        }
+
+        /// <summary>When in the hold the streak crosses (the rest of the memory is only the haze and the house).</summary>
+        public const float StreakFrom = 0.3f;
+
+        public const float StreakTo = 0.62f;
+
+        /// <summary>
+        /// Bea's glimpse: a soft silver smear rushes along the streak path, trailing fading echoes like a motion blur,
+        /// and is gone. Reduced motion shows one still smear, faint, at the middle of the path.
+        /// </summary>
+        private void StageStreak(float progress, float weight, Camera cam)
+        {
+            bool on = _streakPath != null && weight > 0.05f;
+            float u = (progress - StreakFrom) / (StreakTo - StreakFrom);
+            if (_reduced)
             {
-                float size = Mathf.Lerp(1.6f, 1f, VignetteSampler.Apply(Ease.Out, Mathf.Min(1f, p * 3f)));
-                _stamp.transform.SetPositionAndRotation(_current.Mark,
-                    face * Quaternion.Euler(0f, 0f, VignetteSampler.Wiggle(p)));
-                SetWorldSize(_stamp, 0.95f * size);
-                _stamp.color = UiFactory.WithAlpha(Color.white, weight * Mathf.Min(1f, p * 4f));
+                // Reduced motion has no ghost clock (progress holds at its end): one still, faint smear for the hold.
+                u = 0.5f;
+            }
+
+            on &= u >= 0f && u <= 1f;
+            for (int i = 0; i < _streak.Length; i++)
+            {
+                var s = _streak[i];
+                float ui = _reduced ? u : u - i * 0.07f;
+                bool show = on && ui >= 0f && ui <= 1f && (!_reduced || i == 0);
+                s.gameObject.SetActive(show);
+                if (!show)
+                {
+                    continue;
+                }
+
+                StreakShown = true;
+                float e = ui * ui * (3f - 2f * ui);
+                Vector3 at = PathAt(_streakPath, e);
+                Vector3 ahead = PathAt(_streakPath, Mathf.Min(1f, e + 0.05f)) - PathAt(_streakPath, Mathf.Max(0f, e - 0.05f));
+                // Face the camera and lie along the motion on screen.
+                Quaternion face = cam != null ? cam.transform.rotation : Quaternion.identity;
+                float roll = 0f;
+                if (cam != null)
+                {
+                    Vector3 local = cam.transform.InverseTransformDirection(ahead);
+                    roll = Mathf.Atan2(local.y, local.x) * Mathf.Rad2Deg;
+                }
+
+                s.transform.SetPositionAndRotation(at, face * Quaternion.Euler(0f, 0f, roll));
+                float swell = Mathf.Sin(Mathf.Clamp01(ui) * Mathf.PI);
+                float length = (_reduced ? 0.9f : 1.5f) * (1f - 0.12f * i);
+                float native = s.sprite != null ? s.sprite.bounds.size.x : 1f;
+                float k = length / Mathf.Max(0.01f, native);
+                s.transform.localScale = new Vector3(k, k * (0.75f + 0.25f * swell), 1f);
+                float alpha = weight * swell * (_reduced ? 0.55f : 0.9f) * (1f - 0.22f * i);
+                Color c = Palette.ClothSilver;
+                c.a = alpha;
+                s.color = c;
             }
         }
 
@@ -489,6 +603,36 @@ namespace SpookyStreet.Case
             }
 
             return points[points.Length - 1];
+        }
+
+        private static Sprite s_streak;
+
+        /// <summary>A soft horizontal smear: a bright rounded head on the right, a tail that thins and fades left.</summary>
+        private static Sprite StreakSprite()
+        {
+            if (s_streak != null)
+            {
+                return s_streak;
+            }
+
+            const int w = 128, h = 32;
+            var texture = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, name = "BlurStreak" };
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    float u = (x + 0.5f) / w;
+                    float v = (y + 0.5f) / h * 2f - 1f;
+                    float thickness = Mathf.Lerp(0.12f, 0.85f, Mathf.Pow(u, 1.6f)) * (u > 0.88f ? Mathf.Sqrt(Mathf.Clamp01((1f - u) / 0.12f)) : 1f);
+                    float across = Mathf.Clamp01(1f - Mathf.Abs(v) / Mathf.Max(0.01f, thickness));
+                    float a = across * across * Mathf.Pow(u, 1.2f);
+                    texture.SetPixel(x, y, new Color(1f, 1f, 1f, a));
+                }
+            }
+
+            texture.Apply();
+            s_streak = Sprite.Create(texture, new Rect(0f, 0f, w, h), new Vector2(0.5f, 0.5f), w);
+            return s_streak;
         }
 
         private static Sprite s_edge;

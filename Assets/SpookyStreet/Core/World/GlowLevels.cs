@@ -38,10 +38,18 @@ namespace SpookyStreet.Core.World
         public const float StreetView = 0.85f;
 
         /// <summary>
-        /// The tier-1 hint's star flecks (candy corn, unlit sprites): bright but under the bloom threshold, so a hint
-        /// never blooms and the attic window and rooftop owl stay the brightest points.
+        /// The S002 tier-1 star flecks (retired from the world by S002.5b; the star stays the tier-1 badge picture).
         /// </summary>
         public const float HintSparkle = 0.95f;
+
+        /// <summary>
+        /// The tier-1 area glow (S002.5b, D26): a soft warm pool on the area's floor, well under the bloom threshold, so
+        /// it reads as lamplight on a place and never as a glowing "this matters" mark.
+        /// </summary>
+        public const float HintAreaGlow = 0.55f;
+
+        /// <summary>A clue's glint (S002.5b attractions): a brief catch of light, under the bloom threshold.</summary>
+        public const float ClueGlint = 0.95f;
 
         /// <summary>
         /// The workshop nook's hanging lamp shade (house v3 cutaway): a warm practical, well under the attic window.

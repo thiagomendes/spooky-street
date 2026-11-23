@@ -215,6 +215,9 @@ namespace SpookyStreet.Core.Case
                     return view.June == JunePlacement.Porch;
                 case PointKit:
                     return view.KitPresent;
+                case PointOwlBooth:
+                    // Kit stands at her booth for the reopening: her own target takes the porch then.
+                    return !view.KitPresent;
                 case PointServicePanel:
                     return !view.ServicePanelOpen;
                 case PointLinkArm:
