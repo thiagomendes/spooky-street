@@ -14,8 +14,8 @@ using UnityEngine.TestTools;
 namespace SpookyStreet.Tests.Visual
 {
     /// <summary>
-    /// S003 frames: Pip sliding down the tall shed's west side under the treehouse (45_wall_slide) and hanging from the
-    /// street lamp's arm (46_ledge_hang), each reached by the real moves (the gamepad stick pushes her into the wall or
+    /// S003 frames: Pip sliding down the tall shed's west side under the treehouse (50_wall_slide) and hanging from the
+    /// street lamp's arm (51_ledge_hang), each reached by the real moves (the gamepad stick pushes her into the wall or
     /// at the arm) and frozen mid-move.
     /// </summary>
     [Category("Visual")]
@@ -123,14 +123,14 @@ namespace SpookyStreet.Tests.Visual
                 yield return null;
             }
 
-            Assert.IsTrue(pip.WallSliding, "45_wall_slide: Pip should slide down the shed wall");
+            Assert.IsTrue(pip.WallSliding, "50_wall_slide: Pip should slide down the shed wall");
             yield return Wait(0.35f);
             var probe = pip.LastWallProbe;
-            Debug.Log($"[S003] 45_wall_slide: feet {pip.transform.position:F2}, sliding {pip.WallSliding}, " +
+            Debug.Log($"[S003] 50_wall_slide: feet {pip.transform.position:F2}, sliding {pip.WallSliding}, " +
                       $"vy {pip.VerticalSpeed:F2}, wall hit {probe.Hit} d {probe.Distance:F2} clearance {probe.FeetClearance:F2}");
-            Assert.IsTrue(pip.WallSliding, "45_wall_slide: still sliding");
+            Assert.IsTrue(pip.WallSliding, "50_wall_slide: still sliding");
             Vector3 at = pip.transform.position;
-            yield return Capture("45_wall_slide", at + new Vector3(-2.0f, 0.45f, -1.1f), at + new Vector3(0.15f, 0.65f, 0f));
+            yield return Capture("50_wall_slide", at + new Vector3(-2.0f, 0.45f, -1.1f), at + new Vector3(0.15f, 0.65f, 0f));
             Set(_pad.leftStick, Vector2.zero);
         }
 
@@ -150,7 +150,7 @@ namespace SpookyStreet.Tests.Visual
                 }
             }
 
-            Assert.IsNotNull(head, "46_ledge_hang: the street lamp's marked arm");
+            Assert.IsNotNull(head, "51_ledge_hang: the street lamp's marked arm");
             Vector3 n = head.transform.forward;
             n.y = 0f;
             n.Normalize();
@@ -168,12 +168,12 @@ namespace SpookyStreet.Tests.Visual
             }
 
             Set(_pad.leftStick, Vector2.zero);
-            Assert.IsTrue(pip.Hanging, "46_ledge_hang: Pip should catch the lamp arm");
+            Assert.IsTrue(pip.Hanging, "51_ledge_hang: Pip should catch the lamp arm");
             yield return Wait(0.75f);
-            Assert.IsTrue(pip.Hanging, "46_ledge_hang: still hanging");
+            Assert.IsTrue(pip.Hanging, "51_ledge_hang: still hanging");
             Vector3 at = pip.transform.position;
             Vector3 side = Vector3.Cross(Vector3.up, n);
-            yield return Capture("46_ledge_hang", at + n * 2.4f + side * 1.3f + Vector3.up * 0.9f,
+            yield return Capture("51_ledge_hang", at + n * 2.4f + side * 1.3f + Vector3.up * 0.9f,
                 at + Vector3.up * 1.0f - n * 0.2f);
         }
     }

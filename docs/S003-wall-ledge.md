@@ -162,7 +162,7 @@ That change is frozen here and is the owner's call.
   - the wall tip shows the gamepad's lit South button and switches to the touch icon.
 
   The existing moveset tests run unchanged.
-- **Frames:** `45_wall_slide` and `46_ledge_hang`.
+- **Frames:** `50_wall_slide` and `51_ledge_hang`.
 
 ## Evidence
 
