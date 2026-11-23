@@ -131,17 +131,27 @@ a fade-in left the gain.
   - The loop fades out under the sting (0.4 s) and the theme comes back from its start after it (2 s fade-in).
 - **Slider:** the Music slider (`MusicVol`) now controls real audio (tested).
 
-## Hooks for cutscenes (`feature/s002.5b-cutscenes`)
+## Hooks for cutscenes (merged S002.5b)
 
-The other branch's cutscenes raise `SignalCue`s with placeholder ids: `music.c01.opening`, `music.c01.reveal`,
-`babble.c01.bea.hello`, `babble.c01.kit.cheer`, `babble.c01.june.cheer`. Its `CutscenePlayer.CueFired` handler
-needs one line for both channels:
+The cutscenes merged to main with their own small hook: `ICutsceneAudio` (`PlayCue`, `Babble`, `Stop`, `Duck`) on
+`CaseCutscenes.Audio`, silent by default. Their cue ids are `music_street_theme` (the opening), `music_reveal` (the
+reveal) and babble as `speaker.emotion` (`bea.happy` in the opening, `kit.happy` and `june.happy` at the reveal's
+reopening). `Runtime/Audio/GameCutsceneAudio.cs` implements it with the `GameAudio` hooks, and `GameAudio` sets
+it on `CaseCutscenes.Audio` when it is created (and puts the silent hook back on destroy). Their files are untouched.
 
-```csharp
-player.CueFired += cue => SpookyStreet.Core.Audio.AudioCues.PlayCue(cue.Id); // music and babble ids
-```
+| `ICutsceneAudio` | Played as |
+|---|---|
+| `PlayCue("music_street_theme")` | the street theme restarts from its start (the opening) and carries on into play |
+| `PlayCue("music_reveal")` | the reveal over a faded loop; it replaces a sting still playing and cancels one still waiting for its card |
+| `Babble(actor, emotion)` | that speaker's babble in that emotion, the phrase take closest to 1.2 s, on the Voice bus (it ducks the music and holds with the pause like a line) |
+| `Stop(id)` | the reveal stops early (0.5 s) and the loop comes back; stopping a loop does nothing, so the opening's theme keeps playing |
+| `Duck(true/false)` | the night bed (the street) steps back 10 dB while the cutscene plays; the cutscene's own music is not lowered |
 
-All hooks are static, engine-free and in `Core/Audio/AudioCues.cs`. With no listener they do nothing.
+The two `BabbleEmotion` enums (`Core.Cutscenes` and `Core.Audio`) have the same names in the same order; the
+bridge casts by value and an EditMode test pins them together.
+
+The static `AudioCues` hooks below stay for any other caller (and accept the placeholder ids the cutscene branch
+used before its hook). They are engine-free and in `Core/Audio/AudioCues.cs`. With no listener they do nothing.
 
 | Call | Effect |
 |---|---|
@@ -158,15 +168,16 @@ All hooks are static, engine-free and in `Core/Audio/AudioCues.cs`. With no list
 Babble placed with `.Babble(...)` in a cutscene goes through the Voice bus, so it ducks the music and holds with
 the pause like a line. I did not edit the cutscene branch's files.
 
-**Interplay:** that branch plays the reveal on the step that stamps the case. That step also arms the case-closed
-sting, which waits for the notebook's card. Whichever cue comes last wins (a newer cue replaces the older with a
-0.5 s fade). If the reveal should always win, that branch can call `AudioCues.StopCue()` after its cutscene, or skip
-the card's sting with `PlayCue("music_reveal")` once the card is up.
+**Interplay with the stamp:** the reveal waits for the screen to be free, so in play the order is: the last
+deduction's comic, the "Case closed" card with the sting, then (once the notebook closes) the reveal, whose cue
+replaces the sting if it is still sounding. When the stamp happens with the notebook closed, the reveal plays at
+once and cancels the waiting sting, so the sting never plays late over or after the reveal. While a cutscene plays,
+the sting's wait does not run out.
 
 ## Tests
 
 - **EditMode, Core** (run by `tools/core-tests` and Unity):
-  - `BabblePlannerTests` (20 cases):
+  - `BabblePlannerTests` (21 cases):
     - the 14 golden syllable counts;
     - the length rule and both clamps;
     - the closest take for every character, emotion and length;
@@ -194,6 +205,8 @@ the card's sting with `PlayCue("music_reveal")` once the card is up.
   - a stop releases the duck, and so does a voice playing to its end;
   - music fade-in and fade-out.
 - **PlayMode, game** (`VoicesMusicTests`, real scene, `CaseDirector.UseTemporarySaveDirectory()` in Setup):
+  - **Opening:** a new game with the opening plays the street theme from its start, Bea's happy babble, holds the
+    bed 10 dB back without lowering the music, and the theme carries on into play.
   - **Lines:**
     - Bea's first line plays `voice_bea_surprised` with the planner's take, and music and the bed duck 6 dB.
     - Skip stops the babble and the duck lets go.
@@ -205,8 +218,9 @@ the card's sting with `PlayCue("music_reveal")` once the card is up.
     - the pause keeps it playing 6 dB lower;
     - the music slider scales it;
     - through June's window it crosses to exploration 5 dB lower.
-  - **Sting:** it waits for the card after the stamping deduction, plays once when the "Case closed" card shows, and
-    the theme comes back after it.
+  - **Sting and reveal:** the last deduction is made in the open notebook; the sting waits for the card and plays
+    once when it shows; closing the notebook plays the reveal cutscene, whose reveal cue replaces the sting, with
+    Kit's and June's happy babble; the bed comes back and the theme returns after it.
   - **Reveal API:**
     - `PlayCue("music.c01.reveal")` fades the theme and plays the reveal;
     - `DuckMusic` lowers the bus and lets go;

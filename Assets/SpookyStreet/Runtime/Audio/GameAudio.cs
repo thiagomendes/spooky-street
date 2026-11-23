@@ -89,6 +89,10 @@ namespace SpookyStreet.Audio
         private bool _musicHeld;
         private float _musicTrim;
         private float _stingWait = -1f;
+        private bool _cutsceneDuck;
+
+        /// <summary>While a cutscene plays, the street (the night bed) steps back this far (<see cref="SetCutsceneDuck"/>).</summary>
+        public const float CutsceneBedDuckDb = -10f;
 
         public AudioRig Rig { get; private set; }
 
@@ -185,6 +189,11 @@ namespace SpookyStreet.Audio
                     _director.Dialogue.Closed += OnDialogueClosed;
                 }
 
+                if (_director.Cutscenes != null)
+                {
+                    _director.Cutscenes.Audio = new GameCutsceneAudio(this); // the cutscenes' music and babble (S002.5b)
+                }
+
                 _director.Stepped += OnCaseStep;
                 _director.Knocks.Started += OnKnocks;
                 if (_director.Workshop != null)
@@ -241,6 +250,11 @@ namespace SpookyStreet.Audio
                 {
                     _director.Dialogue.LineShown -= OnLineShown;
                     _director.Dialogue.Closed -= OnDialogueClosed;
+                }
+
+                if (_director.Cutscenes != null && _director.Cutscenes.Audio is GameCutsceneAudio)
+                {
+                    _director.Cutscenes.Audio = null; // back to silent
                 }
 
                 if (_director.Knocks != null)
@@ -506,6 +520,41 @@ namespace SpookyStreet.Audio
             }
         }
 
+        // ------------------------------------------------------------------------------------------- cutscenes
+
+        /// <summary>Whether a cutscene holds the street back (<see cref="SetCutsceneDuck"/>).</summary>
+        public bool CutsceneDucked => _cutsceneDuck;
+
+        /// <summary>A cutscene's music cue (<see cref="GameCutsceneAudio"/>): the reveal replaces a waiting sting.</summary>
+        public bool PlayCutsceneCue(string cueId)
+        {
+            if (AudioCues.ResolveMusic(cueId) == VoiceMusicEvents.MusicReveal)
+            {
+                _stingWait = -1f; // the reveal is the stamp's music now
+            }
+
+            return PlayMusicCue(cueId);
+        }
+
+        /// <summary>A cutscene's babble line: the speaker's short phrase take of that emotion.</summary>
+        public void PlayCutsceneBabble(Speaker speaker, BabbleEmotion emotion) =>
+            OnBabbleRequest(new BabbleRequest(speaker, emotion, AudioCues.DefaultBabbleSeconds));
+
+        /// <summary>A cutscene ends or is skipped: its cue (the reveal) stops and the loop comes back; loops carry on.</summary>
+        public void StopCutsceneCue(string cueId)
+        {
+            string id = AudioCues.ResolveMusic(cueId);
+            if (id != null && id == _music.Cue)
+            {
+                _musicCommands.Clear();
+                _music.StopCue(MusicPlan.CueOutSeconds, _musicCommands);
+                ApplyMusic();
+            }
+        }
+
+        /// <summary>While a cutscene plays, the night bed steps back; the cutscene's own music is not lowered.</summary>
+        public void SetCutsceneDuck(bool ducked) => _cutsceneDuck = ducked;
+
         // ------------------------------------------------------------------------------------------- music
 
         private void OnMusicRequest(MusicRequest request)
@@ -588,7 +637,8 @@ namespace SpookyStreet.Audio
                     PlayMusicCue(VoiceMusicEvents.MusicCaseClosed);
                 }
                 else if (notebook == null ||
-                         (!notebook.IsOpen && !_director.FinalePlaying && !_director.Dialogue.IsOpen))
+                         (!notebook.IsOpen && !_director.FinalePlaying && !_director.Dialogue.IsOpen &&
+                          (_director.Cutscenes == null || !_director.Cutscenes.Playing)))
                 {
                     _stingWait -= unscaled;
                     if (_stingWait < 0f)
@@ -681,7 +731,8 @@ namespace SpookyStreet.Audio
             }
 
             UpdateIndoors();
-            float trim = AudioMix.Approach(_ambienceTrim, AudioMix.AmbienceTrimDb(Indoors), AudioMix.AmbienceFadeDbPerSecond * dt);
+            float bedTarget = AudioMix.AmbienceTrimDb(Indoors) + (_cutsceneDuck ? CutsceneBedDuckDb : 0f);
+            float trim = AudioMix.Approach(_ambienceTrim, bedTarget, AudioMix.AmbienceFadeDbPerSecond * dt);
             // The cutoff moves on a log scale, in step with the level (one fade of the trim covers the whole sweep).
             float targetCutoff = AudioMix.AmbienceLowPassHz(Indoors);
             float logNow = Mathf.Log(_ambienceCutoff), logTarget = Mathf.Log(targetCutoff);

@@ -263,7 +263,7 @@ namespace SpookyStreet.Tests.PlayMode
         }
 
         [UnityTest]
-        [Timeout(90000)]
+        [Timeout(180000)]
         public IEnumerator TheStingPlaysWhenTheCaseClosedCardShows()
         {
             yield return StartGame();
@@ -295,13 +295,15 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsNotNull(Director.SolveQuestion(CaseNotebook.QuestionEntry,
                 new[] { CaseNotebook.ValeDoor, CaseNotebook.Cloth, CaseNotebook.SillSnag }));
             Assert.IsFalse(Audio.StingPending, "no stamp yet");
+
+            // The last deduction is made in the notebook (the reveal waits for the notebook to close).
+            Director.OpenNotebook();
+            yield return Frames(2);
+            Assert.IsTrue(notebook.IsOpen);
             Assert.IsNotNull(Director.SolveQuestion(CaseNotebook.QuestionMoved, new[] { CaseNotebook.LooseArm, CaseNotebook.OwlBooth }));
             Assert.IsTrue(Director.State.Has(CaseFact.CaseStamped));
             Assert.IsTrue(Audio.StingPending, "the stamp's sting waits for its card");
-            yield return Frames(3);
-            Assert.AreEqual(0, Plays(VoiceMusicEvents.MusicCaseClosed), "not before the card shows");
-
-            Director.OpenNotebook();
+            notebook.Rebuild();
             yield return Frames(2);
             Assert.IsNotNull(notebook.FinalCard);
             notebook.ShowPage(notebook.PageCount - 1);
@@ -313,14 +315,65 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsNull(Audio.Music.Loop, "the loop fades out under it");
             Assert.IsFalse(Audio.StingPending);
 
-            // After the sting the theme comes back from its start; the card again plays nothing.
+            // Turning back to the card plays nothing more.
             notebook.ShowPage(0);
             yield return Frames(2);
             notebook.ShowPage(notebook.PageCount - 1);
-            yield return Wait((float)VoiceMusicEvents.MusicSeconds(VoiceMusicEvents.MusicCaseClosed) + 0.3f);
+            yield return Frames(2);
             Assert.AreEqual(1, Plays(VoiceMusicEvents.MusicCaseClosed), "once per stamp");
+
+            // Closing the notebook frees the screen: the reveal cutscene plays the reveal cue over the sting, with
+            // Kit's and June's babble, holds the street back, and the theme comes back after it.
+            notebook.Close();
+            float until = Time.unscaledTime + 5f;
+            while (!Director.Cutscenes.Playing && Time.unscaledTime < until) yield return null;
+            Assert.IsTrue(Director.Cutscenes.Playing, "the reveal plays once the notebook closes");
+            yield return Frames(2);
+            Assert.AreEqual(1, Plays(VoiceMusicEvents.MusicReveal), "the cutscene's reveal cue");
+            Assert.AreEqual(1, Stops(VoiceMusicEvents.MusicCaseClosed), "it replaces the sting");
+            Assert.AreEqual(VoiceMusicEvents.MusicReveal, Audio.Music.Cue);
+            Assert.IsTrue(Audio.CutsceneDucked);
+            until = Time.unscaledTime + 60f;
+            while (Director.Cutscenes.Playing && Time.unscaledTime < until) yield return null;
+            Assert.IsFalse(Director.Cutscenes.Playing);
+            Assert.AreEqual(1, Plays("voice_kit_happy"), "kit.happy at the reopening");
+            Assert.AreEqual(1, Plays("voice_june_happy"), "june.happy at the reopening");
+            yield return Frames(3);
+            Assert.IsFalse(Audio.CutsceneDucked, "the street comes back");
             Assert.IsNull(Audio.Music.Cue);
-            Assert.AreEqual(VoiceMusicEvents.MusicStreetTheme, Audio.Music.Loop);
+            Assert.AreEqual(VoiceMusicEvents.MusicStreetTheme, Audio.Music.Loop, "the theme comes back after the reveal");
+            Assert.IsTrue(Rig.IsLooping(VoiceMusicEvents.MusicStreetTheme));
+            Assert.AreEqual(1, Plays(VoiceMusicEvents.MusicCaseClosed), "the sting never comes back late");
+        }
+
+        [UnityTest]
+        [Timeout(120000)]
+        public IEnumerator TheOpeningPlaysTheStreetThemeAndBeasBabble()
+        {
+            CaseDirector.UseTemporarySaveDirectory(playOpening: true);
+            yield return LoadGame();
+            yield return Frames(3);
+            Assert.AreEqual(1, Plays(VoiceMusicEvents.MusicStreetTheme), "the theme on the title");
+            Assert.IsInstanceOf<GameCutsceneAudio>(Director.Cutscenes.Audio, "the cutscenes play through the game's audio");
+            Game.Ui.NewGameButton.onClick.Invoke();
+            yield return Frames(3);
+            Assert.IsTrue(Director.Cutscenes.Playing, "the opening plays");
+            Assert.AreEqual(2, Plays(VoiceMusicEvents.MusicStreetTheme), "the opening restarts the theme from its start");
+            Assert.AreEqual(1, Stops(VoiceMusicEvents.MusicStreetTheme));
+            Assert.IsTrue(Audio.CutsceneDucked);
+            yield return Wait(1f);
+            Assert.AreEqual(AudioMix.AmbienceTrimDb(false) + GameAudio.CutsceneBedDuckDb, Rig.BusTrimDb(AudioBus.Ambience), 0.01f,
+                "the street steps back");
+            Assert.AreEqual(0f, Rig.BusTrimDb(AudioBus.Music), 0.01f, "the cutscene's own music is not lowered");
+
+            float until = Time.unscaledTime + 90f;
+            while (Director.Cutscenes.Playing && Time.unscaledTime < until) yield return null;
+            Assert.IsFalse(Director.Cutscenes.Playing);
+            Assert.AreEqual(1, Plays("voice_bea_happy"), "bea.happy in the opening");
+            yield return Wait(1f);
+            Assert.IsFalse(Audio.CutsceneDucked);
+            Assert.AreEqual(0f, Rig.BusTrimDb(AudioBus.Ambience), 0.01f);
+            Assert.AreEqual(2, Plays(VoiceMusicEvents.MusicStreetTheme), "the theme carries on into play");
             Assert.IsTrue(Rig.IsLooping(VoiceMusicEvents.MusicStreetTheme));
         }
 

@@ -173,6 +173,16 @@ namespace SpookyStreet.Tests.Core
         }
 
         [Test]
+        public void TheCutsceneEmotionsMapOneToOneOntoTheBabbleEmotions()
+        {
+            // GameCutsceneAudio casts the cutscenes' BabbleEmotion onto the audio one by value.
+            CollectionAssert.AreEqual(System.Enum.GetNames(typeof(SpookyStreet.Core.Cutscenes.BabbleEmotion)),
+                System.Enum.GetNames(typeof(BabbleEmotion)));
+            Assert.AreEqual(VoiceMusicEvents.MusicStreetTheme, SpookyStreet.Core.Cutscenes.CutsceneAudio.MusicStreetTheme);
+            Assert.AreEqual(VoiceMusicEvents.MusicReveal, SpookyStreet.Core.Cutscenes.CutsceneAudio.MusicReveal);
+        }
+
+        [Test]
         public void CutsceneCueIdsResolve()
         {
             Assert.AreEqual("music_reveal", AudioCues.ResolveMusic("music_reveal"));
