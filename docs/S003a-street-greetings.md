@@ -95,7 +95,7 @@ test are unchanged.
 ## 5. CI evidence
 
 - `tools/check-local.sh`: all local checks pass (621 Core tests in `tools/core-tests`, 6 new).
-- CI run: filled in below once `ci.yml` has finished.
+- **CI run 143** (`45131715621`, head f961507): all green, first try. EditMode 654/654, PlayMode 126/126, Visual 14/14. New or changed fixtures: `StreetGreetingsTests` 6/6, `StreetMemoryPlayTests` 6/6 (with the new `ATalkAfterARememberedLoadPlaysTheChangedGreeting`), `NonverbalUiTests` 7/7, `VignetteTests` 26/26, `BabblePlannerTests` 21/21.
 
 ## 6. Gaps
 
