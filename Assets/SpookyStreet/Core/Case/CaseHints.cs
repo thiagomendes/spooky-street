@@ -33,18 +33,20 @@ namespace SpookyStreet.Core.Case
     /// </summary>
     public static class CaseHints
     {
+        // Tier 1 (a sensory line about the area) and tier 2 (the area trail line). Tier 3 has no per-objective line any
+        // more (D26 §6): it only demonstrates a move, with that move's line (HintMoves.LineKey).
         private static readonly Dictionary<CaseObjective, string[]> Table = new Dictionary<CaseObjective, string[]>
         {
-            { CaseObjective.Arrival, new[] { Keys.ArrivalObserve, Keys.ArrivalLocate, Keys.ArrivalAct } },
-            { CaseObjective.CheckView, new[] { Keys.CheckViewObserve, Keys.CheckViewLocate, Keys.CheckViewAct } },
-            { CaseObjective.FindWayIn, new[] { Keys.FindWayInObserve, Keys.FindWayInLocate, Keys.FindWayInAct } },
-            { CaseObjective.MeetJune, new[] { Keys.MeetJuneObserve, Keys.MeetJuneLocate, Keys.MeetJuneAct } },
-            { CaseObjective.OpenDoor, new[] { Keys.OpenDoorObserve, Keys.OpenDoorLocate, Keys.OpenDoorAct } },
-            { CaseObjective.FindSource, new[] { Keys.FindSourceObserve, Keys.FindSourceLocate, Keys.FindSourceAct } },
-            { CaseObjective.LinkArm, new[] { Keys.LinkArmObserve, Keys.LinkArmLocate, Keys.LinkArmAct } },
-            { CaseObjective.TurnCrank, new[] { Keys.TurnCrankObserve, Keys.TurnCrankLocate, Keys.TurnCrankAct } },
-            { CaseObjective.ReturnToPorch, new[] { Keys.ReturnObserve, Keys.ReturnLocate, Keys.ReturnAct } },
-            { CaseObjective.FreeRoam, new[] { Keys.FreeRoamObserve, Keys.FreeRoamLocate, Keys.FreeRoamAct } },
+            { CaseObjective.Arrival, new[] { Keys.ArrivalObserve, Keys.ArrivalLocate } },
+            { CaseObjective.CheckView, new[] { Keys.CheckViewObserve, Keys.CheckViewLocate } },
+            { CaseObjective.FindWayIn, new[] { Keys.FindWayInObserve, Keys.FindWayInLocate } },
+            { CaseObjective.MeetJune, new[] { Keys.MeetJuneObserve, Keys.MeetJuneLocate } },
+            { CaseObjective.OpenDoor, new[] { Keys.OpenDoorObserve, Keys.OpenDoorLocate } },
+            { CaseObjective.FindSource, new[] { Keys.FindSourceObserve, Keys.FindSourceLocate } },
+            { CaseObjective.LinkArm, new[] { Keys.LinkArmObserve, Keys.LinkArmLocate } },
+            { CaseObjective.TurnCrank, new[] { Keys.TurnCrankObserve, Keys.TurnCrankLocate } },
+            { CaseObjective.ReturnToPorch, new[] { Keys.ReturnObserve, Keys.ReturnLocate } },
+            { CaseObjective.FreeRoam, new[] { Keys.FreeRoamObserve, Keys.FreeRoamLocate } },
         };
 
         /// <summary>
@@ -89,7 +91,11 @@ namespace SpookyStreet.Core.Case
         /// </summary>
         public static string OpenQuestionKey(CaseState state) => CaseNotebook.FirstOpen(state)?.QuestionKey;
 
-        public static string HintFor(CaseObjective objective, HintTier tier, CaseState state = null)
+        /// <summary>
+        /// The line for a tier. Tier 3 names a move (<paramref name="move"/>, D26 §6); without one there is no tier 3,
+        /// so the area trail line stands (the radio stops at two pips where no move blocks the way).
+        /// </summary>
+        public static string HintFor(CaseObjective objective, HintTier tier, CaseState state = null, HintMove move = HintMove.None)
         {
             if (objective == CaseObjective.FreeRoam && tier == HintTier.Observation && state != null && CaseNotebook.AllFound(state))
             {
@@ -100,6 +106,11 @@ namespace SpookyStreet.Core.Case
             if (index < 0 || index > 2)
             {
                 throw new ArgumentOutOfRangeException(nameof(tier), tier, "unknown hint tier");
+            }
+
+            if (tier == HintTier.Action)
+            {
+                return HintMoves.LineKey(move) ?? Table[objective][(int)HintTier.Location];
             }
 
             return Table[objective][index];
@@ -116,17 +127,25 @@ namespace SpookyStreet.Core.Case
             }
 
             yield return Keys.FreeRoamAllFound;
+            foreach (var move in HintMoves.Demonstrable)
+            {
+                yield return HintMoves.LineKey(move);
+            }
         }
     }
 
     /// <summary>
-    /// Tracks how far the player has escalated hints for the current objective. Each request gives the next tier,
-    /// stopping at the action; a new objective starts again from the observation. In-memory only.
+    /// Tracks how far the player has escalated hints for the current objective. Each request gives the next tier; a
+    /// new objective starts again from the observation. Tier 3 exists only where a move blocks the way
+    /// (<see cref="MoveAt"/>, D26 §6): elsewhere the radio stays on tier 2. In-memory only.
     /// </summary>
     public sealed class HintSession
     {
         private CaseObjective? _objective;
         private int _given;
+
+        /// <summary>The move that blocks Pip where she stands now (None: no tier 3). Unset means no move anywhere.</summary>
+        public Func<CaseObjective, HintMove> MoveAt { get; set; }
 
         public string Request(CaseState state)
         {
@@ -137,13 +156,23 @@ namespace SpookyStreet.Core.Case
                 _given = 0;
             }
 
-            var tier = (HintTier)Math.Min(_given, (int)HintTier.Action);
-            _given++;
-            return CaseHints.HintFor(objective, tier, state);
+            var move = Move(objective);
+            var tier = Cap(_given, move);
+            _given = Math.Min(_given + 1, (int)HintTier.Action);
+            return CaseHints.HintFor(objective, tier, state, move);
         }
 
-        /// <summary>Tier the next request would give, for the current objective.</summary>
-        public HintTier NextTier(CaseState state) =>
-            _objective == CaseHints.ObjectiveFor(state) ? (HintTier)Math.Min(_given, (int)HintTier.Action) : HintTier.Observation;
+        /// <summary>Tier the next request would give, for the current objective and where Pip is now.</summary>
+        public HintTier NextTier(CaseState state)
+        {
+            var objective = CaseHints.ObjectiveFor(state);
+            return _objective == objective ? Cap(_given, Move(objective)) : HintTier.Observation;
+        }
+
+        /// <summary>The move a tier-3 request would demonstrate now (None when there is no tier 3 here).</summary>
+        public HintMove Move(CaseObjective objective) => MoveAt != null ? MoveAt(objective) : HintMove.None;
+
+        private static HintTier Cap(int given, HintMove move) =>
+            (HintTier)Math.Min(given, move == HintMove.None ? (int)HintTier.Location : (int)HintTier.Action);
     }
 }

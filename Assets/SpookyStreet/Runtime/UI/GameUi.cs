@@ -50,6 +50,12 @@ namespace SpookyStreet.UI
         private MoveTipView _tips;
 
         public GameObject TitleScreen => _title;
+
+        /// <summary>The title's safe-area content (logo, case name, Continue, New game): the Continue recap joins it.</summary>
+        public RectTransform TitleContent { get; private set; }
+
+        /// <summary>Top-left of Continue's slot in <see cref="TitleContent"/> (its button is 440 × 112, pivot top-left).</summary>
+        public Vector2 ContinueSlot => _primarySlot;
         public GameObject Hud => _hud;
         public GameObject PauseScreen => _pause;
         public GameObject FirstPrompt => _prompt;
@@ -356,6 +362,7 @@ namespace SpookyStreet.UI
 
             var content = UiFactory.Stretch(UiFactory.Rect(root, "Content"));
             content.gameObject.AddComponent<SafeAreaFitter>();
+            TitleContent = content;
             var topLeft = new Vector2(0f, 1f);
 
             // Baked stitched logo: the product name as art, not localized (docs/ui-language.md). If the PNG is ever

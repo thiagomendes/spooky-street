@@ -48,13 +48,22 @@ namespace SpookyStreet.Tests.Core
         }
 
         [Test]
-        public void BeasRouteReplaysStayWithheldUntilRestagedAsAHazyMemory()
+        public void BeasRestagedHazyMemoriesAreOfferedOnDemandFromHerSticker()
         {
+            // S002.5b restaged Bea's replays as a silver blur high over the hedge (no June, no route): offered from her
+            // sticker once heard, and never auto-played.
             var all = new HashSet<string> { MemoryReplays.BeaSawCape, MemoryReplays.BeaDoorOpen, MemoryReplays.ValeDoorShut };
             var state = CaseState.FromFacts(new[] { CaseFact.BeaSpoke, CaseFact.ValeSpoke });
-            Assert.AreEqual(0, MemoryReplayPolicy.OnDemandFor(CaseNotebook.BeaFlash, state, all).Count,
-                "June's ghost running into the window would answer the entry question");
+            CollectionAssert.AreEqual(new[] { MemoryReplays.BeaSawCape, MemoryReplays.BeaDoorOpen },
+                new List<MemoryReplayDefinition>(MemoryReplayPolicy.OnDemandFor(CaseNotebook.BeaFlash, state, all)).ConvertAll(r => r.Id));
             Assert.AreEqual(1, MemoryReplayPolicy.OnDemandFor(CaseNotebook.ValeDoor, state, all).Count);
+            Assert.AreEqual(0, MemoryReplayPolicy.OnDemandFor(CaseNotebook.BeaFlash, CaseState.Empty, null).Count,
+                "nothing before she has spoken");
+            foreach (var replay in MemoryReplays.All)
+            {
+                Assert.IsTrue(replay.Offered, replay.Id);
+                Assert.IsFalse(MemoryReplayPolicy.OnLineDismissed(replay.LineKey, null, false, false).Play, replay.Id + " never auto-plays");
+            }
         }
 
         [Test]
@@ -98,7 +107,7 @@ namespace SpookyStreet.Tests.Core
             var vale = MemoryReplayPolicy.OnDemandFor(CaseNotebook.ValeDoor, state, None);
             Assert.AreEqual(1, vale.Count, "a save from before this feature still offers Vale's replay");
             Assert.AreEqual(MemoryReplays.ValeDoorShut, vale[0].Id);
-            Assert.AreEqual(0, MemoryReplayPolicy.OnDemandFor(CaseNotebook.BeaFlash, state, None).Count);
+            Assert.AreEqual(0, MemoryReplayPolicy.OnDemandFor(CaseNotebook.BeaFlash, state, None).Count, "Bea has not spoken");
 
             var seen = new HashSet<string> { MemoryReplays.ValeWasShut };
             CollectionAssert.AreEqual(new[] { MemoryReplays.ValeDoorShut, MemoryReplays.ValeWasShut },

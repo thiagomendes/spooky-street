@@ -8,7 +8,10 @@ namespace SpookyStreet.Core.Nonverbal
     /// <summary>The real place a memory replay frames (camera pose data lives in the runtime, per place).</summary>
     public enum ReplayPlace
     {
-        /// <summary>Treehouse balcony → side window, from the plaza side (Bea's account).</summary>
+        /// <summary>
+        /// Bea's view from the plaza toward the side of the house (S002.5b: a hazy silver streak high over the hedge,
+        /// gone by the roof; no June, no window entry). The name is kept from S002.
+        /// </summary>
         TreehouseWindow,
 
         /// <summary>The front door, from Vale's bench.</summary>
@@ -41,9 +44,9 @@ namespace SpookyStreet.Core.Nonverbal
         public string StickerEntryId { get; }
 
         /// <summary>
-        /// D26 §7: a replay is offered only once it is a hazy, partial memory of what the witness perceived. Bea's two
-        /// still re-enact June's route into the window, so they stay withheld until S002.5b restages them as a silver
-        /// blur over the hedge; Vale's (the shut door from his bench) are already perceptions.
+        /// D26 §7: a replay is offered only once it is a hazy, partial memory of what the witness perceived. S002.5b
+        /// restaged Bea's two as a silver blur streaking high over the hedge (no June, no route), so both are offered
+        /// now; Vale's (the shut door from his bench) were already perceptions.
         /// </summary>
         public bool Offered { get; }
 
@@ -64,8 +67,8 @@ namespace SpookyStreet.Core.Nonverbal
 
         public static readonly IReadOnlyList<MemoryReplayDefinition> All = new[]
         {
-            new MemoryReplayDefinition(BeaSawCape, Lines.BeaSawCape, ReplayPlace.TreehouseWindow, CaseNotebook.BeaFlash, CaseFact.BeaSpoke, false),
-            new MemoryReplayDefinition(BeaDoorOpen, Lines.BeaDoorOpen, ReplayPlace.TreehouseWindow, CaseNotebook.BeaFlash, null, false),
+            new MemoryReplayDefinition(BeaSawCape, Lines.BeaSawCape, ReplayPlace.TreehouseWindow, CaseNotebook.BeaFlash, CaseFact.BeaSpoke, true),
+            new MemoryReplayDefinition(BeaDoorOpen, Lines.BeaDoorOpen, ReplayPlace.TreehouseWindow, CaseNotebook.BeaFlash, null, true),
             new MemoryReplayDefinition(ValeDoorShut, Lines.ValeDoorShut, ReplayPlace.FrontDoor, CaseNotebook.ValeDoor, CaseFact.ValeSpoke, true),
             new MemoryReplayDefinition(ValeWasShut, Lines.ValeWasShut, ReplayPlace.FrontDoor, CaseNotebook.ValeDoor, null, true),
         };
