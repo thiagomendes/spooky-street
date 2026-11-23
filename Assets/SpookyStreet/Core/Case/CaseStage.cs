@@ -422,25 +422,11 @@ namespace SpookyStreet.Core.Case
         public static bool IsCaption(Speaker speaker) => speaker == Speaker.Caption;
     }
 
-    /// <summary>Short labels for the notebook's annotation slips (the full note shows on tap).</summary>
+    /// <summary>Short labels for the notebook's clue stickers (final card, accessibility names).</summary>
     public static class CaseNotebookTags
     {
-        private static readonly Dictionary<string, string> Tags = new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            { "c01.note.knocks", UiKeys.TagKnocks },
-            { "c01.note.bea", UiKeys.TagBea },
-            { "c01.note.vale", UiKeys.TagVale },
-            { "c01.note.bench", UiKeys.TagBench },
-            { "c01.note.streamer", UiKeys.TagStreamer },
-            { "c01.note.cloth", UiKeys.TagCloth },
-            { "c01.note.sill", UiKeys.TagSill },
-            { "c01.note.june", UiKeys.TagJune },
-            { "c01.note.sweet", UiKeys.TagSweet },
-        };
-
-        /// <summary>Tag label key for an annotation entry, or null for an answer.</summary>
-        public static string TagKey(string entryId) =>
-            entryId != null && Tags.TryGetValue(entryId, out string key) ? key : null;
+        /// <summary>Tag label key for a sticker, or null for anything else.</summary>
+        public static string TagKey(string stickerId) => CaseNotebook.Sticker(stickerId)?.TagKey;
     }
 
     /// <summary>

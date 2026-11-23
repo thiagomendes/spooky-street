@@ -13,8 +13,8 @@ namespace SpookyStreet.Tests.Visual
 {
     /// <summary>
     /// Non-verbal UX v2 frames (D23, docs/nonverbal-ux.md, mocks in docs/evidence/s002/nonverbal_v2): the tier-2 bat
-    /// trail from the arrival porch (27), Bea's vignette bubble mid-animation (24), her memory replay mid-ghost (25),
-    /// the notebook page with its comic playing (26). The first-launch picture cards (28) were retired with D23.1
+    /// trail from the arrival porch (27) and Bea's vignette bubble mid-animation (24: since D26, only the silver flash she
+    /// saw). The memory replay (25) and notebook page (26) frames were retired by S002.5a. The first-launch picture cards (28) were retired with D23.1
     /// (one hybrid reading mode).
     /// </summary>
     [Category("Visual")]
@@ -129,32 +129,11 @@ namespace SpookyStreet.Tests.Visual
                 brain.enabled = true;
             }
 
-            // 25: dismiss the line: the first hearing replays her memory in the world (letterbox, lilac, June's ghost).
+            // 25 and 26 were retired with D26 (S002.5a): memory replays no longer auto-play, and the notebook page is
+            // captured by DeductionCaptureTests (the tray, a wrong-try wobble, the solved comic, the case card).
             director.Dialogue.Advance();
             yield return null;
-            Assert.IsTrue(layer.MemoryReplay.Active, "25_memory_replay: the replay should start");
-            yield return Wait(1.1f);
-            Assert.IsTrue(layer.MemoryReplay.Ghost.gameObject.activeSelf, "25_memory_replay: the ghost should be out");
-            yield return Shot("25_memory_replay");
-            yield return Wait(2f);
-
-            // 26: a notebook page with a proven answer: the comic plays (June on the bridge, the ring on her panel).
-            director.Perform(CaseAction.Of(CaseActionKind.HearKnocks));
-            director.Perform(CaseAction.Talk(Speaker.Vale));
-            director.Dialogue.Skip();
-            director.Perform(CaseAction.Of(CaseActionKind.ExamineStreamer));
-            director.Dialogue.Skip();
-            director.Perform(CaseAction.Of(CaseActionKind.EnterAttic));
-            director.Dialogue.Skip();
-            director.Captions.Clear();
-            yield return Wait(0.3f);
-            layer.MemoryReplay.End(false);
-            director.OpenNotebook();
-            yield return Wait(1.2f); // stickers wiggle in
-            Assert.IsTrue(director.Notebook.PlayStrip(0), "26_notebook_page: the entry comic should be playable");
-            yield return Wait(1.15f);
-            yield return Shot("26_notebook_page");
-            director.Notebook.Close();
+            Assert.IsFalse(layer.MemoryReplay.Active, "D26: no replay auto-plays after the line");
         }
 
         /// <summary>

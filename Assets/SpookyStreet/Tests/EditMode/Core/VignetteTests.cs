@@ -107,19 +107,18 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void ActiveCuesReportProgressAndStartedCuesFireOnce()
         {
-            var bea = C01Vignettes.Get(C01Vignettes.BeaSawCape);
+            var vale = C01Vignettes.Get(C01Vignettes.ValeDoorShut);
             var active = new List<CueState>();
-            VignetteSampler.ActiveCues(bea, 3.05f, active);
+            VignetteSampler.ActiveCues(vale, 3.0f, active);
             Assert.AreEqual(1, active.Count);
-            Assert.AreEqual(CueKind.Ring, active[0].Cue.Kind);
+            Assert.AreEqual(CueKind.Stamp, active[0].Cue.Kind);
             Assert.AreEqual(0.5f, active[0].Progress, 1e-3f);
 
             var started = new List<VignetteCue>();
-            VignetteSampler.CuesStarted(bea, 2.1f, 2.2f, started);
+            VignetteSampler.CuesStarted(vale, 2.5f, 2.7f, started);
             Assert.AreEqual(1, started.Count);
-            Assert.AreEqual(CueKind.Gesture, started[0].Kind);
-            Assert.AreEqual("Point", started[0].Arg, "Bea plays Point in the world (decision D23.6)");
-            VignetteSampler.CuesStarted(bea, 2.2f, 2.3f, started);
+            Assert.AreEqual(CueKind.Stamp, started[0].Kind);
+            VignetteSampler.CuesStarted(vale, 2.7f, 2.9f, started);
             Assert.AreEqual(0, started.Count);
         }
 
@@ -130,33 +129,27 @@ namespace SpookyStreet.Tests.Core
             var buffer = new PartState[Vignette.MaxTracks];
             int n = VignetteSampler.Sample(bea, 1.0f, buffer);
             Assert.AreEqual(bea.Tracks.Count, n);
-            Assert.AreEqual(VignetteSampler.Sample(bea, 1.0f)[IndexOf(bea, "june")].Pose.X, buffer[IndexOf(bea, "june")].Pose.X);
+            Assert.AreEqual(VignetteSampler.Sample(bea, 1.0f)[IndexOf(bea, "flash")].Pose.X, buffer[IndexOf(bea, "flash")].Pose.X);
             Assert.Throws<System.ArgumentException>(() => VignetteSampler.Sample(bea, 1f, new PartState[1]));
         }
 
         [Test]
-        public void LoopTimeLoopsSpeechForeverAndNotebookStripsTwice()
+        public void LoopTimeLoopsSpeechForever()
         {
             var speech = C01Vignettes.Get(C01Vignettes.BeaSawCape);
             Assert.AreEqual(0, speech.LoopCount);
-            Assert.AreEqual(1.0f, speech.LocalTime(3.6f * 5 + 1.0f), 1e-3f);
+            Assert.AreEqual(1.0f, speech.LocalTime(speech.Length * 5 + 1.0f), 1e-3f);
             Assert.IsFalse(speech.IsFinished(1000f));
-
-            var strip = C01Vignettes.AnswerStripFor(CaseNotebook.QuestionEntry);
-            Assert.AreEqual(C01Vignettes.NotebookLoops, strip.LoopCount);
-            Assert.AreEqual(0.5f, strip.LocalTime(strip.Length + 0.5f), 1e-3f);
-            Assert.IsTrue(strip.IsFinished(strip.Length * 2));
-            Assert.AreEqual(strip.Length, strip.LocalTime(strip.Length * 2 + 3f), 1e-5f, "holds the end pose");
         }
 
         [Test]
         public void ReducedMotionHoldsEachBeatsEndPose()
         {
             var bea = C01Vignettes.Get(C01Vignettes.BeaSawCape);
-            Assert.AreEqual(1.7f, bea.ReducedMotionTime(0f), 1e-5f);
-            Assert.AreEqual(1.7f, bea.ReducedMotionTime(1.0f), 1e-5f);
-            Assert.AreEqual(2.1f, bea.ReducedMotionTime(1.8f), 1e-5f);
-            Assert.AreEqual(3.6f, bea.ReducedMotionTime(2.5f), 1e-5f);
+            Assert.AreEqual(1.5f, bea.ReducedMotionTime(0f), 1e-5f);
+            Assert.AreEqual(1.5f, bea.ReducedMotionTime(1.0f), 1e-5f);
+            Assert.AreEqual(2.4f, bea.ReducedMotionTime(2.2f), 1e-5f);
+            Assert.AreEqual(3.4f, bea.ReducedMotionTime(3.0f), 1e-5f);
         }
 
         // ------------------------------------------------------------------------------- validator
@@ -219,7 +212,7 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void EveryCaseVignetteIsValid()
         {
-            Assert.AreEqual(36, C01Vignettes.All.Count, "5 key lines, 3 notebook strips, 28 for the other lines");
+            Assert.AreEqual(35, C01Vignettes.All.Count, "5 key lines and 30 for the other lines (the notebook comic is drawn from stickers)");
             foreach (var v in C01Vignettes.All)
             {
                 var errors = VignetteValidator.Validate(v);
@@ -275,7 +268,7 @@ namespace SpookyStreet.Tests.Core
         public void EveryScriptLineHasAVignetteAndNoneKeepsTheV1Card()
         {
             var scriptKeys = new List<string>(CaseScript.AllLineKeys);
-            Assert.AreEqual(35, scriptKeys.Count, "case 01 has 35 lines (captions, examines, dialogue)");
+            Assert.AreEqual(37, scriptKeys.Count, "case 01 has 37 lines (captions, examines, dialogue; S002.5a adds the owl panel and Kit's question)");
             Assert.AreEqual(scriptKeys.Count, C01Vignettes.LineTable.Count, "one table row per CaseScript line");
             CollectionAssert.AreEquivalent(scriptKeys, C01Vignettes.ScopedLineKeys, "every line is in scope");
             foreach (string key in scriptKeys)
@@ -302,17 +295,12 @@ namespace SpookyStreet.Tests.Core
         }
 
         [Test]
-        public void EveryVignetteIsUsedByALineOrANotebookStrip()
+        public void EveryVignetteIsUsedByALine()
         {
             var used = new HashSet<string>();
             foreach (var row in C01Vignettes.LineTable)
             {
                 used.Add(row.VignetteId);
-            }
-
-            foreach (var question in CaseNotebook.Questions)
-            {
-                used.Add(C01Vignettes.AnswerStripFor(question.Id).Id);
             }
 
             foreach (var v in C01Vignettes.All)
@@ -333,30 +321,70 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void ClueLinesShowTheActualClue()
         {
-            AssertShows(Lines.ExamineCloth, "pg.cloth", "pg.cape");
-            AssertShows(Lines.ExamineSill, PuppetParts.SillSnag, "pg.cape");
-            AssertShows(Lines.ExamineStreamer, "pg.streamer", "pg.not");
+            AssertShows(Lines.ExamineCloth, "pg.cloth", PuppetParts.Sparkle);
+            AssertShows(Lines.ExamineSill, PuppetParts.SillSnag);
+            AssertShows(Lines.ExamineStreamer, "pg.streamer");
             AssertShows(Lines.ExamineBowlSweet, "pg.sweet");
-            AssertShows(Lines.ExamineDoorStuck, "pg.door_shut", "pg.lock");
-            AssertShows(Lines.BeaRepeat, "pg.hedge", "pg.cape", "pg.feet", "pg.not");
+            AssertShows(Lines.ExamineDoorStuck, "pg.door_shut");
+            AssertShows(Lines.ExamineOwlPanel, "pg.owl");
+            AssertShows(Lines.BeaSawCape, "pg.hedge", PuppetParts.Sparkle, "pg.house_side");
+            AssertShows(Lines.BeaRepeat, "pg.hedge", PuppetParts.Sparkle);
             AssertShows(Lines.CaptionGrille, "pg.grille");
             AssertShows(Lines.CaptionArmLinked, "pg.arm", "pg.cam");
-            AssertShows(Lines.CaptionCrankGap, "pg.crank", "pg.gap", "pg.not");
+            AssertShows(Lines.CaptionCrankGap, "pg.crank", "pg.arm");
             AssertShows(Lines.CaptionFoyerHum, "pg.floor_hum");
             AssertShows(Lines.JuneLatchReminder, PuppetParts.LatchBar, "pg.hands");
             AssertShows(Lines.JuneGreet, PuppetParts.WaveHand, "pg.june");
+            AssertShows(Lines.KitAsk, "pg.kit", "pg.question");
+        }
 
-            // The clue lines mark the clue with the key ring.
-            foreach (string key in new[] { Lines.ExamineCloth, Lines.ExamineSill, Lines.ExamineBowlSweet })
+        /// <summary>
+        /// D26 spoiler rules for case content: no "this matters" ring, no check stamp and no key ring in any case line's
+        /// vignette; clue lines never set June's cape beside the clue; Bea's lines show only a flash (no June, no lit
+        /// window); the decoy and the crank gap get no ⊘ (only Mr. Vale's own claim keeps it).
+        /// </summary>
+        [Test]
+        public void NoCaseVignetteNamesAConclusion()
+        {
+            foreach (var row in C01Vignettes.LineTable)
             {
-                var v = C01Vignettes.Get(C01Vignettes.For(key).VignetteId);
-                bool ring = false;
+                var v = C01Vignettes.Get(row.VignetteId);
                 foreach (var cue in v.Cues)
                 {
-                    ring |= cue.Kind == CueKind.Ring;
+                    Assert.AreNotEqual(CueKind.Ring, cue.Kind, row.LineKey + ": the ring cue left case content");
                 }
 
-                Assert.IsTrue(ring, key + " rings its clue");
+                AssertHides(row.LineKey, "pg.check", PuppetParts.KeyRing);
+            }
+
+            foreach (string key in new[] { Lines.BeaSawCape, Lines.BeaRepeat, Lines.BeaDoorOpen })
+            {
+                AssertHides(key, "pg.june", PuppetParts.JuneRun, "pg.june_window", "pg.cape", "pg.window", "pg.pointer", "pg.feet", "pg.not");
+            }
+
+            foreach (string key in new[] { Lines.ExamineCloth, Lines.ExamineSill, Lines.ExamineStreamer })
+            {
+                AssertHides(key, "pg.cape", "pg.not");
+            }
+
+            AssertHides(Lines.CaptionCrankGap, "pg.not", "pg.gap");
+            AssertHides(Lines.ExamineDoorStuck, "pg.lock");
+            AssertHides(Lines.JuneListenFloor, "pg.floor_hum");
+        }
+
+        private static void AssertHides(string lineKey, params string[] parts)
+        {
+            var v = C01Vignettes.Get(C01Vignettes.For(lineKey).VignetteId);
+            foreach (var track in v.Tracks)
+            {
+                foreach (string part in parts)
+                {
+                    Assert.AreNotEqual(part, track.Part, lineKey + " (" + v.Id + ") must not show " + part);
+                    foreach (var key in track.Keys)
+                    {
+                        Assert.AreNotEqual(part, key.Part, lineKey + " (" + v.Id + ") must not show " + part);
+                    }
+                }
             }
         }
 
@@ -415,44 +443,24 @@ namespace SpookyStreet.Tests.Core
         }
 
         [Test]
-        public void EveryNotebookQuestionHasAnAnswerStrip()
-        {
-            var strips = new HashSet<string>();
-            foreach (var question in CaseNotebook.Questions)
-            {
-                var strip = C01Vignettes.AnswerStripFor(question.Id);
-                Assert.NotNull(strip, question.Id);
-                Assert.Greater(strip.LoopCount, 0, "strips stop after playing (no constant motion on the page)");
-                Assert.IsTrue(strips.Add(strip.Id));
-                Assert.NotNull(strip.FindTrack("check"), "each strip ends on the green check stamp");
-            }
-
-            Assert.IsNull(C01Vignettes.AnswerStripFor("c01.note.nope"));
-        }
-
-        [Test]
-        public void BeaVignetteFollowsTheApprovedChoreography()
+        public void BeaVignetteShowsOnlyTheFlashSheSaw()
         {
             var bea = C01Vignettes.Get(C01Vignettes.BeaSawCape);
-            Assert.AreEqual(3.6f, bea.Length, 1e-5f);
-            int june = IndexOf(bea, "june");
-            int lit = IndexOf(bea, "window_lit");
-            int hand = IndexOf(bea, "hand");
+            int flash = IndexOf(bea, "flash");
+            int eye = IndexOf(bea, "eye");
+            int what = IndexOf(bea, "what");
 
-            var early = VignetteSampler.Sample(bea, 1.0f);
-            Assert.IsTrue(early[june].Visible, "June runs across the bridge");
-            Assert.IsFalse(early[lit].Visible);
-            Assert.IsFalse(early[hand].Visible);
+            var early = VignetteSampler.Sample(bea, 0.9f);
+            Assert.IsTrue(early[flash].Visible, "a silver flash streaks over the hedge");
+            Assert.Greater(early[flash].Pose.Y, 0.6f, "up high");
+            Assert.IsFalse(early[eye].Visible);
 
-            var inside = VignetteSampler.Sample(bea, 2.15f);
-            Assert.IsFalse(inside[june].Visible, "June popped into the window");
-            Assert.IsTrue(inside[lit].Visible, "the window lit with June inside");
+            var gone = VignetteSampler.Sample(bea, 1.7f);
+            Assert.IsFalse(gone[flash].Visible, "then it was gone");
 
-            var point = VignetteSampler.Sample(bea, 3.0f);
-            Assert.IsTrue(point[hand].Visible, "Bea's hand points");
-            var cues = new List<CueState>();
-            VignetteSampler.ActiveCues(bea, 3.0f, cues);
-            Assert.IsTrue(cues.Exists(c => c.Cue.Kind == CueKind.Ring && c.Cue.Target == "window_lit"), "key ring pulses on the window");
+            var after = VignetteSampler.Sample(bea, 3.5f);
+            Assert.IsTrue(after[eye].Visible, "Bea's eye: she saw it");
+            Assert.IsTrue(after[what].Visible, "and she does not know what it was");
         }
 
         [Test]

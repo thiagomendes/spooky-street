@@ -54,7 +54,7 @@ namespace SpookyStreet.Core.Case
         {
             // Captions and examine text.
             { Keys.CaptionArrivalKnocks, When(None, F(CaseFact.HeardKnocks)) },
-            { Keys.CaptionFoyerHum, When(None, F(CaseFact.SawCam)) },
+            { Keys.CaptionFoyerHum, When(None, F(CaseFact.FloorHum)) },
             { Keys.CaptionGrille, When(None, None) },
             { Keys.CaptionArmLinked, When(None, F(CaseFact.LinkedArm)) },
             { Keys.CaptionCrankGap, When(None, F(CaseFact.LinkedArm)) },
@@ -62,6 +62,7 @@ namespace SpookyStreet.Core.Case
             { Keys.ExamineStreamer, When(None, None) },
             { Keys.ExamineCloth, When(None, None) },
             { Keys.ExamineSill, When(None, None) },
+            { Keys.ExamineOwlPanel, When(None, None) },
             { Keys.ExamineDoorStuck, When(None, F(CaseFact.FrontOpen)) },
             { Keys.ExamineBowl, When(None, F(CaseFact.CaseClosed)) },
             { Keys.ExamineBowlSweet, When(F(CaseFact.CaseClosed), None) },
@@ -95,7 +96,9 @@ namespace SpookyStreet.Core.Case
 
             // Aunt Kit appears only for the reopening.
             { Keys.KitFirstShow, When(F(CaseFact.FrontOpen, CaseFact.TestedOwl), F(CaseFact.CaseClosed)) },
-            { Keys.KitThanks, When(F(CaseFact.CaseClosed), None) },
+            // After the show, until the child has explained the case in the notebook (D26).
+            { Keys.KitAsk, When(F(CaseFact.FrontOpen, CaseFact.TestedOwl), F(CaseFact.CaseStamped)) },
+            { Keys.KitThanks, When(F(CaseFact.CaseStamped), None) },
         };
 
         /// <summary>Every line key the case can play.</summary>
@@ -177,7 +180,7 @@ namespace SpookyStreet.Core.Case
                 case Speaker.Kit:
                     if (closed)
                     {
-                        lines.Add(Line(Speaker.Kit, Keys.KitThanks));
+                        lines.Add(Line(Speaker.Kit, state.Has(CaseFact.CaseStamped) ? Keys.KitThanks : Keys.KitAsk));
                     }
 
                     break;

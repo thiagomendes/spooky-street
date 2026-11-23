@@ -11,7 +11,9 @@ namespace SpookyStreet.Core.Case
     /// <item>Gaining a fact also gains what it physically implies (see <see cref="FactDefinition.Implies"/>).</item>
     /// <item>Entering by the window before either witness speaks also records <see cref="CaseFact.AtticFirst"/>,
     /// which June acknowledges.</item>
-    /// <item>The ending needs frontOpen and testedOwl plus arriving at the porch; nothing else.</item>
+    /// <item>The reopening needs frontOpen and testedOwl plus arriving at the porch; nothing else. The "Case closed"
+    /// stamp also needs the three questions solved by the child (D26).</item>
+    /// <item>A question is solved only by a right set of found stickers (<see cref="CaseDeduction.IsCorrect"/>).</item>
     /// <item>Turning the crank before the arm is linked is a tap and a gap: no fact.</item>
     /// <item>Facts are a set: repeating any action gains nothing and returns the same state instance.</item>
     /// </list>
@@ -87,6 +89,7 @@ namespace SpookyStreet.Core.Case
                     if (!state.Has(CaseFact.FrontOpen))
                     {
                         special = CaseOutcome.DoorStuck;
+                        next = Gain(next, CaseFact.TriedDoor, gained);
                         lines.Add(Pip(Keys.ExamineDoorStuck));
                     }
 
@@ -102,8 +105,10 @@ namespace SpookyStreet.Core.Case
                     break;
 
                 case CaseActionKind.EnterFoyer:
-                    // June's mark is derived from foundJune (CaseWorldView), so entering only cues the hum.
-                    if (!state.Has(CaseFact.SawCam))
+                    // June's mark is derived from foundJune (CaseWorldView), so entering only cues the hum: the
+                    // floorboards tremble with the knocks, once, and that perception is the floor-hum sticker.
+                    next = Gain(next, CaseFact.FloorHum, gained);
+                    if (gained.Contains(CaseFact.FloorHum))
                     {
                         lines.Add(Caption(Keys.CaptionFoyerHum));
                     }
@@ -113,6 +118,12 @@ namespace SpookyStreet.Core.Case
                 case CaseActionKind.ExamineGrille:
                     next = Gain(next, CaseFact.SawCam, gained);
                     lines.Add(Caption(Keys.CaptionGrille));
+                    break;
+
+                case CaseActionKind.ExamineOwlPanel:
+                    next = Gain(next, CaseFact.OwlPanel, gained);
+                    lines.Add(Caption(Keys.CaptionGrille));
+                    lines.Add(Pip(Keys.ExamineOwlPanel));
                     break;
 
                 case CaseActionKind.LinkArm:
@@ -128,6 +139,7 @@ namespace SpookyStreet.Core.Case
                     if (!state.Has(CaseFact.LinkedArm))
                     {
                         special = CaseOutcome.CrankGap;
+                        next = Gain(next, CaseFact.LooseArm, gained);
                         lines.Add(Caption(Keys.CaptionCrankGap));
                     }
                     else
@@ -155,6 +167,35 @@ namespace SpookyStreet.Core.Case
                     next = Gain(next, CaseFact.CaseClosed, gained);
                     lines.Add(CaseScript.Line(Speaker.June, Keys.JuneResolve));
                     lines.Add(CaseScript.Line(Speaker.Kit, Keys.KitFirstShow));
+                    if (!AllSolved(state))
+                    {
+                        // The show is never withheld; the case closes only on the child's own explanation (D26).
+                        lines.Add(CaseScript.Line(Speaker.Kit, Keys.KitAsk));
+                    }
+
+                    break;
+
+                case CaseActionKind.Solve:
+                    var question = CaseNotebook.Question(action.Question);
+                    if (question == null || !question.IsRaised(state))
+                    {
+                        special = CaseOutcome.NotYet;
+                        break;
+                    }
+
+                    if (question.IsSolved(state))
+                    {
+                        special = CaseOutcome.Repeated;
+                        break;
+                    }
+
+                    if (!AllFound(state, action.Stickers) || !CaseDeduction.IsCorrect(question, action.Stickers))
+                    {
+                        special = CaseOutcome.WrongSet;
+                        break;
+                    }
+
+                    next = Gain(next, question.SolvedFact, gained);
                     break;
 
                 case CaseActionKind.ExamineCandyBowl:
@@ -183,11 +224,41 @@ namespace SpookyStreet.Core.Case
                 next = Gain(next, CaseFact.AtticFirst, gained);
             }
 
-            var outcome = gained.Count > 0 ? CaseOutcome.Progressed
+            // The case stamp: the reopening plus the three deductions, whichever comes last (D26 open question 1a).
+            if (!next.Has(CaseFact.CaseStamped) && next.HasAll(CaseDefinition.StampRequires))
+            {
+                next = Gain(next, CaseFact.CaseStamped, gained);
+            }
+
+            // The door's rattle and the crank's gap stay visible reactions even when they hand out a sticker.
+            var outcome = (special == CaseOutcome.DoorStuck || special == CaseOutcome.CrankGap) ? special
+                : gained.Count > 0 ? CaseOutcome.Progressed
                 : special != CaseOutcome.None ? special
                 : lines.Count > 0 ? CaseOutcome.Repeated
                 : CaseOutcome.None;
             return new CaseStep(state, next, gained, outcome, lines.Count > 0 ? lines : NoLines, cutaway);
+        }
+
+        private static bool AllSolved(CaseState state) =>
+            state.Has(CaseFact.SolvedSource) && state.Has(CaseFact.SolvedEntry) && state.Has(CaseFact.SolvedMoved);
+
+        private static bool AllFound(CaseState state, IReadOnlyList<string> stickers)
+        {
+            if (stickers == null)
+            {
+                return false;
+            }
+
+            foreach (string id in stickers)
+            {
+                var sticker = CaseNotebook.Sticker(id);
+                if (sticker == null || !sticker.InTray || !sticker.Found(state))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>Which fact a conversation records (Aunt Kit's records none).</summary>
