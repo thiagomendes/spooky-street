@@ -484,6 +484,10 @@ namespace SpookyStreet.Tests.PlayMode
 
             director.Notebook.Close();
             yield return Frames(3);
+            // S002.5b (D28): the reveal payoff plays once the case card closes; skipping it hands control back.
+            Assert.IsTrue(director.Cutscenes.Playing, "the reveal follows the stamp");
+            director.Cutscenes.Player.SkipNow();
+            yield return Wait(0.6f);
             Assert.IsTrue(Game.Controls.GameplayEnabled, "the player keeps control after the finale");
 
             // The candy-bowl sweet works after closure.

@@ -50,7 +50,7 @@ namespace SpookyStreet.Core.Localization
         };
 
         /// <summary>All keys referenced from code, for validation.</summary>
-        public static readonly string[] All = Concat(Shell, CaseLines.All, Notebook.All, Hints.All, Save.All, Verbs.All);
+        public static readonly string[] All = Concat(Shell, CaseLines.All, Notebook.All, Hints.All, Save.All, Verbs.All, Cutscenes.All);
 
         /// <summary>Case 01 script: captions, examine text and dialogue (S002).</summary>
         public static class CaseLines

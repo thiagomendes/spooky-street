@@ -410,7 +410,7 @@ namespace SpookyStreet.UI
         }
 
         /// <summary>A paper sticker with the clue's pictures (who said it and what, or the thing found).</summary>
-        private static Image StickerCard(Transform parent, string id, Vector2 anchor, Vector2 position, Vector2 size, float angle)
+        internal static Image StickerCard(Transform parent, string id, Vector2 anchor, Vector2 position, Vector2 size, float angle)
         {
             var card = UiFactory.PaperTag(parent, "Sticker", null, 20, anchor, position, size, angle, Color.white);
             string[] art = StickerArt(id);

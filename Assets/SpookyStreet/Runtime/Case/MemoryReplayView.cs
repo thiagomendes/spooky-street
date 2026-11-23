@@ -60,7 +60,7 @@ namespace SpookyStreet.Case
         public const string FrontDoorCameraName = "MemoryReplayFrontDoor";
 
         /// <summary>Cinemachine's wildcard camera name in custom blends.</summary>
-        public const string AnyCameraLabel = "**ANY CAMERA**";
+        public const string AnyCameraLabel = CinematicBlends.AnyCamera;
 
         private static readonly Color Lilac = new Color(0.62f, 0.52f, 0.86f, 1f);
         private static readonly Color GhostTint = new Color(1f, 1f, 1f, 0.9f);
@@ -74,12 +74,7 @@ namespace SpookyStreet.Case
             new System.Collections.Generic.Dictionary<ReplayPlace, ReplayStaging>();
         private ReplayStaging _current;
         private CinemachineCamera _active;
-        private RectTransform _overlay;
-        private Image _tint;
-        private Image _vignette;
-        private RectTransform _topBar;
-        private RectTransform _bottomBar;
-        private Image _skipRing;
+        private CinematicFrame _frame;
         private SpriteRenderer _ghost;
         private SpriteRenderer _ring;
         private SpriteRenderer _stamp;
@@ -99,10 +94,13 @@ namespace SpookyStreet.Case
 
         public float Weight => Active ? Playback.Weight : 0f;
 
-        public Button SkipButton { get; private set; }
+        public Button SkipButton => _frame.SkipButton;
 
         /// <summary>The skip disc's small caption ("Skip memory", <c>ui.memory.skip</c>) in the letterbox.</summary>
-        public Text SkipCaption { get; private set; }
+        public Text SkipCaption => _frame.SkipCaption;
+
+        /// <summary>The letterbox, tint, vignette and skip disc (shared with the cutscenes, <see cref="CinematicFrame"/>).</summary>
+        public CinematicFrame Frame => _frame;
 
         public SpriteRenderer Ghost => _ghost;
 
@@ -178,55 +176,10 @@ namespace SpookyStreet.Case
 
         private void BuildOverlay(RectTransform canvasRoot)
         {
-            _overlay = UiFactory.Stretch(UiFactory.Rect(canvasRoot, "MemoryReplayOverlay"));
-            _tint = UiFactory.Panel(_overlay, "PencilTint", UiFactory.WithAlpha(Lilac, 0f), raycast: false);
-            _vignette = UiFactory.Panel(_overlay, "Vignette", UiFactory.WithAlpha(Palette.NightViolet, 0f), raycast: false);
-            _vignette.sprite = EdgeFade();
-            _topBar = Bar("TopBar", new Vector2(0f, 1f));
-            _bottomBar = Bar("BottomBar", new Vector2(0f, 0f));
-
-            // Tap anywhere skips: a clear catcher over the world (the HUD is hidden while the replay runs).
-            var catcher = UiFactory.Panel(_overlay, "TapToSkip", new Color(0f, 0f, 0f, 0f));
-            var catcherButton = catcher.gameObject.AddComponent<Button>();
-            catcherButton.transition = Selectable.Transition.None;
-            catcherButton.onClick.AddListener(() => Skip());
-
-            var safe = UiFactory.Stretch(UiFactory.Rect(_overlay, "SafeArea"));
-            safe.gameObject.AddComponent<SafeAreaFitter>();
-            var disc = UiFactory.FeltDisc(safe, "SkipDisc", UiSpriteCatalog.FeltDiscNight, Palette.WarmPaper,
-                UiSpriteCatalog.IconSkip, Palette.WarmPaper, null, UiFactory.SystemDiscDiameter, Vector2.one,
-                new Vector2(-62f, -60f - BarHeight * 0.5f), 0.92f);
-            var button = disc.gameObject.AddComponent<Button>();
-            button.targetGraphic = disc;
-            button.transition = Selectable.Transition.None;
-            button.onClick.AddListener(() => Skip());
-            SkipButton = button;
-            // Its name, as the accessibility name and as a small caption in the letterbox beside the disc.
-            SpookyStreet.Localization.AccessibleName.Set(disc.gameObject, NvKeys.MemorySkip);
-            var caption = UiFactory.Label(disc.transform, "Caption", NvKeys.MemorySkip, 26, TextAnchor.MiddleRight,
-                UiFactory.WithAlpha(Palette.WarmPaper, 0.85f), UiFactory.BoldFont);
-            UiFactory.Place(caption.rectTransform, new Vector2(0f, 0.5f), new Vector2(-18f, 0f), new Vector2(300f, 40f),
-                new Vector2(1f, 0.5f));
-            SkipCaption = caption;
-            // The candy progress ring fills over the replay (how long is left, without numbers).
-            _skipRing = UiFactory.Sprite(disc.transform, "Progress", UiFactory.Baked(UiSpriteCatalog.StitchRing),
-                Palette.CandyCornYellow, new Vector2(0.5f, 0.5f), Vector2.zero,
-                Vector2.one * (UiFactory.SystemDiscDiameter + 16f));
-            _skipRing.type = Image.Type.Filled;
-            _skipRing.fillMethod = Image.FillMethod.Radial360;
-            _skipRing.fillOrigin = (int)Image.Origin360.Top;
-            _skipRing.fillClockwise = true;
-            _overlay.gameObject.SetActive(false);
-        }
-
-        private RectTransform Bar(string name, Vector2 anchor)
-        {
-            var bar = UiFactory.Panel(_overlay, name, Palette.InkBlack, raycast: false).rectTransform;
-            bar.anchorMin = anchor;
-            bar.anchorMax = new Vector2(1f, anchor.y);
-            bar.pivot = new Vector2(0.5f, anchor.y);
-            bar.sizeDelta = new Vector2(0f, BarHeight);
-            return bar;
+            // Tap anywhere or the disc skips (the HUD is hidden while the replay runs).
+            _frame = CinematicFrame.Create(canvasRoot, "MemoryReplayOverlay", BarHeight, NvKeys.MemorySkip, Lilac, 0.26f, 0.7f);
+            _frame.Tapped += Skip;
+            _frame.SkipPressed += Skip;
         }
 
         private void BuildWorld(Transform parent)
@@ -280,8 +233,7 @@ namespace SpookyStreet.Case
                 Quaternion.LookRotation(_current.LookAt - _current.Eye, Vector3.up));
             _active.gameObject.SetActive(true);
             _route = _current.HasGhost ? _current.Route : null;
-            _overlay.gameObject.SetActive(true);
-            _overlay.SetAsLastSibling();
+            _frame.Show();
             Step(0f);
         }
 
@@ -307,8 +259,7 @@ namespace SpookyStreet.Case
                 _active = null;
             }
 
-            SetLook(0f);
-            _overlay.gameObject.SetActive(false);
+            _frame.Hide();
             _ghost.gameObject.SetActive(false);
             _ring.gameObject.SetActive(false);
             _stamp.gameObject.SetActive(false);
@@ -318,31 +269,8 @@ namespace SpookyStreet.Case
             }
         }
 
-        private void ConfigureBlends(bool cut)
-        {
-            if (_brain == null)
-            {
-                return;
-            }
-
-            if (_blends == null)
-            {
-                _blends = ScriptableObject.CreateInstance<CinemachineBlenderSettings>();
-                _blends.name = "MemoryReplayBlends";
-            }
-
-            var style = cut ? CinemachineBlendDefinition.Styles.Cut : CinemachineBlendDefinition.Styles.EaseInOut;
-            var blend = new CinemachineBlendDefinition(style, MemoryReplayTiming.DefaultBlend);
-            const string any = AnyCameraLabel;
-            _blends.CustomBlends = new[]
-            {
-                new CinemachineBlenderSettings.CustomBlend { From = any, To = TreehouseCameraName, Blend = blend },
-                new CinemachineBlenderSettings.CustomBlend { From = TreehouseCameraName, To = any, Blend = blend },
-                new CinemachineBlenderSettings.CustomBlend { From = any, To = FrontDoorCameraName, Blend = blend },
-                new CinemachineBlenderSettings.CustomBlend { From = FrontDoorCameraName, To = any, Blend = blend },
-            };
-            _brain.CustomBlends = _blends;
-        }
+        private void ConfigureBlends(bool cut) => CinematicBlends.Configure(_brain, ref _blends, "MemoryReplayBlends", cut,
+            MemoryReplayTiming.DefaultBlend, TreehouseCameraName, FrontDoorCameraName);
 
         private void Update()
         {
@@ -394,22 +322,11 @@ namespace SpookyStreet.Case
             }
 
             SetLook(Playback.Weight);
-            _skipRing.fillAmount = Mathf.Clamp01(Playback.GhostProgress);
+            _frame.Progress = Playback.GhostProgress;
             StageGhost(Playback.Replay.Place, Playback.GhostProgress, Playback.Weight);
         }
 
-        private void SetLook(float w)
-        {
-            _tint.color = UiFactory.WithAlpha(Lilac, 0.26f * w);
-            _vignette.color = UiFactory.WithAlpha(Palette.NightViolet, 0.7f * w);
-            _topBar.sizeDelta = new Vector2(0f, BarHeight * w);
-            _bottomBar.sizeDelta = new Vector2(0f, BarHeight * w);
-            if (SkipButton != null)
-            {
-                var group = SkipButton.transform as RectTransform;
-                group.localScale = Vector3.one * Mathf.Lerp(0.6f, 1f, w);
-            }
-        }
+        private void SetLook(float w) => _frame.SetLook(w);
 
         private void StageGhost(ReplayPlace place, float progress, float weight)
         {
@@ -489,34 +406,6 @@ namespace SpookyStreet.Case
             }
 
             return points[points.Length - 1];
-        }
-
-        private static Sprite s_edge;
-
-        /// <summary>Clear in the middle, opaque at the edges (the memory vignette).</summary>
-        private static Sprite EdgeFade()
-        {
-            if (s_edge != null)
-            {
-                return s_edge;
-            }
-
-            const int size = 64;
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    float dx = (x + 0.5f) / size * 2f - 1f;
-                    float dy = (y + 0.5f) / size * 2f - 1f;
-                    float d = Mathf.Clamp01((Mathf.Sqrt(dx * dx * 0.7f + dy * dy) - 0.55f) / 0.6f);
-                    texture.SetPixel(x, y, new Color(1f, 1f, 1f, d * d));
-                }
-            }
-
-            texture.Apply();
-            s_edge = Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f));
-            return s_edge;
         }
     }
 }
