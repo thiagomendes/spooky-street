@@ -385,7 +385,7 @@ namespace SpookyStreet.UI
                 }
             }
 
-            var list = PageText(page, "Discoveries", null, 24, Palette.InkBlack, UiFactory.BoldFont, 44f, 360f, 850f, 64f);
+            var list = PageText(page, "Discoveries", null, 24, Palette.InkBlack, UiFactory.BoldFont, 44f, 344f, 850f, 92f);
             list.text = string.Join(Localizer.Get(UiKeys.NotebookDiscoverySeparator), names);
             list.alignment = TextAnchor.UpperLeft;
             list.resizeTextMinSize = 22;

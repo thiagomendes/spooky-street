@@ -521,6 +521,8 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Use(CaseStage.PointServicePanel, Workshop(-0.35f));
             Assert.IsTrue(director.State.Has(CaseFact.SawCam), "looking through the open panel shows the cam");
             Assert.IsTrue(director.State.Has(CaseFact.OwlPanel), "the panel's painted owl is a clue sticker");
+            Assert.AreEqual(Lines.ExamineOwlPanel, director.Dialogue.CurrentLine.Key, "Pip: a painted owl, wings folded");
+            yield return SkipDialogue();
             yield return Wait(0.9f);
             Assert.IsTrue(workshop.PanelOpen);
             Assert.AreEqual(WorkshopView.PanelOpenDegrees, workshop.PanelDegrees, 0.5f, "the panel swings +112 degrees");

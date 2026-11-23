@@ -56,6 +56,9 @@ namespace SpookyStreet.UI
         private sealed class Tween
         {
             public RectTransform Rect;
+            /// <summary>The page the glide is measured on: positions are page-local, so a canvas mode or scale change
+            /// mid-glide (a capture, a rotation) never throws a sticker off the page.</summary>
+            public Transform Space;
             public Vector3 From;
             public Vector3 To;
             public float Delay;
@@ -85,7 +88,6 @@ namespace SpookyStreet.UI
         private Image _focusRing;
         private bool _cursorVisible;
         private RectTransform _dragHome;
-        private Vector3 _dragFrom;
 
         private InputActionMap _input;
         private InputAction _left;
@@ -748,7 +750,7 @@ namespace SpookyStreet.UI
             {
                 if (s != null)
                 {
-                    map[s.StickerId] = s.Rect.position;
+                    map[s.StickerId] = view.Page.InverseTransformPoint(s.Rect.position);
                 }
             }
 
@@ -756,7 +758,7 @@ namespace SpookyStreet.UI
             {
                 if (s != null)
                 {
-                    map[s.StickerId] = s.Rect.position;
+                    map[s.StickerId] = view.Page.InverseTransformPoint(s.Rect.position);
                 }
             }
 
@@ -791,7 +793,8 @@ namespace SpookyStreet.UI
                     continue;
                 }
 
-                if ((from - s.Rect.position).sqrMagnitude < 0.5f)
+                Vector3 to = view.Page.InverseTransformPoint(s.Rect.position);
+                if ((from - to).sqrMagnitude < 0.5f)
                 {
                     continue;
                 }
@@ -799,10 +802,10 @@ namespace SpookyStreet.UI
                 bool home = wobble != null && wobble.Contains(s.StickerId);
                 _tweens.Add(new Tween
                 {
-                    Rect = s.Rect, From = from, To = s.Rect.position, Delay = home ? order++ * WobbleStagger : 0f,
+                    Rect = s.Rect, Space = view.Page, From = from, To = to, Delay = home ? order++ * WobbleStagger : 0f,
                     Duration = home ? WobbleSeconds : 0.18f, Wobble = home ? 14f : 0f, BaseAngle = s.Rect.localEulerAngles.z,
                 });
-                s.Rect.position = from;
+                s.Rect.position = view.Page.TransformPoint(from);
             }
 
             if (ReducedMotion)
@@ -917,7 +920,6 @@ namespace SpookyStreet.UI
             // It lifts and follows the thumb above everything on the page.
             _cursor.Drop();
             _dragHome = sticker.Rect;
-            _dragFrom = sticker.Rect.position;
             sticker.Rect.SetParent(view.Overlay, true);
             sticker.Rect.SetAsLastSibling();
             sticker.Rect.localScale = new Vector3(1.12f, 1.12f, 1f);
@@ -967,7 +969,7 @@ namespace SpookyStreet.UI
             }
 
             var before = SnapshotPositions(view);
-            before[sticker.StickerId] = sticker.Rect.position;
+            before[sticker.StickerId] = view.Page.InverseTransformPoint(sticker.Rect.position);
             var found = CaseNotebook.FoundIds(CurrentState);
             bool placed = target >= 0 && board.Place(target, sticker.StickerId, found);
             if (!placed && sticker.SlotIndex >= 0 && target < 0)
@@ -1111,7 +1113,7 @@ namespace SpookyStreet.UI
             for (int i = _tweens.Count - 1; i >= 0; i--)
             {
                 var t = _tweens[i];
-                if (t.Rect == null)
+                if (t.Rect == null || t.Space == null)
                 {
                     _tweens.RemoveAt(i);
                     continue;
@@ -1120,12 +1122,12 @@ namespace SpookyStreet.UI
                 t.Elapsed += dt;
                 float p = Mathf.Clamp01((t.Elapsed - t.Delay) / t.Duration);
                 float e = VignetteSampler.Apply(t.Wobble > 0f ? Ease.Back : Ease.Out, p);
-                t.Rect.position = Vector3.LerpUnclamped(t.From, t.To, e);
+                t.Rect.position = t.Space.TransformPoint(Vector3.LerpUnclamped(t.From, t.To, e));
                 float wobble = t.Wobble * Mathf.Sin(p * Mathf.PI * 3f) * (1f - p);
                 t.Rect.localRotation = Quaternion.Euler(0f, 0f, t.BaseAngle + wobble);
                 if (p >= 1f)
                 {
-                    t.Rect.position = t.To;
+                    t.Rect.position = t.Space.TransformPoint(t.To);
                     t.Rect.localRotation = Quaternion.Euler(0f, 0f, t.BaseAngle);
                     _tweens.RemoveAt(i);
                 }
@@ -1156,9 +1158,9 @@ namespace SpookyStreet.UI
         {
             foreach (var t in _tweens)
             {
-                if (t.Rect != null)
+                if (t.Rect != null && t.Space != null)
                 {
-                    t.Rect.position = t.To;
+                    t.Rect.position = t.Space.TransformPoint(t.To);
                     t.Rect.localRotation = Quaternion.Euler(0f, 0f, t.BaseAngle);
                 }
             }

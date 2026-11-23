@@ -123,7 +123,7 @@ namespace SpookyStreet.Core.Nonverbal
                 cues.ToArray());
         }
 
-        /// <summary>"[Knock, knock… knock. The floorboards tremble.]": the floor planks jump on each knock (a perception).</summary>
+        /// <summary>"[The floor shakes: knock, knock… knock]": the floor planks jump on each knock (a perception).</summary>
         private static Vignette BuildCaptionFoyerHum()
         {
             var floor = Shiver(0.46f, 0.42f, 1.5f, KnockRhythm);

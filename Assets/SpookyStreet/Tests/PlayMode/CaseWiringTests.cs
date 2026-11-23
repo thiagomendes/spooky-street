@@ -143,7 +143,7 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(director.Captions.Raised, "captions lift above the speech card");
             Assert.AreEqual(Speaker.Bea, director.Dialogue.CurrentLine.Speaker);
             Assert.AreEqual(Lines.BeaSawCape, director.Dialogue.CurrentLine.Key);
-            Assert.AreEqual("I saw June's silver cape go in. Right there!", director.Dialogue.CurrentText);
+            Assert.AreEqual("Something silver flashed up high, by the side of the house!", director.Dialogue.CurrentText);
             yield return null;
             AssertEveryLabelDraws(director.Dialogue.gameObject);
             Assert.IsFalse(game.Controls.GameplayEnabled, "the conversation holds gameplay input");

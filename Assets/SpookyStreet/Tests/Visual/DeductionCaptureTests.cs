@@ -121,9 +121,13 @@ namespace SpookyStreet.Tests.Visual
             }
 
             Assert.IsNotNull(notebook.Thought, "46_deduction_wobble: Pip should be thinking");
-            yield return Wait(0.18f);
+            yield return Wait(0.22f);
             Director.Captions.Clear();
+            // Freeze the notebook's clock for the capture's few rendered frames: mid-wobble, Pip still thinking.
+            var animate = notebook.CanAnimate;
+            notebook.CanAnimate = () => false;
             yield return Shot("46_deduction_wobble");
+            notebook.CanAnimate = animate;
             yield return Wait(2.5f);
 
             // 47: stuck on "Where are the knocks coming from?": Pip muses (listen, then look) and the missing clue's
