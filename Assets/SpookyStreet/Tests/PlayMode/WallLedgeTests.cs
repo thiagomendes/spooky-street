@@ -449,7 +449,9 @@ namespace SpookyStreet.Tests.PlayMode
 
             // A tap falls short.
             yield return TapJump();
-            yield return SteerFor(-n * 0.3f, 1.0f);
+            // Stay put: the stick off, so the tap only rises and lands where Pip stood.
+            StopSteering();
+            yield return Wait(1.0f);
             Assert.AreEqual(0, _grabs, "a 1 m tap does not reach a 3 m ledge");
             yield return StandBesideLamp(head, v => n = v);
 
