@@ -15,10 +15,17 @@ namespace SpookyStreet.Tests.Core
         public void TheFirstSetIsValid()
         {
             var catalog = AudioEvents.CreateCatalog();
-            Assert.AreEqual(25, catalog.Count);
+            // The 25 S003 events, plus the v2 voices (25, six phrase takes each) and music (4, one take each; D20.2).
+            Assert.AreEqual(25 + 25 + 4, catalog.Count);
             CollectionAssert.IsEmpty(catalog.Validate());
             foreach (var def in catalog.Events)
             {
+                if (VoiceMusicEvents.IsVoice(def.Id) || VoiceMusicEvents.IsMusic(def.Id))
+                {
+                    Assert.AreEqual(VoiceMusicEvents.IsVoice(def.Id) ? 6 : 1, def.Variants, def.Id);
+                    continue;
+                }
+
                 Assert.GreaterOrEqual(def.Variants, 3, def + " needs 3–5 takes");
                 Assert.LessOrEqual(def.Variants, 5, def.Id);
                 Assert.AreEqual("Audio/" + def.Id + "/" + def.Id + "_t1", def.ResourcePath(1));

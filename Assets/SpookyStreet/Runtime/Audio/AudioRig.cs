@@ -24,6 +24,12 @@ namespace SpookyStreet.Audio
         Stop,
         Pause,
         Resume,
+
+        /// <summary>A voice started: music and ambience begin to dip (<see cref="AudioMix.VoiceDuckDb"/>).</summary>
+        Duck,
+
+        /// <summary>The last voice ended or stopped: the duck lets go.</summary>
+        Unduck,
     }
 
     /// <summary>One entry of <see cref="AudioRig.Log"/>.</summary>
@@ -89,6 +95,9 @@ namespace SpookyStreet.Audio
         private readonly HashSet<AudioSource> paused = new HashSet<AudioSource>();
         private readonly Dictionary<AudioSource, float> fading = new Dictionary<AudioSource, float>();
         private readonly Dictionary<AudioSource, float> fadeGain = new Dictionary<AudioSource, float>();
+        private readonly Dictionary<AudioSource, float> fadingIn = new Dictionary<AudioSource, float>();
+        private readonly Dictionary<AudioSource, double> voiceEnds = new Dictionary<AudioSource, double>();
+        private readonly Dictionary<AudioSource, double> voiceHeld = new Dictionary<AudioSource, double>();
         private readonly Dictionary<string, AudioClip> clipCache = new Dictionary<string, AudioClip>();
         private readonly HashSet<string> reportedMissing = new HashSet<string>();
         private readonly List<AudioLogEntry> log = new List<AudioLogEntry>();
@@ -101,6 +110,7 @@ namespace SpookyStreet.Audio
         private VariantPicker picker;
         private AudioThrottle throttle;
         private bool duckedLastFrame;
+        private float duckDb;
 
         public AudioCatalog Catalog => catalog;
 
@@ -147,10 +157,48 @@ namespace SpookyStreet.Audio
         }
 
         /// <summary>Plays an event as 2D sound. Returns the source, or null when throttled, paused or the clip is missing.</summary>
-        public AudioSource Play(string eventId) => PlayInternal(eventId, false, Vector3.zero);
+        public AudioSource Play(string eventId) => PlayInternal(eventId, false, Vector3.zero, 0, 0f);
 
         /// <summary>Plays an event at a world position (3D for spatial events).</summary>
-        public AudioSource PlayAt(string eventId, Vector3 position) => PlayInternal(eventId, true, position);
+        public AudioSource PlayAt(string eventId, Vector3 position) => PlayInternal(eventId, true, position, 0, 0f);
+
+        /// <summary>
+        /// Plays one chosen take (1-based) as 2D sound, fading in over <paramref name="fadeInSeconds"/> (0: at once):
+        /// the babble planner's phrase take, a music loop's crossfade.
+        /// </summary>
+        public AudioSource PlayTake(string eventId, int take, float fadeInSeconds = 0f) =>
+            PlayInternal(eventId, false, Vector3.zero, take, fadeInSeconds);
+
+        /// <summary>
+        /// True while <paramref name="eventId"/> plays and is not fading out: a loop until stopped, a voice for its
+        /// clip's length (held by the pause), anything else while its source plays.
+        /// </summary>
+        public bool IsPlaying(string eventId)
+        {
+            double now = Now;
+            foreach (var pair in playing)
+            {
+                if (pair.Value.Id != eventId || fading.ContainsKey(pair.Key)) continue;
+                if (pair.Value.Loop || paused.Contains(pair.Key) || pair.Key.isPlaying) return true;
+                if (voiceEnds.TryGetValue(pair.Key, out double ends) && ends > now) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>The source playing <paramref name="eventId"/> (not fading out), or null.</summary>
+        public AudioSource SourceOf(string eventId)
+        {
+            foreach (var pair in playing)
+            {
+                if (pair.Value.Id == eventId && !fading.ContainsKey(pair.Key)) return pair.Key;
+            }
+
+            return null;
+        }
+
+        /// <summary>The current voice duck on music and ambience (dB: 0 open, down to <see cref="AudioMix.VoiceDuckDb"/>).</summary>
+        public float DuckDb => duckDb;
 
         /// <summary>Stops every source playing the event (loops such as the glide flutter or the night bed).</summary>
         public void Stop(string eventId) => Stop(eventId, 0f);
@@ -162,10 +210,13 @@ namespace SpookyStreet.Audio
             {
                 if (pair.Value.Id != eventId || fading.ContainsKey(pair.Key)) continue;
                 Record(AudioLogKind.Stop, pair.Value, 0, pair.Key.transform.position);
-                if (fadeSeconds > 0f && pair.Key.isPlaying)
+                voiceEnds.Remove(pair.Key);
+                voiceHeld.Remove(pair.Key);
+                if (fadeSeconds > 0f && (pair.Key.isPlaying || pair.Value.Loop || pair.Value.Bus == AudioBus.Music))
                 {
+                    fadingIn.Remove(pair.Key);
                     fading[pair.Key] = 1f / fadeSeconds;
-                    fadeGain[pair.Key] = 1f;
+                    if (!fadeGain.ContainsKey(pair.Key)) fadeGain[pair.Key] = 1f;
                     continue;
                 }
 
@@ -263,15 +314,26 @@ namespace SpookyStreet.Audio
             {
                 if (!AudioMix.PausesWithGame(pair.Value)) continue;
                 // Loops and sounds still sounding hold; a finished one-shot is simply free again.
-                if (pause && !pair.Value.Loop && !pair.Key.isPlaying) continue;
+                bool voiceSounding = voiceEnds.TryGetValue(pair.Key, out double voiceEnd) && voiceEnd > Now;
+                if (pause && !pair.Value.Loop && !pair.Key.isPlaying && !voiceSounding) continue;
                 if (pause)
                 {
                     pair.Key.Pause();
                     paused.Add(pair.Key);
+                    if (voiceEnds.TryGetValue(pair.Key, out double ends))
+                    {
+                        voiceHeld[pair.Key] = System.Math.Max(0.0, ends - Now); // the voice's remaining time holds with it
+                        voiceEnds.Remove(pair.Key);
+                    }
                 }
                 else if (paused.Remove(pair.Key))
                 {
                     pair.Key.UnPause();
+                    if (voiceHeld.TryGetValue(pair.Key, out double left))
+                    {
+                        voiceEnds[pair.Key] = Now + left;
+                        voiceHeld.Remove(pair.Key);
+                    }
                 }
             }
 
@@ -303,29 +365,75 @@ namespace SpookyStreet.Audio
             return false;
         }
 
-        /// <summary>True while a voice line plays (music and ambience duck under it).</summary>
+        /// <summary>
+        /// True while a voice line plays (music and ambience duck under it). It comes from the rig's own bookkeeping
+        /// (each voice play lasts its clip's length, holds under the pause and ends on a stop), never from
+        /// <c>AudioSource.isPlaying</c>, which depends on the audio device. It used to read every voice source's
+        /// <c>isPlaying</c>; see docs/S003-voices-music-wiring.md on the run 113 reading of −6 dB.
+        /// </summary>
         public bool VoiceActive
         {
             get
             {
-                if (!pools.TryGetValue(AudioBus.Voice, out var voices)) return false;
-                foreach (var s in voices)
+                foreach (var pair in voiceHeld)
                 {
-                    if (s.isPlaying) return true;
+                    if (pair.Value > 0.0) return true;
+                }
+
+                double now = Now;
+                foreach (var pair in voiceEnds)
+                {
+                    if (pair.Value > now) return true;
                 }
 
                 return false;
             }
         }
 
+        private static double Now => Time.unscaledTimeAsDouble;
+
         private void Update()
         {
+            float dt = Time.unscaledDeltaTime;
             var ducked = VoiceActive;
-            if (ducked != duckedLastFrame) RefreshVolumes();
+            if (ducked != duckedLastFrame)
+            {
+                log.Add(new AudioLogEntry(ducked ? AudioLogKind.Duck : AudioLogKind.Unduck, null, 0, AudioBus.Voice, false,
+                    Vector3.zero, Time.time, Time.frameCount));
+                TrimLog();
+            }
+
             duckedLastFrame = ducked;
+            float duck = AudioMix.StepDuck(duckDb, ducked, dt);
+            if (!Mathf.Approximately(duck, duckDb))
+            {
+                duckDb = duck;
+                RefreshVolumes();
+            }
+
+            if (fadingIn.Count > 0)
+            {
+                foreach (var source in new List<AudioSource>(fadingIn.Keys))
+                {
+                    if (source == null || !playing.TryGetValue(source, out var def))
+                    {
+                        fadingIn.Remove(source);
+                        continue;
+                    }
+
+                    float gain = Mathf.Min(1f, fadeGain[source] + fadingIn[source] * dt);
+                    fadeGain[source] = gain;
+                    if (gain >= 1f)
+                    {
+                        fadingIn.Remove(source);
+                        fadeGain.Remove(source);
+                    }
+
+                    source.volume = VolumeFor(def) * gain;
+                }
+            }
 
             if (fading.Count == 0) return;
-            float dt = Time.unscaledDeltaTime;
             foreach (var source in new List<AudioSource>(fading.Keys))
             {
                 if (source == null)
@@ -347,7 +455,7 @@ namespace SpookyStreet.Audio
             }
         }
 
-        private AudioSource PlayInternal(string eventId, bool positioned, Vector3 position)
+        private AudioSource PlayInternal(string eventId, bool positioned, Vector3 position, int forcedTake, float fadeIn)
         {
             if (catalog == null || !catalog.TryGet(eventId, out var def))
             {
@@ -357,7 +465,7 @@ namespace SpookyStreet.Audio
 
             if (GamePaused && AudioMix.PausesWithGame(def)) return null;
             if (!throttle.TryPlay(def, Time.realtimeSinceStartupAsDouble)) return null;
-            var take = picker.Next(def);
+            var take = forcedTake >= 1 && forcedTake <= def.Variants ? forcedTake : picker.Next(def);
             var clip = LoadClip(def.ResourcePath(take));
             if (clip == null) return null;
 
@@ -365,6 +473,9 @@ namespace SpookyStreet.Audio
             source.Stop();
             fading.Remove(source);
             fadeGain.Remove(source);
+            fadingIn.Remove(source);
+            voiceEnds.Remove(source);
+            voiceHeld.Remove(source);
             source.clip = clip;
             source.loop = def.Loop;
             source.pitch = AudioMix.PitchFor(def, picker.NextUnit());
@@ -377,7 +488,18 @@ namespace SpookyStreet.Audio
             source.ignoreListenerPause = !AudioMix.PausesWithGame(def);
             source.transform.position = positioned ? position : transform.position;
             playing[source] = def;
-            source.volume = VolumeFor(def);
+            if (fadeIn > 0f)
+            {
+                fadingIn[source] = 1f / fadeIn;
+                fadeGain[source] = 0f;
+            }
+
+            if (def.Bus == AudioBus.Voice)
+            {
+                voiceEnds[source] = Now + clip.length / Mathf.Max(0.01f, Mathf.Abs(source.pitch));
+            }
+
+            source.volume = fadeIn > 0f ? 0f : VolumeFor(def);
             source.Play();
             Record(AudioLogKind.Play, def, take, source.transform.position, spatial);
             return source;
@@ -401,6 +523,9 @@ namespace SpookyStreet.Audio
             paused.Remove(source);
             fading.Remove(source);
             fadeGain.Remove(source);
+            fadingIn.Remove(source);
+            voiceEnds.Remove(source);
+            voiceHeld.Remove(source);
         }
 
         private AudioClip LoadClip(string path)
@@ -459,10 +584,10 @@ namespace SpookyStreet.Audio
             if (mixer != null && GroupFor(def.Bus) != null)
             {
                 // The mixer applies the bus level; only the trim, shaping and ducking stay on the source.
-                return AudioMix.PlayGain(def, 0f, VoiceActive, trim);
+                return AudioMix.PlayGain(def, 0f, duckDb, trim);
             }
 
-            return AudioMix.PlayGain(def, busDb[(int)def.Bus], VoiceActive, trim);
+            return AudioMix.PlayGain(def, busDb[(int)def.Bus], duckDb, trim);
         }
 
         private void RefreshVolumes()
