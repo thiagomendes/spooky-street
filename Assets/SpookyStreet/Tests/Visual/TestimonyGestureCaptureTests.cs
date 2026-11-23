@@ -207,7 +207,8 @@ namespace SpookyStreet.Tests.Visual
             // 66: Mr. Vale, second talk, "Not one creak from that door all evening.": seated, he shows the listener his
             // watch (gesture 1.5 s in: the dial rolled toward Pip).
             var valeAt = vale.transform.position;
-            Stand(valeAt + vale.transform.forward * 1.8f + vale.transform.right * 0.6f, valeAt);
+            // Pip on his other side from the camera, so she does not cover him.
+            Stand(valeAt + vale.transform.forward * 1.8f - vale.transform.right * 1.1f, valeAt);
             yield return Wait(1.0f);
             Director.Perform(CaseAction.Talk(Speaker.Vale));
             yield return CloseTalk();
@@ -247,8 +248,8 @@ namespace SpookyStreet.Tests.Visual
             Frame(pip.position + pip.forward * 2.3f + left * 2.0f + Vector3.up * 1.25f,
                 pip.position + Vector3.up * 0.75f + left * 0.9f);
             yield return Shot("67_pip_hint_glance", Director.UiCanvas);
-            Frame(pip.position - pip.forward * 2.6f - left * 1.6f + Vector3.up * 3.4f,
-                pip.position + left * 3.5f + Vector3.up * 0.6f);
+            Frame(pip.position - pip.forward * 3.4f - left * 1.4f + Vector3.up * 2.4f,
+                pip.position + left * 2.6f + Vector3.up * 0.5f);
             yield return Shot("r_pip_hint_glance_wide", Blank(), ReviewWidth, ReviewHeight);
             Frame(pip.position + pip.forward * 1.3f + left * 1.1f + Vector3.up * 1.0f, pip.position + Vector3.up * 0.75f);
             yield return Shot("r_pip_hint_glance_close", Blank(), ReviewWidth, ReviewHeight);

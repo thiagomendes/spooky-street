@@ -345,8 +345,32 @@ namespace SpookyStreet.Tests.PlayMode
             }
 
             CollectionAssert.AreEquivalent(expected, stickers);
-            CollectionAssert.AreEqual(new[] { "duck:True", "play:" + CutsceneAudio.MusicReveal, "babble:Kit.Happy", "babble:June.Happy",
-                "stop:" + CutsceneAudio.MusicReveal, "duck:False" }, audio.Calls, "the audio hook hears the reveal's cues");
+            // In the data's time order (S003a: the witnesses' babble on their stickers, the score timed to end at the
+            // reopening, so it starts a little after the first sticker's babble).
+            var reveal = C01Cutscenes.Reveal(director.State, director.Answers);
+            var heard = new List<(float at, string call)>();
+            for (int i = 0; i < reveal.Beats.Count; i++)
+            {
+                foreach (var cue in reveal.Beats[i].Signals)
+                {
+                    if (cue.Channel == CueChannel.Music)
+                    {
+                        heard.Add((reveal.BeatStart(i) + cue.At, "play:" + cue.Id));
+                    }
+                    else if (cue.Channel == CueChannel.Babble && CutsceneAudio.TryParseBabble(cue.Id, out var who, out var how))
+                    {
+                        heard.Add((reveal.BeatStart(i) + cue.At, "babble:" + who + "." + how));
+                    }
+                }
+            }
+
+            var calls = new List<string> { "duck:True" };
+            calls.AddRange(heard.OrderBy(h => h.at).Select(h => h.call));
+            calls.Add("stop:" + CutsceneAudio.MusicReveal);
+            calls.Add("duck:False");
+            CollectionAssert.IsSubsetOf(new[] { "play:" + CutsceneAudio.MusicReveal, "babble:Vale.Neutral", "babble:Bea.Surprised",
+                "babble:Kit.Happy", "babble:June.Happy" }, calls);
+            CollectionAssert.AreEqual(calls, audio.Calls, "the audio hook hears the reveal's cues");
             Assert.IsTrue(turned, "the page turns into the house");
             Assert.IsTrue(pipHidden, "Pip stays out of the reveal's frames");
             yield return Frames(3);
