@@ -106,10 +106,23 @@ up close, and from about where the game's camera looks.
 - `docs/evidence/s003/pip_climb_clips/pip_LedgeHang.jpg`
 - `docs/evidence/s003/pip_climb_clips/pip_LedgeClimb.jpg`
 
-CI: the run for this branch is recorded here once it has finished.
+### CI run 126, commit 2a8e5bb (software GL; not a device)
+
+- **Tests:** EditMode 548/548, PlayMode 94/94, Visual 11/11. Of these: `PipClipsTests` 12/12, `PipPoseTrackerTests`
+  14/14, Core `WallLedgeTests` 41/41, `ModelImportRulesTests` 14/14 (the four takes import from the unchanged
+  meta), PlayMode `WallLedgeTests` 8/8.
+- **Log:** `[PipAvatar] model: 15 clips, scale 1.000`. The chain test still makes 5 kicks and reaches 5.80 m.
+- **Frames:**
+  - `docs/evidence/s003/51_ledge_hang_run126.jpg`: Pip hangs from the lamp arm by her left hand, which is forward on
+    the arm's end, with no body lean. One leg is mid-kick and the pail is at her right side. Compared with run 116
+    she hangs 0.1 m further out and upright, as the motor places her.
+  - `docs/evidence/s003/50_wall_slide_run126.jpg`: the wall slide, unchanged from run 116 as expected.
 
 ## Not verified
 
 - The feel on a phone. That needs a TestFlight build after the merge.
-- The kick and the climb in motion in the game. CI captures only still frames of the slide and the hang; the
-  kick, the catch and the climb are checked by tests and by the Blender sheets.
+- The kick, the catch and the climb in motion in the game. CI captures only still frames of the slide and the
+  hang. The other three are checked by tests (the right clip plays, the facing, the pose afterwards) and by the
+  Blender sheets, so their blends and timing in play have not been seen.
+- The lamp arm is a curved rod with a box collider. The hand rests on the collider's edge, which is close to the
+  rod's end but is not modelled as a flat top.
