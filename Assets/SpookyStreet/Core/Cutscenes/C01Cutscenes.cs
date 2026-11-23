@@ -72,7 +72,7 @@ namespace SpookyStreet.Core.Cutscenes
                         new CameraShot(P(1.2f, 7.4f, -21.5f), P(0f, 3.6f, 6f), 42f)
                             .DriftTo(P(0.6f, 5.6f, -18.8f), P(0f, 3.8f, 8f), 40f))
                     .Caption(Keys.OpeningTown)
-                    .Music(0f, "music.c01.opening")
+                    .Music(0f, CutsceneAudio.MusicStreetTheme)
                     .Cue(CastCue.Place(0f, CastActor.Pip, PorchBack, 20f)),
 
                 // 2. The new kid: moving boxes on the porch, and Pip steps out to its front edge.
@@ -85,8 +85,8 @@ namespace SpookyStreet.Core.Cutscenes
 
                 // 3. Up the lane, the owl house's round window glows (it is lit from the start; the knocks come in play).
                 new CutsceneBeat("window", 4f,
-                        new CameraShot(P(0.9f, 1.85f, -12.4f), P(0f, 6.1f, 10.9f), 17f)
-                            .DriftTo(P(0.9f, 1.85f, -12.4f), P(0f, 6.2f, 10.9f), 14f))
+                        new CameraShot(P(0.9f, 1.85f, -12.4f), P(0f, 5.55f, 10.9f), 17f)
+                            .DriftTo(P(0.9f, 1.85f, -12.4f), P(0f, 5.65f, 10.9f), 14.5f))
                     .Caption(Keys.OpeningWindow),
 
                 // 4. A neighbour waves hello: Bea by her bicycle.
@@ -95,7 +95,7 @@ namespace SpookyStreet.Core.Cutscenes
                             .DriftTo(P(-4.5f, 1.2f, -3.8f), P(-7f, 1.05f, -1.35f), 32f))
                     .Caption(Keys.OpeningWave)
                     .Cue(CastCue.Gesture(0.3f, CastActor.Bea, CharacterClips.Wave, P(0f, 1f, -13.4f)))
-                    .Babble(0.4f, "babble.c01.bea.hello"),
+                    .Babble(0.4f, CutsceneAudio.Babble(CastActor.Bea, BabbleEmotion.Happy)),
 
                 // 5. The arrival-porch composition: settles into the play camera behind Pip; play starts here.
                 new CutsceneBeat("porch", 3.5f,
@@ -222,7 +222,7 @@ namespace SpookyStreet.Core.Cutscenes
             if (before.Count == 0)
             {
                 // The reveal starts clean: June and Kit step out of frame until their own beats.
-                beat.Cue(CastCue.Hide(0f, CastActor.June)).Cue(CastCue.Hide(0f, CastActor.Kit)).Music(0f, "music.c01.reveal");
+                beat.Cue(CastCue.Hide(0f, CastActor.June)).Cue(CastCue.Hide(0f, CastActor.Kit)).Music(0f, CutsceneAudio.MusicReveal);
             }
 
             switch (stickerId)
@@ -303,14 +303,14 @@ namespace SpookyStreet.Core.Cutscenes
                 .Cue(CastCue.Show(0f, CastActor.Kit))
                 .Cue(CastCue.OneShot(0.2f, CastActor.Kit, CharacterClips.OpenBooth))
                 .Cue(CastCue.OneShot(1f, CastActor.June, CharacterClips.Wave))
-                .Babble(0.4f, "babble.c01.kit.cheer")
-                .Babble(1.1f, "babble.c01.june.cheer");
+                .Babble(0.4f, CutsceneAudio.Babble(CastActor.Kit, BabbleEmotion.Happy))
+                .Babble(1.1f, CutsceneAudio.Babble(CastActor.June, BabbleEmotion.Happy));
         }
 
         private static CutsceneBeat SeedBeat(List<CutsceneBeat> before)
         {
             // The season seed, unexplained: a slow push in on Kit's old photo in the hall, and one soft glint.
-            var shot = Story(P(0.25f, 0.05f, 1.5f), P(0f, 0f, 0f), 30f, P(0.12f, 0.02f, 1.05f), P(0f, 0f, 0f), 26f, before,
+            var shot = Story(P(0.2f, 0.4f, 1.6f), P(0f, 0.02f, 0f), 30f, P(0.1f, 0.3f, 1.2f), P(0f, 0.02f, 0f), 26f, before,
                 CutsceneAnchors.KitPhoto);
             return new CutsceneBeat("seed", 3.4f, shot)
                 .Caption(Keys.RevealPhoto)

@@ -308,6 +308,8 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsFalse(Cutscenes.Play(C01Cutscenes.RevealId, false));
             Assert.IsFalse(Cutscenes.WatchAgain(C01Cutscenes.RevealId));
 
+            var audio = new RecordingAudio();
+            Cutscenes.Audio = audio;
             var entry = new[] { N.SillSnag, N.ValeDoor, N.BeaFlash };
             Assert.IsNotNull(director.SolveQuestion(N.QuestionSource, new[] { N.WoodenPiece, N.FloorHum }));
             Assert.IsNotNull(director.SolveQuestion(N.QuestionEntry, entry));
@@ -343,6 +345,8 @@ namespace SpookyStreet.Tests.PlayMode
             }
 
             CollectionAssert.AreEquivalent(expected, stickers);
+            CollectionAssert.AreEqual(new[] { "duck:True", "play:" + CutsceneAudio.MusicReveal, "babble:Kit.Happy", "babble:June.Happy",
+                "stop:" + CutsceneAudio.MusicReveal, "duck:False" }, audio.Calls, "the audio hook hears the reveal's cues");
             Assert.IsTrue(turned, "the page turns into the house");
             Assert.IsTrue(pipHidden, "Pip stays out of the reveal's frames");
             yield return Frames(3);
@@ -453,6 +457,20 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Frames(3);
             Assert.IsTrue(Game.Controls.GameplayEnabled);
         }
+    }
+
+    /// <summary>Records what the cutscenes ask of the audio hook.</summary>
+    internal sealed class RecordingAudio : ICutsceneAudio
+    {
+        public List<string> Calls { get; } = new List<string>();
+
+        public void PlayCue(string cueId) => Calls.Add("play:" + cueId);
+
+        public void Babble(CastActor speaker, BabbleEmotion emotion) => Calls.Add("babble:" + speaker + "." + emotion);
+
+        public void Stop(string cueId) => Calls.Add("stop:" + cueId);
+
+        public void Duck(bool ducked) => Calls.Add("duck:" + ducked);
     }
 
     /// <summary>The cutscene keys used by these tests (kept local so the test reads plainly).</summary>

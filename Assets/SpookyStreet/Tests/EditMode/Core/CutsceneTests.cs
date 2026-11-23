@@ -154,10 +154,10 @@ namespace SpookyStreet.Tests.Core
                     .Caption("k.a")
                     .Cue(CastCue.Place(0f, CastActor.Pip, P(0, 0, -5), 0f))
                     .Cue(CastCue.WalkTo(0.5f, CastActor.Pip, 1f, P(0, 0, -5), P(0, 0, -4)))
-                    .Music(0f, "music.test")
+                    .Music(0f, CutsceneAudio.MusicStreetTheme)
                     .Wait("walk.pip", 1f),
                 new CutsceneBeat("b", 1.5f, new CameraShot(P(3, 2, -6), P(0, 1, 0), 30f, ShotTransition.Blend, 0.6f))
-                    .Babble(0.75f, "babble.test")
+                    .Babble(0.75f, CutsceneAudio.Babble(CastActor.Bea, BabbleEmotion.Surprised))
                     .Cue(CastCue.Gesture(1.5f, CastActor.Bea, CharacterClips.Wave, P(0, 1, 0))),
                 new CutsceneBeat("c", 1f, new CameraShot(P(0, 1.5f, CaseRouteLayout.InteriorFrontZ + 1f), P(1, 1, CaseRouteLayout.InteriorFrontZ + 3f), 45f,
                         ShotTransition.PageTurn))
@@ -470,6 +470,36 @@ namespace SpookyStreet.Tests.Core
             Assert.AreEqual(1.5f, left, 0.02f);
             playback.Advance(left - CutscenePlayback.PageCoverLead);
             Assert.AreEqual(CutscenePlayback.PageCoverLead, playback.SecondsToPageTurn, 1e-3f);
+        }
+
+        [Test]
+        public void AudioCuesUseTheAudioBranchVocabulary()
+        {
+            var (state, answers) = Canonical();
+            foreach (var cutscene in new[] { C01Cutscenes.Opening, C01Cutscenes.Reveal(state, answers) })
+            {
+                foreach (var cue in cutscene.Beats.SelectMany(b => b.Signals))
+                {
+                    if (cue.Channel == CueChannel.Babble)
+                    {
+                        Assert.IsTrue(CutsceneAudio.TryParseBabble(cue.Id, out _, out _), cue.Id + " is speaker.emotion");
+                    }
+                    else if (cue.Channel == CueChannel.Music)
+                    {
+                        CollectionAssert.Contains(new[] { CutsceneAudio.MusicStreetTheme, CutsceneAudio.MusicReveal }, cue.Id);
+                    }
+                }
+            }
+
+            Assert.AreEqual(CutsceneAudio.MusicStreetTheme, C01Cutscenes.Opening.Beats[0].Signals.Single(s => s.Channel == CueChannel.Music).Id);
+            Assert.AreEqual(CutsceneAudio.MusicReveal,
+                C01Cutscenes.Reveal(state, answers).Beats[0].Signals.Single(s => s.Channel == CueChannel.Music).Id);
+            Assert.IsTrue(CutsceneAudio.TryParseBabble("kit.whisper", out var who, out var how));
+            Assert.AreEqual(CastActor.Kit, who);
+            Assert.AreEqual(BabbleEmotion.Whisper, how);
+            Assert.IsFalse(CutsceneAudio.TryParseBabble("kit", out _, out _));
+            Assert.IsFalse(CutsceneAudio.TryParseBabble("kit.grumpy", out _, out _));
+            Assert.IsFalse(CutsceneAudio.TryParseBabble("babble.kit.happy", out _, out _));
         }
 
         [Test]

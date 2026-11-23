@@ -59,6 +59,35 @@ namespace SpookyStreet.Case
 
         public CutscenePlayer Player { get; private set; }
 
+        /// <summary>
+        /// The music and babble hook (S003 voices and music wiring sets it); silent until then, so the cutscenes never
+        /// depend on the audio branch.
+        /// </summary>
+        public ICutsceneAudio Audio
+        {
+            get => _audio;
+            set => _audio = value ?? SilentCutsceneAudio.Instance;
+        }
+
+        private ICutsceneAudio _audio = SilentCutsceneAudio.Instance;
+        private readonly List<string> _musicPlaying = new List<string>();
+
+        /// <summary>Music cues started by the current cutscene (tests).</summary>
+        public IReadOnlyList<string> MusicPlaying => _musicPlaying;
+
+        private void OnAudioCue(SignalCue cue)
+        {
+            if (cue.Channel == CueChannel.Music)
+            {
+                _musicPlaying.Add(cue.Id);
+                _audio.PlayCue(cue.Id);
+            }
+            else if (cue.Channel == CueChannel.Babble && CutsceneAudio.TryParseBabble(cue.Id, out var speaker, out var emotion))
+            {
+                _audio.Babble(speaker, emotion);
+            }
+        }
+
         public CutsceneProgressStore Progress => _store;
 
         /// <summary>The notebook's rewatch discs.</summary>
@@ -92,13 +121,7 @@ namespace SpookyStreet.Case
             Player = CutscenePlayer.Create(director.transform, game.CameraRig.OutputCamera, (RectTransform)director.UiCanvas.transform);
             Player.Stage = this;
             Player.Ended += OnEnded;
-            Player.CueFired += cue =>
-            {
-                if (Debug.isDebugBuild)
-                {
-                    Debug.Log($"[CaseCutscenes] {cue.Channel} cue {cue.Id} (audio arrives with S003)");
-                }
-            };
+            Player.CueFired += OnAudioCue;
 
             Rewatch = NotebookRewatch.Attach(director.Notebook);
             Rewatch.Rewatchable = () => CutscenePolicy.Rewatchable(_director.State);
@@ -267,6 +290,8 @@ namespace SpookyStreet.Case
             _walks.Clear();
             _photo = null;
             _game.Controls.ScriptedMove = Vector2.zero;
+            _musicPlaying.Clear();
+            _audio.Duck(true);
             if (cutscene.HidePip)
             {
                 _director.HidePipForCutscene(true);
@@ -614,6 +639,13 @@ namespace SpookyStreet.Case
             _walks.Clear();
             _game.Controls.ScriptedMove = Vector2.zero;
             RestoreWorld();
+            foreach (string music in _musicPlaying)
+            {
+                _audio.Stop(music);
+            }
+
+            _musicPlaying.Clear();
+            _audio.Duck(false);
             _director.HidePipForCutscene(false);
             _director.HoldForCutscene(false);
         }

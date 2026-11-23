@@ -192,7 +192,7 @@ namespace SpookyStreet.Tests.Visual
                 }
                 else if (id == "story:entry")
                 {
-                    yield return At(id, 1.6f, "56_reveal_june_bridge");
+                    yield return At(id, 2.3f, "56_reveal_june_bridge");
                 }
                 else if (id == "story:moved")
                 {
