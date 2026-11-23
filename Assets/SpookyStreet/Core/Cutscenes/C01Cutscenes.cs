@@ -77,16 +77,16 @@ namespace SpookyStreet.Core.Cutscenes
 
                 // 2. The new kid: moving boxes on the porch, and Pip steps out to its front edge.
                 new CutsceneBeat("boxes", 4f,
-                        new CameraShot(P(1.45f, 1.3f, -16.3f), P(-0.15f, 0.95f, -12.6f), 44f)
-                            .DriftTo(P(1.3f, 1.35f, -16f), P(-0.1f, 1f, -12.2f), 44f))
+                        new CameraShot(P(-1f, 1.35f, -16.9f), P(0.4f, 0.95f, -13.2f), 46f)
+                            .DriftTo(P(-0.9f, 1.38f, -16.6f), P(0.4f, 1f, -13f), 44f))
                     .Caption(Keys.OpeningBoxes)
                     .Cue(CastCue.WalkTo(0.5f, CastActor.Pip, 1.3f, PorchBack, PorchSpawn))
                     .Wait(CutsceneWorld.PipArrived, 1.5f),
 
                 // 3. Up the lane, the owl house's round window glows (it is lit from the start; the knocks come in play).
                 new CutsceneBeat("window", 4f,
-                        new CameraShot(P(0.9f, 1.85f, -12.4f), P(0f, 7.35f, 10.9f), 17f)
-                            .DriftTo(P(0.9f, 1.85f, -12.4f), P(0f, 7.45f, 10.9f), 13.5f))
+                        new CameraShot(P(0.9f, 1.85f, -12.4f), P(0f, 6.1f, 10.9f), 17f)
+                            .DriftTo(P(0.9f, 1.85f, -12.4f), P(0f, 6.2f, 10.9f), 14f))
                     .Caption(Keys.OpeningWindow),
 
                 // 4. A neighbour waves hello: Bea by her bicycle.
@@ -181,7 +181,7 @@ namespace SpookyStreet.Core.Cutscenes
                     return Shot(transition, P(-9f, 1.5f, -4.6f), P(-4.6f, 3.1f, 14f), 34f, P(-8.9f, 1.55f, -4.3f), P(-4.6f, 3.1f, 14f), 31f);
                 case N.ValeDoor:
                     // Over Mr. Vale's shoulder from his bench: the front door.
-                    return Shot(transition, P(9.7f, 1.3f, -1.9f), P(0f, 1.45f, 10.9f), 30f, P(9.6f, 1.3f, -1.7f), P(0f, 1.45f, 10.9f), 27f);
+                    return Shot(transition, P(10.6f, 1.5f, -2.6f), P(0f, 1.45f, 10.9f), 28f, P(10.5f, 1.5f, -2.4f), P(0f, 1.45f, 10.9f), 26f);
                 case N.BenchView:
                     // From the bench seat: the door ahead, the hedge hiding the side.
                     return Shot(transition, P(8.36f, 1.17f, 0.27f), P(0f, 1.4f, 10.9f), 32f, P(8.3f, 1.17f, 0.4f), P(0f, 1.4f, 10.9f), 29f);
@@ -259,7 +259,7 @@ namespace SpookyStreet.Core.Cutscenes
             {
                 case N.QuestionEntry:
                     // June crosses the treehouse bridge and slips in at the little window.
-                    shot = Story(P(-8.3f, 3.65f, 6.4f), P(-4.9f, 2.9f, 13.9f), 36f, P(-8.2f, 3.65f, 6.5f), P(-4.2f, 2.9f, 14f), 34f, before);
+                    shot = Story(P(-8.3f, 3.65f, 6.4f), P(-5.1f, 2.95f, 13.9f), 31f, P(-8.2f, 3.65f, 6.5f), P(-4.2f, 2.95f, 14f), 29f, before);
                     beat = new CutsceneBeat("story:entry", StorySeconds, shot)
                         .Caption(Keys.RevealEntry)
                         .World(0f, CutsceneWorld.DoorRestore)
@@ -292,7 +292,7 @@ namespace SpookyStreet.Core.Cutscenes
         {
             var june = CaseStage.JunePorch;
             var kit = CaseStage.KitBooth;
-            var shot = Story(P(0.35f, 1.45f, 6.6f), P(0f, 1.35f, 10.2f), 36f, P(0.3f, 1.42f, 7f), P(0f, 1.35f, 10.2f), 34f, before);
+            var shot = Story(P(0.35f, 1.45f, 6.3f), P(0f, 1.35f, 10.2f), 40f, P(0.3f, 1.42f, 6.7f), P(0f, 1.35f, 10.2f), 38f, before);
             return new CutsceneBeat("reopen", 4.2f, shot)
                 .Caption(Keys.RevealReopen)
                 .World(0f, CutsceneWorld.DoorRestore)

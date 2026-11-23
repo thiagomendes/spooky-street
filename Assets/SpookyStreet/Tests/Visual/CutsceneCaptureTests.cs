@@ -14,9 +14,9 @@ using N = SpookyStreet.Core.Case.CaseNotebook;
 namespace SpookyStreet.Tests.Visual
 {
     /// <summary>
-    /// S002.5b cutscene frames (D28): the opening (50 the street at dusk, 51 the moving boxes as Pip steps out, 52 the
-    /// owl house's round window) and the reveal staged from the child's stickers (53 a sticker shot with the child's
-    /// sticker, 54 June crossing the bridge, 55 the owl bowing). Every other beat, and every other sticker's shot through
+    /// S002.5b cutscene frames (D28): the opening (52 the street at dusk, 53 the moving boxes as Pip steps out, 54 the
+    /// owl house's round window) and the reveal staged from the child's stickers (55 a sticker shot with the child's
+    /// sticker, 56 June crossing the bridge, 57 the owl bowing). Every other beat, and every other sticker's shot through
     /// a second reveal built from other stickers, is captured small ("r_*") for review only.
     /// </summary>
     [Category("Visual")]
@@ -164,9 +164,9 @@ namespace SpookyStreet.Tests.Visual
             Assert.IsTrue(Director.Cutscenes.Playing, "the opening plays");
 
             // The opening.
-            yield return At("town", 4.4f, "50_opening_town");
-            yield return At("boxes", 1.3f, "51_opening_boxes");
-            yield return At("window", 3.0f, "52_opening_window");
+            yield return At("town", 4.4f, "52_opening_town");
+            yield return At("boxes", 1.3f, "53_opening_boxes");
+            yield return At("window", 3.0f, "54_opening_window");
             yield return At("wave", 1.6f, "r_opening_wave", review: true);
             yield return At("porch", 3.2f, "r_opening_porch", review: true);
             while (Player.Active)
@@ -188,15 +188,15 @@ namespace SpookyStreet.Tests.Visual
                 string id = beat.Id;
                 if (id == "sticker:" + N.ValeDoor)
                 {
-                    yield return At(id, 1.1f, "53_reveal_sticker_vale");
+                    yield return At(id, 1.1f, "55_reveal_sticker_vale");
                 }
                 else if (id == "story:entry")
                 {
-                    yield return At(id, 1.6f, "54_reveal_june_bridge");
+                    yield return At(id, 1.6f, "56_reveal_june_bridge");
                 }
                 else if (id == "story:moved")
                 {
-                    yield return At(id, 1.3f, "55_reveal_owl_bows");
+                    yield return At(id, 1.3f, "57_reveal_owl_bows");
                 }
                 else
                 {

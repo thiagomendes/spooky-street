@@ -722,7 +722,9 @@ namespace SpookyStreet.Case
             Vector3 centre = any ? box.center : photo.position;
             CaseStage.TryGetAnchor(CaseAnchors.Foyer, out var foyer);
             Vector3 toHall = V(foyer) - centre;
-            float yaw = Mathf.Abs(toHall.x) >= Mathf.Abs(toHall.z) ? (toHall.x >= 0f ? 90f : 270f) : (toHall.z >= 0f ? 0f : 180f);
+            // A framed picture is thin along its face normal: that axis, turned toward the hall.
+            bool alongX = any ? box.size.x <= box.size.z : Mathf.Abs(toHall.x) >= Mathf.Abs(toHall.z);
+            float yaw = alongX ? (toHall.x >= 0f ? 90f : 270f) : (toHall.z >= 0f ? 0f : 180f);
             if (Debug.isDebugBuild)
             {
                 Debug.Log($"[CaseCutscenes] Kit's photo at {centre:F2}, size {box.size:F2}, facing {yaw}");
@@ -750,9 +752,9 @@ namespace SpookyStreet.Case
 
         // ------------------------------------------------------------------------------------------ props
 
-        private static readonly Color Kraft = new Color32(0xB8, 0x8E, 0x5E, 0xFF);
-        private static readonly Color KraftDark = new Color32(0x9C, 0x74, 0x48, 0xFF);
-        private static readonly Color Tape = new Color32(0xE2, 0xCF, 0x9E, 0xFF);
+        private static readonly Color Kraft = new Color32(0xD9, 0xB0, 0x7C, 0xFF);
+        private static readonly Color KraftDark = new Color32(0xC4, 0x9A, 0x66, 0xFF);
+        private static readonly Color Tape = new Color32(0xEF, 0xE2, 0xBC, 0xFF);
 
         /// <summary>
         /// Moving boxes on the back corner of the arrival porch: the new kid has just moved in (narrative bible §3). Plain
@@ -763,9 +765,9 @@ namespace SpookyStreet.Case
             var root = new GameObject("MovingBoxes").transform;
             root.SetParent(parent, false);
             var corner = V(C01Cutscenes.BoxesCorner);
-            Box(root, materials, "BigBox", corner + new Vector3(0.1f, 0.25f, 0f), new Vector3(0.62f, 0.5f, 0.5f), 8f, Kraft, true);
-            Box(root, materials, "TopBox", corner + new Vector3(0.08f, 0.68f, 0.02f), new Vector3(0.46f, 0.36f, 0.4f), -12f, KraftDark, false);
-            Box(root, materials, "SmallBox", corner + new Vector3(-0.58f, 0.19f, -0.15f), new Vector3(0.42f, 0.38f, 0.38f), 22f, Kraft, true);
+            Box(root, materials, "BigBox", corner + new Vector3(0.15f, 0.2f, 0f), new Vector3(0.52f, 0.4f, 0.42f), 8f, Kraft, true);
+            Box(root, materials, "TopBox", corner + new Vector3(0.13f, 0.54f, 0.02f), new Vector3(0.38f, 0.28f, 0.32f), -12f, KraftDark, false);
+            Box(root, materials, "SmallBox", corner + new Vector3(-0.45f, 0.15f, -0.12f), new Vector3(0.34f, 0.3f, 0.32f), 22f, Kraft, true);
             return root;
         }
 
