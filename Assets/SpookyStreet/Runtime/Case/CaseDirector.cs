@@ -45,7 +45,7 @@ namespace SpookyStreet.Case
         private Camera _camera;
         private CanvasGroup _hudGroup;
         private CaseSaveStore _store;
-        private HintSession _hints = new HintSession();
+        private HintSession _hints;
         private Witness _talking;
         private bool _modal;
         private int _reenableFrame = -1;
@@ -135,6 +135,12 @@ namespace SpookyStreet.Case
         /// <summary>Case 01's cutscenes (S002.5b, D28): the opening, the reveal payoff, their seen set and rewatch.</summary>
         public CaseCutscenes Cutscenes { get; private set; }
 
+        /// <summary>What the street remembers across cases (S002.5b, D29): its file and the changes it shows.</summary>
+        public StreetMemoryStage Street { get; private set; }
+
+        /// <summary>The picture recap beside Continue on the title (S002.5b).</summary>
+        public ContinueRecapView Recap { get; private set; }
+
         /// <summary>The witness in the current conversation (null otherwise).</summary>
         public Witness Talking => _talking;
 
@@ -188,6 +194,7 @@ namespace SpookyStreet.Case
             _pip = game.Pip;
             _ui = game.Ui;
             _camera = game.CameraRig.OutputCamera;
+            _hints = new HintSession { MoveAt = HintMoveAt };
 
             BuildUi();
             int sightMask = Physics.DefaultRaycastLayers & ~(1 << _pip.gameObject.layer);
@@ -223,6 +230,8 @@ namespace SpookyStreet.Case
             _ui.NewGameButton.onClick.RemoveAllListeners();
             _ui.NewGameButton.onClick.AddListener(OnNewGame);
 
+            Street = StreetMemoryStage.Create(transform, game);
+            Recap = ContinueRecapView.Create(_ui);
             LoadSave();
             Nonverbal = NonverbalLayer.Create(this, game);
             Cutscenes = CaseCutscenes.Create(this, game);
@@ -304,9 +313,11 @@ namespace SpookyStreet.Case
             State = HasSave ? Resume.State : CaseState.Empty;
             Answers = HasSave ? Resume.Answers : CaseAnswers.Empty;
             AnchorId = HasSave ? Resume.AnchorId : CaseAnchors.Start;
+            // The street beside the case save (D29); a stamped save without a street file teaches it now.
+            Street.Load(SaveDirectory, State);
             // Spec §7: restore props from facts before enabling controls (the title is up; play has not started).
             ApplyWorld();
-            _ui.SetHasSave(HasSave && State.Count > 0);
+            RefreshTitle();
             if (Debug.isDebugBuild)
             {
                 Debug.Log($"[CaseDirector] Save {Resume?.Status} in {SaveDirectory}: {State}, anchor {AnchorId}");
@@ -330,7 +341,22 @@ namespace SpookyStreet.Case
         {
             TryStore(() => _store.StartFresh());
             ResetCase();
-            _ui.SetHasSave(false);
+            RefreshTitle();
+        }
+
+        /// <summary>Continue and its picture recap (only with a case in progress or closed), New game's style.</summary>
+        private void RefreshTitle()
+        {
+            bool canContinue = HasSave && State.Count > 0;
+            _ui.SetHasSave(canContinue);
+            Recap?.Show(canContinue ? ContinueRecap.Build(State, AnchorId) : null);
+        }
+
+        /// <summary>The case's world view with what the street remembers laid over it (D29).</summary>
+        private CaseWorldView ComposeView()
+        {
+            var view = CaseWorldView.From(State);
+            return Street != null ? Street.Compose(view) : view;
         }
 
         /// <summary>Writes the case now (fact changes and closure). Returns false when nothing was written.</summary>
@@ -366,7 +392,8 @@ namespace SpookyStreet.Case
         /// <summary>Rebuilds every staged prop from facts (resume, new game, replay).</summary>
         private void ApplyWorld()
         {
-            var view = CaseWorldView.From(State);
+            Street?.Rebuild(State);
+            var view = ComposeView();
             _view = view;
             Knocks.SetHeard(view.PaperBatFallen);
             _juneWalkPending = false;
@@ -392,6 +419,11 @@ namespace SpookyStreet.Case
             }
 
             Cast?.Apply(view);
+            if (Workshop != null && view.Owl == OwlState.Bowing)
+            {
+                // The street's owl keeps bowing with the wind once a case has woken it (D29).
+                Workshop.WindEnabled = true;
+            }
         }
 
         /// <summary>Whether a Use target exists in the world right now (June's mark, the panel, the latch...).</summary>
@@ -407,7 +439,7 @@ namespace SpookyStreet.Case
             Answers = CaseAnswers.Empty;
             Notebook.Session.Reset();
             AnchorId = CaseAnchors.Start;
-            _hints = new HintSession();
+            _hints = new HintSession { MoveAt = HintMoveAt };
             _askAfterDialogue = false;
             CloseModals();
             Captions.Clear();
@@ -429,6 +461,13 @@ namespace SpookyStreet.Case
         /// <summary>The tier the radio gives next.</summary>
         public HintTier NextHintTier => _hints.NextTier(State);
 
+        /// <summary>The move that blocks Pip where she stands (tier 3 exists only then, D26 §6), or None.</summary>
+        public HintMove HintMoveAt(CaseObjective objective)
+        {
+            var p = _pip.transform.position;
+            return HintMoves.For(objective, p.x, p.y, p.z);
+        }
+
         // ------------------------------------------------------------------------------------------------- title
 
         private void OnContinue()
@@ -441,11 +480,18 @@ namespace SpookyStreet.Case
         {
             if (State.Count > 0)
             {
-                Notice.Show(null, UiKeys.NewGameConfirm, UiKeys.NewGameConfirmYes, StartNewCase, UiKeys.NewGameConfirmNo,
-                    null);
+                Notice.Show(null, UiKeys.NewGameConfirm, UiKeys.NewGameConfirmYes, StartNewGameConfirmed,
+                    UiKeys.NewGameConfirmNo, null);
                 return;
             }
 
+            StartNewCase();
+        }
+
+        /// <summary>A confirmed New game starts Pip over as the new kid: the street forgets too (D29).</summary>
+        private void StartNewGameConfirmed()
+        {
+            Street?.OnNewGame(CaseState.Empty);
             StartNewCase();
         }
 
@@ -487,7 +533,7 @@ namespace SpookyStreet.Case
             if (current == GameState.Title)
             {
                 ResetPresentation();
-                _ui.SetHasSave(HasSave && State.Count > 0);
+                RefreshTitle();
             }
 
             if (current == GameState.Playing && (_modal || (Travel != null && Travel.Active)))
@@ -625,7 +671,7 @@ namespace SpookyStreet.Case
         {
             var step = State.Apply(action);
             State = step.State;
-            _view = CaseWorldView.From(State);
+            _view = ComposeView();
             LastStep = step;
             if (action.Kind == CaseActionKind.Solve && step.Outcome == CaseOutcome.Progressed)
             {
@@ -641,6 +687,12 @@ namespace SpookyStreet.Case
             if (step.ShouldAutosave)
             {
                 Autosave();
+            }
+
+            if (step.StampedCase)
+            {
+                // "Case closed": the street remembers (its lamp and Bea's sticker at once, the rest on the next load).
+                Street?.Observe(State);
             }
 
             Stage(action, step);

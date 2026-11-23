@@ -63,6 +63,7 @@ namespace SpookyStreet.Core.Case
             { Keys.ExamineCloth, When(None, None) },
             { Keys.ExamineSill, When(None, None) },
             { Keys.ExamineOwlPanel, When(None, None) },
+            { Keys.ExamineOwlBooth, When(None, None) },
             { Keys.ExamineDoorStuck, When(None, F(CaseFact.FrontOpen)) },
             { Keys.ExamineBowl, When(None, F(CaseFact.CaseClosed)) },
             { Keys.ExamineBowlSweet, When(F(CaseFact.CaseClosed), None) },

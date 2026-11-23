@@ -109,37 +109,70 @@ namespace SpookyStreet.Tests.Core
     public class CaseHintTests
     {
         [Test]
-        public void TiersEscalateAndRestartWithANewObjective()
+        public void TiersEscalateAndStopAtTheTrailWhereNoMoveBlocks()
         {
             var session = new HintSession();
             var state = CaseState.FromFacts(new[] { CaseFact.HeardKnocks });
             Assert.AreEqual(CaseObjective.CheckView, CaseHints.ObjectiveFor(state));
             Assert.AreEqual(LocalizationKeys.Hints.CheckViewObserve, session.Request(state));
             Assert.AreEqual(LocalizationKeys.Hints.CheckViewLocate, session.Request(state));
-            Assert.AreEqual(LocalizationKeys.Hints.CheckViewAct, session.Request(state));
-            Assert.AreEqual(LocalizationKeys.Hints.CheckViewAct, session.Request(state), "stays on the action");
+            Assert.AreEqual(HintTier.Location, session.NextTier(state), "no move blocks the bench: two pips only");
+            Assert.AreEqual(LocalizationKeys.Hints.CheckViewLocate, session.Request(state), "stays on the trail");
 
             state = state.Apply(CaseAction.Of(CaseActionKind.SitOnBench)).State;
             Assert.AreEqual(HintTier.Observation, session.NextTier(state));
             Assert.AreEqual(LocalizationKeys.Hints.FindWayInObserve, session.Request(state));
         }
 
-        /// <summary>For each objective, the action its third tier names actually moves the case on.</summary>
         [Test]
-        public void EveryObjectivesActionHintMakesProgressFromAnyReachableState()
+        public void TierThreeDemonstratesOnlyTheMoveWherePipStands()
         {
-            var actionFor = new Dictionary<CaseObjective, CaseAction>
+            var move = HintMove.None;
+            var session = new HintSession { MoveAt = _ => move };
+            var state = CaseState.FromFacts(new[] { CaseFact.HeardKnocks, CaseFact.CheckedView });
+            Assert.AreEqual(CaseObjective.FindWayIn, CaseHints.ObjectiveFor(state));
+            session.Request(state);
+            session.Request(state);
+            Assert.AreEqual(HintTier.Location, session.NextTier(state), "away from the crate: no tier 3");
+            move = HintMove.Jump; // Pip walks to the crate
+            Assert.AreEqual(HintTier.Action, session.NextTier(state));
+            Assert.AreEqual(LocalizationKeys.Hints.MoveJump, session.Request(state));
+            move = HintMove.HighJump;
+            Assert.AreEqual(LocalizationKeys.Hints.MoveHighJump, session.Request(state));
+        }
+
+        /// <summary>D26 §6: no hint line of any tier is an action on a clue; tier 3 is always a move line.</summary>
+        [Test]
+        public void TierThreeIsMovesOnlyForEveryObjectiveAndMove()
+        {
+            var moveLines = new HashSet<string>();
+            foreach (var move in HintMoves.Demonstrable)
             {
-                { CaseObjective.Arrival, CaseAction.Of(CaseActionKind.HearKnocks) },
-                { CaseObjective.CheckView, CaseAction.Of(CaseActionKind.SitOnBench) },
-                { CaseObjective.FindWayIn, CaseAction.Of(CaseActionKind.EnterAttic) },
-                { CaseObjective.MeetJune, CaseAction.Talk(Speaker.June) },
-                { CaseObjective.OpenDoor, CaseAction.Of(CaseActionKind.LiftLatch) },
-                { CaseObjective.FindSource, CaseAction.Of(CaseActionKind.ExamineGrille) },
-                { CaseObjective.LinkArm, CaseAction.Of(CaseActionKind.LinkArm) },
-                { CaseObjective.TurnCrank, CaseAction.Of(CaseActionKind.TurnCrank) },
-                { CaseObjective.ReturnToPorch, CaseAction.Of(CaseActionKind.ArriveAtPorch) },
-            };
+                moveLines.Add(HintMoves.LineKey(move));
+            }
+
+            foreach (CaseObjective objective in System.Enum.GetValues(typeof(CaseObjective)))
+            {
+                foreach (var move in HintMoves.Demonstrable)
+                {
+                    Assert.IsTrue(moveLines.Contains(CaseHints.HintFor(objective, HintTier.Action, null, move)),
+                        $"{objective} tier 3 with {move} is that move's line");
+                }
+
+                Assert.AreEqual(CaseHints.HintFor(objective, HintTier.Location), CaseHints.HintFor(objective, HintTier.Action),
+                    objective + ": without a move there is no tier-3 line");
+            }
+
+            foreach (string key in CaseHints.AllKeys())
+            {
+                StringAssert.DoesNotEndWith(".act", key, "the per-objective action lines are retired");
+            }
+        }
+
+        /// <summary>Every objective's tier-1 and tier-2 lines point to its area: the area exists in every reachable state.</summary>
+        [Test]
+        public void EveryReachableObjectiveHasAHintArea()
+        {
             foreach (var state in CaseReducerTests.ReachableStates())
             {
                 var objective = CaseHints.ObjectiveFor(state);
@@ -149,9 +182,7 @@ namespace SpookyStreet.Tests.Core
                     continue;
                 }
 
-                var step = state.Apply(actionFor[objective]);
-                Assert.Greater(step.Gained.Count, 0, $"{objective} hint leads nowhere from {state}");
-                Assert.AreNotEqual(objective, CaseHints.ObjectiveFor(step.State));
+                Assert.IsNotNull(HintAreas.For(objective), objective.ToString());
             }
         }
 

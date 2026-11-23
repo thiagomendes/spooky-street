@@ -126,6 +126,11 @@ namespace SpookyStreet.Core.Case
                     lines.Add(Pip(Keys.ExamineOwlPanel));
                     break;
 
+                case CaseActionKind.ExamineOwlBooth:
+                    next = Gain(next, CaseFact.OwlBooth, gained);
+                    lines.Add(Pip(Keys.ExamineOwlBooth));
+                    break;
+
                 case CaseActionKind.LinkArm:
                     next = Gain(next, CaseFact.LinkedArm, gained);
                     if (gained.Contains(CaseFact.LinkedArm))
