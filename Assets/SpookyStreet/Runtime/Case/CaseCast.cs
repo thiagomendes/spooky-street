@@ -147,6 +147,7 @@ namespace SpookyStreet.Case
             June.Avatar.SetClipSpeed(WalkClip, 1f);
             var spot = placement == JunePlacement.Attic ? CaseStage.JuneAttic
                 : placement == JunePlacement.Foyer ? CaseStage.JuneFoyer
+                : placement == JunePlacement.Treehouse ? CaseStage.JuneTreehouse
                 : CaseStage.JunePorch;
             var p = spot.Position;
             June.transform.SetPositionAndRotation(new Vector3(p.X, p.Y, p.Z), Quaternion.Euler(0f, spot.FacingYaw, 0f));

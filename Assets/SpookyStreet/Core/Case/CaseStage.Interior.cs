@@ -31,6 +31,7 @@ namespace SpookyStreet.Core.Case
         public const string PointJuneAttic = "june_attic";
         public const string PointJuneFoyer = "june_foyer";
         public const string PointJunePorch = "june_porch";
+        public const string PointJuneTreehouse = "june_treehouse";
         public const string PointKit = "kit";
         public const string PointLatch = "latch";
         public const string PointGrille = "grille";
@@ -48,6 +49,12 @@ namespace SpookyStreet.Core.Case
 
         /// <summary>On the porch for the reopening, west of the door, facing the street.</summary>
         public static readonly CastSpot JunePorch = new CastSpot(-1.35f, CaseRouteLayout.FloorY, CaseRouteLayout.FrontZ - 0.85f, 175f);
+
+        /// <summary>
+        /// Once the street remembers case 01 (D29): June outside in the side yard, at the foot of her treehouse way,
+        /// beside the ramp (clear of the route's corridor and the hedge's west end), facing the plaza.
+        /// </summary>
+        public static readonly CastSpot JuneTreehouse = new CastSpot(-10.45f, 0f, 5.6f, 120f);
 
         /// <summary>Aunt Kit at her booth (the ticket door), east of the doorway, facing the street.</summary>
         public static readonly CastSpot KitBooth = new CastSpot(1.15f, CaseRouteLayout.FloorY, CaseRouteLayout.FrontZ - 0.75f, 185f);
@@ -213,6 +220,8 @@ namespace SpookyStreet.Core.Case
                     return view.June == JunePlacement.Foyer && !juneWalking;
                 case PointJunePorch:
                     return view.June == JunePlacement.Porch;
+                case PointJuneTreehouse:
+                    return view.June == JunePlacement.Treehouse;
                 case PointKit:
                     return view.KitPresent;
                 case PointServicePanel:
@@ -245,6 +254,8 @@ namespace SpookyStreet.Core.Case
                 new InteractionPoint(PointJuneFoyer, CaseAction.Talk(Speaker.June), JuneFoyer.Position, 1.8f, 1.55f,
                     PointSide.Inside),
                 new InteractionPoint(PointJunePorch, CaseAction.Talk(Speaker.June), JunePorch.Position, 1.8f, 1.55f,
+                    PointSide.Outside),
+                new InteractionPoint(PointJuneTreehouse, CaseAction.Talk(Speaker.June), JuneTreehouse.Position, 1.8f, 1.55f,
                     PointSide.Outside),
                 new InteractionPoint(PointKit, CaseAction.Talk(Speaker.Kit), KitBooth.Position, 1.8f, 1.75f,
                     PointSide.Outside),

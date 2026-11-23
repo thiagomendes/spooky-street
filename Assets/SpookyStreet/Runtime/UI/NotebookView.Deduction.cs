@@ -223,18 +223,8 @@ namespace SpookyStreet.UI
             view.Overlay = UiFactory.Stretch(UiFactory.Rect(page, "Overlay"));
         }
 
-        private static string[] ChipsFor(string questionId)
-        {
-            switch (questionId)
-            {
-                case CaseNotebook.QuestionEntry:
-                    return new[] { "pg.june", "pg.question", "pg.house" };
-                case CaseNotebook.QuestionSource:
-                    return new[] { "pg.knock3", "pg.question", "pg.house" };
-                default:
-                    return new[] { "pg.knock_ring", "pg.question" };
-            }
-        }
+        /// <summary>The question as picture chips (shared with the Continue recap).</summary>
+        private static string[] ChipsFor(string questionId) => Core.Save.ContinueRecap.QuestionChips(questionId);
 
         private static float SlotX(int slot, int count) => (slot - (count - 1) * 0.5f) * (SlotWidth + SlotGap);
 
