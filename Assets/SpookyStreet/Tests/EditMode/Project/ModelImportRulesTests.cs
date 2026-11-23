@@ -179,6 +179,90 @@ namespace SpookyStreet.Tests.Project
             Assert.IsNotNull(PipAnimator.Find(loaded, CharacterClips.Point), "Point not loadable from Resources");
         }
 
+        // S003a testimony gestures and hint glances. Frames at 30 fps from tools/blender/export: witness_anims.py
+        // (SHADE_FRAMES 66, WATCH_FRAMES 72), junekit_anims.py (LISTEN_FRAMES 66, PONDER_FRAMES 66) and
+        // pip_anims.py (GLANCE_FRAMES 40). Each plays once and is loadable from Resources, where the game finds it.
+        [TestCase("Bea", "ShadeEyes", 60f, 72f)]
+        [TestCase("Vale", "CheckWatch", 66f, 78f)]
+        [TestCase("June", "Listen", 60f, 72f)]
+        [TestCase("Kit", "Ponder", 60f, 72f)]
+        [TestCase("Pip", "GlanceLeft", 36f, 44f)]
+        [TestCase("Pip", "GlanceRight", 36f, 44f)]
+        public void CharactersHaveTheirGestureClips(string model, string clipName, float minFrames, float maxFrames)
+        {
+            string fbx = ModelImportRules.ModelsRoot + "Characters/" + model + "/" + model + ".fbx";
+            var importer = AssetImporter.GetAtPath(fbx) as ModelImporter;
+            if (importer == null)
+            {
+                Assert.Ignore(model + ".fbx is not committed.");
+            }
+
+            bool found = false;
+            foreach (var clip in importer.clipAnimations)
+            {
+                StringAssert.DoesNotContain("|", clip.name, "clip name not cleaned: " + clip.name);
+                if (clip.name != clipName)
+                {
+                    continue;
+                }
+
+                found = true;
+                Assert.IsFalse(clip.loopTime, clipName + " plays once");
+                Assert.That(clip.lastFrame - clip.firstFrame, Is.InRange(minFrames, maxFrames), clipName + " length");
+            }
+
+            Assert.IsTrue(found, model + ".fbx has no " + clipName + " take");
+            Assert.IsFalse(CharacterClips.IsLooping(clipName));
+            if (model == "Pip")
+            {
+                Assert.IsTrue(PipClips.IsKnown(clipName));
+                Assert.IsTrue(PipClips.IsGlance(clipName));
+            }
+            else
+            {
+                Assert.AreEqual(clipName, CharacterClips.TestimonyGestureOf(model));
+            }
+
+            var loaded = Resources.LoadAll<AnimationClip>(SpookyStreet.Characters.NpcAvatar.PathFor(model));
+            AnimationClip asset = PipAnimator.Find(loaded, clipName);
+            Assert.IsNotNull(asset, clipName + " not loadable from Resources");
+            Assert.That(asset.length * 30f, Is.InRange(minFrames, maxFrames), clipName + " seconds");
+        }
+
+        [Test]
+        public void ValeWearsHisWatchOnItsOwnBone()
+        {
+            var prefab = Resources.Load<GameObject>(SpookyStreet.Characters.NpcAvatar.PathFor("Vale"));
+            if (prefab == null)
+            {
+                Assert.Ignore("Vale.fbx is not committed.");
+            }
+
+            Transform watch = null, bone = null;
+            foreach (var t in prefab.GetComponentsInChildren<Transform>(true))
+            {
+                watch = t.name == "Vale_Watch" ? t : watch;
+                bone = t.name == "Watch" ? t : bone;
+            }
+
+            Assert.IsNotNull(watch, "Vale.fbx has no Vale_Watch mesh");
+            Assert.IsNotNull(bone, "Vale.fbx has no Watch bone");
+            Assert.AreEqual("LowerArm_L", bone.parent.name, "the watch rides his left forearm");
+            var renderer = watch.GetComponent<Renderer>();
+            Assert.IsNotNull(renderer, "the watch is drawn");
+            var skinned = renderer as SkinnedMeshRenderer;
+            Mesh mesh = skinned != null ? skinned.sharedMesh : watch.GetComponent<MeshFilter>()?.sharedMesh;
+            Assert.IsNotNull(mesh, "the watch has a mesh");
+            long triangles = 0;
+            for (int i = 0; i < mesh.subMeshCount; i++)
+            {
+                triangles += mesh.GetIndexCount(i) / 3;
+            }
+
+            Assert.That(triangles, Is.InRange(60L, 400L), "a small mesh");
+            Assert.That(mesh.bounds.size.magnitude, Is.InRange(0.03f, 0.3f), "wrist sized");
+        }
+
         [Test]
         public void BicycleImportsAsAStaticProp()
         {

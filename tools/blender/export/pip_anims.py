@@ -692,6 +692,64 @@ def interact(u):
     return keyed([(0.0, rest), (0.2, wind), (0.42, reach), (0.55, press), (0.68, reach), (1.0, rest)], u)
 
 
+GLANCE_FRAMES = 40
+GLANCE_TURN = 89.0  # how far her face ends up from straight ahead at the hold (hips + spine + chest + head)
+
+
+def _glance(u, d):
+    """The hint glance (S003a, D26): something over THERE has her attention. A tiny duck the other way, then
+    her head and shoulders snap round to one side (d = 1: her left, -1: her right) and she rises on her toes,
+    leans after her nose and peers, free hand coming up; a second little push of the chin, then back.
+    It says "that way", toward an area; it never points at a thing. From the game camera (behind her) the
+    turned head shows her face in profile, which is what reads. Starts and ends on Idle frame 0.
+    Frames: duck 0-4, turn 4-9, peering 9-28 (second push at 18), back 28-40."""
+    rest = idle(0.0)
+    duck = dict(rest)
+    duck.update(hz=-0.012, head_yaw=-7 * d, head_pitch=5, chest_yaw=-3 * d, spine_pitch=3, kneeL=10, kneeR=10,
+                legL_fwd=5, legR_fwd=5, shoulderL=-1, shoulderR=-1, hair_side=-2 * d)
+    cape(duck, [5, 6, 7], flare=[2, 3, 4], sway=2.5 * d)
+    look = dict(rest)
+    look.update(hx=0.026 * d, hz=0.0, hip_yaw=6 * d, hip_roll=-2.5 * d, spine_yaw=9 * d, chest_yaw=20 * d,
+                spine_roll=4.5 * d, chest_roll=4 * d, spine_pitch=2, chest_pitch=-2, neck_pitch=-2,
+                head_yaw=54 * d, head_pitch=-5, head_roll=4 * d,
+                kneeL=3, kneeR=3, legL_fwd=1.5, legR_fwd=1.5, shoulderL=4, shoulderR=3,
+                hair_side=9 * d, hair_back=3, pail_y=7 * d, pail_x=4)
+    if d > 0:
+        # looking left: the free hand comes up on that side, "oh?", and the pail arm swings back a little
+        look.update(armL_fwd=26, armL_out=12, elbowL=74, handL_pitch=-8, fingersL=22,
+                    armR_fwd=-6, armR_out=7, elbowR=10)
+    else:
+        # looking right: the pail arm lifts out on that side (the pail swings), the free hand comes up less
+        look.update(armR_fwd=6, armR_out=26, elbowR=34, shoulderR=6,
+                    armL_fwd=14, armL_out=4, elbowL=52, handL_pitch=-6, fingersL=22, pail_y=-12, pail_x=3)
+    cape(look, [6, 9, 12], flare=[3, 5, 7], sway=-6 * d)
+    peer = dict(look)
+    peer.update(hx=0.034 * d, head_yaw=58 * d, head_pitch=-8, head_roll=6 * d, chest_yaw=22 * d, spine_pitch=4,
+                chest_pitch=0, spine_roll=5.5 * d, armL_fwd=look["armL_fwd"] + 4, elbowL=look["elbowL"] + 6,
+                armR_out=look["armR_out"] + (4 if d < 0 else 0), hair_side=-3 * d, hair_back=1,
+                pail_y=look["pail_y"] - 9 * d, pail_x=-2, shoulderL=6, shoulderR=look["shoulderR"] + 2)
+    cape(peer, [4, 5, 7], flare=[2, 3, 4], sway=3 * d)
+    settle = dict(look)
+    settle.update(head_yaw=55 * d, head_pitch=-4, hair_side=1 * d, hair_back=1,
+                  pail_y=look["pail_y"] - 3 * d, pail_x=0)
+    cape(settle, [3, 4, 5], flare=[2, 3, 3], sway=0.0)
+    p = keyed([(0.0, rest), (0.1, duck), (0.225, look), (0.45, peer), (0.7, settle), (1.0, rest)], u)
+    # up on her toes while she peers (the feet are world-pitched; `ground` keeps the lowest sole on the floor)
+    f = u * GLANCE_FRAMES
+    tip = smooth((f - 5) / 4) * (1 - smooth((f - 27) / 9))
+    rise = tip * (8 + 5 * math.exp(-((f - 18) / 3.5) ** 2))
+    p.update(footL=rise, footR=rise, toeL=0.8 * rise, toeR=0.8 * rise)
+    return p
+
+
+def glance_left(u):
+    return _glance(u, 1.0)
+
+
+def glance_right(u):
+    return _glance(u, -1.0)
+
+
 # name, pose function, frames at 30 fps, loops, intended ground speed (m/s), note
 CLIPS = [
     ("Idle", idle, 75, True, 0.0, "breathing, weight shift, cape sway"),
@@ -709,4 +767,9 @@ CLIPS = [
     ("WallKick", wall_kick, 10, False, None, "wall 0.31 m BEHIND her at frame 0; ends on the JumpAir pose"),
     ("LedgeGrab", ledge_grab, 6, False, 0.0, "catch; ends on LedgeHang frame 0"),
     ("LedgeClimb", ledge_climb, 12, False, 0.0, "pull up and over in 0.4 s (60 % rise, then in); ends on Idle frame 0"),
+    ("GlanceLeft", glance_left, GLANCE_FRAMES, False, 0.0,
+     "hint glance: head and shoulders turn to her LEFT (face 89 degrees off ahead), peering frames 9-28; "
+     "starts and ends on Idle frame 0"),
+    ("GlanceRight", glance_right, GLANCE_FRAMES, False, 0.0,
+     "hint glance: the same to her RIGHT; starts and ends on Idle frame 0"),
 ]

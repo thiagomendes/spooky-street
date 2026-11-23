@@ -40,6 +40,61 @@ namespace SpookyStreet.Core.Animation
         public const string OpenBooth = "OpenBooth";
         public const string Wave = "Wave";
 
+        /// <summary>Bea's testimony gesture (S003a): a hand over her eyes, head back, searching up high. Where she
+        /// looked, never what was there (D26). The clip aims along her own forward: turn her to the place first.</summary>
+        public const string ShadeEyes = "ShadeEyes";
+
+        /// <summary>Mr. Vale's testimony gesture (S003a), seated: he checks his wristwatch, two beats, looks up.
+        /// About when, never what. It aims nowhere: he must not be turned on his bench for it.</summary>
+        public const string CheckWatch = "CheckWatch";
+
+        /// <summary>June's testimony gesture (S003a): a hand cupped behind her ear ("Listen…"). It leans to her own
+        /// side, not toward a place.</summary>
+        public const string Listen = "Listen";
+
+        /// <summary>Aunt Kit's testimony gesture (S003a): hand to her cheek, head tilted, then she looks up, asking
+        /// ("So, detective, what happened here?"). She asks; she never tells.</summary>
+        public const string Ponder = "Ponder";
+
+        /// <summary>The S003a testimony gestures, one per cast member, all one-shots that start and end on the
+        /// character's rest loop (frame 0). None of them points at a clue.</summary>
+        public static readonly string[] TestimonyGestures = { ShadeEyes, CheckWatch, Listen, Ponder };
+
+        /// <summary>
+        /// The testimony gesture of a cast member by model name ("Bea", "Vale", "June", "Kit"), or null for anyone
+        /// else. A model that lacks the clip simply does not gesture (<c>Witness.PlayGesture</c> returns false).
+        /// </summary>
+        public static string TestimonyGestureOf(string model)
+        {
+            switch (model)
+            {
+                case "Bea": return ShadeEyes;
+                case "Vale": return CheckWatch;
+                case "June": return Listen;
+                case "Kit": return Ponder;
+                default: return null;
+            }
+        }
+
+        /// <summary>
+        /// True when a gesture is aimed along the character's forward, so the body turns to the cue's point while it
+        /// plays (Point, ShadeEyes, a wave at someone). False for the gestures that are about the speaker and aim
+        /// nowhere (CheckWatch, Listen, Ponder): turning for those would point a non-pointing gesture at a place,
+        /// and would spin Mr. Vale on his bench.
+        /// </summary>
+        public static bool TurnsToAim(string clipName)
+        {
+            switch (PipClips.CleanClipName(clipName))
+            {
+                case CheckWatch:
+                case Listen:
+                case Ponder:
+                    return false;
+                default:
+                    return true;
+            }
+        }
+
         /// <summary>Witness clips that cycle; <see cref="Wave"/> plays once.</summary>
         public static readonly string[] WitnessLooping = { Talk, SitIdle, SitTalk, KneeTap };
 

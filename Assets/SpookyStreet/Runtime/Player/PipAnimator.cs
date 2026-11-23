@@ -220,6 +220,29 @@ namespace SpookyStreet.Player
         public void SetLedgeHanging(bool hanging) => _ledgeHanging = hanging;
 
         /// <summary>
+        /// The hint glance (S003a, D26): Pip's head and shoulders turn toward the side <paramref name="point"/> lies
+        /// on (<see cref="PipClips.GlanceToward"/>), she peers, and comes back. It shows a direction, never a thing.
+        /// Only while she stands on the ground; walking off or leaving the ground ends it. Returns false, without
+        /// logging, when the model has no glance clips, she is not standing, or the point is where she stands.
+        /// </summary>
+        public bool PlayGlance(Vector3 point)
+        {
+            if (!IsReady || (_motor != null && (!_motor.Grounded || _motor.HorizontalSpeed > GlanceMaxSpeed)))
+            {
+                return false;
+            }
+
+            Transform body = _motor != null ? _motor.transform : transform;
+            Vector3 to = point - body.position;
+            Vector3 forward = body.forward;
+            string clip = PipClips.GlanceToward(forward.x, forward.z, to.x, to.z);
+            return clip != null && _slot.ContainsKey(clip) && PlayOneShot(clip);
+        }
+
+        /// <summary>Ground speed above which a glance does not start, and at which a playing one ends (m/s).</summary>
+        public const float GlanceMaxSpeed = 0.6f;
+
+        /// <summary>
         /// Plays a one-shot clip (e.g. <see cref="PipClips.Roll"/>, <see cref="PipClips.Interact"/>) over every
         /// pose, then blends back. Returns false, without error, when the clip is missing or the graph is not built.
         /// </summary>
@@ -392,6 +415,12 @@ namespace SpookyStreet.Player
             // catch was let go.
             if ((OneShot == PipClips.WallKick && (input.Grounded || input.WallSliding || input.LedgeHanging)) ||
                 (OneShot == PipClips.LedgeGrab && !input.LedgeHanging))
+            {
+                CancelOneShot();
+            }
+
+            // A glance belongs to standing still: the player walking off, a jump or a fall ends it at once.
+            if (PipClips.IsGlance(OneShot) && (!input.Grounded || speed > GlanceMaxSpeed))
             {
                 CancelOneShot();
             }

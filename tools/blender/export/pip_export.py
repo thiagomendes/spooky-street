@@ -1,4 +1,4 @@
-"""Pip, game-ready: low-poly meshes, one baked atlas (+ a face map), a rig, fifteen clips, one FBX.
+"""Pip, game-ready: low-poly meshes, one baked atlas (+ a face map), a rig, seventeen clips, one FBX.
 
     blender -b -t 2 --python tools/blender/export/pip_export.py -- [--out DIR] [--cache FILE.blend]
                                                                [--tex 2048] [--face-tex 1024] [--report FILE.json]

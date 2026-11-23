@@ -24,6 +24,7 @@ import math
 import numpy as np
 from mathutils import Matrix, Vector
 
+import gesture_fit as gf
 import pip_anims as pa
 from pip_anims import SIDES, TAU, bump, rx, ry, rz, smooth
 
@@ -134,6 +135,10 @@ def fk(p, rig):
         D["Toe_" + S] = rx(-p[f"toe{S}"])
     for b in BANDS:
         W["Bandage_" + b] = ry(p[f"b{b}_y"]) @ rx(-p[f"b{b}_x"])
+    if "Watch" in rig:
+        # Mr. Vale's wristwatch turns about the forearm with the hand: the pronation the rig has no bone for
+        along = (rig["Hand_L"][1] - rig["LowerArm_L"][1]).normalized()
+        D["Watch"] = Matrix.Rotation(math.radians(p["handL_twist"]), 3, along)
     pot_w = ry(p["pot_y"]) @ rx(-p["pot_x"])
     wobble = rz(p["pumpkin_yaw"]) @ ry(p["pumpkin_roll"]) @ rx(p["pumpkin_pitch"])
     shifts = {"Pumpkin": Vector((0, 0, p["pumpkin_z"])),
@@ -424,6 +429,91 @@ def bea_point(u):
     return p
 
 
+# --- Bea: ShadeEyes (S003a) -------------------------------------------------------------------------------
+# Her testimony is partial (D26): something silver flashed "up high", and that is all she knows. The gesture
+# says where she was looking, never what was there: a hand over her eyes like a visor, head back, searching.
+
+SHADE_FRAMES = 66
+# where the knuckles of the shading hand sit, from the head joint (her own axes: left, back, up): on the brow
+# line under the helmet's rim, right of centre, so the fingers lie across the forehead toward her left
+BEA_BROW = Vector((-0.085, -0.178, 0.168))
+SHADE_ALONG = Vector((1.0, -0.12, 0.10))  # the hand lies across the brow, fingertips to her left
+SHADE_BACK = Vector((0.0, -0.34, 0.94))  # palm down, tipped a little like a cap's peak
+BEA_HIP = Vector((0.208, -0.095, 0.79))  # the left knuckles on the pumpkin's side (rest pose, her own axes)
+HIP_ALONG = Vector((0.1, -0.55, -0.83))
+HIP_BACK = Vector((0.85, -0.5, 0.15))
+_SHADE_ARM = ("armR_fwd", "armR_out", "armR_twist", "elbowR", "handR_pitch", "handR_side", "handR_twist")
+
+
+def _head_dir(q, v):
+    """A direction given in the head's own axes, as it points in the pose."""
+    return fk(q, RIG)[2]["Head"] @ Vector(v)
+
+
+def bea_shade_eyes(u):
+    """What WAS that, up there? She pops up on her toes with her right hand flat over her eyes, leans back and
+    searches the sky: a look to one side, a stretch, a look to the other, a stretch; then she drops back.
+    The game turns her toward the place first, so "up high" is her own forward. Starts and ends on Idle frame 0.
+    Frames: up 0-11, searching 11-50 (stretches at 24 and 39), down 50-66."""
+    f = u * SHADE_FRAMES
+    rest = bea_idle(0.0)
+    up = _ramp(f, 0, 11) * (1 - _ramp(f, 50, 65))
+    arrive = _bell(f, 11.5, 2.6) * up  # she overshoots a little as the hand lands
+    search = _ramp(f, 13, 19) * (1 - _ramp(f, 44, 50))
+    scan = math.sin(TAU * (f - 16.5) / 30.0) * search  # + toward her left
+    stretch = (_bell(f, 24.0, 3.2) + _bell(f, 39.0, 3.2)) * up
+    look = dict(rest)
+    look.update(hy=0.022, hx=0.0, hip_roll=0, hip_pitch=-4, spine_pitch=-5, chest_pitch=-6, spine_roll=0,
+                chest_roll=-2, chest_yaw=-3, neck_pitch=-7, head_pitch=-21, head_yaw=0, head_roll=3,
+                shoulderR=14, fingersR=-4, thumbR=-6,
+                # the other hand goes to her pumpkin's "hip": elbow out, like a little explorer
+                shoulderL=4, fingersL=24,
+                footL=13, footR=13, toeL=11, toeR=11,
+                pumpkin_pitch=-3, tail_back=8, tail_side=0)
+    p = blend(rest, look, up)
+    p.update(hip_pitch=p["hip_pitch"] - 2 * stretch - 1.5 * arrive,
+             spine_pitch=p["spine_pitch"] - 2 * stretch, chest_pitch=p["chest_pitch"] - 2 * stretch - 2 * arrive,
+             head_pitch=p["head_pitch"] - 5 * stretch - 3 * arrive,
+             head_yaw=p["head_yaw"] + 13 * scan, chest_yaw=p["chest_yaw"] + 7 * scan,
+             spine_yaw=p["spine_yaw"] + 3 * scan, hip_yaw=p["hip_yaw"] + 2 * scan,
+             head_roll=p["head_roll"] - 3 * scan,
+             footL=p["footL"] + 7 * stretch + 4 * arrive, footR=p["footR"] + 7 * stretch + 4 * arrive,
+             toeL=p["toeL"] + 6 * stretch + 3 * arrive, toeR=p["toeR"] + 6 * stretch + 3 * arrive,
+             shoulderR=p["shoulderR"] + 3 * stretch, armL_out=p["armL_out"] + 3 * stretch + 4 * arrive,
+             # the costume and the ponytail lag her
+             pumpkin_z=p["pumpkin_z"] - 0.009 * _bell(f, 9.0, 2.4) + 0.007 * _bell(f, 13.5, 2.6) - 0.005 * stretch
+             + 0.008 * _bell(f, 57.0, 2.6),
+             pumpkin_pitch=p["pumpkin_pitch"] + 2.5 * _bell(f, 13.0, 3.0), pumpkin_yaw=p["pumpkin_yaw"] - 3 * scan,
+             tail_back=p["tail_back"] + 10 * _bell(f, 8.0, 2.6) - 6 * _bell(f, 13.5, 3.0) + 4 * stretch,
+             tail_side=p["tail_side"] - 9 * math.sin(TAU * (f - 19.5) / 30.0) * search)
+    p["ground"] = 1.0
+    plant(p)
+    if up > 0:
+        # the hand: fitted to the brow of this frame's head, then blended in, so it rides the head through the
+        # search instead of sliding over it
+        q = dict(p)
+        q.update(armR_fwd=96, armR_out=38, armR_twist=58, elbowR=118, handR_pitch=0, handR_side=0, handR_twist=20)
+        brow = point(q, "Head", RIG["Head"][1] + BEA_BROW)
+        gf.fit_hand(fk, RIG, q, "R", brow, _head_dir(q, SHADE_ALONG), _head_dir(q, SHADE_BACK))
+        k = _ramp(f, 1.5, 10.5) * (1 - _ramp(f, 50.5, 63))
+        for key in _SHADE_ARM:
+            p[key] += (q[key] - p[key]) * k
+        # on the way the elbow leads and swings wide, clear of the pumpkin and of her cheek
+        swing = math.sin(math.pi * k) if 0 < k < 1 else 0.0
+        p["armR_out"] += 16 * swing
+        p["elbowR"] += 10 * swing
+        # the other hand: planted on the side of the pumpkin, elbow out behind her
+        q = dict(p)
+        q.update(armL_fwd=-20, armL_out=30, armL_twist=30, elbowL=110, handL_pitch=0, handL_side=0, handL_twist=0)
+        side = fk(q, RIG)[2]["Pumpkin"]
+        gf.fit_hand(fk, RIG, q, "L", point(q, "Pumpkin", BEA_HIP), side @ HIP_ALONG, side @ HIP_BACK)
+        k = _ramp(f, 3, 12) * (1 - _ramp(f, 49, 62))
+        for key in _SHADE_ARM:
+            key = key.replace("R", "L")
+            p[key] += (q[key] - p[key]) * k
+    return p
+
+
 # --- Mr. Vale ---------------------------------------------------------------------------------------------
 # He sits upright but easy, feet flat, the cauldron of sweets standing on his right thigh with his right hand
 # through its handle; his left hand rests on his left thigh, points at the door, or waves.
@@ -538,6 +628,70 @@ def vale_wave(u):
     return _vale_lap(p)
 
 
+# --- Mr. Vale: CheckWatch (S003a) -------------------------------------------------------------------------
+# His testimony is about time ("all evening", "when I looked"). He brings his left wrist up in front of his
+# chest, looks down at it, taps the time out with two small beats of the wrist and looks up again: sure of
+# WHEN, which is all he knows. His right hand never leaves the cauldron.
+
+WATCH_FRAMES = 72
+# the knuckles of the raised hand from the chest joint (his own axes): in front of the breastbone, the hand
+# lying across his body so the back of the wrist (where the watch is) faces up, toward his eyes
+VALE_WRIST = Vector((0.05, -0.30, 0.125))
+WATCH_ALONG = Vector((-1.0, -0.18, 0.12))
+WATCH_BACK = Vector((0.0, 0.12, 0.99))
+WATCH_SHOWN = Vector((0.0, -0.78, 0.62))  # the same wrist rolled toward the listener
+WATCH_TAPS = (27.0, 35.0)  # frames of the two beats
+_WATCH_ARM = ("armL_fwd", "armL_out", "armL_twist", "elbowL", "handL_pitch", "handL_side", "handL_twist",
+              "fingersL", "thumbL")
+
+
+def vale_check_watch(u):
+    """Seated: the left forearm comes up across his chest, wrist turned to his eyes; he leans in and looks down
+    at it, two small beats of the wrist with a nod on each (frames 27 and 35), then he looks up at the
+    listener with the wrist still raised, and lowers it. Starts and ends on SitIdle frame 0.
+    Frames: up 0-14, reading 14-24, beats 24-40, looks up 40-56, down 56-72."""
+    f = u * WATCH_FRAMES
+    base = vale_sit_idle(0.0)
+    up = _ramp(f, 0, 14) * (1 - _ramp(f, 56, 71))
+    read = _ramp(f, 6, 16) * (1 - _ramp(f, 39, 47))  # eyes on the wrist
+    tap = sum(_bell(f, t, 1.7) for t in WATCH_TAPS) * up
+    tell = _ramp(f, 41, 48) * (1 - _ramp(f, 57, 66))  # looks up: "see?"
+    p = _vale_sit(math.sin(-0.3), lean=5 * up + 2 * read)
+    still = _vale_sit(math.sin(-0.3))
+    p.update(head_yaw=base["head_yaw"] * (1 - up) + 15 * read - 3 * tell,
+             head_pitch=base["head_pitch"] * (1 - up) + still["head_pitch"] * up + 20 * read + 7 * tap - 5 * tell,
+             head_roll=base["head_roll"] * (1 - up) + 4 * read - 3 * tell,
+             neck_pitch=-2 + 6 * read,
+             chest_yaw=base["chest_yaw"] * (1 - up) + 5 * up, spine_yaw=2 * up,
+             spine_roll=base["spine_roll"] * (1 - up),
+             chest_pitch=p["chest_pitch"] + 3 * read + 1.5 * tap,
+             shoulderL=p["shoulderL"] + 7 * up + 2 * tap)
+    _vale_sway(p, TAU * u * 1.5, 1.0 + 0.9 * up)
+    for k in ("bHead_y", "bHead_x", "bArmL_y", "bArmL_x", "bArmR_y", "bArmR_x", "bKnee_y", "bKnee_x", "bBelly_y"):
+        p[k] = base[k] + (p[k] - base[k]) * up  # back to the idle's first frame at both ends
+    # the loose end at his wrist swings with the lift and with each beat
+    p["bArmL_x"] += (14 * _bell(f, 9.0, 3.5) - 9 * _bell(f, 16.0, 4.0)) * up + 7 * tap
+    p["bArmL_y"] += -10 * up + 6 * _bell(f, 62.0, 4.0)
+    p["bHead_x"] += 6 * read
+    # the left arm: on the thigh (as in SitIdle) and raised (fitted to this frame's chest), blended
+    low = _vale_rest_hand(dict(p))
+    high = dict(p)
+    high.update(armL_fwd=60, armL_out=35, armL_twist=70, elbowL=112, handL_pitch=0, handL_side=0, handL_twist=40,
+                fingersL=6, thumbL=0)
+    wrist = (point(high, "Chest", RIG["Chest"][1] + VALE_WRIST)
+             + Vector((0.0, -0.05 * tell, 0.03 * tap + 0.03 * tell)))
+    chest = fk(high, RIG)[2]["Chest"]
+    # showing it: the wrist rolls toward the listener
+    gf.fit_hand(fk, RIG, high, "L", wrist, chest @ WATCH_ALONG, chest @ WATCH_BACK.lerp(WATCH_SHOWN, tell),
+                limits={"handL_twist": (-40.0, 110.0), "handL_pitch": (-25.0, 25.0), "handL_side": (-20.0, 20.0)})
+    k = _ramp(f, 0.5, 13.5) * (1 - _ramp(f, 56.5, 70.5))
+    for key in _WATCH_ARM:
+        p[key] = low[key] + (high[key] - low[key]) * k
+    swing = math.sin(math.pi * k) if 0 < k < 1 else 0.0
+    p["armL_out"] += 10 * swing  # the elbow swings out on the way, clear of his belly
+    return _vale_lap(p)
+
+
 # name, pose function, frames at 30 fps, loops, intended ground speed (m/s), note
 BEA_CLIPS = [
     ("Idle", bea_idle, 90, True, 0.0, "weight shift, a glance to her left (toward the house), a bounce on her toes"),
@@ -546,9 +700,15 @@ BEA_CLIPS = [
     ("Point", bea_point, POINT_FRAMES, False, 0.0,
      "right index finger points straight ahead and 23 degrees up, left foot stamped forward, up on her toes; "
      "on target frames 13-41; starts and ends on Idle frame 0"),
+    ("ShadeEyes", bea_shade_eyes, SHADE_FRAMES, False, 0.0,
+     "testimony gesture: right hand over her eyes like a visor, head back, searching up high (her own forward); "
+     "hand on the brow frames 11-50; starts and ends on Idle frame 0"),
 ]
 VALE_CLIPS = [
     ("SitIdle", vale_sit_idle, 90, True, 0.0, "seated, breathing, bandage ends swaying, cauldron on his right thigh"),
     ("SitTalk", vale_sit_talk, 60, True, 0.0, "seated, left hand points straight ahead at the door"),
     ("Wave", vale_wave, 45, False, 0.0, "seated left-hand wave; starts and ends on SitIdle frame 0"),
+    ("CheckWatch", vale_check_watch, WATCH_FRAMES, False, 0.0,
+     "testimony gesture, seated: left wrist up in front of his chest, he looks down at it, two beats on frames "
+     "27 and 35, looks up; starts and ends on SitIdle frame 0"),
 ]

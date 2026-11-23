@@ -28,6 +28,42 @@ namespace SpookyStreet.Tests.Core
         }
 
         [Test]
+        public void TestimonyGesturesPlayOnceAndBelongToOneCastMemberEach()
+        {
+            CollectionAssert.AreEqual(new[] { "ShadeEyes", "CheckWatch", "Listen", "Ponder" }, CharacterClips.TestimonyGestures);
+            foreach (var name in CharacterClips.TestimonyGestures)
+            {
+                Assert.IsFalse(CharacterClips.IsLooping(name), name);
+                Assert.IsFalse(CharacterClips.IsLooping("Bea_Rig|" + name), "prefixed " + name);
+                Assert.IsFalse(PipClips.IsKnown(name), name + " is not one of Pip's clips");
+            }
+
+            Assert.AreEqual(CharacterClips.ShadeEyes, CharacterClips.TestimonyGestureOf("Bea"));
+            Assert.AreEqual(CharacterClips.CheckWatch, CharacterClips.TestimonyGestureOf("Vale"));
+            Assert.AreEqual(CharacterClips.Listen, CharacterClips.TestimonyGestureOf("June"));
+            Assert.AreEqual(CharacterClips.Ponder, CharacterClips.TestimonyGestureOf("Kit"));
+            Assert.IsNull(CharacterClips.TestimonyGestureOf("Pip"));
+            Assert.IsNull(CharacterClips.TestimonyGestureOf(null));
+        }
+
+        [Test]
+        public void OnlyGesturesAimedAheadTurnTheBody()
+        {
+            // Bea looks up high along her own forward, and she points: the game turns her to the place.
+            Assert.IsTrue(CharacterClips.TurnsToAim(CharacterClips.ShadeEyes));
+            Assert.IsTrue(CharacterClips.TurnsToAim(CharacterClips.Point));
+            Assert.IsTrue(CharacterClips.TurnsToAim(CharacterClips.Wave));
+            // The others are about the speaker: turning would aim them at a place (D26) and spin Vale on his bench.
+            Assert.IsFalse(CharacterClips.TurnsToAim(CharacterClips.CheckWatch));
+            Assert.IsFalse(CharacterClips.TurnsToAim("Vale_Rig|CheckWatch"));
+            Assert.IsFalse(CharacterClips.TurnsToAim(CharacterClips.Listen));
+            Assert.IsFalse(CharacterClips.TurnsToAim(CharacterClips.Ponder));
+            // An unknown gesture keeps the old behaviour (it will not play anyway).
+            Assert.IsTrue(CharacterClips.TurnsToAim("NoSuchGesture"));
+            Assert.IsTrue(CharacterClips.TurnsToAim(null));
+        }
+
+        [Test]
         public void PipClassificationIsUnchanged()
         {
             foreach (var name in PipClips.All)

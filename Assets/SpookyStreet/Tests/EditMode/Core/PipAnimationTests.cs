@@ -20,10 +20,53 @@ namespace SpookyStreet.Tests.Core
         }
 
         [Test]
+        public void HintGlancePicksTheSideThePlaceIsOn()
+        {
+            // Unity axes on the ground: x right, z forward. Facing +z, a place at +x is to her right.
+            Assert.AreEqual(PipClips.GlanceRight, PipClips.GlanceToward(0f, 1f, 3f, 1f));
+            Assert.AreEqual(PipClips.GlanceLeft, PipClips.GlanceToward(0f, 1f, -3f, 1f));
+            // Facing -x (west), north (+z) is to her right and south to her left.
+            Assert.AreEqual(PipClips.GlanceRight, PipClips.GlanceToward(-1f, 0f, 0f, 5f));
+            Assert.AreEqual(PipClips.GlanceLeft, PipClips.GlanceToward(-1f, 0f, 0f, -5f));
+            // Behind her and off to one side still picks that side.
+            Assert.AreEqual(PipClips.GlanceLeft, PipClips.GlanceToward(0f, 1f, -0.5f, -4f));
+            Assert.AreEqual(PipClips.GlanceRight, PipClips.GlanceToward(0f, 1f, 0.5f, -4f));
+            // No direction, no glance.
+            Assert.IsNull(PipClips.GlanceToward(0f, 0f, 1f, 1f));
+            Assert.IsNull(PipClips.GlanceToward(0f, 1f, 0f, 0f));
+
+            Assert.AreEqual(90f, PipClips.GlanceAngle(0f, 1f, 2f, 0f), 1e-3f);
+            Assert.AreEqual(-90f, PipClips.GlanceAngle(0f, 1f, -2f, 0f), 1e-3f);
+            Assert.AreEqual(0f, PipClips.GlanceAngle(0f, 1f, 0f, 7f), 1e-3f);
+            Assert.AreEqual(180f, PipClips.GlanceAngle(0f, 1f, 0f, -7f), 1e-3f);
+            Assert.AreEqual(45f, PipClips.GlanceAngle(1f, 0f, 1f, -1f), 1e-3f);
+            Assert.AreEqual(0f, PipClips.GlanceAngle(0f, 0f, 1f, 0f));
+            for (float a = -175f; a <= 175f; a += 10f)
+            {
+                float rad = a * (float)System.Math.PI / 180f;
+                float x = (float)System.Math.Sin(rad), z = (float)System.Math.Cos(rad);
+                Assert.AreEqual(a, PipClips.GlanceAngle(0f, 1f, x, z), 1e-2f);
+                Assert.AreEqual(a < 0f ? PipClips.GlanceLeft : PipClips.GlanceRight, PipClips.GlanceToward(0f, 1f, x, z));
+            }
+
+            Assert.IsTrue(PipClips.IsGlance(PipClips.GlanceLeft));
+            Assert.IsTrue(PipClips.IsGlance("Pip_Rig|GlanceRight"));
+            Assert.IsFalse(PipClips.IsGlance(PipClips.Interact));
+            Assert.IsFalse(PipClips.IsGlance(null));
+            // A model without the glances just does not glance: nothing stands in for them.
+            Assert.IsNull(PipClips.Fallback(PipClips.GlanceLeft));
+            Assert.IsNull(PipClips.Fallback(PipClips.GlanceRight));
+            Assert.That(PipClips.GlanceTurn, Is.InRange(60f, 100f));
+        }
+
+        [Test]
         public void LoopingClipsMatchTheExportContract()
         {
             var loops = new[] { "Idle", "Walk", "Run", "JumpAir", "Fall", "Glide", "WallSlide", "LedgeHang" };
-            var once = new[] { "JumpStart", "Land", "Roll", "Interact", "WallKick", "LedgeGrab", "LedgeClimb" };
+            var once = new[]
+            {
+                "JumpStart", "Land", "Roll", "Interact", "WallKick", "LedgeGrab", "LedgeClimb", "GlanceLeft", "GlanceRight",
+            };
             foreach (var name in loops)
             {
                 Assert.IsTrue(PipClips.IsLooping(name), name);
@@ -45,6 +88,10 @@ namespace SpookyStreet.Tests.Core
             Assert.AreEqual("WallKick", PipClips.All[12]);
             Assert.AreEqual("LedgeGrab", PipClips.All[13]);
             Assert.AreEqual("LedgeClimb", PipClips.All[14]);
+            // ... and the S003a hint glances after them.
+            Assert.AreEqual("GlanceLeft", PipClips.All[15]);
+            Assert.AreEqual("GlanceRight", PipClips.All[16]);
+            Assert.AreEqual(17, PipClips.All.Length);
         }
 
         [Test]
