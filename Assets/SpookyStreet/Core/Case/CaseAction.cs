@@ -39,14 +39,25 @@ namespace SpookyStreet.Core.Case
         /// <summary>Pip reaches the arrival porch sightline.</summary>
         ArriveAtPorch,
         ExamineCandyBowl,
+
+        /// <summary>Use on the owl-painted service panel in the workshop: the panel opens on the mechanism.</summary>
+        ExamineOwlPanel,
+
+        /// <summary>
+        /// The child placed a full set of stickers on a notebook question (D26). The reducer writes the solved fact
+        /// only for a right set of found stickers on a raised question.
+        /// </summary>
+        Solve,
     }
 
     public readonly struct CaseAction : IEquatable<CaseAction>
     {
-        private CaseAction(CaseActionKind kind, Speaker speaker)
+        private CaseAction(CaseActionKind kind, Speaker speaker, string question = null, IReadOnlyList<string> stickers = null)
         {
             Kind = kind;
             Speaker = speaker;
+            Question = question;
+            Stickers = stickers;
         }
 
         public CaseActionKind Kind { get; }
@@ -54,11 +65,22 @@ namespace SpookyStreet.Core.Case
         /// <summary>Only meaningful for <see cref="CaseActionKind.Talk"/>.</summary>
         public Speaker Speaker { get; }
 
+        /// <summary>Only for <see cref="CaseActionKind.Solve"/>: the question ID.</summary>
+        public string Question { get; }
+
+        /// <summary>Only for <see cref="CaseActionKind.Solve"/>: the sticker IDs placed, in slot order.</summary>
+        public IReadOnlyList<string> Stickers { get; }
+
         public static CaseAction Of(CaseActionKind kind)
         {
             if (kind == CaseActionKind.Talk)
             {
                 throw new ArgumentException("Use CaseAction.Talk(speaker) for conversations.", nameof(kind));
+            }
+
+            if (kind == CaseActionKind.Solve)
+            {
+                throw new ArgumentException("Use CaseAction.Solve(question, stickers) for deductions.", nameof(kind));
             }
 
             return new CaseAction(kind, Speaker.Caption);
@@ -74,13 +96,55 @@ namespace SpookyStreet.Core.Case
             return new CaseAction(CaseActionKind.Talk, speaker);
         }
 
-        public bool Equals(CaseAction other) => Kind == other.Kind && Speaker == other.Speaker;
+        /// <summary>A set of stickers placed on a notebook question (copied, so later changes cannot alter it).</summary>
+        public static CaseAction Solve(string questionId, IReadOnlyList<string> stickers)
+        {
+            if (string.IsNullOrEmpty(questionId))
+            {
+                throw new ArgumentException("A deduction names its question.", nameof(questionId));
+            }
+
+            var copy = new string[stickers?.Count ?? 0];
+            for (int i = 0; i < copy.Length; i++)
+            {
+                copy[i] = stickers[i];
+            }
+
+            return new CaseAction(CaseActionKind.Solve, Speaker.Caption, questionId, copy);
+        }
+
+        public bool Equals(CaseAction other)
+        {
+            if (Kind != other.Kind || Speaker != other.Speaker || Question != other.Question)
+            {
+                return false;
+            }
+
+            int a = Stickers?.Count ?? 0, b = other.Stickers?.Count ?? 0;
+            if (a != b)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < a; i++)
+            {
+                if (Stickers[i] != other.Stickers[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         public override bool Equals(object obj) => obj is CaseAction other && Equals(other);
 
-        public override int GetHashCode() => ((int)Kind * 31) + (int)Speaker;
+        public override int GetHashCode() => ((int)Kind * 31) + (int)Speaker + (Question?.GetHashCode() ?? 0) * 7;
 
-        public override string ToString() => Kind == CaseActionKind.Talk ? "Talk(" + Speaker + ")" : Kind.ToString();
+        public override string ToString() =>
+            Kind == CaseActionKind.Talk ? "Talk(" + Speaker + ")"
+            : Kind == CaseActionKind.Solve ? "Solve(" + Question + ": " + string.Join(", ", Stickers) + ")"
+            : Kind.ToString();
     }
 
     /// <summary>What happened, beyond the facts gained, so the world can react with animation and sound.</summary>
@@ -106,6 +170,9 @@ namespace SpookyStreet.Core.Case
 
         /// <summary>The ending's conditions are not met yet; nothing changes.</summary>
         NotYet,
+
+        /// <summary>A deduction that does not answer its question (or uses stickers not found): nothing changes.</summary>
+        WrongSet,
 
         /// <summary>The character is not present in this state (e.g. Aunt Kit before the reopening).</summary>
         Absent,
@@ -167,7 +234,24 @@ namespace SpookyStreet.Core.Case
         /// <summary>Persistent state changed: autosave now (spec §7 "Autosave on fact changes, closure").</summary>
         public bool ShouldAutosave => Gained.Count > 0;
 
-        /// <summary>The case was closed by this step: stamp "Case closed" on the case page.</summary>
+        /// <summary>The "Case closed" stamp was earned by this step (the reopening and the three deductions).</summary>
+        public bool StampedCase
+        {
+            get
+            {
+                foreach (var fact in Gained)
+                {
+                    if (fact == CaseFact.CaseStamped)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>The reopening happened in this step: Kit's show starts on the porch.</summary>
         public bool ClosedCase
         {
             get

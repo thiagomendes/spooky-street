@@ -255,7 +255,8 @@ namespace SpookyStreet.Core.Case
                 // crank behind it. Each sits at its own part of the partition so the markers stay apart.
                 new InteractionPoint(PointGrille, CaseAction.Of(CaseActionKind.ExamineGrille),
                     new StagePoint(workX, floor, CaseRouteLayout.MechanismZ + 0.65f), DefaultReach, 0.45f, PointSide.Inside),
-                new InteractionPoint(PointServicePanel, CaseAction.Of(CaseActionKind.ExamineGrille),
+                // The child-height service panel is painted with an owl: opening it is the owl-panel clue (D26).
+                new InteractionPoint(PointServicePanel, CaseAction.Of(CaseActionKind.ExamineOwlPanel),
                     new StagePoint(workX, floor, CaseRouteLayout.MechanismZ - 0.2f), DefaultReach, 1.05f, PointSide.Inside,
                     Verbs.Open),
                 new InteractionPoint(PointLinkArm, CaseAction.Of(CaseActionKind.LinkArm),

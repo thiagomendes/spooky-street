@@ -442,9 +442,27 @@ namespace SpookyStreet.Tests.PlayMode
             director.Dialogue.Advance();
             yield return Wait(0.3f);
             Assert.AreEqual(Lines.KitFirstShow, director.Dialogue.CurrentLine.Key);
+            director.Dialogue.Advance();
+            yield return Wait(0.3f);
+            Assert.AreEqual(Lines.KitAsk, director.Dialogue.CurrentLine.Key, "So, detective, what happened here?");
             yield return SkipDialogue();
             yield return Wait(FinaleView.HoldAfterLines + 0.3f);
             Assert.IsFalse(director.FinalePlaying);
+            Assert.IsTrue(director.Notebook.IsOpen, "the notebook opens on the questions the child has not answered");
+            Assert.IsNull(director.Notebook.FinalCard, "the stamp waits for the child's own explanation (D26)");
+            Assert.IsFalse(director.State.Has(CaseFact.CaseStamped));
+
+            // The child's deductions: the stamp follows the last one.
+            Assert.IsTrue(director.State.Has(CaseFact.FloorHum), "the hall floor trembled with the knocks");
+            director.Notebook.Close();
+            yield return Frames(2);
+            Assert.IsNotNull(director.SolveQuestion(CaseNotebook.QuestionSource, new[] { CaseNotebook.WoodenPiece, CaseNotebook.FloorHum }));
+            Assert.IsNotNull(director.SolveQuestion(CaseNotebook.QuestionEntry,
+                new[] { CaseNotebook.SillSnag, CaseNotebook.ValeDoor, CaseNotebook.BeaFlash }));
+            Assert.IsNotNull(director.SolveQuestion(CaseNotebook.QuestionMoved, new[] { CaseNotebook.OwlBooth, CaseNotebook.LooseArm }));
+            Assert.IsTrue(director.State.Has(CaseFact.CaseStamped));
+            director.OpenNotebook();
+            yield return Frames(2);
             Assert.IsTrue(director.Notebook.IsOpen, "the notebook shows the final card");
             Assert.IsNotNull(director.Notebook.FinalCard);
 
@@ -502,6 +520,9 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Wait(0.3f);
             yield return Use(CaseStage.PointServicePanel, Workshop(-0.35f));
             Assert.IsTrue(director.State.Has(CaseFact.SawCam), "looking through the open panel shows the cam");
+            Assert.IsTrue(director.State.Has(CaseFact.OwlPanel), "the panel's painted owl is a clue sticker");
+            Assert.AreEqual(Lines.ExamineOwlPanel, director.Dialogue.CurrentLine.Key, "Pip: a painted owl, wings folded");
+            yield return SkipDialogue();
             yield return Wait(0.9f);
             Assert.IsTrue(workshop.PanelOpen);
             Assert.AreEqual(WorkshopView.PanelOpenDegrees, workshop.PanelDegrees, 0.5f, "the panel swings +112 degrees");
@@ -510,7 +531,9 @@ namespace SpookyStreet.Tests.PlayMode
             int facts = director.State.Count;
             yield return Use(CaseStage.PointCrank, Workshop(0.1f));
             Assert.AreEqual(CaseOutcome.CrankGap, director.LastStep.Outcome);
-            Assert.AreEqual(facts, director.State.Count, "no fact from the early crank");
+            Assert.AreEqual(facts + 1, director.State.Count, "only the loose-arm sticker from the early crank");
+            Assert.IsTrue(director.State.Has(CaseFact.LooseArm));
+            Assert.IsFalse(director.State.Has(CaseFact.LinkedArm));
             CollectionAssert.Contains(director.LastStep.Lines, new ScriptLine(Speaker.Caption, Lines.CaptionCrankGap));
             Assert.IsFalse(director.Cutaway.Active, "no cutaway without the flag");
             yield return Wait(MechanismMotion.GapCycleSeconds + 0.1f);

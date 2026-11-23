@@ -35,16 +35,16 @@ namespace SpookyStreet.Core.Case
     {
         private static readonly Dictionary<CaseObjective, string[]> Table = new Dictionary<CaseObjective, string[]>
         {
-            { CaseObjective.Arrival, new[] { Keys.ArrivalTitle, Keys.ArrivalObserve, Keys.ArrivalLocate, Keys.ArrivalAct } },
-            { CaseObjective.CheckView, new[] { Keys.CheckViewTitle, Keys.CheckViewObserve, Keys.CheckViewLocate, Keys.CheckViewAct } },
-            { CaseObjective.FindWayIn, new[] { Keys.FindWayInTitle, Keys.FindWayInObserve, Keys.FindWayInLocate, Keys.FindWayInAct } },
-            { CaseObjective.MeetJune, new[] { Keys.MeetJuneTitle, Keys.MeetJuneObserve, Keys.MeetJuneLocate, Keys.MeetJuneAct } },
-            { CaseObjective.OpenDoor, new[] { Keys.OpenDoorTitle, Keys.OpenDoorObserve, Keys.OpenDoorLocate, Keys.OpenDoorAct } },
-            { CaseObjective.FindSource, new[] { Keys.FindSourceTitle, Keys.FindSourceObserve, Keys.FindSourceLocate, Keys.FindSourceAct } },
-            { CaseObjective.LinkArm, new[] { Keys.LinkArmTitle, Keys.LinkArmObserve, Keys.LinkArmLocate, Keys.LinkArmAct } },
-            { CaseObjective.TurnCrank, new[] { Keys.TurnCrankTitle, Keys.TurnCrankObserve, Keys.TurnCrankLocate, Keys.TurnCrankAct } },
-            { CaseObjective.ReturnToPorch, new[] { Keys.ReturnTitle, Keys.ReturnObserve, Keys.ReturnLocate, Keys.ReturnAct } },
-            { CaseObjective.FreeRoam, new[] { Keys.FreeRoamTitle, Keys.FreeRoamObserve, Keys.FreeRoamLocate, Keys.FreeRoamAct } },
+            { CaseObjective.Arrival, new[] { Keys.ArrivalObserve, Keys.ArrivalLocate, Keys.ArrivalAct } },
+            { CaseObjective.CheckView, new[] { Keys.CheckViewObserve, Keys.CheckViewLocate, Keys.CheckViewAct } },
+            { CaseObjective.FindWayIn, new[] { Keys.FindWayInObserve, Keys.FindWayInLocate, Keys.FindWayInAct } },
+            { CaseObjective.MeetJune, new[] { Keys.MeetJuneObserve, Keys.MeetJuneLocate, Keys.MeetJuneAct } },
+            { CaseObjective.OpenDoor, new[] { Keys.OpenDoorObserve, Keys.OpenDoorLocate, Keys.OpenDoorAct } },
+            { CaseObjective.FindSource, new[] { Keys.FindSourceObserve, Keys.FindSourceLocate, Keys.FindSourceAct } },
+            { CaseObjective.LinkArm, new[] { Keys.LinkArmObserve, Keys.LinkArmLocate, Keys.LinkArmAct } },
+            { CaseObjective.TurnCrank, new[] { Keys.TurnCrankObserve, Keys.TurnCrankLocate, Keys.TurnCrankAct } },
+            { CaseObjective.ReturnToPorch, new[] { Keys.ReturnObserve, Keys.ReturnLocate, Keys.ReturnAct } },
+            { CaseObjective.FreeRoam, new[] { Keys.FreeRoamObserve, Keys.FreeRoamLocate, Keys.FreeRoamAct } },
         };
 
         /// <summary>
@@ -83,8 +83,11 @@ namespace SpookyStreet.Core.Case
             return state.Has(CaseFact.TestedOwl) ? CaseObjective.ReturnToPorch : CaseObjective.TurnCrank;
         }
 
-        /// <summary>Short goal name (e.g. the Continue button's detail line).</summary>
-        public static string TitleKey(CaseObjective objective) => Table[objective][0];
+        /// <summary>
+        /// What the Continue detail and Kit ask about: the first open question the world has raised (D26: titles that
+        /// narrated the route, "Find June's way in", "Fix what's loose", were retired). Null when nothing is open.
+        /// </summary>
+        public static string OpenQuestionKey(CaseState state) => CaseNotebook.FirstOpen(state)?.QuestionKey;
 
         public static string HintFor(CaseObjective objective, HintTier tier, CaseState state = null)
         {
@@ -99,7 +102,7 @@ namespace SpookyStreet.Core.Case
                 throw new ArgumentOutOfRangeException(nameof(tier), tier, "unknown hint tier");
             }
 
-            return Table[objective][index + 1];
+            return Table[objective][index];
         }
 
         public static IEnumerable<string> AllKeys()
