@@ -1,4 +1,4 @@
-"""Pip, game-ready: low-poly meshes, one baked atlas (+ a face map), a rig, twelve clips, one FBX.
+"""Pip, game-ready: low-poly meshes, one baked atlas (+ a face map), a rig, fifteen clips, one FBX.
 
     blender -b -t 2 --python tools/blender/export/pip_export.py -- [--out DIR] [--cache FILE.blend]
                                                                [--tex 2048] [--face-tex 1024] [--report FILE.json]
@@ -394,6 +394,7 @@ def main():
             bpy.ops.wm.save_as_mainfile(filepath=args["cache"], compress=True)
     table = [(n, p, Vector(h), Vector(t), d) for n, p, h, t, d in json.loads(rig["pip_table"])]
     srig = solver_rig(table)
+    anims.RIG = srig  # the wall and ledge clips place their hands by measuring the pose
 
     def pose_at(p):
         D, offset = anims.solve(p, srig)

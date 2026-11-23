@@ -40,6 +40,12 @@ namespace SpookyStreet.Tests.PlayMode
         private int _climbs;
         private int _drops;
 
+        /// <summary>The one-shot clip the animator was playing right after the kick, the catch and the climb began.</summary>
+        private string _kickClip;
+        private string _grabClip;
+        private string _climbClip;
+        private PipAnimator _animator;
+
         public override void Setup()
         {
             base.Setup();
@@ -47,6 +53,8 @@ namespace SpookyStreet.Tests.PlayMode
             Localizer.ResetForTests();
             CaseDirector.UseTemporarySaveDirectory(); // no save leaks between tests (S002)
             _slides = _kicks = _grabs = _climbs = _drops = 0;
+            _kickClip = _grabClip = _climbClip = null;
+            _animator = null;
         }
 
         public override void TearDown()
@@ -68,6 +76,8 @@ namespace SpookyStreet.Tests.PlayMode
             }
 
             game.Ui.Tips.UseStore(new MemoryTipStore());
+            // The animator subscribed when the avatar was built, so it has already answered each step counted here.
+            _animator = game.Pip.GetComponent<PipAvatar>().Animator;
             game.Pip.Stepped += Count;
         }
 
@@ -78,6 +88,12 @@ namespace SpookyStreet.Tests.PlayMode
             _grabs += step.LedgeGrabbed ? 1 : 0;
             _climbs += step.ClimbStarted ? 1 : 0;
             _drops += step.LedgeDropped ? 1 : 0;
+            if (_animator != null)
+            {
+                _kickClip = step.WallJumped ? _animator.OneShot : _kickClip;
+                _grabClip = step.LedgeGrabbed ? _animator.OneShot : _grabClip;
+                _climbClip = step.ClimbStarted ? _animator.OneShot : _climbClip;
+            }
         }
 
         private static IEnumerator Wait(float seconds)
@@ -196,6 +212,13 @@ namespace SpookyStreet.Tests.PlayMode
             float x = pip.transform.position.x;
             yield return TapJump();
             Assert.AreEqual(1, _kicks, "Jump kicks off the wall");
+            Assert.Greater(Vector3.Dot(pip.transform.forward, Vector3.left), 0.7f,
+                "the kick turns her away from the shed at once: the wall is behind her");
+            if (animator != null && animator.HasClip(PipClips.WallKick))
+            {
+                Assert.AreEqual(PipClips.WallKick, _kickClip, "the kick plays its own clip");
+            }
+
             yield return Wait(0.3f);
             Assert.Less(pip.transform.position.x, x - 0.8f, "away from the shed, to the west");
             Assert.IsFalse(pip.WallSliding);
@@ -480,10 +503,17 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(pip.TuningData.LedgeHangWallOffset, out_, 0.06f, "hanging 0.34 m out from the face");
             Assert.Greater(Vector3.Dot(pip.transform.forward, -n), 0.9f, "facing the lamp arm");
             var avatar = pip.GetComponent<PipAvatar>();
-            Assert.Greater(avatar.HangLean, 0.9f, "the body leans in so the hand meets the edge");
+            Assert.AreEqual(Vector3.zero, avatar.Body.localPosition, "the hang clip meets the edge with no body offset");
+            Assert.AreEqual(Quaternion.identity, avatar.Body.localRotation);
             if (avatar.Animator != null)
             {
                 Assert.AreEqual(PipPose.LedgeHang, avatar.Animator.Pose);
+                if (avatar.Animator.HasClip(PipClips.LedgeGrab))
+                {
+                    Assert.AreEqual(PipClips.LedgeGrab, _grabClip, "the catch plays its own clip");
+                    Assert.IsNull(avatar.Animator.OneShot, "and has given way to the hang");
+                    Assert.Greater(avatar.Animator.WeightOf(PipClips.LedgeHang), 0.9f);
+                }
             }
 
             var feedback = Object.FindAnyObjectByType<MoveFeedback>();
@@ -506,6 +536,12 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(head.bounds.Contains(new Vector3(pip.transform.position.x, top - 0.01f, pip.transform.position.z)),
                 "on top of the arm, not beside it");
             Assert.AreNotEqual(MoveTip.LedgeClimb, game.Ui.Tips.Scheduler.Current, "climbing ends the tip");
+            if (avatar.Animator != null && avatar.Animator.HasClip(PipClips.LedgeClimb))
+            {
+                Assert.AreEqual(PipClips.LedgeClimb, _climbClip, "the climb plays its own clip");
+                Assert.IsNull(avatar.Animator.OneShot, "the climb clip is over");
+                Assert.AreEqual(PipPose.Locomotion, avatar.Animator.Pose, "she ends on her feet, with no landing squat");
+            }
         }
 
         [UnityTest]
