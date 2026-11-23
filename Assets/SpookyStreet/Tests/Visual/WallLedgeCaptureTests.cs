@@ -124,7 +124,7 @@ namespace SpookyStreet.Tests.Visual
             }
 
             Assert.IsTrue(pip.WallSliding, "45_wall_slide: Pip should slide down the shed wall");
-            yield return Wait(0.3f);
+            yield return Wait(0.6f);
             Assert.IsTrue(pip.WallSliding, "45_wall_slide: still sliding");
             Vector3 at = pip.transform.position;
             yield return Capture("45_wall_slide", at + new Vector3(-2.0f, 0.45f, -1.1f), at + new Vector3(0.15f, 0.65f, 0f));
