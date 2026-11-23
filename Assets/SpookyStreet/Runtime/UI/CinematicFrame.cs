@@ -18,7 +18,7 @@ namespace SpookyStreet.UI
         private readonly Image _vignette;
         private readonly RectTransform _topBar;
         private readonly RectTransform _bottomBar;
-        private readonly Image _ring;
+        private Image _ring;
         private readonly Color _tintColor;
         private readonly float _tintAlpha;
         private readonly float _vignetteAlpha;
