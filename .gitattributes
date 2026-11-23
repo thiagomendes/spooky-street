@@ -30,3 +30,9 @@ docs/evidence/** -filter -diff -merge binary
 # Original game models and their baked textures stay in plain git (LFS is unreachable from cloud sessions).
 Assets/SpookyStreet/Content/Resources/Models/** -filter -diff -merge binary
 Assets/SpookyStreet/Content/Resources/UI/** -filter -diff -merge binary
+
+# Generated audio sources (Gemini TTS FLAC, Lyria MP3) kept for reproducibility in plain git (D20.1).
+tools/audio/generated/** -filter -diff -merge binary
+tools/audio/generated/*.json text eol=lf -binary diff
+tools/audio/generated/*.jsonl text eol=lf -binary diff
+tools/audio/generated/review/*.json text eol=lf -binary diff
