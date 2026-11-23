@@ -1,4 +1,5 @@
 using SpookyStreet.Core.Art;
+using SpookyStreet.Core.Nonverbal;
 using UnityEditor;
 using UnityEngine;
 
@@ -9,7 +10,8 @@ namespace SpookyStreet.EditorTools
     /// <c>tools/ui_mock/ui_mock.py --export</c>). Kept in code because tools/unity_meta.py writes bare importer metas,
     /// and a bare texture meta once imported as a cube map: the shape and type are forced here. Sprite, single, 2D,
     /// 9-slice borders from <see cref="UiSpriteCatalog"/>, 200 pixels per unit, full-rect mesh (needed for sliced and
-    /// tiled drawing), no mipmaps, clamp, sRGB with alpha, ASTC 4×4 on iOS.
+    /// tiled drawing), no mipmaps, clamp, sRGB with alpha, ASTC 4×4 on iOS. The portrait atlas in the
+    /// <c>Portraits</c> subfolder gets the same settings at its full size.
     /// </summary>
     public sealed class UiSpriteImportRules : AssetPostprocessor
     {
@@ -20,13 +22,20 @@ namespace SpookyStreet.EditorTools
         public const string PuppetAtlasName = "puppet_atlas";
         public const int PuppetAtlasMaxSize = 2048;
 
-        public override uint GetVersion() => 2;
+        /// <summary>The dialogue portrait atlas (tools/blender/export/portraits.py), cut into badges at runtime.</summary>
+        public const int PortraitAtlasMaxSize = PortraitAtlasLayout.AtlasSize;
+
+        public override uint GetVersion() => 3;
+
+        public static bool IsPortraitAtlasPath(string path) =>
+            string.Equals(path, PortraitAtlasLayout.AssetPath, System.StringComparison.Ordinal);
 
         public static bool IsPuppetAtlasPath(string path) =>
             string.Equals(UiSpriteCatalog.NameFromAssetPath(path), PuppetAtlasName, System.StringComparison.Ordinal);
 
         /// <summary>Largest import size for a texture in the UI folder.</summary>
-        public static int MaxSizeFor(string path) => IsPuppetAtlasPath(path) ? PuppetAtlasMaxSize : MaxTextureSize;
+        public static int MaxSizeFor(string path) =>
+            IsPortraitAtlasPath(path) ? PortraitAtlasMaxSize : IsPuppetAtlasPath(path) ? PuppetAtlasMaxSize : MaxTextureSize;
 
         public static bool IsUiSpritePath(string path) => UiSpriteCatalog.NameFromAssetPath(path) != null;
 
@@ -45,12 +54,13 @@ namespace SpookyStreet.EditorTools
         private void OnPreprocessTexture()
         {
             string name = UiSpriteCatalog.NameFromAssetPath(assetPath);
-            if (name == null)
+            bool portraits = IsPortraitAtlasPath(assetPath);
+            if (name == null && !portraits)
             {
                 return;
             }
 
-            bool atlas = name == PuppetAtlasName;
+            bool atlas = portraits || name == PuppetAtlasName;
             if (!atlas && !UiSpriteCatalog.TryFind(name, out _))
             {
                 Debug.LogWarning($"[UiSpriteImportRules] {assetPath} is not in UiSpriteCatalog; importing without borders.");
@@ -79,7 +89,7 @@ namespace SpookyStreet.EditorTools
             settings.aniso = 1;
             importer.SetTextureSettings(settings);
 
-            int maxSize = atlas ? PuppetAtlasMaxSize : MaxTextureSize;
+            int maxSize = MaxSizeFor(assetPath);
             importer.maxTextureSize = maxSize;
             importer.textureCompression = TextureImporterCompression.CompressedHQ;
             importer.SetPlatformTextureSettings(new TextureImporterPlatformSettings
