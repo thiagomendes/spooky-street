@@ -4,6 +4,7 @@ using SpookyStreet.App;
 using SpookyStreet.Core.Audio;
 using SpookyStreet.Core.Keepsakes;
 using SpookyStreet.Core.World;
+using SpookyStreet.Player;
 using SpookyStreet.Save;
 using UnityEngine;
 
