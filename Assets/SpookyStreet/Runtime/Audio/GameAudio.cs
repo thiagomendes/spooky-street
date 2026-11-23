@@ -258,7 +258,15 @@ namespace SpookyStreet.Audio
                 _cadence.Reset();
             }
 
-            if (step.Landed)
+            // The wall moves reuse the jump and land sounds: the kick and the pull-up push like a jump, the hands
+            // catching a ledge and the feet reaching the top land like a landing.
+            if (step.WallJumped || step.ClimbStarted)
+            {
+                Rig.Play(AudioEvents.MoveJump);
+                _cadence.Reset();
+            }
+
+            if (step.Landed || step.LedgeGrabbed || step.ClimbEnded)
             {
                 Rig.Play(AudioEvents.MoveLand);
                 _cadence.Reset();

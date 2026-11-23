@@ -144,6 +144,9 @@ namespace SpookyStreet.Tests.PlayMode
         /// <summary>On the lawn in the yard pocket west of the tall shed, north of the treehouse deck.</summary>
         private static readonly Vector3 ShedPocket = new Vector3(CaseRouteLayout.RoofMinX - 0.85f, 0.05f, 14.1f);
 
+        /// <summary>Plays of an audio event in the game's rig log (S003).</summary>
+        private static int Plays(string eventId) => GameBootstrap.Instance.Audio.Rig.CountPlays(eventId);
+
         [UnityTest]
         [Timeout(120000)]
         public IEnumerator SlidesDownAndKicksOffTheShedWall()
@@ -194,8 +197,10 @@ namespace SpookyStreet.Tests.PlayMode
 
             // Kick.
             float x = pip.transform.position.x;
+            int jumpSounds = Plays(SpookyStreet.Core.Audio.AudioEvents.MoveJump);
             yield return TapJump();
             Assert.AreEqual(1, _kicks, "Jump kicks off the wall");
+            Assert.AreEqual(jumpSounds + 1, Plays(SpookyStreet.Core.Audio.AudioEvents.MoveJump), "the kick plays the jump (S003)");
             yield return Wait(0.3f);
             Assert.Less(pip.transform.position.x, x - 0.8f, "away from the shed, to the west");
             Assert.IsFalse(pip.WallSliding);
@@ -461,6 +466,7 @@ namespace SpookyStreet.Tests.PlayMode
             yield return StandBesideLamp(head, v => n = v);
 
             // A held high jump, the stick at the arm: catch and hang.
+            int landSounds = Plays(SpookyStreet.Core.Audio.AudioEvents.MoveLand);
             JumpDown();
             float deadline = Time.time + 1.6f;
             while (!pip.Hanging && Time.time < deadline)
@@ -473,6 +479,7 @@ namespace SpookyStreet.Tests.PlayMode
             JumpUp();
             StopSteering();
             Assert.IsTrue(pip.Hanging, "the high jump catches the lamp arm");
+            Assert.AreEqual(landSounds + 1, Plays(SpookyStreet.Core.Audio.AudioEvents.MoveLand), "the catch plays the land (S003)");
             yield return Wait(0.5f);
             Vector3 feet = pip.transform.position;
             Assert.AreEqual(top - pip.TuningData.LedgeHangHandHeight, feet.y, 0.06f, "hands on the top");
@@ -492,8 +499,11 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(MoveTip.LedgeClimb, game.Ui.Tips.Shown, "the first hang teaches the climb");
 
             // Jump climbs onto the arm.
+            int climbJumps = Plays(SpookyStreet.Core.Audio.AudioEvents.MoveJump);
+            landSounds = Plays(SpookyStreet.Core.Audio.AudioEvents.MoveLand);
             yield return TapJump();
             Assert.AreEqual(1, _climbs);
+            Assert.AreEqual(climbJumps + 1, Plays(SpookyStreet.Core.Audio.AudioEvents.MoveJump), "the pull-up plays the jump");
             deadline = Time.time + 1.5f;
             while (!pip.Grounded && Time.time < deadline)
             {
@@ -502,6 +512,7 @@ namespace SpookyStreet.Tests.PlayMode
 
             yield return Wait(0.2f);
             Assert.IsTrue(pip.Grounded, "standing on the lamp arm");
+            Assert.GreaterOrEqual(Plays(SpookyStreet.Core.Audio.AudioEvents.MoveLand), landSounds + 1, "the feet land on top");
             Assert.AreEqual(top, pip.transform.position.y, 0.08f);
             Assert.IsTrue(head.bounds.Contains(new Vector3(pip.transform.position.x, top - 0.01f, pip.transform.position.z)),
                 "on top of the arm, not beside it");
