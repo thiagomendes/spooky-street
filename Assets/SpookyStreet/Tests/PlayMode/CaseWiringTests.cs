@@ -143,7 +143,7 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(director.Captions.Raised, "captions lift above the speech card");
             Assert.AreEqual(Speaker.Bea, director.Dialogue.CurrentLine.Speaker);
             Assert.AreEqual(Lines.BeaSawCape, director.Dialogue.CurrentLine.Key);
-            Assert.AreEqual("I saw June's silver cape go in. Right there!", director.Dialogue.CurrentText);
+            Assert.AreEqual("Something silver flashed up high, by the side of the house!", director.Dialogue.CurrentText);
             yield return null;
             AssertEveryLabelDraws(director.Dialogue.gameObject);
             Assert.IsFalse(game.Controls.GameplayEnabled, "the conversation holds gameplay input");
@@ -239,13 +239,13 @@ namespace SpookyStreet.Tests.PlayMode
             var before = director.State;
             yield return Tap(_keyboard.eKey);
             Assert.AreEqual(CaseOutcome.DoorStuck, director.LastStep.Outcome);
-            Assert.AreEqual(0, director.LastStep.Gained.Count, "no fact from the stuck door");
-            Assert.AreSame(before, director.State);
+            CollectionAssert.AreEqual(new[] { CaseFact.TriedDoor }, director.LastStep.Gained, "only the stuck-door sticker");
+            Assert.AreEqual(before.Count + 1, director.State.Count);
             Assert.IsFalse(director.State.Has(CaseFact.FrontOpen));
             Assert.IsTrue(director.Dialogue.IsOpen);
             Assert.AreEqual(Speaker.Pip, director.Dialogue.CurrentLine.Speaker);
             Assert.AreEqual(Lines.ExamineDoorStuck, director.Dialogue.CurrentLine.Key);
-            Assert.AreEqual("It's stuck on the inside.", director.Dialogue.CurrentText);
+            Assert.AreEqual("It won't budge.", director.Dialogue.CurrentText);
         }
 
         [UnityTest]
@@ -297,47 +297,51 @@ namespace SpookyStreet.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator NotebookOpensWithTheThreeQuestionsAndTheHintRadio()
+        public IEnumerator NotebookShowsOnlyRaisedQuestionsAndTheRadioMuses()
         {
             yield return StartGame();
             var game = GameBootstrap.Instance;
             var director = game.Director;
             Assert.IsTrue(director.NotebookButton.gameObject.activeInHierarchy, "notebook disc in the HUD");
+            director.Perform(CaseAction.Of(CaseActionKind.HearKnocks));
             director.NotebookButton.onClick.Invoke();
             yield return Frames(2);
 
             var notebook = director.Notebook;
             Assert.IsTrue(notebook.IsOpen);
             Assert.IsFalse(game.Controls.GameplayEnabled, "the notebook holds gameplay input");
-            Assert.AreEqual(3, notebook.QuestionLabels.Count);
-            Assert.AreEqual(Localizer.Get(NoteKeys.QuestionEntry), notebook.QuestionLabels[0].text);
-            Assert.AreEqual(Localizer.Get(NoteKeys.QuestionSource), notebook.QuestionLabels[1].text);
-            Assert.AreEqual(Localizer.Get(NoteKeys.QuestionMoved), notebook.QuestionLabels[2].text);
-            foreach (var answer in notebook.AnswerLabels)
-            {
-                Assert.IsNull(answer, "nothing proven yet: every answer is a question mark");
-            }
-
+            Assert.AreEqual(1, notebook.QuestionLabels.Count, "only the knocks have asked anything (D26)");
+            Assert.AreEqual(Localizer.Get(NoteKeys.QuestionSource), notebook.QuestionLabels[0].text);
+            Assert.IsNull(notebook.AnswerLabels[0], "nothing answered before the child solves it");
             Assert.IsNull(notebook.FinalCard);
-            string expected = CaseHints.HintFor(CaseHints.ObjectiveFor(director.State), HintTier.Observation, director.State);
+            Assert.AreEqual(2, notebook.Slots.Count, "two empty slots");
+            Assert.AreEqual(12, notebook.OutlineCount, "one ? per clue still out there");
+
+            // The radio on an open question: Pip muses and the missing clue's place lights, never a pairing.
             notebook.HintButton.onClick.Invoke();
             yield return null;
-            Assert.AreEqual(expected, director.Captions.CurrentKey, "the radio's hint shows in the caption strip");
+            Assert.IsNotNull(notebook.Thought, "Pip's musing");
+            Assert.IsNotNull(notebook.PlaceBadge, "the missing clue shows its place");
 
             notebook.CloseButton.onClick.Invoke();
             yield return Frames(3);
             Assert.IsFalse(notebook.IsOpen);
             Assert.IsTrue(game.Controls.GameplayEnabled);
 
-            // A found note appears as a slip whose tap shows its caption.
+            // Witnesses raise the entry question; a found sticker sits in the tray and its tap reads its note.
+            director.Perform(CaseAction.Talk(Speaker.Vale));
+            director.Dialogue.Skip();
             director.Perform(CaseAction.Of(CaseActionKind.SitOnBench));
             yield return Frames(2);
             director.OpenNotebook();
             yield return Frames(2);
-            Assert.AreEqual(1, notebook.FoundSlips.Count);
+            Assert.AreEqual(2, notebook.QuestionLabels.Count);
+            Assert.AreEqual(Localizer.Get(NoteKeys.QuestionEntry), notebook.QuestionLabels[1].text);
+            Assert.AreEqual(2, notebook.TrayStickers.Count);
             AssertEveryLabelDraws(notebook.gameObject);
-            notebook.FoundSlips[0].onClick.Invoke();
+            notebook.TapSticker(CaseNotebook.BenchView);
             Assert.AreEqual(NoteKeys.NoteBench, director.Captions.CurrentKey);
+            Assert.AreEqual(CaseNotebook.BenchView, notebook.HeldSticker, "tap-tap: the sticker is picked up");
             notebook.Close();
         }
 
@@ -396,25 +400,42 @@ namespace SpookyStreet.Tests.PlayMode
             // The interior is not staged yet: drive the reducer through the route directly.
             foreach (var action in new[]
                      {
-                         CaseAction.Of(CaseActionKind.HearKnocks),
-                         CaseAction.Of(CaseActionKind.EnterAttic), CaseAction.Talk(Speaker.June),
+                         CaseAction.Of(CaseActionKind.HearKnocks), CaseAction.Talk(Speaker.Vale),
+                         CaseAction.Of(CaseActionKind.ExamineCloth),
+                         CaseAction.Of(CaseActionKind.EnterAttic), CaseAction.Of(CaseActionKind.ExamineSill),
+                         CaseAction.Talk(Speaker.June), CaseAction.Of(CaseActionKind.EnterFoyer),
                          CaseAction.Of(CaseActionKind.LiftLatch), CaseAction.Of(CaseActionKind.ExamineGrille),
                          CaseAction.Of(CaseActionKind.LinkArm), CaseAction.Of(CaseActionKind.TurnCrank),
                          CaseAction.Of(CaseActionKind.ArriveAtPorch),
                      })
             {
                 director.Perform(action);
+                director.Dialogue.Skip();
             }
 
-            Assert.IsTrue(director.State.Has(CaseFact.CaseClosed));
+            Assert.IsTrue(director.State.Has(CaseFact.CaseClosed), "the show is tied to world actions");
+            Assert.IsFalse(director.State.Has(CaseFact.CaseStamped), "the stamp waits for the deductions");
             yield return Wait(FinaleView.IntroSeconds + 0.3f); // the reopening plays before its lines
             director.Dialogue.Skip();
+            yield return Wait(FinaleView.HoldAfterLines + 0.4f);
+            var notebook = director.Notebook;
+            Assert.IsTrue(notebook.IsOpen, "Kit asks; the notebook opens on an open question");
+            Assert.IsNull(notebook.FinalCard, "no Case closed card before the child explains the case");
+            Assert.IsNotNull(notebook.CurrentQuestion);
+            Assert.IsFalse(notebook.CurrentQuestion.IsSolved(director.State));
+            notebook.Close();
             yield return Frames(2);
 
+            Assert.IsNotNull(director.SolveQuestion(CaseNotebook.QuestionSource, new[] { CaseNotebook.FloorHum, CaseNotebook.WoodenPiece }));
+            Assert.IsNotNull(director.SolveQuestion(CaseNotebook.QuestionEntry,
+                new[] { CaseNotebook.ValeDoor, CaseNotebook.Cloth, CaseNotebook.SillSnag }));
+            Assert.IsNull(director.SolveQuestion(CaseNotebook.QuestionMoved, new[] { CaseNotebook.LooseArm, CaseNotebook.Streamer }),
+                "a wrong set records nothing");
+            Assert.IsNotNull(director.SolveQuestion(CaseNotebook.QuestionMoved, new[] { CaseNotebook.LooseArm, CaseNotebook.OwlBooth }));
+            Assert.IsTrue(director.State.Has(CaseFact.CaseStamped));
             director.OpenNotebook();
             yield return Frames(2);
-            var notebook = director.Notebook;
-            Assert.IsNotNull(notebook.FinalCard, "the final card appears once the case is closed");
+            Assert.IsNotNull(notebook.FinalCard, "the final card appears once the case is stamped");
             Assert.IsNotNull(notebook.AnswerLabels[0]);
             Assert.IsNotNull(notebook.AnswerLabels[2]);
             notebook.ReplayButton.onClick.Invoke();

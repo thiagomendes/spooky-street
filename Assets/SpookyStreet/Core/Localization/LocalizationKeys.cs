@@ -70,6 +70,7 @@ namespace SpookyStreet.Core.Localization
             public const string ExamineStreamer = "c01.examine.streamer";
             public const string ExamineCloth = "c01.examine.cloth";
             public const string ExamineSill = "c01.examine.sill";
+            public const string ExamineOwlPanel = "c01.examine.owl_panel";
             public const string ExamineDoorStuck = "c01.examine.door_stuck";
             public const string ExamineBowl = "c01.examine.bowl";
             public const string ExamineBowlSweet = "c01.examine.bowl_sweet";
@@ -96,6 +97,7 @@ namespace SpookyStreet.Core.Localization
             public const string JuneClosed = "c01.line.june.closed";
             public const string KitFirstShow = "c01.line.kit.first_show";
             public const string KitThanks = "c01.line.kit.thanks";
+            public const string KitAsk = "c01.line.kit.ask";
 
             public static readonly string[] All =
             {
@@ -108,6 +110,7 @@ namespace SpookyStreet.Core.Localization
                 ExamineStreamer,
                 ExamineCloth,
                 ExamineSill,
+                ExamineOwlPanel,
                 ExamineDoorStuck,
                 ExamineBowl,
                 ExamineBowlSweet,
@@ -134,6 +137,7 @@ namespace SpookyStreet.Core.Localization
                 JuneClosed,
                 KitFirstShow,
                 KitThanks,
+                KitAsk,
             };
         }
 
@@ -156,14 +160,18 @@ namespace SpookyStreet.Core.Localization
             public const string AnswerEntry = "c01.notebook.a_entry";
             public const string AnswerSource = "c01.notebook.a_source";
             public const string AnswerMoved = "c01.notebook.a_moved";
-            public const string NoteKnocks = "c01.notebook.note_knocks";
             public const string NoteBea = "c01.notebook.note_bea";
             public const string NoteVale = "c01.notebook.note_vale";
             public const string NoteBench = "c01.notebook.note_bench";
             public const string NoteStreamer = "c01.notebook.note_streamer";
             public const string NoteCloth = "c01.notebook.note_cloth";
             public const string NoteSill = "c01.notebook.note_sill";
-            public const string NoteJune = "c01.notebook.note_june";
+            public const string NoteDoor = "c01.notebook.note_door";
+            public const string NoteHum = "c01.notebook.note_hum";
+            public const string NotePiece = "c01.notebook.note_piece";
+            public const string NoteOwlPanel = "c01.notebook.note_owl_panel";
+            public const string NoteOwlBooth = "c01.notebook.note_owl_booth";
+            public const string NoteArm = "c01.notebook.note_arm";
             public const string NoteSweet = "c01.notebook.note_sweet";
 
             public static readonly string[] All =
@@ -184,14 +192,18 @@ namespace SpookyStreet.Core.Localization
                 AnswerEntry,
                 AnswerSource,
                 AnswerMoved,
-                NoteKnocks,
                 NoteBea,
                 NoteVale,
                 NoteBench,
                 NoteStreamer,
                 NoteCloth,
                 NoteSill,
-                NoteJune,
+                NoteDoor,
+                NoteHum,
+                NotePiece,
+                NoteOwlPanel,
+                NoteOwlBooth,
+                NoteArm,
                 NoteSweet,
             };
         }
@@ -200,43 +212,33 @@ namespace SpookyStreet.Core.Localization
         public static class Hints
         {
             public const string HudHint = "ui.hud.hint";
-            public const string ArrivalTitle = "c01.objective.arrival";
             public const string ArrivalObserve = "c01.hint.arrival.observe";
             public const string ArrivalLocate = "c01.hint.arrival.locate";
             public const string ArrivalAct = "c01.hint.arrival.act";
-            public const string CheckViewTitle = "c01.objective.check_view";
             public const string CheckViewObserve = "c01.hint.check_view.observe";
             public const string CheckViewLocate = "c01.hint.check_view.locate";
             public const string CheckViewAct = "c01.hint.check_view.act";
-            public const string FindWayInTitle = "c01.objective.find_way_in";
             public const string FindWayInObserve = "c01.hint.find_way_in.observe";
             public const string FindWayInLocate = "c01.hint.find_way_in.locate";
             public const string FindWayInAct = "c01.hint.find_way_in.act";
-            public const string MeetJuneTitle = "c01.objective.meet_june";
             public const string MeetJuneObserve = "c01.hint.meet_june.observe";
             public const string MeetJuneLocate = "c01.hint.meet_june.locate";
             public const string MeetJuneAct = "c01.hint.meet_june.act";
-            public const string OpenDoorTitle = "c01.objective.open_door";
             public const string OpenDoorObserve = "c01.hint.open_door.observe";
             public const string OpenDoorLocate = "c01.hint.open_door.locate";
             public const string OpenDoorAct = "c01.hint.open_door.act";
-            public const string FindSourceTitle = "c01.objective.find_source";
             public const string FindSourceObserve = "c01.hint.find_source.observe";
             public const string FindSourceLocate = "c01.hint.find_source.locate";
             public const string FindSourceAct = "c01.hint.find_source.act";
-            public const string LinkArmTitle = "c01.objective.link_arm";
             public const string LinkArmObserve = "c01.hint.link_arm.observe";
             public const string LinkArmLocate = "c01.hint.link_arm.locate";
             public const string LinkArmAct = "c01.hint.link_arm.act";
-            public const string TurnCrankTitle = "c01.objective.turn_crank";
             public const string TurnCrankObserve = "c01.hint.turn_crank.observe";
             public const string TurnCrankLocate = "c01.hint.turn_crank.locate";
             public const string TurnCrankAct = "c01.hint.turn_crank.act";
-            public const string ReturnTitle = "c01.objective.return_to_porch";
             public const string ReturnObserve = "c01.hint.return_to_porch.observe";
             public const string ReturnLocate = "c01.hint.return_to_porch.locate";
             public const string ReturnAct = "c01.hint.return_to_porch.act";
-            public const string FreeRoamTitle = "c01.objective.free_roam";
             public const string FreeRoamObserve = "c01.hint.free_roam.observe";
             public const string FreeRoamAllFound = "c01.hint.free_roam.all_found";
             public const string FreeRoamLocate = "c01.hint.free_roam.locate";
@@ -245,43 +247,33 @@ namespace SpookyStreet.Core.Localization
             public static readonly string[] All =
             {
                 HudHint,
-                ArrivalTitle,
                 ArrivalObserve,
                 ArrivalLocate,
                 ArrivalAct,
-                CheckViewTitle,
                 CheckViewObserve,
                 CheckViewLocate,
                 CheckViewAct,
-                FindWayInTitle,
                 FindWayInObserve,
                 FindWayInLocate,
                 FindWayInAct,
-                MeetJuneTitle,
                 MeetJuneObserve,
                 MeetJuneLocate,
                 MeetJuneAct,
-                OpenDoorTitle,
                 OpenDoorObserve,
                 OpenDoorLocate,
                 OpenDoorAct,
-                FindSourceTitle,
                 FindSourceObserve,
                 FindSourceLocate,
                 FindSourceAct,
-                LinkArmTitle,
                 LinkArmObserve,
                 LinkArmLocate,
                 LinkArmAct,
-                TurnCrankTitle,
                 TurnCrankObserve,
                 TurnCrankLocate,
                 TurnCrankAct,
-                ReturnTitle,
                 ReturnObserve,
                 ReturnLocate,
                 ReturnAct,
-                FreeRoamTitle,
                 FreeRoamObserve,
                 FreeRoamAllFound,
                 FreeRoamLocate,

@@ -35,14 +35,17 @@ namespace SpookyStreet.Tests.Core
                 }
             }
 
-            foreach (var entry in CaseNotebook.Entries)
+            foreach (var sticker in CaseNotebook.Stickers)
             {
-                string tag = CaseNotebookTags.TagKey(entry.Id);
-                Assert.AreEqual(CaseNotebook.IsQuestion(entry.Id), tag == null, entry.Id);
-                if (tag != null)
-                {
-                    Assert.IsTrue(table.Contains(tag), tag);
-                }
+                string tag = CaseNotebookTags.TagKey(sticker.Id);
+                Assert.IsNotNull(tag, sticker.Id);
+                Assert.IsTrue(table.Contains(tag), tag);
+                Assert.IsTrue(table.Contains(sticker.NoteKey), sticker.NoteKey);
+            }
+
+            foreach (var question in CaseNotebook.Questions)
+            {
+                Assert.IsNull(CaseNotebookTags.TagKey(question.Id), "questions are not stickers");
             }
         }
 

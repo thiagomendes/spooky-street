@@ -18,13 +18,15 @@ namespace SpookyStreet.Core.Nonverbal
     /// <summary>One in-world memory replay (docs/nonverbal-ux.md §4).</summary>
     public sealed class MemoryReplayDefinition
     {
-        internal MemoryReplayDefinition(string id, string lineKey, ReplayPlace place, string stickerEntryId, CaseFact? heardFact)
+        internal MemoryReplayDefinition(string id, string lineKey, ReplayPlace place, string stickerEntryId, CaseFact? heardFact,
+            bool offered)
         {
             Id = id;
             LineKey = lineKey;
             Place = place;
             StickerEntryId = stickerEntryId;
             HeardFact = heardFact;
+            Offered = offered;
         }
 
         /// <summary>Stable saved ID, e.g. "mr.bea.saw_cape". Never display text.</summary>
@@ -37,6 +39,13 @@ namespace SpookyStreet.Core.Nonverbal
 
         /// <summary>The notebook clue sticker that offers it on demand (the eye icon).</summary>
         public string StickerEntryId { get; }
+
+        /// <summary>
+        /// D26 §7: a replay is offered only once it is a hazy, partial memory of what the witness perceived. Bea's two
+        /// still re-enact June's route into the window, so they stay withheld until S002.5b restages them as a silver
+        /// blur over the hedge; Vale's (the shut door from his bench) are already perceptions.
+        /// </summary>
+        public bool Offered { get; }
 
         /// <summary>
         /// A case fact that proves the line was heard, when one exists (the first-hearing lines gain one). Lets saves
@@ -55,10 +64,10 @@ namespace SpookyStreet.Core.Nonverbal
 
         public static readonly IReadOnlyList<MemoryReplayDefinition> All = new[]
         {
-            new MemoryReplayDefinition(BeaSawCape, Lines.BeaSawCape, ReplayPlace.TreehouseWindow, "c01.note.bea", CaseFact.BeaSpoke),
-            new MemoryReplayDefinition(BeaDoorOpen, Lines.BeaDoorOpen, ReplayPlace.TreehouseWindow, "c01.note.bea", null),
-            new MemoryReplayDefinition(ValeDoorShut, Lines.ValeDoorShut, ReplayPlace.FrontDoor, "c01.note.vale", CaseFact.ValeSpoke),
-            new MemoryReplayDefinition(ValeWasShut, Lines.ValeWasShut, ReplayPlace.FrontDoor, "c01.note.vale", null),
+            new MemoryReplayDefinition(BeaSawCape, Lines.BeaSawCape, ReplayPlace.TreehouseWindow, CaseNotebook.BeaFlash, CaseFact.BeaSpoke, false),
+            new MemoryReplayDefinition(BeaDoorOpen, Lines.BeaDoorOpen, ReplayPlace.TreehouseWindow, CaseNotebook.BeaFlash, null, false),
+            new MemoryReplayDefinition(ValeDoorShut, Lines.ValeDoorShut, ReplayPlace.FrontDoor, CaseNotebook.ValeDoor, CaseFact.ValeSpoke, true),
+            new MemoryReplayDefinition(ValeWasShut, Lines.ValeWasShut, ReplayPlace.FrontDoor, CaseNotebook.ValeDoor, null, true),
         };
 
         public static MemoryReplayDefinition ForLine(string lineKey)
@@ -92,8 +101,11 @@ namespace SpookyStreet.Core.Nonverbal
 
     public enum ReplayDecisionKind
     {
-        /// <summary>Play it now (first hearing in this save).</summary>
+        /// <summary>Play it now (first hearing in this save). Not produced since D26: replays are on demand only.</summary>
         Play,
+
+        /// <summary>D26 §7: the first hearing offers it in the notebook (the eye on the sticker); nothing auto-plays.</summary>
+        OnDemandOnly,
 
         /// <summary>The line has no memory replay.</summary>
         NotKeyLine,
@@ -120,13 +132,14 @@ namespace SpookyStreet.Core.Nonverbal
 
         public bool Play => Kind == ReplayDecisionKind.Play;
 
-        /// <summary>Record the replay ID as seen now (before playing: a skip, crash or quit must not replay it).</summary>
-        public bool MarkSeen => Kind == ReplayDecisionKind.Play || Kind == ReplayDecisionKind.DroppedUnsafe;
+        /// <summary>Record the replay ID as offered now (the notebook's eye can play it from then on).</summary>
+        public bool MarkSeen => Kind == ReplayDecisionKind.Play || Kind == ReplayDecisionKind.DroppedUnsafe ||
+                                Kind == ReplayDecisionKind.OnDemandOnly;
     }
 
     /// <summary>
-    /// When memory replays play (owner decision D23.2): automatically the first time each key line is heard in a
-    /// save, never again after that except on demand from the notebook. Pure over a set of seen replay IDs. The
+    /// When memory replays play: D23.2 played them automatically on first hearing; D26 §7 makes them on demand only,
+    /// from the eye on the witness's sticker in the notebook. Pure over a set of seen replay IDs. The
     /// replay never gates progress: the clue (fact) is recorded by the line itself, whatever happens to the replay.
     /// </summary>
     public static class MemoryReplayPolicy
@@ -152,13 +165,14 @@ namespace SpookyStreet.Core.Nonverbal
                 return new ReplayDecision(ReplayDecisionKind.DroppedUnsafe, replay);
             }
 
-            return new ReplayDecision(ReplayDecisionKind.Play, replay);
+            // D26 §7: auto-play pulled the camera toward the side of the house, a hint nobody asked for.
+            return new ReplayDecision(ReplayDecisionKind.OnDemandOnly, replay);
         }
 
         /// <summary>The notebook can replay it: it was offered in this save, or its heard-fact proves the line played.</summary>
         public static bool AvailableOnDemand(MemoryReplayDefinition replay, CaseState state, IReadOnlyCollection<string> seen)
         {
-            if (replay == null)
+            if (replay == null || !replay.Offered)
             {
                 return false;
             }

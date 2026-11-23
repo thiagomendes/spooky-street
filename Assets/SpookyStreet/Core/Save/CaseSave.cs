@@ -6,19 +6,23 @@ namespace SpookyStreet.Core.Save
 {
     /// <summary>
     /// The case save contract (spec §7): schema version, case ID, acquired facts (stable IDs, in acquisition order),
-    /// last safe anchor ID and discovered notebook entries. Preferences and language live in
+    /// last safe anchor ID, discovered notebook entries and (schema 2, D26) the child's own right sticker sets per
+    /// solved question. Wrong tries and half-filled slots are memory only. Preferences and language live in
     /// <see cref="PreferencesData"/>, in a separate file, so replaying the case never touches them.
     /// </summary>
     public sealed class CaseSaveData
     {
-        public const int CurrentSchemaVersion = 1;
+        /// <summary>2: the deduction notebook (S002.5a) adds solved facts and the "answers" field.</summary>
+        public const int CurrentSchemaVersion = 2;
 
-        public CaseSaveData(string caseId, IReadOnlyList<string> facts, string anchorId, IReadOnlyList<string> notebookEntries)
+        public CaseSaveData(string caseId, IReadOnlyList<string> facts, string anchorId, IReadOnlyList<string> notebookEntries,
+            IReadOnlyList<string> answers = null)
         {
             CaseId = caseId;
             Facts = facts ?? Array.Empty<string>();
             AnchorId = anchorId;
             NotebookEntries = notebookEntries ?? Array.Empty<string>();
+            Answers = answers ?? Array.Empty<string>();
         }
 
         public int SchemaVersion => CurrentSchemaVersion;
@@ -31,10 +35,15 @@ namespace SpookyStreet.Core.Save
 
         public IReadOnlyList<string> NotebookEntries { get; }
 
+        /// <summary>The child's right sets, "questionId=sticker+sticker" (<see cref="CaseAnswers.ToSaveStrings"/>).</summary>
+        public IReadOnlyList<string> Answers { get; }
+
         /// <summary>A new or replayed case: no facts, at the arrival porch.</summary>
         public static CaseSaveData Fresh() => FromState(CaseState.Empty, CaseAnchors.Start);
 
-        public static CaseSaveData FromState(CaseState state, string anchorId)
+        public static CaseSaveData FromState(CaseState state, string anchorId) => FromState(state, anchorId, null);
+
+        public static CaseSaveData FromState(CaseState state, string anchorId, CaseAnswers answers)
         {
             if (state == null)
             {
@@ -47,9 +56,14 @@ namespace SpookyStreet.Core.Save
                 facts.Add(CaseDefinition.StableId(fact));
             }
 
+            // Only right sets for solved questions are written; a solved question always has one.
+            var checkedAnswers = CaseAnswers.FromSaveStrings(answers?.ToSaveStrings(), state, null);
             return new CaseSaveData(CaseDefinition.CaseId, facts, CaseAnchors.Resolve(anchorId, state),
-                CaseNotebook.DiscoveredEntryIds(state));
+                CaseNotebook.DiscoveredEntryIds(state), checkedAnswers.ToSaveStrings());
         }
+
+        /// <summary>The validated answers for <see cref="ToState"/>.</summary>
+        public CaseAnswers ToAnswers() => CaseAnswers.FromSaveStrings(Answers, ToState(), null);
 
         /// <summary>Rebuilds the case state; unknown IDs are ignored (they were reported when the save was read).</summary>
         public CaseState ToState()
@@ -105,10 +119,73 @@ namespace SpookyStreet.Core.Save
     {
         /// <summary>
         /// Migration steps keyed by the version they upgrade FROM (v → v + 1), each over the parsed JSON object.
-        /// Schema 1 is the first shipped schema, so the table is empty; add a step whenever the schema changes.
+        /// Schema 1 is the first shipped schema; 1 → 2 is the deduction notebook (<see cref="MigrateDeductions"/>).
         /// </summary>
         public static readonly Dictionary<int, Func<Dictionary<string, object>, Dictionary<string, object>>> Migrations =
-            new Dictionary<int, Func<Dictionary<string, object>, Dictionary<string, object>>>();
+            new Dictionary<int, Func<Dictionary<string, object>, Dictionary<string, object>>>
+            {
+                { 1, MigrateDeductions },
+            };
+
+        /// <summary>
+        /// Schema 1 → 2 (S002.5a, D26). In schema 1 the notebook answered a question by physical proof, so a player
+        /// who saw an answer keeps it: entering the attic solved "How did June get in?", seeing the cam "Where are the
+        /// knocks from?", the owl's bow "What should the knocks move?", and a closed case keeps its stamp. Runs once
+        /// (only schema-1 files reach it); the answers field starts empty and validation derives each solved
+        /// question's comic from the stickers that save had found. New saves never derive anything.
+        /// </summary>
+        public static Dictionary<string, object> MigrateDeductions(Dictionary<string, object> root)
+        {
+            if (!SaveJsonReader.TryStrings(root, "facts", out var facts))
+            {
+                return root; // left for validation to reject as corrupt
+            }
+
+            var list = new List<object>(facts.Count + 4);
+            foreach (string id in facts)
+            {
+                list.Add(id);
+            }
+
+            void Derive(CaseFact proof, CaseFact solved)
+            {
+                if (facts.Contains(CaseDefinition.StableId(proof)) && !facts.Contains(CaseDefinition.StableId(solved)))
+                {
+                    list.Add(CaseDefinition.StableId(solved));
+                }
+            }
+
+            Derive(CaseFact.EnteredByWindow, CaseFact.SolvedEntry);
+            Derive(CaseFact.FoundJune, CaseFact.SolvedEntry);
+            Derive(CaseFact.FrontOpen, CaseFact.SolvedEntry);
+            Derive(CaseFact.SawCam, CaseFact.SolvedSource);
+            Derive(CaseFact.LinkedArm, CaseFact.SolvedSource);
+            Derive(CaseFact.TestedOwl, CaseFact.SolvedSource);
+            Derive(CaseFact.TestedOwl, CaseFact.SolvedMoved);
+            Derive(CaseFact.CaseClosed, CaseFact.SolvedEntry);
+            Derive(CaseFact.CaseClosed, CaseFact.SolvedSource);
+            Derive(CaseFact.CaseClosed, CaseFact.SolvedMoved);
+            Derive(CaseFact.CaseClosed, CaseFact.CaseStamped);
+            root["facts"] = Distinct(list);
+            root["answers"] = new List<object>();
+            root["schemaVersion"] = 2.0;
+            return root;
+        }
+
+        private static List<object> Distinct(List<object> list)
+        {
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            var result = new List<object>(list.Count);
+            foreach (object o in list)
+            {
+                if (o is string s && seen.Add(s))
+                {
+                    result.Add(s);
+                }
+            }
+
+            return result;
+        }
 
         public static string Serialize(CaseSaveData data)
         {
@@ -123,6 +200,7 @@ namespace SpookyStreet.Core.Save
                 .Strings("facts", data.Facts)
                 .String("anchorId", data.AnchorId)
                 .Strings("notebook", data.NotebookEntries)
+                .Strings("answers", data.Answers)
                 .ToString();
         }
 
@@ -217,7 +295,16 @@ namespace SpookyStreet.Core.Save
                 issues.Add("notebook rebuilt from facts");
             }
 
-            var data = CaseSaveData.FromState(state, resolved);
+            // Answers (schema 2): only right sets of solved questions; a solved question without one gets a comic
+            // from the stickers it had (a migrated save).
+            if (!SaveJsonReader.TryStrings(root, "answers", out var rawAnswers))
+            {
+                rawAnswers = new List<string>();
+                issues.Add("missing answers");
+            }
+
+            var answers = CaseAnswers.FromSaveStrings(rawAnswers, state, issues);
+            var data = CaseSaveData.FromState(state, resolved, answers);
             return new CaseSaveRead(CaseSaveStatus.Ok, data, version, issues);
         }
 

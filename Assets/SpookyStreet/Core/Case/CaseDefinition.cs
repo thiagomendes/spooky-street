@@ -23,8 +23,21 @@ namespace SpookyStreet.Core.Case
         SawCam,
         LinkedArm,
         TestedOwl,
+
+        /// <summary>The reopening on the porch (Kit's owl show). The "Case closed" stamp is <see cref="CaseStamped"/>.</summary>
         CaseClosed,
         FoundSweet,
+
+        // S002.5a mystery first (D26): sticker facts and the deductions. Additive stable IDs.
+        TriedDoor,
+        FloorHum,
+        OwlPanel,
+        LooseArm,
+        OwlBooth,
+        SolvedSource,
+        SolvedEntry,
+        SolvedMoved,
+        CaseStamped,
     }
 
     /// <summary>The six beats of the case script (spec §3).</summary>
@@ -103,10 +116,25 @@ namespace SpookyStreet.Core.Case
             new FactDefinition(CaseFact.FoundJune, "c01.attic.june_found", "foundJune", CaseBeat.FindJune, FactRole.Route, CaseFact.EnteredByWindow),
             new FactDefinition(CaseFact.FrontOpen, "c01.foyer.front_open", "frontOpen", CaseBeat.FindJune, FactRole.Required, CaseFact.EnteredByWindow),
             new FactDefinition(CaseFact.SawCam, "c01.workshop.cam_seen", "sawCam", CaseBeat.FindSource, FactRole.Route),
-            new FactDefinition(CaseFact.LinkedArm, "c01.workshop.linked", "linkedArm", CaseBeat.FindSource, FactRole.Route, CaseFact.SawCam),
-            new FactDefinition(CaseFact.TestedOwl, "c01.workshop.owl_tested", "testedOwl", CaseBeat.FindSource, FactRole.Required, CaseFact.LinkedArm),
+            new FactDefinition(CaseFact.LinkedArm, "c01.workshop.linked", "linkedArm", CaseBeat.FindSource, FactRole.Route, CaseFact.SawCam, CaseFact.LooseArm),
+            new FactDefinition(CaseFact.TestedOwl, "c01.workshop.owl_tested", "testedOwl", CaseBeat.FindSource, FactRole.Required, CaseFact.LinkedArm, CaseFact.OwlBooth),
             new FactDefinition(CaseFact.CaseClosed, "c01.porch.case_closed", "caseClosed", CaseBeat.Resolve, FactRole.Route),
             new FactDefinition(CaseFact.FoundSweet, "c01.bench.sweet_found", "foundSweet", CaseBeat.Resolve, FactRole.Optional),
+
+            // S002.5a (D26): clue stickers the world hands out, each a perception, never a conclusion.
+            new FactDefinition(CaseFact.TriedDoor, "c01.porch.door_tried", "triedDoor", CaseBeat.ConflictingViews, FactRole.Optional),
+            new FactDefinition(CaseFact.FloorHum, "c01.foyer.floor_hum", "floorHum", CaseBeat.FindSource, FactRole.Optional),
+            // Opening the owl-painted service panel shows the mechanism behind it.
+            new FactDefinition(CaseFact.OwlPanel, "c01.workshop.owl_panel", "owlPanel", CaseBeat.FindSource, FactRole.Optional, CaseFact.SawCam),
+            new FactDefinition(CaseFact.LooseArm, "c01.workshop.arm_loose", "looseArm", CaseBeat.FindSource, FactRole.Optional),
+            new FactDefinition(CaseFact.OwlBooth, "c01.porch.owl_seen", "owlBooth", CaseBeat.FindSource, FactRole.Optional),
+
+            // The child's own deductions (a right set of stickers on a question), then the case stamp.
+            new FactDefinition(CaseFact.SolvedSource, "c01.solved.source", "solvedSource", CaseBeat.Resolve, FactRole.Route),
+            new FactDefinition(CaseFact.SolvedEntry, "c01.solved.entry", "solvedEntry", CaseBeat.Resolve, FactRole.Route),
+            new FactDefinition(CaseFact.SolvedMoved, "c01.solved.moved", "solvedMoved", CaseBeat.Resolve, FactRole.Route),
+            new FactDefinition(CaseFact.CaseStamped, "c01.case.stamped", "caseStamped", CaseBeat.Resolve, FactRole.Route,
+                CaseFact.CaseClosed),
         };
 
         private static readonly Dictionary<string, CaseFact> ByStableId = BuildIndex();
@@ -137,8 +165,18 @@ namespace SpookyStreet.Core.Case
             return false;
         }
 
-        /// <summary>The ending needs these plus arriving at the porch (spec §3).</summary>
+        /// <summary>
+        /// The reopening (Kit's owl show, <see cref="CaseFact.CaseClosed"/>) needs these plus arriving at the porch
+        /// (spec §3). It stays tied to world actions (D26); the "Case closed" stamp (<see cref="CaseFact.CaseStamped"/>)
+        /// also needs the three solved questions (<see cref="StampRequires"/>).
+        /// </summary>
         public static readonly IReadOnlyList<CaseFact> EndingRequires = new[] { CaseFact.FrontOpen, CaseFact.TestedOwl };
+
+        /// <summary>The case stamp needs the reopening and the child's three deductions (D26 open question 1a).</summary>
+        public static readonly IReadOnlyList<CaseFact> StampRequires = new[]
+        {
+            CaseFact.CaseClosed, CaseFact.SolvedSource, CaseFact.SolvedEntry, CaseFact.SolvedMoved,
+        };
 
         private static Dictionary<string, CaseFact> BuildIndex()
         {

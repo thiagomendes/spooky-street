@@ -146,6 +146,11 @@ namespace SpookyStreet.Tests.Core
                 var bare = CaseState.FromFacts(stripped);
                 foreach (var action in CasePlaythrough.AllActions())
                 {
+                    if (action.Kind == CaseActionKind.Solve)
+                    {
+                        continue; // by design (D26) a deduction needs the clue stickers the child found
+                    }
+
                     Assert.AreEqual(RouteGains(state.Apply(action)), RouteGains(bare.Apply(action)), $"{action} from {state}");
                 }
             }
@@ -158,7 +163,7 @@ namespace SpookyStreet.Tests.Core
 
             // Straight to the workshop: linking the arm also proves Pip saw the cam.
             var link = state.Apply(CaseAction.Of(CaseActionKind.LinkArm));
-            CollectionAssert.AreEqual(new[] { CaseFact.SawCam, CaseFact.LinkedArm }, link.Gained);
+            CollectionAssert.AreEqual(new[] { CaseFact.SawCam, CaseFact.LooseArm, CaseFact.LinkedArm }, link.Gained);
 
             // Lifting the inside latch proves the window entry, with no interviews at all.
             var latch = CaseState.Empty.Apply(CaseAction.Of(CaseActionKind.LiftLatch));
@@ -205,15 +210,15 @@ namespace SpookyStreet.Tests.Core
             var state = CaseState.FromFacts(new[] { CaseFact.EnteredByWindow, CaseFact.FrontOpen, CaseFact.SawCam });
             var early = state.Apply(CaseAction.Of(CaseActionKind.TurnCrank));
             Assert.AreEqual(CaseOutcome.CrankGap, early.Outcome);
-            Assert.AreEqual(0, early.Gained.Count);
-            Assert.AreSame(state, early.State);
+            CollectionAssert.AreEqual(new[] { CaseFact.LooseArm }, early.Gained, "only the loose-arm sticker (D26), no route fact");
+            Assert.AreSame(early.State, early.State.Apply(CaseAction.Of(CaseActionKind.TurnCrank)).State);
             Assert.IsFalse(early.PlayCutaway);
             Assert.AreEqual(1, early.Lines.Count);
             Assert.AreEqual(SpookyStreet.Core.Localization.LocalizationKeys.CaseLines.CaptionCrankGap, early.Lines[0].Key);
 
             var linked = state.Apply(CaseAction.Of(CaseActionKind.LinkArm)).State;
             var test = linked.Apply(CaseAction.Of(CaseActionKind.TurnCrank));
-            CollectionAssert.AreEqual(new[] { CaseFact.TestedOwl }, test.Gained);
+            CollectionAssert.AreEqual(new[] { CaseFact.OwlBooth, CaseFact.TestedOwl }, test.Gained, "the bow shows the owl outside");
             Assert.IsTrue(test.PlayCutaway);
             var again = test.State.Apply(CaseAction.Of(CaseActionKind.TurnCrank));
             Assert.AreEqual(CaseOutcome.ShowReplayed, again.Outcome);
@@ -225,7 +230,8 @@ namespace SpookyStreet.Tests.Core
         {
             var stuck = CaseState.Empty.Apply(CaseAction.Of(CaseActionKind.TryFrontDoor));
             Assert.AreEqual(CaseOutcome.DoorStuck, stuck.Outcome);
-            Assert.AreEqual(0, stuck.Gained.Count);
+            CollectionAssert.AreEqual(new[] { CaseFact.TriedDoor }, stuck.Gained, "only the stuck-door sticker (D26)");
+            Assert.AreEqual(0, stuck.State.Apply(CaseAction.Of(CaseActionKind.TryFrontDoor)).Gained.Count);
             var open = CaseState.FromFacts(new[] { CaseFact.FrontOpen }).Apply(CaseAction.Of(CaseActionKind.TryFrontDoor));
             Assert.AreEqual(CaseOutcome.None, open.Outcome);
             Assert.AreEqual(0, open.Lines.Count);
@@ -252,8 +258,10 @@ namespace SpookyStreet.Tests.Core
         {
             foreach (CaseActionKind kind in Enum.GetValues(typeof(CaseActionKind)))
             {
+                // Solve comes from the notebook, not the world: no Use verb, like the trigger kinds.
                 bool trigger = kind == CaseActionKind.HearKnocks || kind == CaseActionKind.EnterAttic ||
-                               kind == CaseActionKind.EnterFoyer || kind == CaseActionKind.ArriveAtPorch;
+                               kind == CaseActionKind.EnterFoyer || kind == CaseActionKind.ArriveAtPorch ||
+                               kind == CaseActionKind.Solve;
                 Assert.AreEqual(trigger, CaseInteractions.IsTrigger(kind), kind.ToString());
             }
         }
