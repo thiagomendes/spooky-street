@@ -173,4 +173,28 @@ Notes for the cutscene and wiring pass:
 
 ## CI
 
-_To be filled in after the validation push._
+Run **144** of `ci.yml` (id 45132539396) on `423c2d9` (this branch with `origin/main` at `65854fc` merged in):
+**success**, read from the job log.
+
+| Results | Total | Passed | Failed | Skipped |
+|---|---|---|---|---|
+| EditMode | 658 | 658 | 0 | 0 |
+| PlayMode | 130 | 130 | 0 | 0 |
+| Visual captures | 14 | 14 | 0 | 0 |
+
+- `SpookyStreet.Tests.PlayMode.GestureClipTests` 5/5 passed (the four testimony gestures and Pip's glances, in the
+  engine, on the imported models; none ignored, so all five models and their clips were found).
+- `SpookyStreet.Tests.Project.ModelImportRulesTests` 21/21 passed (with the six `CharactersHaveTheirGestureClips`
+  cases and `ValeWearsHisWatchOnItsOwnBone`): Unity imports the FBX files written by `fbx_add_takes.py`.
+- `SpookyStreet.Tests.Core.CharacterClipsTests` 5/5 and `PipClipsTests` 13/13 passed.
+- The fixtures that use the changed models passed unchanged: `WitnessTests` 3/3, `CutscenePlayTests` 5/5,
+  `WallLedgeTests` 8/8, `MovesetTests` 4/4, `CaseInteriorTests` 6/6.
+- Static checks job: success (core tests, meta check, linters).
+
+Not done: the CI frames were **not looked at**. This session could not download the log or the artifact (the
+storage host is blocked here), and the frames are printed as base64 lines too large to read through the log tool.
+No CI frame shows a new clip anyway, since nothing cues them yet; frames that show Mr. Vale will now show his
+watch. The review of the clips themselves is the rendered sheets above.
+
+Seen in the run, not from this branch: the "Unity normalised files" step lists audio `.meta` files
+(`Content/Resources/Audio/**`); they come with `origin/main`.
