@@ -131,7 +131,7 @@ namespace SpookyStreet.Case
         /// <summary>The milky haze over a hazy memory (0 clear, up to <see cref="HazeAlpha"/>).</summary>
         public float Haze => _haze != null ? _haze.color.a : 0f;
 
-        public const float HazeAlpha = 0.24f;
+        public const float HazeAlpha = 0.14f;
         public const int StreakEchoes = 4;
 
         public CinemachineCamera ActiveCamera => _active;
@@ -173,11 +173,14 @@ namespace SpookyStreet.Case
                 return new ReplayStaging(benchEye, FrontDoorCentre, null, FrontDoorCentre + Vector3.right * 0.2f);
             }
 
-            // From Bea's own spot on the plaza, at her eye height, toward the side of the house above the hedge.
+            // From Bea's spot on the plaza (a step in front of her, so she is not in her own memory), at her eye
+            // height, toward the side of the house above the hedge.
             var bea = CaseStage.Find(CaseStage.PointBea).Position;
+            var look = new Vector3(-4.9f, 3.6f, 13.8f);
+            var toward = new Vector3(look.x - bea.X, 0f, look.z - bea.Z).normalized;
+            var eye = new Vector3(bea.X, 1.45f, bea.Z) + toward * 1.0f;
             var streak = BeaStreak();
-            return new ReplayStaging(new Vector3(bea.X + 0.3f, 1.45f, bea.Z + 0.2f), new Vector3(-4.9f, 3.6f, 13.8f), null,
-                streak[streak.Length - 1], streak);
+            return new ReplayStaging(eye, look, null, streak[streak.Length - 1], streak);
         }
 
         /// <summary>The staging used for <paramref name="place"/>.</summary>
@@ -467,7 +470,7 @@ namespace SpookyStreet.Case
         private void SetLook(float w)
         {
             bool hazy = Playback != null && _streakPath != null;
-            _tint.color = UiFactory.WithAlpha(Lilac, (hazy ? 0.34f : 0.26f) * w);
+            _tint.color = UiFactory.WithAlpha(Lilac, (hazy ? 0.3f : 0.26f) * w);
             if (_haze != null)
             {
                 _haze.color = UiFactory.WithAlpha(Palette.WarmPaper, hazy ? HazeAlpha * w : 0f);
@@ -564,14 +567,13 @@ namespace SpookyStreet.Case
 
                 s.transform.SetPositionAndRotation(at, face * Quaternion.Euler(0f, 0f, roll));
                 float swell = Mathf.Sin(Mathf.Clamp01(ui) * Mathf.PI);
-                float length = (_reduced ? 0.9f : 1.5f) * (1f - 0.12f * i);
+                float length = (_reduced ? 1.4f : 2.4f) * (1f - 0.12f * i);
                 float native = s.sprite != null ? s.sprite.bounds.size.x : 1f;
                 float k = length / Mathf.Max(0.01f, native);
-                s.transform.localScale = new Vector3(k, k * (0.75f + 0.25f * swell), 1f);
-                float alpha = weight * swell * (_reduced ? 0.55f : 0.9f) * (1f - 0.22f * i);
-                Color c = Palette.ClothSilver;
-                c.a = alpha;
-                s.color = c;
+                s.transform.localScale = new Vector3(k, k * (0.9f + 0.5f * swell), 1f);
+                float alpha = weight * swell * (_reduced ? 0.6f : 1f) * (1f - 0.22f * i);
+                // A bright silver smear (a little over white, so it catches the bloom like a flash of light).
+                s.color = new Color(1.2f, 1.25f, 1.35f, alpha);
             }
         }
 

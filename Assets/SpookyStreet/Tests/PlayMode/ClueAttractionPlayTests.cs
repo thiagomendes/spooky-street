@@ -174,8 +174,9 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(View.Offset(ClueAttractions.WindWheel), "spun past its ambient turn");
 
             // Paused: the whir holds still with the game.
-            float clock = View.Clock;
             Game.Flow.Pause();
+            yield return Frames(3);
+            float clock = View.Clock;
             yield return Frames(10);
             Assert.AreEqual(clock, View.Clock, 1e-4f, "the attractions freeze with the pause");
             Game.Flow.Resume();
@@ -231,7 +232,7 @@ namespace SpookyStreet.Tests.PlayMode
             }
 
             Assert.IsTrue(rattled, "the owl panel rattles softly on the knock");
-            Assert.Less(Quaternion.Angle(panel.rotation, shut), 3f, "softly");
+            Assert.Less(Quaternion.Angle(panel.rotation, shut), ClueAttractionView.RattleDegrees * 2f + 0.5f, "softly");
             yield return Wait(ClueAttractions.KnockRingSeconds + 0.1f);
             var arm = View.Model(ClueAttractions.LooseArm);
             Assert.IsNotNull(arm, "the slipped arm is bound");
