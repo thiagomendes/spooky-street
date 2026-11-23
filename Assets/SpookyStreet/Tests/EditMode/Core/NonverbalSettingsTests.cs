@@ -151,7 +151,7 @@ namespace SpookyStreet.Tests.Core
                 contexts[entry.Key] = entry.Context;
             }
 
-            Assert.AreEqual(4, NvKeys.All.Length);
+            Assert.AreEqual(7, NvKeys.All.Length);
             foreach (string key in NvKeys.All)
             {
                 Assert.IsTrue(contexts.ContainsKey(key), "en.json is missing " + key);

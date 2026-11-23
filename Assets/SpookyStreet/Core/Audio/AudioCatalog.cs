@@ -22,7 +22,8 @@ namespace SpookyStreet.Core.Audio
         public const string ResourceRoot = "Audio";
 
         public AudioEventDef(string id, AudioBus bus, int variants, float volumeDb = 0f, float pitchJitterSemitones = 0f,
-            bool loop = false, bool spatial = false, float minIntervalSeconds = 0f, float[] markers = null)
+            bool loop = false, bool spatial = false, float minIntervalSeconds = 0f, float[] markers = null,
+            float minDistance = DefaultMinDistance, float maxDistance = DefaultMaxDistance)
         {
             Id = id;
             Bus = bus;
@@ -33,7 +34,12 @@ namespace SpookyStreet.Core.Audio
             Spatial = spatial;
             MinIntervalSeconds = minIntervalSeconds;
             Markers = markers ?? Array.Empty<float>();
+            MinDistance = minDistance;
+            MaxDistance = maxDistance;
         }
+
+        public const float DefaultMinDistance = 3f;
+        public const float DefaultMaxDistance = 40f;
 
         /// <summary>Stable event id; also the file stem of its takes (<c>{Id}_t{take}</c>).</summary>
         public string Id { get; }
@@ -56,6 +62,12 @@ namespace SpookyStreet.Core.Audio
 
         /// <summary>Repeats closer than this are dropped (protects ears from rapid-fire triggers).</summary>
         public float MinIntervalSeconds { get; }
+
+        /// <summary>3D only: full level within this distance (metres), then a logarithmic roll-off.</summary>
+        public float MinDistance { get; }
+
+        /// <summary>3D only: beyond this distance the sound gets no quieter.</summary>
+        public float MaxDistance { get; }
 
         /// <summary>Sync points in seconds from the start of every take (e.g. the three knock onsets).</summary>
         public IReadOnlyList<float> Markers { get; }
@@ -124,6 +136,7 @@ namespace SpookyStreet.Core.Audio
                 if (def.VolumeDb > 6f || def.VolumeDb < -40f) problems.Add(def.Id + ": trim out of range");
                 if (def.PitchJitterSemitones < 0f || def.PitchJitterSemitones > 2f) problems.Add(def.Id + ": pitch jitter out of range");
                 if (def.MinIntervalSeconds < 0f) problems.Add(def.Id + ": negative min interval");
+                if (def.MinDistance <= 0f || def.MaxDistance <= def.MinDistance) problems.Add(def.Id + ": bad 3D distances");
                 for (var i = 0; i < def.Markers.Count; i++)
                 {
                     if (def.Markers[i] < 0f || (i > 0 && def.Markers[i] <= def.Markers[i - 1]))

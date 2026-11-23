@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using SpookyStreet.Core.Art;
+using SpookyStreet.Core.Audio;
 using SpookyStreet.Core.Case;
 using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.Localization;
@@ -256,6 +257,7 @@ namespace SpookyStreet.UI
                 view.SlotStitches.Add(stitch);
                 int index = k;
                 var button = slot.gameObject.AddComponent<Button>();
+                slot.gameObject.AddComponent<SpookyStreet.Audio.UiTapSound>().Silent = true; // the sticker's own sound, not a tap
                 button.targetGraphic = slot;
                 button.transition = Selectable.Transition.None;
                 button.navigation = new Navigation { mode = Navigation.Mode.None };
@@ -718,10 +720,12 @@ namespace SpookyStreet.UI
             switch (result)
             {
                 case CursorResult.Picked:
+                    AudioCues.StickerPick();
                     ShowNote(target);
                     HideThought();
                     break;
                 case CursorResult.Placed:
+                    AudioCues.StickerDrop();
                     HideThought();
                     HidePlace();
                     RebuildBoard(view, before, null);
@@ -859,6 +863,7 @@ namespace SpookyStreet.UI
                 }
 
                 RebuildBoard(view, before, home);
+                AudioCues.StickerWobble();
                 ShowThought(new[] { "pg.pip", "pg.emo_think" }, ThinkSeconds, UiKeys.NotebookThinking);
                 yield return new WaitForSecondsRealtime(ReducedMotion ? 0f : WobbleSeconds + WobbleStagger * home.Count);
                 _checking = false;
@@ -870,6 +875,7 @@ namespace SpookyStreet.UI
             if (check.Verdict == DeductionVerdict.Right)
             {
                 // The stitches glow orange and the stickers press in; then the comic built from them.
+                AudioCues.CorrectGlow();
                 foreach (var stitch in view.SlotStitches)
                 {
                     if (stitch != null)
@@ -924,6 +930,7 @@ namespace SpookyStreet.UI
             sticker.Rect.SetAsLastSibling();
             sticker.Rect.localScale = new Vector3(1.12f, 1.12f, 1f);
             sticker.Rect.localRotation = Quaternion.Euler(0f, 0f, 3f);
+            AudioCues.StickerPick();
             OnStickerDragged(sticker, eventData);
             HideThought();
         }
@@ -981,6 +988,7 @@ namespace SpookyStreet.UI
             RebuildBoard(view, before, placed ? null : new[] { sticker.StickerId });
             if (placed)
             {
+                AudioCues.StickerDrop();
                 HidePlace();
                 AfterPlacement(view);
             }

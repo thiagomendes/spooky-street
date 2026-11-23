@@ -11,6 +11,9 @@ namespace SpookyStreet.Core.Localization
         public static class NonverbalUi
         {
             public const string SettingsHelper = "ui.settings.helper";
+            public const string SettingsMusic = "ui.settings.music";
+            public const string SettingsSounds = "ui.settings.sounds";
+            public const string SettingsVoices = "ui.settings.voices";
             public const string MemoryWatchAgain = "ui.memory.watch_again";
             public const string MemorySkip = "ui.memory.skip";
             public const string ParentGateHint = "ui.parent_gate.hint";
@@ -18,6 +21,9 @@ namespace SpookyStreet.Core.Localization
             public static readonly string[] All =
             {
                 SettingsHelper,
+                SettingsMusic,
+                SettingsSounds,
+                SettingsVoices,
                 MemoryWatchAgain,
                 MemorySkip,
                 ParentGateHint,

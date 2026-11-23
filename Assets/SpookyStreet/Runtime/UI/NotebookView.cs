@@ -413,6 +413,11 @@ namespace SpookyStreet.UI
             CurrentPage = Mathf.Clamp(index, 0, _pages.Count - 1);
             if (before != CurrentPage)
             {
+                if (!snap)
+                {
+                    Core.Audio.AudioCues.PageTurn(); // the paper flip (S003)
+                }
+
                 _cursor.Drop();
                 HideThought();
                 HidePlace();

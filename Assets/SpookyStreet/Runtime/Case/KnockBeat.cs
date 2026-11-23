@@ -1,3 +1,5 @@
+using System;
+using SpookyStreet.Core.Audio;
 using SpookyStreet.Core.World;
 using SpookyStreet.World;
 using UnityEngine;
@@ -9,16 +11,19 @@ namespace SpookyStreet.Case
     /// attic window's warm light swells, then settles a little brighter than before; on the second knock a paper bat
     /// shakes loose from the owl house's porch eave and flutters down to the deck. <see cref="SetHeard"/> rebuilds the
     /// settled state from facts on resume (CaseWorldView.PaperBatFallen). Runs on game time (pause freezes it).
+    /// The pulses land on the knock onsets inside the sound's takes (<see cref="AudioEvents.KnockOnsets"/>): the
+    /// audio starts on <see cref="Started"/>, the same frame as the animation, and both hold under the pause (S003).
     /// </summary>
     public sealed class KnockBeat : MonoBehaviour
     {
-        /// <summary>Knock times in seconds: short, short, pause, last (spec §6 sound rhythm).</summary>
-        public static readonly float[] KnockTimes = { 0f, 0.32f, 1.05f };
+        /// <summary>Knock times in seconds: short, short, pause, last (spec §6 sound rhythm), as in the sound itself.</summary>
+        public static readonly float[] KnockTimes = AudioEvents.KnockOnsets;
 
         public const float Duration = 2.4f;
         public const float SettledIntensity = 1.4f;
         public const float PulseIntensity = 4.5f;
-        public const float BatFallStart = 0.32f;
+        /// <summary>The bat shakes loose on the second knock.</summary>
+        public static float BatFallStart => KnockTimes[1];
         public const float BatFallSeconds = 1.3f;
 
         /// <summary>Under the owl house porch eave, right of the door, and where the bat lands on the deck.</summary>
@@ -38,6 +43,12 @@ namespace SpookyStreet.Case
         public bool Playing => _time >= 0f;
 
         public Light WarmLight => _warm;
+
+        /// <summary>Where the knocks come from: the attic window's light (the 3D sound plays here).</summary>
+        public Vector3 SoundPosition => _warm.transform.position;
+
+        /// <summary>Raised when the cue starts (not on <see cref="SetHeard"/>): the knock sound starts with it.</summary>
+        public event Action Started;
 
         /// <summary>The loose paper bat (null without the environment models).</summary>
         public Transform PaperBat => _bat;
@@ -90,6 +101,7 @@ namespace SpookyStreet.Case
         {
             Heard = true;
             _time = 0f;
+            Started?.Invoke();
         }
 
         private void Update()

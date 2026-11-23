@@ -1,0 +1,2168 @@
+{
+ "pip": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "inquisitive chatter",
+   "matches": true,
+   "artefacts": "mild metallic warble around 0:00.8",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "water",
+    "no"
+   ],
+   "charm": 5
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "cheerful excitement",
+   "matches": true,
+   "artefacts": "robotic harshness on peaks at 0:00.6",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "people"
+   ],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "wondering disbelief",
+   "matches": true,
+   "artefacts": "phasey jitter near 0:01.0",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "really"
+   ],
+   "charm": 5
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "thoughtful pondering",
+   "matches": true,
+   "artefacts": "phasey warble throughout 0:00-0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "secretive murmuring",
+   "matches": true,
+   "artefacts": "digital noise and robotic rasp at 0:00.5",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "flat conversational babble",
+   "matches": true,
+   "artefacts": "choppy joins at 0:00.4",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_surprised",
+   "emotion_heard": "startled exclamation",
+   "matches": true,
+   "artefacts": "abrupt cutoff click at 0:00.4",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "no"
+   ],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 5,
+   "distinct_voice": "Generic pitched AI chatter lacking genuine child vocal timbre.",
+   "top_fix": "Reduce formant pitch shift to eliminate synthetic squeak and smooth syllable crossfades."
+  }
+ ],
+ "bea": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "perky chatter",
+   "matches": true,
+   "artefacts": "mild metallic timbre throughout (0.0-1.2s)",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "cheerful excitement",
+   "matches": true,
+   "artefacts": "slight warble and phasey highs at 0.5-0.9s",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "startled curiosity",
+   "matches": true,
+   "artefacts": "metallic edge on upper peaks at 0.8-1.1s",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "puzzled pondering",
+   "matches": true,
+   "artefacts": "robotic granular smear at 0.4-0.8s",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "hey"
+   ],
+   "charm": 5
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "hushed conspiracy",
+   "matches": true,
+   "artefacts": "phasey breath noise throughout (0.0-1.1s)",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "staccato robotic neutral",
+   "matches": false,
+   "artefacts": "choppy joins at 0.2s, 0.4s, and 0.6s",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "playful chirp",
+   "matches": true,
+   "artefacts": "abrupt cuts and choppy joins at 0.3s and 0.5s",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "Bouncy synthetic cartoon babble with pitch-shifted processing.",
+   "top_fix": "Crossfade syllable boundaries and soften high-frequency metallic resonance."
+  }
+ ],
+ "vale": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "calm chatter",
+   "matches": true,
+   "artefacts": "mild robotic warble at 0:00-0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "mild chuckle",
+   "matches": true,
+   "artefacts": "synthetic warble on exhale at 0:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "ha"
+   ],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "mild astonishment",
+   "matches": true,
+   "artefacts": "phasey high frequencies at 0:00-0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "pondering query",
+   "matches": true,
+   "artefacts": "metallic resonance at 0:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "hushed secret",
+   "matches": true,
+   "artefacts": "breathy phasey digital sheen throughout",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "neutral babble",
+   "matches": true,
+   "artefacts": "choppy joins and minor clicks around 0:00.8",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_thinking",
+   "emotion_heard": "hesitant wondering",
+   "matches": true,
+   "artefacts": "choppy join at 0:00.6 with robotic step",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 4,
+   "distinct_voice": "Generic pitch-shifted synthetic babble lacking elderly gravel and warmth.",
+   "top_fix": "Lower base pitch and introduce chest resonance and vocal creak."
+  }
+ ],
+ "june": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "curious chatter",
+   "matches": true,
+   "artefacts": "mild phasey high-end at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "cheerful giggle-talk",
+   "matches": true,
+   "artefacts": "metallic sheen at 0:00-0:01",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 7
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "startled gasp and babble",
+   "matches": true,
+   "artefacts": "slight click at 0:00 start",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "deliberative mumble",
+   "matches": true,
+   "artefacts": "phasey sibilance across 0:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "hushed conspiracy",
+   "matches": true,
+   "artefacts": "subtle warble on breath tails",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 7
+  },
+  {
+   "clip": "seq1_whisper",
+   "emotion_heard": "soft conspiratorial chatter",
+   "matches": true,
+   "artefacts": "choppy joins at 0:00 and 0:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "perky chirp",
+   "matches": true,
+   "artefacts": "abrupt cutoff click at 0:00.6",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "playful high-register gibberish with natural child-like cadence",
+   "top_fix": "smooth concatenation crossfades and tame high-frequency sibilance"
+  }
+ ],
+ "kit": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "pleasant curiosity",
+   "matches": true,
+   "artefacts": "slight phasey tail at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "giggling joy",
+   "matches": true,
+   "artefacts": "breath pop at 0:00",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "baby"
+   ],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "startled gasp",
+   "matches": true,
+   "artefacts": "choppy onset click at 0:00",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "pensive musing",
+   "matches": true,
+   "artefacts": "faint warble across 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "conspiratorial hush",
+   "matches": true,
+   "artefacts": "mic clicks at 0:00 and 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "flat chatter",
+   "matches": true,
+   "artefacts": "choppy joins at 0:00.4 and 0:00.9",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "cheerful surprise",
+   "matches": true,
+   "artefacts": "abrupt syllable joins throughout",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "oh"
+   ],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 4,
+   "distinct_voice": "high squeaky pixie",
+   "top_fix": "Lower pitch and add dramatic chest resonance for older grand aunt persona"
+  }
+ ],
+ "pip_v2": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "curious neutral",
+   "matches": true,
+   "artefacts": "mild metallic timbre throughout",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "no",
+    "little"
+   ],
+   "charm": 6
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "cheerful",
+   "matches": true,
+   "artefacts": "robotic warble at 00:01",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "people"
+   ],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "startled wonder",
+   "matches": true,
+   "artefacts": "choppy cut at 00:00.8",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "woah"
+   ],
+   "charm": 6
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "hesitant curiosity",
+   "matches": true,
+   "artefacts": "phasey decay around 00:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "nice"
+   ],
+   "charm": 5
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "quiet mutter",
+   "matches": false,
+   "artefacts": "metallic buzz and micro-clicks, 00:00-00:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "flat neutral",
+   "matches": true,
+   "artefacts": "abrupt transitions and clicks",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_surprised",
+   "emotion_heard": "brief surprise",
+   "matches": true,
+   "artefacts": "slight join click at 00:00.3",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "processed high-pitched chatter",
+   "top_fix": "soften metallic processing and true-whisper phonemes"
+  }
+ ],
+ "bea_v2": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "casual chatter",
+   "matches": true,
+   "artefacts": "mild metallic buzz at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "cheerful excitement",
+   "matches": true,
+   "artefacts": "phasey high frequencies at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "startled alarm",
+   "matches": true,
+   "artefacts": "choppy joins at 0:00-0:01",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "quizzical mumble",
+   "matches": true,
+   "artefacts": "slight warble at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "hushed secretiveness",
+   "matches": true,
+   "artefacts": "high-frequency sibilance throughout",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "flat statement",
+   "matches": true,
+   "artefacts": "choppy joins and click at 0:00",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "perky chirp",
+   "matches": true,
+   "artefacts": "click on syllable boundary at 0:00",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "Energetic, pitch-shifted babble with recognizable child cadences.",
+   "top_fix": "Warm up formant filtering to reduce digital harshness on syllable transitions."
+  }
+ ],
+ "vale_v2": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "calm, dry",
+   "matches": true,
+   "artefacts": "slight phasey tone at 0:01",
+   "chipmunk": 3,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "chuckle, amused",
+   "matches": true,
+   "artefacts": "none",
+   "chipmunk": 3,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "mild startle",
+   "matches": true,
+   "artefacts": "metallic warble at 0:01",
+   "chipmunk": 4,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "contemplative",
+   "matches": true,
+   "artefacts": "clicks at 0:00",
+   "chipmunk": 3,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "hushed murmur",
+   "matches": true,
+   "artefacts": "choppy joins at 0:01",
+   "chipmunk": 3,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "steady, casual",
+   "matches": true,
+   "artefacts": "choppy joins throughout",
+   "chipmunk": 4,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_thinking",
+   "emotion_heard": "curious, deliberating",
+   "matches": true,
+   "artefacts": "choppy joins at 0:00 and 0:01",
+   "chipmunk": 4,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "husky grandfatherly murmur",
+   "top_fix": "smooth syllable boundaries on assembled sequences"
+  }
+ ],
+ "june_v2": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "inquisitive chatter",
+   "matches": true,
+   "artefacts": "metallic edge, slight granular buzz throughout",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "cheerful giggle",
+   "matches": true,
+   "artefacts": "minor phasey warble at 0:01",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 7
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "startled gasp and squeak",
+   "matches": true,
+   "artefacts": "slight robotic ring at 0:01",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "pondering query",
+   "matches": true,
+   "artefacts": "mild metallic buzz around 0:00-0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "conspiratorial whisper",
+   "matches": true,
+   "artefacts": "phasey high frequencies throughout",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 7
+  },
+  {
+   "clip": "seq1_whisper",
+   "emotion_heard": "hushed muttering",
+   "matches": true,
+   "artefacts": "choppy joins and minor clicks between syllables",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "bubbly excitement",
+   "matches": true,
+   "artefacts": "abrupt syllable transitions and slight clicks",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "playful high-pitched gibberish",
+   "top_fix": "smooth syllable boundaries and tame resonant highs"
+  }
+ ],
+ "kit_v2": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "casual inquiry",
+   "matches": true,
+   "artefacts": "mild robotic timbre at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "boba"
+   ],
+   "charm": 5
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "delighted giggle",
+   "matches": true,
+   "artefacts": "slight phasey tail at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "gasping shock",
+   "matches": true,
+   "artefacts": "metallic breath cut at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "musing contemplation",
+   "matches": true,
+   "artefacts": "slight warble at 0:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "hushed intrigue",
+   "matches": true,
+   "artefacts": "harsh clicks and sibilance across 0:00-0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "matter-of-fact jabber",
+   "matches": true,
+   "artefacts": "choppy joins between syllables",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "cheerful banter",
+   "matches": true,
+   "artefacts": "choppy joins at 0:00 and 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 4,
+   "distinct_voice": "Whimsical high creature, lacks grand stage presence.",
+   "top_fix": "Lower pitch and introduce warm, dramatic theatrical chest resonance."
+  }
+ ],
+ "pip_v3": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "inquisitive neutral",
+   "matches": true,
+   "artefacts": "mild robotic warble at 0:00-0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "cheerful and playful",
+   "matches": true,
+   "artefacts": "slight phasey tail at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [
+    "what"
+   ],
+   "charm": 7
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "startled wonder",
+   "matches": true,
+   "artefacts": "minor metallic harshness around 0:00.8",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [
+    "whoa"
+   ],
+   "charm": 6
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "puzzled curiosity",
+   "matches": true,
+   "artefacts": "none",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "conspiratorial whisper",
+   "matches": true,
+   "artefacts": "slight digital buzz at 0:00.5-0:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "neutral utterance",
+   "matches": true,
+   "artefacts": "choppy joins at 0:00.3",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "seq2_surprised",
+   "emotion_heard": "inquisitive surprise",
+   "matches": true,
+   "artefacts": "abrupt cut-off at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "quirky stylized child babble",
+   "top_fix": "smooth runtime concatenation points and reduce pitch-shift artifacts"
+  }
+ ],
+ "bea_v3": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "brisk chatter",
+   "matches": true,
+   "artefacts": "metallic edge throughout",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "playful cheer",
+   "matches": true,
+   "artefacts": "phasey high frequencies",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "pick"
+   ],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "startled curiosity",
+   "matches": true,
+   "artefacts": "metallic warble at 0:00.7",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "puzzled querying",
+   "matches": true,
+   "artefacts": "robotic warble 0:00-0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "hushed secretiveness",
+   "matches": true,
+   "artefacts": "phasey sibilance throughout",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "flat matter-of-fact",
+   "matches": true,
+   "artefacts": "choppy joins at 0:00.3 and 0:00.7",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "chirpy excitement",
+   "matches": true,
+   "artefacts": "choppy joins and minor clicks",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "Energetic cartoon child",
+   "top_fix": "Soften harsh pitch-shifting and smooth syllable transitions"
+  }
+ ],
+ "vale_v3": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "calm murmur",
+   "matches": true,
+   "artefacts": "none",
+   "chipmunk": 3,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "jovial chuckle",
+   "matches": true,
+   "artefacts": "slight metallic tail at 0.9s",
+   "chipmunk": 3,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "mild startle",
+   "matches": true,
+   "artefacts": "none",
+   "chipmunk": 4,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "pondering",
+   "matches": true,
+   "artefacts": "mild warble at 0.6s",
+   "chipmunk": 3,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "soft conspiratorial",
+   "matches": true,
+   "artefacts": "phasey breathiness around 0.5s",
+   "chipmunk": 3,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "curious neutral",
+   "matches": true,
+   "artefacts": "choppy joins at 0.3s and 0.7s",
+   "chipmunk": 4,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_thinking",
+   "emotion_heard": "hesitant mumble",
+   "matches": true,
+   "artefacts": "choppy transitions between phonemes",
+   "chipmunk": 4,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "guttural, cosy baritone babble",
+   "top_fix": "smooth concatenation boundaries on sequenced clips"
+  }
+ ],
+ "june_v3": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "Perky and curious",
+   "matches": true,
+   "artefacts": "Metallic high frequencies throughout",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "Cheerful and excited",
+   "matches": true,
+   "artefacts": "Slight phasey warble at 0:01",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "Startled inquiry",
+   "matches": true,
+   "artefacts": "Subtle digital click at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "Pondering and questioning",
+   "matches": true,
+   "artefacts": "Robotic resonance around 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "Hushed conspiratorial whisper",
+   "matches": true,
+   "artefacts": "Phasey sibilance across 0:00-0:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq1_whisper",
+   "emotion_heard": "Tentative whisper",
+   "matches": true,
+   "artefacts": "Choppy joins near 0:00.6",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "Upbeat chirp",
+   "matches": true,
+   "artefacts": "Abrupt cutoff at 0:00.8",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "Energetic pitch-shifted babble",
+   "top_fix": "Softening metallic high-end and crossfading syllable splices"
+  }
+ ],
+ "kit_v3": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "theatrical neutral",
+   "matches": true,
+   "artefacts": "metallic resonance around 0:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [
+    "boba"
+   ],
+   "charm": 6
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "upbeat delight",
+   "matches": true,
+   "artefacts": "slight phasey tail at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "dramatic gasp",
+   "matches": true,
+   "artefacts": "breath click at 0:00",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 7
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "pensive curiosity",
+   "matches": true,
+   "artefacts": "none",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "conspiratorial whisper",
+   "matches": true,
+   "artefacts": "hiss and warble around 0:01",
+   "chipmunk": 4,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "monotone babble",
+   "matches": true,
+   "artefacts": "choppy joins at 0:00 and 0:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "do"
+   ],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "bouncy cheer",
+   "matches": true,
+   "artefacts": "choppy joins at 0:00",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "Theatrical, grand, and operatic with warm eccentric flair.",
+   "top_fix": "Crossfade syllable boundaries in sequenced clips to eliminate abrupt cutoffs."
+  }
+ ],
+ "bea_v4": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "brisk matter-of-fact",
+   "matches": true,
+   "artefacts": "mild metallic timbre throughout (0:00-0:01)",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "bubbly excitement",
+   "matches": true,
+   "artefacts": "slight phasey edge at peak pitch (0:01)",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "startled curiosity",
+   "matches": true,
+   "artefacts": "clicks on sharp onset transients (0:00)",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "quizzical pondering",
+   "matches": true,
+   "artefacts": "minor warble on sustained syllables (0:01)",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "conspiratorial hush",
+   "matches": true,
+   "artefacts": "phasey high-frequency sibilance (0:00-0:01)",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "blunt statement",
+   "matches": true,
+   "artefacts": "choppy cutoff at boundary (0:00)",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "perky chirp",
+   "matches": true,
+   "artefacts": "slight transient click at splice point (0:00)",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "Fast, high-pitched synthetic chatter",
+   "top_fix": "Dampen metallic highs and naturalize pitch shift."
+  }
+ ],
+ "june_v4": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "Curious chatter",
+   "matches": true,
+   "artefacts": "metallic high-end and slight pitch-tracking roboticism (0:00-0:01)",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "see"
+   ],
+   "charm": 5
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "Playful excitement",
+   "matches": true,
+   "artefacts": "phasey sibilance and minor warble (0:01)",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "Inquisitive shock",
+   "matches": true,
+   "artefacts": "metallic resonance across upper formants (0:00-0:01)",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "Pensive contemplation",
+   "matches": true,
+   "artefacts": "choppy joins between phonemes (0:00-0:01)",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "Secretive whisper",
+   "matches": true,
+   "artefacts": "breathy phasey wash and mild warble (0:00-0:01)",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq1_whisper",
+   "emotion_heard": "Hushed utterance",
+   "matches": true,
+   "artefacts": "choppy joins and abrupt gating (0:00-0:01)",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "Perky chirp",
+   "matches": true,
+   "artefacts": "robotic click at onset and abrupt cut (0:00)",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 5,
+   "distinct_voice": "Generic pitch-shifted synthetic babble",
+   "top_fix": "Reduce formantic pitch-shift to add natural body and reduce metallic processing"
+  }
+ ],
+ "pip_v5": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "Mildly curious",
+   "matches": true,
+   "artefacts": "slight metallic sheen at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "Upbeat and playful",
+   "matches": true,
+   "artefacts": "subtle warble at peaks",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "Startled wonder",
+   "matches": true,
+   "artefacts": "phasey high end at 0:01",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "whoa"
+   ],
+   "charm": 6
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "Inquisitive hesitation",
+   "matches": true,
+   "artefacts": "metallic buzz around 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "Hushed curiosity",
+   "matches": true,
+   "artefacts": "sibilant phasing across 0:00-0:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "Flat conversational",
+   "matches": true,
+   "artefacts": "choppy joins at 0:00",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_surprised",
+   "emotion_heard": "Abrupt surprise",
+   "matches": true,
+   "artefacts": "choppy joins and click at 0:00",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "oh"
+   ],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 5,
+   "distinct_voice": "Generic synthetic pitch-shifted chatter.",
+   "top_fix": "Lower pitch multiplier to restore natural child warmth."
+  }
+ ],
+ "bea_v5": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "brisk neutral",
+   "matches": true,
+   "artefacts": "slight metallic warble throughout",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "bouncy cheerful",
+   "matches": true,
+   "artefacts": "minor clicks at 00:01",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "startled curiosity",
+   "matches": true,
+   "artefacts": "phasey buzz around 00:01",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "pondering inquiry",
+   "matches": true,
+   "artefacts": "robotic buzz on syllable decays",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "hushed conspiratorial",
+   "matches": true,
+   "artefacts": "heavy phasey and metallic processing throughout",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "quick neutral burst",
+   "matches": true,
+   "artefacts": "choppy joins and abrupt cutoff",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "upbeat chirp",
+   "matches": true,
+   "artefacts": "choppy joins at tail",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "energetic synthetic babble",
+   "top_fix": "ease extreme pitch-scaling to reduce metallic artifacts"
+  }
+ ],
+ "vale_v5": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "mildly curious",
+   "matches": true,
+   "artefacts": "slight metallic resonance throughout",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "warm cheerful",
+   "matches": true,
+   "artefacts": "none",
+   "chipmunk": 4,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 7
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "startled query",
+   "matches": true,
+   "artefacts": "robotic transient at 00:00",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "puzzled muttering",
+   "matches": true,
+   "artefacts": "slight warble at 00:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "subdued murmuring",
+   "matches": false,
+   "artefacts": "phasey breath tail at 00:01",
+   "chipmunk": 4,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "hesitant neutral",
+   "matches": true,
+   "artefacts": "choppy joins between syllables at 00:00.6",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_thinking",
+   "emotion_heard": "quizzical pause",
+   "matches": true,
+   "artefacts": "micro-clicks at syllable boundaries",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "overall",
+   "fits_character": 5,
+   "distinct_voice": "guttural cartoon gibberish with slight elder warmth",
+   "top_fix": "Smooth syllable crossfades and lower overall tempo to match unhurried grandfather persona."
+  }
+ ],
+ "june_v5": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "inquisitive chatter",
+   "matches": true,
+   "artefacts": "metallic warble around 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "cheerful giggle",
+   "matches": true,
+   "artefacts": "phasey high frequencies at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "startled curiosity",
+   "matches": true,
+   "artefacts": "clicks on syllable transients 0:00-0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "pensive hesitation",
+   "matches": true,
+   "artefacts": "choppy joins around 0:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "secretive whisper",
+   "matches": true,
+   "artefacts": "phasey noise floor throughout",
+   "chipmunk": 4,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq1_whisper",
+   "emotion_heard": "hushed murmur",
+   "matches": true,
+   "artefacts": "choppy joins between syllables at 0:00",
+   "chipmunk": 4,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "brief chirp",
+   "matches": true,
+   "artefacts": "robotic onset click at 0:00",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "overall",
+   "fits_character": 5,
+   "distinct_voice": "Generic pitched chatter with noticeable synthetic processing.",
+   "top_fix": "Lower base pitch and crossfade syllable boundaries to reduce robotic artifacts."
+  }
+ ],
+ "kit_v5": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "perky conversational",
+   "matches": true,
+   "artefacts": "metallic edge at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [
+    "boba"
+   ],
+   "charm": 6
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "amused delight",
+   "matches": true,
+   "artefacts": "slight warble at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 7
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "curious astonishment",
+   "matches": true,
+   "artefacts": "phasey quality at 0:00.6",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [
+    "hola"
+   ],
+   "charm": 6
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "musing contemplation",
+   "matches": true,
+   "artefacts": "mild robotic undertone around 0:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "hushed intrigue",
+   "matches": true,
+   "artefacts": "breath noise warble at 0:00.8",
+   "chipmunk": 4,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 7
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "matter-of-fact chatter",
+   "matches": true,
+   "artefacts": "choppy joins at 0:00.4 and 0:00.9",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "bubbly excitement",
+   "matches": true,
+   "artefacts": "clicks at transitions around 0:00.6",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "eccentric high-register theatrical babble",
+   "top_fix": "lower formant shift slightly to enhance grand aunt warmth and smooth syllable crossfades"
+  }
+ ],
+ "pip_final": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "inquisitive neutral",
+   "matches": true,
+   "artefacts": "slight metallic resonance around 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "cheerful",
+   "matches": true,
+   "artefacts": "none",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 7
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "startled wonder",
+   "matches": true,
+   "artefacts": "slight warble at 0:01",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "pensive",
+   "matches": true,
+   "artefacts": "none",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "conspiratorial whisper",
+   "matches": true,
+   "artefacts": "minor phasey breath texture throughout",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 7
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "neutral prompt",
+   "matches": true,
+   "artefacts": "choppy joins between syllables",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "seq2_surprised",
+   "emotion_heard": "mild surprise",
+   "matches": true,
+   "artefacts": "choppy join at 0:00.3",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "overall",
+   "fits_character": 7,
+   "distinct_voice": "playful animated babble with expressive melodic contours",
+   "top_fix": "smooth syllable boundaries and soften upper-mid pitch processing"
+  }
+ ],
+ "bea_final": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "confident chatter",
+   "matches": true,
+   "artefacts": "mild metallic resonance throughout",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "cheerful excitement",
+   "matches": true,
+   "artefacts": "slight robotic sheen around 0:01",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [
+    "keep"
+   ],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "startled gasp",
+   "matches": true,
+   "artefacts": "none",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "curious musing",
+   "matches": true,
+   "artefacts": "mild phasey high end at 0:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "hushed conspiratorial",
+   "matches": true,
+   "artefacts": "subtle sibilant warble at 0:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "matter-of-fact",
+   "matches": true,
+   "artefacts": "choppy joins between syllables",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "perky chirp",
+   "matches": true,
+   "artefacts": "micro-click at 0:00.1",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [
+    "keep"
+   ],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "punchy youthful babble",
+   "top_fix": "lower pitch shift slightly to reduce chipmunk quality"
+  }
+ ],
+ "vale_final": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "calm mutter",
+   "matches": true,
+   "artefacts": "mild metallic resonance around 0:01",
+   "chipmunk": 3,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "jovial chuckle",
+   "matches": true,
+   "artefacts": "none",
+   "chipmunk": 3,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "startled grunt",
+   "matches": true,
+   "artefacts": "minor click at 0:00 onset",
+   "chipmunk": 4,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "pensive mumble",
+   "matches": true,
+   "artefacts": "slight phasey decay at 0:02",
+   "chipmunk": 3,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "hushed murmur",
+   "matches": true,
+   "artefacts": "grainy noise floor across clip",
+   "chipmunk": 3,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "staccato chatter",
+   "matches": true,
+   "artefacts": "choppy joins between syllables",
+   "chipmunk": 4,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_thinking",
+   "emotion_heard": "halting ponder",
+   "matches": true,
+   "artefacts": "abrupt syllable cutoffs",
+   "chipmunk": 3,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "gruff dry grandfather",
+   "top_fix": "smooth runtime crossfades"
+  }
+ ],
+ "june_final": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "Inquisitive",
+   "matches": true,
+   "artefacts": "Slight metallic sheen and phasey highs around 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "see"
+   ],
+   "charm": 5
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "Cheerful",
+   "matches": true,
+   "artefacts": "Minor digital roughness around 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "Startled",
+   "matches": true,
+   "artefacts": "Phasey tail and abrupt stop at 0:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "see"
+   ],
+   "charm": 5
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "Contemplative",
+   "matches": true,
+   "artefacts": "Robotic warble in vowels around 0:01",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [
+    "money"
+   ],
+   "charm": 6
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "Conspiratorial",
+   "matches": true,
+   "artefacts": "Harsh sibilance and phasey breath throughout",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq1_whisper",
+   "emotion_heard": "Secretive",
+   "matches": true,
+   "artefacts": "Choppy joins and abrupt micro-fades",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 4
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "Playful",
+   "matches": true,
+   "artefacts": "Boundary clicks and fragmented decay",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": true,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "Energetic, synthetic high chatter",
+   "top_fix": "Reduce artificial pitch scaling and smooth syllable crossfades"
+  }
+ ],
+ "kit_final": [
+  {
+   "clip": "neutral_p4",
+   "emotion_heard": "calmly theatrical",
+   "matches": true,
+   "artefacts": "mild metallic timbre around 00:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [
+    "boba"
+   ],
+   "charm": 6
+  },
+  {
+   "clip": "happy_p4",
+   "emotion_heard": "delighted chuckling",
+   "matches": true,
+   "artefacts": "slight warble at 00:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 7
+  },
+  {
+   "clip": "surprised_p4",
+   "emotion_heard": "startled curiosity",
+   "matches": true,
+   "artefacts": "minor phasey sizzle at 00:00-00:01",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "thinking_p4",
+   "emotion_heard": "pondering lilt",
+   "matches": true,
+   "artefacts": "none",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 7
+  },
+  {
+   "clip": "whisper_p4",
+   "emotion_heard": "hushed intrigue",
+   "matches": true,
+   "artefacts": "mild breathy phasey hiss at 00:00",
+   "chipmunk": 5,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 6
+  },
+  {
+   "clip": "seq1_neutral",
+   "emotion_heard": "staccato delivery",
+   "matches": true,
+   "artefacts": "choppy joins at 00:00 and 00:01",
+   "chipmunk": 6,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "seq2_happy",
+   "emotion_heard": "bubbly chatter",
+   "matches": true,
+   "artefacts": "choppy joins throughout 00:00-00:01",
+   "chipmunk": 7,
+   "sounds_like_stock_ai_voice": false,
+   "real_words": [],
+   "charm": 5
+  },
+  {
+   "clip": "overall",
+   "fits_character": 6,
+   "distinct_voice": "Operatic, eccentric elderly cadence with light chipmunk lift.",
+   "top_fix": "Lower pitch slightly and soften syllable crossfades in runtime sequences."
+  }
+ ]
+}
