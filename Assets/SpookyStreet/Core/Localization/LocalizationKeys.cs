@@ -36,6 +36,12 @@ namespace SpookyStreet.Core.Localization
         public const string TipGlide = "tip.move.glide";
         public const string TipDive = "tip.move.dive";
 
+        /// <summary>First wall slide (S003): Jump kicks off the wall.</summary>
+        public const string TipWallJump = "tip.move.wall_jump";
+
+        /// <summary>First ledge hang (S003): Jump climbs up.</summary>
+        public const string TipLedgeClimb = "tip.move.ledge_climb";
+
         public const string PauseHeading = "ui.pause.heading";
         public const string PauseResume = "ui.pause.resume";
         public const string PauseBackToTitle = "ui.pause.back_to_title";
@@ -45,7 +51,7 @@ namespace SpookyStreet.Core.Localization
             TitleGameName, TitleCaseName, TitleNewGame, TitleContinue, TitleLanguageToggle, TitleBuildLabel, TitleContinueDetail,
             PromptMoveTouch, PromptMoveKeyboard, PromptMoveGamepad,
             HudPause, HudJump, HudUse, HudRoll, HudDive,
-            TipHoldJump, TipChainJump, TipGlide, TipDive,
+            TipHoldJump, TipChainJump, TipGlide, TipDive, TipWallJump, TipLedgeClimb,
             PauseHeading, PauseResume, PauseBackToTitle,
         };
 

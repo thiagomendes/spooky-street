@@ -46,6 +46,26 @@ namespace SpookyStreet.Player
         /// <summary>Rising with Jump held since take-off (the higher, held jump).</summary>
         public bool HoldingJumpRise => _state.HoldingJumpRise;
 
+        /// <summary>Sliding down a marked wall (S003).</summary>
+        public bool WallSliding => _state.WallSliding;
+
+        /// <summary>Hanging from a marked ledge (S003).</summary>
+        public bool Hanging => _state.Hanging;
+
+        /// <summary>Climbing up from a hang onto the ledge's top (S003).</summary>
+        public bool Climbing => _state.Climbing;
+
+        /// <summary>Where Pip last touched a wall at chest height when she kicked off it (feedback anchor).</summary>
+        public Vector3 LastKickPoint { get; private set; }
+
+        /// <summary>The edge point Pip's hands caught at the last ledge grab (feedback anchor).</summary>
+        public Vector3 LastGrabPoint { get; private set; }
+
+        /// <summary>The wall and ledge measurements of the last step (tests and diagnostics).</summary>
+        public WallProbe LastWallProbe { get; private set; }
+
+        public LedgeProbe LastLedgeProbe { get; private set; }
+
         /// <summary>Use would dive now (in the air, no dive yet this airtime).</summary>
         public bool CanDive => _data != null && _state.CanDive(_data);
 
@@ -142,6 +162,7 @@ namespace SpookyStreet.Player
 
             Vector3 desired = right * move.x + forward * move.y;
             Vector3 facing = transform.forward;
+            float groundDistance = _state.Grounded ? 0f : GroundDistanceBelow();
             var motorInput = new MotorInput
             {
                 MoveX = desired.x,
@@ -150,13 +171,31 @@ namespace SpookyStreet.Player
                 JumpHeld = _input.ReadJumpHeld(),
                 UsePressed = _input.ConsumeUsePressed(),
                 InteractionAvailable = InteractionAvailable,
-                GroundDistance = _state.Grounded ? 0f : GroundDistanceBelow(),
+                GroundDistance = groundDistance,
                 FacingX = facing.x,
                 FacingZ = facing.z,
+                FeetY = transform.position.y,
+                StickY = move.y,
             };
+            ProbeClimbSurfaces(ref motorInput, groundDistance);
+            LastWallProbe = motorInput.Wall;
+            LastLedgeProbe = motorInput.Ledge;
 
             Vector3 before = transform.position;
             MotorStep step = MovementModel.Step(ref _state, motorInput, _controller.isGrounded, dt, _data);
+            if (step.WallJumped)
+            {
+                LastKickPoint = before + Vector3.up * ClimbProbes.ChestHeight -
+                                new Vector3(_state.KickNormalX, 0f, _state.KickNormalZ) * _data.BodyRadius;
+            }
+
+            if (step.LedgeGrabbed)
+            {
+                var ledge = motorInput.Ledge;
+                LastGrabPoint = before + new Vector3(-ledge.NormalX * ledge.EdgeDistance, ledge.TopAbove,
+                    -ledge.NormalZ * ledge.EdgeDistance);
+            }
+
             if (step.Interacted && UseTargets != null)
             {
                 UseTargets.Interact();
@@ -176,8 +215,8 @@ namespace SpookyStreet.Player
             LastStep = step;
             Stepped?.Invoke(step);
 
-            // A glide with ground below is a controlled descent; a glide over the void still counts as falling.
-            bool glidingOverGround = _state.Gliding && GroundBelow();
+            // A glide or a wall slide with ground below is a controlled descent; over the void it still counts as falling.
+            bool glidingOverGround = (_state.Gliding || _state.WallSliding) && GroundBelow();
             if (_safeGround.Tick(_controller.isGrounded, _state.VelocityY, dt, glidingOverGround))
             {
                 ReturnToSafeGround();
@@ -209,8 +248,44 @@ namespace SpookyStreet.Player
             return 0f;
         }
 
+        /// <summary>
+        /// Fills the wall and ledge probes (S003) while airborne and free; nothing on the ground, while held by a ledge
+        /// (the hang keeps its own ledge) or while rising too fast to catch one.
+        /// </summary>
+        private void ProbeClimbSurfaces(ref MotorInput motorInput, float groundDistance)
+        {
+            if (_state.Grounded || _state.Hanging || _state.Climbing)
+            {
+                return;
+            }
+
+            int mask = Physics.DefaultRaycastLayers & ~(1 << gameObject.layer);
+            Vector3 feet = transform.position;
+            float clearance = groundDistance > 0f ? groundDistance : 100f;
+            motorInput.Wall = ClimbProbes.Wall(feet, _data, clearance);
+            if (_state.VelocityY <= _data.LedgeGrabMaxRiseSpeed && _state.LedgeRegrabLeft <= 0f)
+            {
+                motorInput.Ledge = ClimbProbes.Ledge(feet, _data, mask, _controller.height, _controller.radius);
+            }
+        }
+
+        /// <summary>Turn rate (degrees per second) toward a wall or ledge Pip is held by.</summary>
+        private const float FaceWallDegreesPerSecond = 1080f;
+
         private void FaceVelocity(float dt)
         {
+            if (_state.FacingWall)
+            {
+                var into = new Vector3(-_state.FacedNormalX, 0f, -_state.FacedNormalZ);
+                if (into.sqrMagnitude > 1e-4f)
+                {
+                    transform.rotation = Quaternion.RotateTowards(transform.rotation,
+                        Quaternion.LookRotation(into, Vector3.up), FaceWallDegreesPerSecond * dt);
+                }
+
+                return;
+            }
+
             var velocity = new Vector3(_state.VelocityX, 0f, _state.VelocityZ);
             if (velocity.sqrMagnitude < 0.04f)
             {

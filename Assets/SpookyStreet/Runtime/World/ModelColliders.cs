@@ -1,3 +1,4 @@
+using SpookyStreet.Core.Movement;
 using SpookyStreet.Core.World;
 using UnityEngine;
 
@@ -60,6 +61,10 @@ namespace SpookyStreet.World
                         capsule.height = axis.magnitude + 2f * part.Radius;
                         break;
                 }
+
+                // S003: the few parts marked for the wall jump or the ledge grab (faces turn with the model).
+                SurfaceMarks marks = CollisionRules.MarksForPart(recipe.Model, part.Name, out float faceX, out float faceZ);
+                ClimbSurface.Mark(go, marks, holder.rotation * new Vector3(faceX, 0f, faceZ));
             }
 
             return holder;

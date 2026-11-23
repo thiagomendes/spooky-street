@@ -30,6 +30,9 @@ namespace SpookyStreet.Core.Animation
         public bool Gliding;
         public bool WallSliding;
         public bool LedgeHanging;
+
+        /// <summary>Pip kicked off a wall this frame (S003): the take-off plays again, as for a jump.</summary>
+        public bool Kicked;
     }
 
     /// <summary>Idle/walk/run weights; they always sum to 1.</summary>
@@ -119,7 +122,7 @@ namespace SpookyStreet.Core.Animation
             }
             else
             {
-                if (_wasGrounded && input.VerticalSpeed > TakeoffSpeed)
+                if (input.Kicked || (_wasGrounded && input.VerticalSpeed > TakeoffSpeed))
                 {
                     _startTimer = JumpStartDuration;
                     _landTimer = 0f;

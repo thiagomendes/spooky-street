@@ -44,6 +44,34 @@ MonoBehaviour:
   diveSpeed: 5.5
   diveHopVelocity: 3
   diveTurnRateDegrees: 90
+  wallContactSlack: 0.12
+  wallSlideMinFeetHeight: 0.35
+  wallSlideIntoMin: 0.3
+  wallSlideGripTime: 0.2
+  wallSlideGripSpeed: 0.6
+  wallSlideSpeed: 1.5
+  wallSlideBrakeDeceleration: 30
+  wallSlideReleaseTime: 0.25
+  wallJumpHeight: 1.2
+  wallJumpAwaySpeed: 4.5
+  wallJumpCoyoteTime: 0.2
+  wallJumpControlLockTime: 0.25
+  wallJumpLockedAirControl: 0.15
+  ledgeHangHandHeight: 1.27
+  ledgeHangWallOffset: 0.34
+  ledgeGrabReachBelow: 0.35
+  ledgeGrabReachAbove: 0.3
+  ledgeGrabReachForward: 0.35
+  ledgeGrabMaxRiseSpeed: 1.5
+  ledgeMinHangClearance: 0.15
+  ledgeSnapTime: 0.1
+  ledgeClimbTime: 0.4
+  ledgeClimbRiseFraction: 0.6
+  ledgeClimbInset: 0.4
+  ledgeClimbLift: 0.06
+  ledgeDropHoldTime: 0.1
+  ledgeDropPushSpeed: 1
+  ledgeRegrabDelay: 0.4
   height: 1.1
   radius: 0.28
   stepOffset: 0.2
