@@ -9,8 +9,8 @@ enterable places, D25 portability, spec §6 premium bar and §1 exclusions (no c
 
 ## 1. The neighbourhood as a world
 
-The town is **Lantern Hollow** *(placeholder until the owner names it, D27; use it only in docs, never in shipped
-strings or stable IDs)*, a small valley neighbourhood. Lantern Lane is its oldest street. The
+The town is **Candlebrook** *(owner's choice, 2026-11-23, D27.1; a proper noun kept in every language; never part of stable
+IDs)*, a small valley neighbourhood along a brook. Lantern Lane is its oldest street. The
 map grows outward one place per case, connected on foot (a street-level hub, no world map menu), so every new place
 also opens a new view back on the old ones.
 
@@ -19,7 +19,7 @@ also opens a new view back on the old ones.
 | **Lantern Lane** (case 01) | cosy party street, candlelit porches | ramp and bridge, bench viewpoint, glide off roofs | Bea, June, Mr. Vale, Aunt Kit | sounds from a shut house | owl house (bigger inside), treehouse (seamless) |
 | **Bramble Row** | narrow, tall houses, washing lines and roof lanterns | **ledge grab** and rooftop paths | Mrs. Ortega the retired lamplighter (owl-and-moon witch), the Penn twins (skeleton and ghost sheets) | a light that walks across roofs | lamplighter's loft (seamless) |
 | **Hollow Park** | open lawns, bandstand, hilltop kites | **glide on updrafts** from vents and hilltops | Coach Amara (scarecrow), Theo (dragon, age 7) | kites that fly with nobody holding them | bandstand under-stage (seamless) |
-| **Lantern Hollow School** | after-hours school dressed for the Halloween fair | **wall jump** in the courtyard chimneys and stairwells | Mr. Dunmore the caretaker (friendly ghost-in-overalls), Ms. Lee the music teacher (bat) | a bell that rings at midnight | hall and bell tower (bigger inside) |
+| **Candlebrook School** | after-hours school dressed for the Halloween fair | **wall jump** in the courtyard chimneys and stairwells | Mr. Dunmore the caretaker (friendly ghost-in-overalls), Ms. Lee the music teacher (bat) | a bell that rings at midnight | hall and bell tower (bigger inside) |
 | **Market Corner** | bakery, cart stalls, warm smells | **push and carry** light crates to make steps | Rosa the baker (gingerbread witch), Mr. Okafor the cart man (pirate) | footprints in the flour at night | bakery (bigger inside) |
 | **The Old Mill** | brook, mossy wheel, fireflies (paper) | **turning wheels and floating logs** (timed only by water, never a countdown) | Grandpa Ilse the miller (wizard) | singing from the mill at night | mill floors (bigger inside) |
 | **Woods' Edge** | the orchard and lantern-lit trail where the town ends, never deep dark woods | **torch beam** reveals shadow shapes; no dark navigation (spec §6) | Bea and June's dad (fox costume), the orchard keeper | a giant fox shadow on the trees | orchard shed (seamless) |
@@ -118,7 +118,7 @@ Each thread is planted in the finale (and lightly before it), is kind, and invit
 season 1 feel unfinished. None is ever advertised as something to buy.
 
 1. **The Players' touring map.** In the Players' hall, an old map shows lantern marks in towns beyond the valley:
-   the troupe once toured, and some machines may still be out there. A later season can leave Lantern Hollow.
+   the troupe once toured, and some machines may still be out there. A later season can leave Candlebrook.
 2. **The unfinished machine.** A plan signed by every Player, one part missing, labelled "for next year". The
    whole street wonders what it does; building it is a natural next season's spine.
 3. **The shooting-star wink.** As the festival ends, a shooting star crosses the paper sky and the owl on Kit's
@@ -159,8 +159,8 @@ Details and guardrails: `docs/engagement.md`.
 2. **One street or a growing map?** (a) Each case adds a connected place you can walk to. (b) Each case is a separate
    level picked from a menu. **Decided (a)**, as recommended: the living neighbourhood is a pillar; the D24.1
    threshold technique keeps scene costs down.
-3. **The town's name, Lantern Hollow?** (a) Adopt. (b) Owner names it. **Open:** the owner will choose; Lantern
-   Hollow stays a placeholder.
+3. **The town's name?** **Decided 2026-11-23 (D27.1):** the owner chose **Candlebrook** from four options
+   (Owlbury, Lanternby, Candlebrook, Hollowmere).
 4. **Machines are never magic?** (a) Always a mechanical, kind explanation. (b) Allow one gentle unexplained wonder
    in the finale. **Decided** as recommended: (a) for the cases, with (b) as the final shooting-star wink only
    (§4.1 thread 3).
