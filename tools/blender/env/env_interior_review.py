@@ -184,7 +184,7 @@ def main():
         tag = "Mech" + state
         lib.load("WorkshopMechanism", tag, (mx + 6.0 * i, 0.0, 0.0, 0.0), tag)
         turn(lib, tag, "ServicePanel", "Z", 112)
-        HIDDEN.update((lib.parts[tag]["LinkArm_" + ("Seated" if state == "Slipped" else "Slipped")], lib.parts[tag]["KitPhoto"]))
+        HIDDEN.add(lib.parts[tag]["LinkArm_" + ("Seated" if state == "Slipped" else "Slipped")])
         if state == "Seated":  # a lobe under the roller: follower up, the arm riding on its cradle
             lift = 6.6
             turn(lib, tag, "Cam", "Z", 76)

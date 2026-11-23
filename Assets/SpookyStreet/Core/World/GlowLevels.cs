@@ -56,6 +56,13 @@ namespace SpookyStreet.Core.World
         /// </summary>
         public const float NookLamp = 1.2f;
 
+        /// <summary>
+        /// The S004 keepsake lanterns (the bat mobile's three little lanterns and Pip's lantern pail, parts named
+        /// <c>Keepsake*_Glow</c>): a warm inner glow kept under the bloom threshold, so a keepsake never reads as a clue
+        /// or outshines a practical.
+        /// </summary>
+        public const float KeepsakeLantern = 0.9f;
+
         /// <summary>Unlit moon disc colour scale: under the bloom threshold so it never competes with the attic.</summary>
         public const float Moon = 0.92f;
 
@@ -103,6 +110,11 @@ namespace SpookyStreet.Core.World
             if (objectName.StartsWith("Face", StringComparison.Ordinal))
             {
                 return JackFace;
+            }
+
+            if (objectName.StartsWith("Keepsake", StringComparison.Ordinal))
+            {
+                return KeepsakeLantern;
             }
 
             if (objectName.StartsWith("PaperBat", StringComparison.Ordinal))

@@ -301,7 +301,7 @@ def _house(craft):
 
 def _dressing(craft):
     pr.DETAIL = 0.75
-    oh.dress_house(craft, pk.paints(craft), lights=False)
+    oh.dress_house(craft, pk.paints(craft), lights=False, crest=False)
     pr.DETAIL = 1
 
 

@@ -95,7 +95,7 @@
   "px_per_m": 66
  },
  "WorkshopMechanism": {
-  "triangles": 5420,
+  "triangles": 4710,
   "children": {
    "Cam": {
     "triangles": 1224,
@@ -119,14 +119,6 @@
      -0.72,
      0.38,
      0.66
-    ]
-   },
-   "KitPhoto": {
-    "triangles": 710,
-    "pivot": [
-     -0.62,
-     0.0,
-     1.52
     ]
    },
    "LinkArm_Seated": {
@@ -155,7 +147,7 @@
    }
   },
   "atlas": "WorkshopMechanism",
-  "px_per_m": 214
+  "px_per_m": 222
  },
  "ShedRamp": {
   "triangles": 11948,

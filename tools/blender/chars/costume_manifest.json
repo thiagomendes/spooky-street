@@ -1,0 +1,30 @@
+{
+ "star_cape": {
+  "file": "PipStarCape_BaseColor.png",
+  "lining_texels": 132603,
+  "star_texels": 11922
+ },
+ "PipShowmanHat": {
+  "triangles": 1267,
+  "children": {},
+  "atlas": "PipCostume",
+  "px_per_m": 652,
+  "socket": "Head"
+ },
+ "PipLanternPail": {
+  "triangles": 924,
+  "children": {
+   "KeepsakePail_Glow": {
+    "triangles": 320,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "PipCostume",
+  "px_per_m": 652,
+  "socket": "Pail"
+ }
+}

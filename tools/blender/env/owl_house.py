@@ -374,7 +374,35 @@ def build_house(craft, dress=True, lights=True, attic=3.4):
         dress_house(craft, P, lights)
 
 
-def dress_house(craft, P, lights=True):
+CREST_D = 0.35  # the Players' owl crest over the booth (S004 plan section 2.2): it reads from the plaza
+# Builder space: hung from the porch beam on the door's axis, in front of the bunting, so that from the plaza it
+# sits right over the ticket shutter. (On the door head itself the porch bunting hides it from the plaza.)
+CREST_AT = Vector((0.0, -2.07, FLOOR + POST - 0.125))
+
+
+def crest_sign(b, craft, P, M=None, reach=0.095):
+    """The booth's sign: the owl crest carved and painted on a round board, on two brass hangers.
+    Origin at the board's centre, on its back face; it faces -Y. `reach`: how far behind it the beam's face is."""
+    board = craft.timber(E["night"], "X", wear=0.25, bare=E["purple"])
+    r = CREST_D / 2
+    with b.at(M if M is not None else T()):
+        b.disc(P["trim_x"], r + 0.012, 0.022, T(0, -0.022, 0), segs=40, bevel=0.006)  # backing board, a bone edge all round
+        el.crest(b, craft, CREST_D, T(0, -0.022, 0), board=board)
+        for sx in (-1, 1):
+            x = sx * r * 0.5
+            top = r * math.cos(math.asin(0.5))
+            b.box(P["brass"], (0.022, 0.012, 0.11), (x, -0.008, top + 0.035), bevel=0.004, tint=1.0)
+            b.cyl(P["brass"], 0.012, 0.016, T(x, -0.02, top - 0.012) @ R("X", 90), segments=8, tint=1.0)
+            b.box(P["brass"], (0.022, reach + 0.012, 0.014), (x, reach / 2 - 0.008, top + 0.083), bevel=0.004, tint=1.0)  # arm to the beam
+
+
+def build_crest_sign(craft):
+    b = Builder(131)
+    crest_sign(b, craft, pk.paints(craft))
+    return b.finish("OwlCrest")
+
+
+def dress_house(craft, P, lights=True, crest=True):
     """Halloween dressing: jack-o'-lanterns on the steps, bunting, bat garlands, the porch lamp, a little candy
     bowl on a stool, a broom, a doormat and paper cut-outs in the windows."""
     b = Builder(110)
@@ -425,6 +453,8 @@ def dress_house(craft, P, lights=True):
     for k in range(4):
         b.lathe(stone, [(0.0, 0.0), (0.3, 0.0), (0.3, 0.025), (0.24, 0.045), (0.0, 0.045)], 9,
                 T(0.12 * (-1) ** k, -3.25 - 0.72 * k, 0) @ R("Z", 37 * k) @ S(1.0, 0.8, 1.0), radial=lambda a, i: 1 + 0.08 * math.cos(3 * a + 1), tint=b.vary(0.8, 1.2))
+    if crest:  # the game loads it as its own model (`OwlCrest`, env_export_keepsakes.py)
+        crest_sign(b, craft, P, T(*CREST_AT))
     b.finish("House_Dressing")
     if lights:
         el.point_light("PorchLamp", lamp + Vector((0.0, -0.1, -0.42)), 55, (1.0, 0.7, 0.38), 0.12, shadow=True)
@@ -470,6 +500,8 @@ def main():
         "side": ((-42.0, 2.0, 3.4), (0.0, 2.0, 4.75), 104, 1000, 720, ["House"]),
         "door": ((-1.6, -7.2, 1.75), (-0.05, 0.0, 1.62), 60, 500, 720, ["House"]),
         "owl": ((-3.4, -7.0, 6.9), (0.0, 0.3, 7.65), 50, 500, 720, ["House"]),
+        "plaza": ((0.6, -13.0, 2.3), (0.0, 0.0, 2.6), 35, 844, 390, ["House"]),  # the play camera's view from the plaza, phone shaped
+        "crest": ((-0.5, -4.2, 2.2), (0.0, -2.0, CREST_AT.z), 70, 500, 500, ["House"]),
         "kit": ((-8.0, 40.0 - 80.0, 13.0), (0.0, 40.4, 1.15), 122, 2000, 440, kit_names),
     }
     todo = [v for v in rest if v in views] or list(views)
@@ -480,7 +512,7 @@ def main():
         bpy.context.scene.view_settings.exposure = 0.9 if name == "kit" else 0.0
         tiles[name] = el.render_view(cam, loc, target, lens, int(w * k), int(h * k), f"{tmp}_{name}.png")
         print("rendered", name, flush=True)
-    if len(todo) < len(views):
+    if len(todo) < len(views) or "plaza" in tiles:
         el.co.save_sheet(np.concatenate([el.pad(tiles[n], max(t.shape[1] for t in tiles.values()), tiles[n].shape[0]) for n in todo][::-1], axis=0), out)
     else:
         rows = [np.concatenate([tiles["hero"], tiles["front"]], axis=1),
