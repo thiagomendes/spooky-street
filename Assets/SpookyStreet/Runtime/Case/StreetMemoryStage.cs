@@ -107,8 +107,9 @@ namespace SpookyStreet.Case
                 return null;
             }
 
+            // The bicycle's basket end, as imported: CI run 137 (r_bea_sticker) showed the model's +Z is the saddle end.
             float r = bike.Yaw * Mathf.Deg2Rad;
-            var front = new Vector3(Mathf.Sin(r), 0f, Mathf.Cos(r));
+            var front = -new Vector3(Mathf.Sin(r), 0f, Mathf.Cos(r));
             var side = new Vector3(Mathf.Cos(r), 0f, -Mathf.Sin(r));
             // The side of the basket that faces the plaza (east).
             if (side.x < 0f)

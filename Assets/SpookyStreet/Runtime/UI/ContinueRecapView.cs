@@ -130,9 +130,9 @@ namespace SpookyStreet.UI
             UiFactory.StitchLayer(stamp.transform, WitchGreen);
             _stamp = stamp.gameObject;
 
-            _stickers = UiFactory.Place(UiFactory.Rect(_card, "Stickers"), topLeft, new Vector2(170f, -186f),
-                new Vector2(232f, 46f), topLeft);
-            _count = UiFactory.Label(_card, "Count", null, 20, TextAnchor.MiddleCenter, Graphite, UiFactory.BoldFont);
+            _stickers = UiFactory.Place(UiFactory.Rect(_card, "Stickers"), topLeft, new Vector2(166f, -180f),
+                new Vector2(240f, 54f), topLeft);
+            _count = UiFactory.Label(_card, "Count", null, 22, TextAnchor.MiddleCenter, Graphite, UiFactory.BoldFont);
             UiFactory.Place(_count.rectTransform, topLeft, new Vector2(84f, -204f), new Vector2(150f, 30f));
             _count.resizeTextMinSize = 16;
         }
@@ -192,8 +192,8 @@ namespace SpookyStreet.UI
             for (int s = 0; s < icons; s++)
             {
                 string id = recap.Stickers[recap.StickerCount - icons + s]; // the latest finds
-                var card = NotebookView.StickerCard(_stickers, id, new Vector2(0f, 0.5f), new Vector2(26f + s * 54f, 0f),
-                    new Vector2(50f, 44f), s % 2 == 0 ? 3f : -3f);
+                var card = NotebookView.StickerCard(_stickers, id, new Vector2(0f, 0.5f), new Vector2(29f + s * 58f, 0f),
+                    new Vector2(56f, 52f), s % 2 == 0 ? 3f : -3f);
                 card.raycastTarget = false;
                 _stickerIds.Add(id);
             }

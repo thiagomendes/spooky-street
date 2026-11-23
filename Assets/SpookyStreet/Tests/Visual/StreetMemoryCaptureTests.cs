@@ -145,7 +145,7 @@ namespace SpookyStreet.Tests.Visual
             var booth = new Vector3(kit.X, kit.Y + 1.2f, kit.Z);
             PlacePip(new Vector3(0.9f, 0.05f, 6.2f), booth);
             yield return Wait(0.4f);
-            var brain = Frame(new Vector3(3.6f, 2.0f, 3.4f), new Vector3(0.3f, 2.6f, kit.Z));
+            var brain = Frame(new Vector3(3.6f, 2.2f, 1.8f), new Vector3(0.3f, 3.5f, kit.Z));
             yield return Shot("62_street_booth_open", Director.UiCanvas);
 
             // 63: June outside by the foot of her treehouse way, the side yard hedges behind her.
@@ -175,7 +175,7 @@ namespace SpookyStreet.Tests.Visual
             // Review: the same booth shot during a replay (case 01's memories rest until its stamp).
             Director.Replay();
             yield return Wait(0.5f);
-            Frame(new Vector3(3.6f, 2.0f, 3.4f), new Vector3(0.3f, 2.6f, kit.Z));
+            Frame(new Vector3(3.6f, 2.2f, 1.8f), new Vector3(0.3f, 3.5f, kit.Z));
             yield return Shot("r_replay_booth_resting", Director.UiCanvas, ReviewWidth, ReviewHeight);
             if (brain != null)
             {
