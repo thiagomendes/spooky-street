@@ -114,7 +114,8 @@ namespace SpookyStreet.Core.World
     /// garlands, the drive shafts, the cabin's trunk). Each room has a profile (boom, shoulder, pitch range, shortest
     /// boom). <see cref="Solve"/> keeps the player's orbit when the boom fits; otherwise it searches pitch first, then
     /// small yaw swings, then larger ones, for the longest boom with clear lines from the lens to Pip's head and chest
-    /// (and the character being talked to). <see cref="ClearDistance"/> is the per-frame probe that shortens the boom
+    /// (and the character being talked to), paying for any shot where a wall or slope beside the lens fills the frame
+    /// (<see cref="FrameCover"/>, S002 attic framing). <see cref="ClearDistance"/> is the per-frame probe that shortens the boom
     /// at once against anything in the way. A lens in a room's air sees only that room's inner faces, so it never
     /// shows the void. Pure, so every room can be swept in EditMode.
     /// </summary>
@@ -362,8 +363,9 @@ namespace SpookyStreet.Core.World
             return h <= CaseRouteLayout.CabinCeilingAt(cy) - 0.02f;
         }
 
-        /// <summary>A camera sphere at (x, y, z) is in room air and touches no solid.</summary>
-        public static bool SphereClear(float x, float y, float z, bool doorOpen, float radius = Radius)
+        /// <summary>A camera sphere at (x, y, z) is in room air and touches no solid (with <paramref name="lensOnly"/> false,
+        /// the solids only the lens keeps out of, such as June's open shutter, do not count: the shoulder is Pip's own).</summary>
+        public static bool SphereClear(float x, float y, float z, bool doorOpen, float radius = Radius, bool lensOnly = true)
         {
             if (!InAir(x, y, z))
             {
@@ -373,7 +375,7 @@ namespace SpookyStreet.Core.World
             var c = new V(x, y, z);
             foreach (var b in FixedBlockers)
             {
-                if (b.OverlapsSphere(c, radius))
+                if ((lensOnly || !b.LensOnly) && b.OverlapsSphere(c, radius))
                 {
                     return false;
                 }
@@ -404,7 +406,7 @@ namespace SpookyStreet.Core.World
             var b = new V(bx, by, bz);
             foreach (var blocker in FixedBlockers)
             {
-                if (blocker.HitsSegment(a, b, SightRadius))
+                if (!blocker.LensOnly && blocker.HitsSegment(a, b, SightRadius))
                 {
                     return blocker.Name;
                 }
@@ -422,7 +424,7 @@ namespace SpookyStreet.Core.World
         {
             for (float r = rise; r > -0.45f; r -= 0.05f)
             {
-                if (SphereClear(pipX, pipY + pivotHeight + r, pipZ, doorOpen, Radius * 0.75f))
+                if (SphereClear(pipX, pipY + pivotHeight + r, pipZ, doorOpen, Radius * 0.75f, false))
                 {
                     return r;
                 }
@@ -474,9 +476,11 @@ namespace SpookyStreet.Core.World
                 request.FocusY, request.FocusZ);
             float preferred = Clamp(request.Pitch, profile.MinPitch, profile.MaxPitch);
 
-            // The player's own framing wins whenever it fits.
+            // The player's own framing wins whenever it fits and no wall or roof slope beside the lens fills the frame.
             float d0 = Probe(scope, hand, request.Yaw, preferred, profile.Distance, targets, minDistance);
-            if (d0 >= profile.Distance - 1e-3f)
+            float allowance = CoverAllowanceFor(room);
+            if (d0 >= profile.Distance - 1e-3f &&
+                (allowance >= 1f || LensCover(hand, request.Yaw, preferred, d0, request.DoorOpen, allowance) <= allowance))
             {
                 return Shot(room, d0, preferred, 0f, rise, hand, request.Yaw, true);
             }
@@ -514,6 +518,7 @@ namespace SpookyStreet.Core.World
 
             candidates.Sort((x, y) => x.Bound.CompareTo(y.Bound));
             float lengthWeight = 8f * 2.2f / Math.Max(0.5f, profile.Distance);
+            float comfort = allowance < 1f && room != InteriorRoom.Stair ? ComfortDistance : 0f;
             foreach (var c in candidates)
             {
                 if (c.Bound >= bestScore)
@@ -527,6 +532,20 @@ namespace SpookyStreet.Core.World
                 if (d < minDistance)
                 {
                     score += 100f + (minDistance - d) * 50f;
+                }
+                else if (d < comfort - 1e-3f)
+                {
+                    // D24's bigger rooms keep 1.8 m wherever the floor allows: a wall is never dodged by a short boom.
+                    score += ComfortStep + (comfort - d) * ComfortWeight;
+                }
+
+                if (score < bestScore && allowance < 1f)
+                {
+                    // Only a shot that could still win pays for the near-cover check.
+                    // Counting stops once the shot has lost (the cover at which it would tie the best so far).
+                    float stop = bestScore < float.MaxValue ? allowance + (bestScore - score) / CoverPenalty : 1f;
+                    float cover = LensCover(hands[c.Hand].Hand, request.Yaw + c.Yaw, c.Pitch, d, request.DoorOpen, stop);
+                    score += Math.Max(0f, cover - allowance) * CoverPenalty;
                 }
 
                 if (score < bestScore)
@@ -542,6 +561,253 @@ namespace SpookyStreet.Core.World
             var bestHand = new V(request.PipX, request.PipY + request.PivotHeight + bestRise, request.PipZ);
             return Shot(room, bestD, bestPitch, bestYaw, bestRise, bestHand, request.Yaw, bestD >= minDistance);
         }
+
+        // ------------------------------------------------------------------------------------------- near cover
+
+        /// <summary>
+        /// The share of the screen (0…1) where the first surface seen from a lens at (x, y, z), looking along the
+        /// boom's yaw and pitch toward Pip, is architecture (a wall, a roof slope, a ceiling, a solid's side: not a
+        /// floor or a top seen from above) closer than <paramref name="within"/>. A grid of <paramref name="columns"/>
+        /// × <paramref name="rows"/> screen points over the 50° lens at the phone's landscape aspect; each ray is
+        /// tested against the room's closed shell (walls, roof slopes, the alcove, the openings' view boxes; the
+        /// cabin's walls and ceiling) and every indoor solid. Pip and the cast are not counted.
+        /// </summary>
+        public static float NearCover(float x, float y, float z, float yaw, float pitch, bool doorOpen,
+            float within = CoverDistance, int columns = CoverColumns, int rows = CoverRows) =>
+            Cover(x, y, z, yaw, pitch, doorOpen, within, 0f, columns, rows, FineStep, 1f);
+
+        /// <summary>
+        /// The share of the screen a wall beside the lens fills: architecture closer than <see cref="CoverDistance"/>,
+        /// or a wall or roof slope closer than <see cref="GrazeDistance"/> seen at a glancing angle (more than
+        /// <see cref="GrazeDegrees"/> off its normal; floors never count). A lens that looks along a wall a metre away sees it as a slab
+        /// smeared over a third of the frame (S002 attic framing: the front gable in frames 37 and 39), however far
+        /// each point of it is; a wall faced across the room is the room, not a slab.
+        /// </summary>
+        public static float FrameCover(float x, float y, float z, float yaw, float pitch, bool doorOpen,
+            int columns = CoverColumns, int rows = CoverRows) =>
+            Cover(x, y, z, yaw, pitch, doorOpen, CoverDistance, GrazeDistance, columns, rows, FineStep, 1f);
+
+        /// <summary>The <see cref="FrameCover"/> of a solved shot (its lens, looking along its boom).</summary>
+        public static float FrameCover(in InteriorShot shot, float orbitYaw, bool doorOpen) =>
+            FrameCover(shot.CameraX, shot.CameraY, shot.CameraZ, orbitYaw + shot.YawOffset, shot.Pitch, doorOpen);
+
+        /// <summary>The <see cref="NearCover"/> of a solved shot.</summary>
+        public static float NearCover(in InteriorShot shot, float orbitYaw, bool doorOpen, float within = CoverDistance) =>
+            NearCover(shot.CameraX, shot.CameraY, shot.CameraZ, orbitYaw + shot.YawOffset, shot.Pitch, doorOpen, within);
+
+        /// <summary>The rig's lens: 50° vertical field of view (PipMovementTuning).</summary>
+        public const float LensFieldOfView = 50f;
+
+        /// <summary>The phone's landscape aspect (iPhone 19.5:9; the capture frames are 1278 × 590).</summary>
+        public const float LensAspect = 2.166f;
+
+        /// <summary>Screen grid of the cover checks (the sweeps and the frames; the solver uses a coarser one).</summary>
+        public const int CoverColumns = 24;
+
+        public const int CoverRows = 12;
+
+        /// <summary>Any architecture closer to the lens than this fills the frame.</summary>
+        public const float CoverDistance = 1.0f;
+
+        /// <summary>A wall seen at a glancing angle fills the frame up to this far.</summary>
+        public const float GrazeDistance = 3.2f;
+
+        /// <summary>How far off a wall's normal a ray must be to glance along it.</summary>
+        public const float GrazeDegrees = 50f;
+
+        private static readonly float GrazeCos = (float)Math.Cos(GrazeDegrees * Math.PI / 180.0);
+
+        /// <summary>March step through the shell for the sweeps and frames, and the solver's coarser one.</summary>
+        private const float FineStep = 0.04f;
+
+        private const float SolveStep = 0.1f;
+
+        /// <summary>The cover; counting stops (returning more than <paramref name="stopAbove"/>) once it is exceeded.</summary>
+        private static float Cover(float x, float y, float z, float yaw, float pitch, bool doorOpen, float near,
+            float graze, int columns, int rows, float step, float stopAbove)
+        {
+            int limit = (int)Math.Floor(stopAbove * columns * rows);
+            var lens = new V(x, y, z);
+            BackDirection(yaw, pitch, out float bx, out float by, out float bz);
+            var forward = new V(-bx, -by, -bz);
+            double yr = yaw * Math.PI / 180.0;
+            var right = new V((float)Math.Cos(yr), 0f, (float)-Math.Sin(yr));
+            var up = V.Cross(forward, right);
+            float tanV = (float)Math.Tan(LensFieldOfView * 0.5 * Math.PI / 180.0);
+            float tanH = tanV * LensAspect;
+            float reach = Math.Max(near, graze);
+            var scope = InView(Near(lens, reach, null, doorOpen), lens, forward, reach,
+                (float)Math.Atan(Math.Sqrt(tanH * tanH + tanV * tanV)));
+            bool cabin = !CaseRouteLayout.Inside(x, z);
+            int covered = 0;
+            for (int i = 0; i < columns; i++)
+            {
+                float u = ((i + 0.5f) / columns * 2f - 1f) * tanH;
+                for (int k = 0; k < rows; k++)
+                {
+                    float v = ((k + 0.5f) / rows * 2f - 1f) * tanV;
+                    var dir = (forward + right * u + up * v).Normalized;
+                    if (!FirstSurface(scope, lens, dir, reach, cabin, step, out float t, out var n) || IsFloor(n))
+                    {
+                        continue;
+                    }
+
+                    bool glancing = Math.Abs(V.Dot(n, dir)) < GrazeCos;
+                    if (t < near || (glancing && t < graze))
+                    {
+                        covered++;
+                        if (covered > limit)
+                        {
+                            return covered / (float)(columns * rows);
+                        }
+                    }
+                }
+            }
+
+            return covered / (float)(columns * rows);
+        }
+
+        /// <summary>The share of the screen walls beside the lens may fill before a shot pays for it (the cabin is all near walls).</summary>
+        public static float CoverAllowanceFor(InteriorRoom room)
+        {
+            switch (room)
+            {
+                case InteriorRoom.Cabin:
+                case InteriorRoom.None:
+                    return 1f;
+                case InteriorRoom.Stair:
+                    return StairCoverAllowance;
+                default:
+                    return CoverAllowance;
+            }
+        }
+
+        /// <summary>The share of the screen a wall beside the lens may fill in the hall, the attic and the alcove.</summary>
+        public const float CoverAllowance = 0.08f;
+
+        /// <summary>The boom the hall, the attic and the alcove keep wherever there is room for it (D24).</summary>
+        public const float ComfortDistance = 1.8f;
+
+        /// <summary>Score cost of a boom below <see cref="ComfortDistance"/>, and per metre below it.</summary>
+        public const float ComfortStep = 10f;
+
+        public const float ComfortWeight = 30f;
+
+        /// <summary>The stair is a 1.5 m wide flight between walls: its side walls always show.</summary>
+        public const float StairCoverAllowance = 0.3f;
+
+        /// <summary>Score cost per unit of screen filled past the allowance (10 % costs about 0.6 m of boom).</summary>
+        public const float CoverPenalty = 50f;
+
+        /// <summary>The solver's coarse cover grid (the sweeps use the finer default).</summary>
+        private const int SolveColumns = 12;
+
+        private const int SolveRows = 6;
+
+        private static float LensCover(V hand, float yaw, float pitch, float d, bool doorOpen, float stopAbove)
+        {
+            BackDirection(yaw, pitch, out float bx, out float by, out float bz);
+            return Cover(hand.X + bx * d, hand.Y + by * d, hand.Z + bz * d, yaw, pitch, doorOpen, CoverDistance,
+                GrazeDistance, SolveColumns, SolveRows, SolveStep, stopAbove);
+        }
+
+        private static bool IsFloor(V n) => n.Y > 0.7f;
+
+        /// <summary>The solids whose bounding spheres reach into the view cone (half-angle <paramref name="half"/> radians).</summary>
+        private static List<Blocker> InView(List<Blocker> scope, V lens, V forward, float reach, float half)
+        {
+            var list = new List<Blocker>(scope.Count);
+            foreach (var b in scope)
+            {
+                var to = b.Centre - lens;
+                float d = to.Length;
+                if (d <= b.Bound)
+                {
+                    list.Add(b); // the lens is within its bounding sphere
+                    continue;
+                }
+
+                if (d - b.Bound > reach)
+                {
+                    continue;
+                }
+
+                double off = Math.Acos(Math.Max(-1f, Math.Min(1f, V.Dot(to, forward) / d)));
+                if (off - Math.Asin(Math.Min(1f, b.Bound / d)) <= half)
+                {
+                    list.Add(b);
+                }
+            }
+
+            return list;
+        }
+
+        /// <summary>The first surface along the ray within <paramref name="max"/>: its distance and outward normal.</summary>
+        private static bool FirstSurface(List<Blocker> scope, V lens, V dir, float max, bool cabin, float step, out float hit,
+            out V normal)
+        {
+            hit = max;
+            normal = new V(0f, 0f, 0f);
+            bool found = false;
+            foreach (var b in scope)
+            {
+                if (b.Entry(lens, dir, hit, out float t, out var n) && t < hit)
+                {
+                    hit = t;
+                    normal = n;
+                    found = true;
+                }
+            }
+
+            // The shell, marched up to the first solid. The face crossed is the axis whose change alone closes the
+            // step (a roof slope closes on both x and y; the hall floor on y alone).
+            var q = lens;
+            for (float t = step; t < hit; t += step)
+            {
+                var p = lens + dir * t;
+                if (Open(p, cabin))
+                {
+                    q = p;
+                    continue;
+                }
+
+                // Narrow the crossing down to a few millimetres before reading the face off it.
+                for (int i = 0; i < 4; i++)
+                {
+                    var m = (q + p) * 0.5f;
+                    if (Open(m, cabin))
+                    {
+                        q = m;
+                    }
+                    else
+                    {
+                        p = m;
+                    }
+                }
+
+                bool xs = !Open(new V(p.X, q.Y, q.Z), cabin);
+                bool ys = !Open(new V(q.X, p.Y, q.Z), cabin);
+                bool zs = !Open(new V(q.X, q.Y, p.Z), cabin);
+                float nx = xs ? -Math.Sign(dir.X) : 0f;
+                float ny = ys ? -Math.Sign(dir.Y) : 0f;
+                float nz = zs ? -Math.Sign(dir.Z) : 0f;
+                if (!xs && !ys && !zs)
+                {
+                    nx = -dir.X;
+                    ny = -dir.Y;
+                    nz = -dir.Z;
+                }
+
+                hit = (p - lens).Length;
+                normal = new V(nx, ny, nz).Normalized;
+                return true;
+            }
+
+            return found;
+        }
+
+        private static bool Open(V p, bool cabin) =>
+            cabin ? CabinAir(p.X, p.Y, p.Z) : InteriorSafety.InsideShell(p.X, p.Y, p.Z);
 
         private static InteriorShot Shot(InteriorRoom room, float d, float pitch, float yawOffset, float rise, V hand,
             float yaw, bool clear)
@@ -643,7 +909,7 @@ namespace SpookyStreet.Core.World
             {
                 foreach (var b in scope)
                 {
-                    if (b.HitsSegment(camera, targets[i], SightRadius))
+                    if (!b.LensOnly && b.HitsSegment(camera, targets[i], SightRadius))
                     {
                         return false;
                     }
@@ -708,6 +974,11 @@ namespace SpookyStreet.Core.World
             HouseBox(list, "Attic_PushRod", 2.52f, 2.64f, 4.04f, 4.16f, loft, 6.1f);
             HouseBox(list, "Attic_StarLantern", -0.42f, 0.02f, 2.2f, 2.64f, 6.6f, 7.3f);
             HouseBox(list, "Attic_OwlLantern", -0.3f, 0.3f, 0.6f, 1.3f, 6.6f, 7.5f);
+            // June's window: the inner shutter leaf, swung back into the alcove off the north jamb (no collider). The
+            // lens keeps out of it; lines of sight pass its louvres (Pip can stand against it).
+            const float jamb = CaseRouteLayout.InnerWindowZ + CaseRouteLayout.WindowHalfWidth;
+            list.Add(Blocker.Box("Attic_WindowShutter", CaseRouteLayout.InnerMinX - 0.02f, loft, jamb - 0.04f,
+                CaseRouteLayout.InnerMinX + 0.5f, loft + CaseRouteLayout.WindowSpring + 0.02f, jamb + 0.12f, true));
             CabinSolids(list);
             return list.ToArray();
         }
@@ -819,8 +1090,9 @@ namespace SpookyStreet.Core.World
             private readonly V[] _normals;
             private readonly float[] _offsets;
 
-            private Blocker(string name, V[] normals, float[] offsets, V centre, float bound)
+            private Blocker(string name, V[] normals, float[] offsets, V centre, float bound, bool lensOnly = false)
             {
+                LensOnly = lensOnly;
                 Name = name;
                 _normals = normals;
                 _offsets = offsets;
@@ -832,7 +1104,11 @@ namespace SpookyStreet.Core.World
             public V Centre { get; }
             public float Bound { get; }
 
-            public static Blocker Box(string name, float x0, float y0, float z0, float x1, float y1, float z1)
+            /// <summary>Keeps the lens out but lets lines of sight through (an open louvred leaf).</summary>
+            public bool LensOnly { get; }
+
+            public static Blocker Box(string name, float x0, float y0, float z0, float x1, float y1, float z1,
+                bool lensOnly = false)
             {
                 var normals = new[]
                 {
@@ -842,7 +1118,7 @@ namespace SpookyStreet.Core.World
                 var offsets = new[] { x1, -x0, y1, -y0, z1, -z0 };
                 var centre = new V((x0 + x1) * 0.5f, (y0 + y1) * 0.5f, (z0 + z1) * 0.5f);
                 float bound = new V(x1 - x0, y1 - y0, z1 - z0).Length * 0.5f;
-                return new Blocker(name, normals, offsets, centre, bound);
+                return new Blocker(name, normals, offsets, centre, bound, lensOnly);
             }
 
             /// <summary>The slab's box exactly as the runtime builds its collider (OwlHouseStage.SlabCollider).</summary>
@@ -887,6 +1163,58 @@ namespace SpookyStreet.Core.World
                     }
                 }
 
+                return true;
+            }
+
+            /// <summary>
+            /// Where the ray from <paramref name="a"/> along the unit <paramref name="dir"/> enters the solid, up to
+            /// <paramref name="max"/> (Cyrus–Beck), and the outward normal of the face it enters through (zero from inside).
+            /// </summary>
+            public bool Entry(V a, V dir, float max, out float t, out V normal)
+            {
+                t = 0f;
+                normal = new V(0f, 0f, 0f);
+                var mid = a + dir * (max * 0.5f);
+                if ((mid - Centre).Length > Bound + max * 0.5f)
+                {
+                    return false;
+                }
+
+                float t0 = 0f, t1 = max;
+                int face = -1;
+                for (int i = 0; i < _normals.Length; i++)
+                {
+                    float denom = V.Dot(_normals[i], dir);
+                    float num = _offsets[i] - V.Dot(_normals[i], a);
+                    if (Math.Abs(denom) < 1e-7f)
+                    {
+                        if (num < 0f)
+                        {
+                            return false;
+                        }
+
+                        continue;
+                    }
+
+                    float s = num / denom;
+                    if (denom > 0f)
+                    {
+                        t1 = Math.Min(t1, s);
+                    }
+                    else if (s > t0)
+                    {
+                        t0 = s;
+                        face = i;
+                    }
+
+                    if (t0 > t1)
+                    {
+                        return false;
+                    }
+                }
+
+                t = t0;
+                normal = face >= 0 ? _normals[face] : new V(0f, 0f, 0f);
                 return true;
             }
 

@@ -12,8 +12,9 @@ namespace SpookyStreet.Tests.Core
     /// attic should be; the sky is now hidden while Pip or the lens is indoors. The interior's standing places, a flood
     /// fill over the collider layout at Pip's capsule size, form one main area joining the hall and the attic, with no
     /// pocket Pip can get into but not out of; every arrival point and safe anchor is in it. The lens is clamped inside
-    /// the shell. The safety net sets Pip down on the nearest safe anchor when Pip is off the walkable area or pushed
-    /// without getting anywhere for several seconds.
+    /// the shell. The safety net sets Pip down on the nearest safe anchor when Pip is off the walkable area, or pushed
+    /// without getting anywhere for several seconds in a spot the walk map finds shut in (S002 attic framing): pushing
+    /// against a wall in open floor never moves her, and standing on June's head slides her gently off.
     /// </summary>
     public class InteriorSafetyTests
     {
@@ -309,14 +310,125 @@ namespace SpookyStreet.Tests.Core
             return t;
         }
 
+        /// <summary>Boxed in under the upper flight (the walk map's only pocket, never reachable on foot).</summary>
+        private static readonly (float X, float Y, float Z) UnderTheStair = (-1.5f, CaseRouteLayout.FloorY, Ifz + 6.1f);
+
         [Test]
-        public void PushingWithoutGettingAnywhereRescuesAfterSeveralSeconds([Values(30f, 60f)] float fps)
+        public void PushingWhileShutInRescuesAfterSeveralSeconds([Values(30f, 60f)] float fps)
         {
-            var a = Thresholds.DormerInside;
+            var p = UnderTheStair;
+            Assert.IsTrue(InteriorRescue.OnWalkableArea(p.X, p.Y, p.Z, false), "on the hall floor, under the flight");
+            Assert.IsTrue(InteriorSafety.Enclosed(p.X, p.Y, p.Z, false), "shut in under the stair");
             var rescue = new InteriorRescue();
-            float t = RunUntilRescue(rescue, fps, 10f, a.ArriveX, a.ArriveY, a.ArriveZ, true, 1f, out var reason, 0.1f);
+            float t = RunUntilRescue(rescue, fps, 10f, p.X, p.Y, p.Z, true, 1f, out var reason, 0.1f);
             Assert.AreEqual(RescueReason.Stuck, reason);
             Assert.AreEqual(InteriorRescue.StuckSeconds, t, 2.5f / fps, "after the same time at any frame rate");
+            // Any spot the walk map finds shut in (fewer than two ways on) is rescued the same way.
+            var walled = new InteriorRescue { Enclosure = (x, y, z, door) => true };
+            t = RunUntilRescue(walled, fps, 10f, 0.6f, CaseRouteLayout.LoftY, Ifz + 3.2f, true, 1f, out reason);
+            Assert.AreEqual(RescueReason.Stuck, reason);
+            Assert.AreEqual(InteriorRescue.StuckSeconds, t, 2.5f / fps);
+        }
+
+        /// <summary>Pushing into a wall or a piece of furniture from open floor: the child is just pushing.</summary>
+        [Test]
+        public void PushingAgainstAWallInOpenFloorNeverMovesPip()
+        {
+            var a = Thresholds.DormerInside;
+            var spots = new (string Name, float X, float Y, float Z)[]
+            {
+                ("the dormer arrival", a.ArriveX, a.ArriveY, a.ArriveZ),
+                ("into the trunk by the front gable (the old PlayMode wedge)", -1.3f, CaseRouteLayout.LoftY, Ifz + 1.12f),
+                ("the hall's front wall by the door", 0.8f, CaseRouteLayout.FloorY, Ifz + 0.5f),
+                ("the attic's back gable", 0.6f, CaseRouteLayout.LoftY, Ifz + 6.65f),
+                ("June's stool", -1.1f, CaseRouteLayout.LoftY, Ifz + 3.3f),
+                ("the attic's balustrade", -1.0f, CaseRouteLayout.LoftY, Ifz + 4.6f),
+            };
+            var map = Map(false);
+            foreach (var s in spots)
+            {
+                int node = map.NodeAt(s.X, s.Y, s.Z);
+                Assert.GreaterOrEqual(node, 0, s.Name + " is a standing place");
+                Assert.IsTrue(map.Main[node], s.Name + " is in the main area");
+                Assert.GreaterOrEqual(InteriorSafety.FreeDirections(s.X, s.Y, s.Z, false), InteriorSafety.MinFreeDirections,
+                    s.Name);
+                var rescue = new InteriorRescue();
+                RunUntilRescue(rescue, 60f, 20f, s.X, s.Y, s.Z, true, 1f, out var reason, 0.05f);
+                Assert.AreEqual(RescueReason.None, reason, s.Name + ": 20 s of pushing never moves Pip");
+                Assert.GreaterOrEqual(rescue.EnclosureChecks, 4, s.Name + ": each 4 s push was checked and found free");
+            }
+        }
+
+        [Test]
+        public void HardlyAnyStandingPlaceIsShutInAndEveryPocketIs()
+        {
+            var map = Map(false);
+            int sampled = 0;
+            var shut = new List<int>();
+            for (int n = 0; n < map.Count; n += 5)
+            {
+                if (!map.Main[n] || !map.OnFloor(n))
+                {
+                    continue;
+                }
+
+                sampled++;
+                if (InteriorSafety.Enclosed(map.X(n), map.Y(n), map.Z(n), false))
+                {
+                    shut.Add(n);
+                }
+            }
+
+            TestContext.Progress.WriteLine($"[InteriorSafetyTests] shut-in floor places: {shut.Count} of {sampled} " +
+                                           Describe(map, shut));
+            Assert.Greater(sampled, 400);
+            Assert.Less(shut.Count, sampled * 0.03f, "only narrow nooks with a single way out: " + Describe(map, shut));
+            // The pockets Pip could never walk out of (under the flights) are all shut in, or off the walkable area.
+            var open = new List<int>();
+            for (int n = 0; n < map.Count; n++)
+            {
+                if (!map.CanReachMain[n] && CaseRouteLayout.Inside(map.X(n), map.Z(n)) &&
+                    InteriorRescue.OnWalkableArea(map.X(n), map.Y(n), map.Z(n), false) &&
+                    !InteriorSafety.Enclosed(map.X(n), map.Y(n), map.Z(n), false))
+                {
+                    open.Add(n);
+                }
+            }
+
+            Assert.IsEmpty(open, "pockets the safety net would leave Pip in: " + Describe(map, open));
+        }
+
+        [Test]
+        public void StandingOnJuneSlidesPipGentlyOffAndNeverTeleports()
+        {
+            var june = SpookyStreet.Core.Case.CaseStage.JuneAttic.Position;
+            float head = june.Y + InteriorRescue.CharacterHeight;
+            var rescue = new InteriorRescue();
+            rescue.AddCharacter(june.X, june.Y, june.Z);
+            const float dt = 1f / 60f;
+            // A little east of her crown: slid east, every frame, for as long as Pip stays up there.
+            for (int i = 0; i < 600; i++)
+            {
+                var reason = rescue.Step(dt, june.X + 0.12f, head, june.Z, true, i % 2 == 0 ? 1f : 0f, true);
+                Assert.AreEqual(RescueReason.SlideOff, reason, "on June's head");
+                Assert.Greater(rescue.SlideX, 0.95f, "away from her crown");
+            }
+
+            Assert.AreEqual(0f, rescue.OffTime, 1e-6f, "never counted as off the walkable area");
+            // Right on her crown: toward the most open side round her (a way Pip can walk on from).
+            rescue.Step(dt, june.X, head, june.Z, true, 0f, true);
+            Assert.AreEqual(1f, rescue.SlideX * rescue.SlideX + rescue.SlideZ * rescue.SlideZ, 1e-3f);
+            float r = InteriorRescue.CharacterRadius + CaseRouteLayout.PipRadius + 0.05f;
+            Assert.GreaterOrEqual(InteriorWalkMap.EscapeRun(june.X + rescue.SlideX * r, june.Y, june.Z + rescue.SlideZ * r,
+                rescue.SlideX, rescue.SlideZ, InteriorSafety.FreeReach, false), InteriorSafety.FreeReach - 1e-3f,
+                "slid toward open floor");
+            // Beside her on the floor, or jumping over her: nothing to do.
+            Assert.AreEqual(RescueReason.None, rescue.Step(dt, june.X + 0.6f, june.Y, june.Z, true, 1f, true));
+            Assert.AreEqual(RescueReason.None, rescue.Step(dt, june.X, head + 0.2f, june.Z, false, 1f, true));
+            // Without June in the list, the same place is off the walkable area (the old behaviour, a teleport).
+            var alone = new InteriorRescue();
+            RunUntilRescue(alone, 60f, 2f, june.X + 0.12f, head, june.Z, true, 0f, out var old);
+            Assert.AreEqual(RescueReason.OffWalkable, old);
         }
 
         [Test]
