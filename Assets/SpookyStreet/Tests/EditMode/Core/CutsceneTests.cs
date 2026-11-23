@@ -493,7 +493,7 @@ namespace SpookyStreet.Tests.Core
 
             Assert.AreEqual(CutsceneAudio.MusicStreetTheme, C01Cutscenes.Opening.Beats[0].Signals.Single(s => s.Channel == CueChannel.Music).Id);
             Assert.AreEqual(CutsceneAudio.MusicReveal,
-                C01Cutscenes.Reveal(state, answers).Beats[0].Signals.Single(s => s.Channel == CueChannel.Music).Id);
+                C01Cutscenes.Reveal(state, answers).Beats.SelectMany(b => b.Signals).Single(s => s.Channel == CueChannel.Music).Id);
             Assert.IsTrue(CutsceneAudio.TryParseBabble("kit.whisper", out var who, out var how));
             Assert.AreEqual(CastActor.Kit, who);
             Assert.AreEqual(BabbleEmotion.Whisper, how);
@@ -721,7 +721,83 @@ namespace SpookyStreet.Tests.Core
             CollectionAssert.Contains(revealB.Stickers, N.BeaFlash);
             CollectionAssert.DoesNotContain(revealA.Stickers, N.BeaFlash);
             var bea = revealB.Beats.First(x => x.StickerId == N.BeaFlash);
-            Assert.IsTrue(bea.Cast.Any(c => c.Actor == CastActor.Bea && c.Clip == CharacterClips.Point), "Bea points up high");
+            Assert.IsTrue(bea.Cast.Any(c => c.Actor == CastActor.Bea && c.Clip == CharacterClips.ShadeEyes), "Bea shades her eyes up high");
+        }
+
+        [Test]
+        public void TheRevealScoreEndsAsAuntKitReopensHerBooth()
+        {
+            float score = CutsceneAudio.MusicSeconds(CutsceneAudio.MusicReveal);
+            Assert.AreEqual(929477 / 48000f, score, 1e-3f, "the imported reveal master's length");
+            foreach (var (entry, moved) in new[]
+                     {
+                         (new[] { N.ValeDoor, N.Cloth, N.SillSnag }, new[] { N.OwlBooth, N.LooseArm }),
+                         (new[] { N.StuckDoor, N.SillSnag, N.BeaFlash }, new[] { N.OwlPanel, N.LooseArm }),
+                     })
+            {
+                var (state, answers) = Stamped(entry, new[] { N.FloorHum, N.WoodenPiece }, moved);
+                var reveal = C01Cutscenes.Reveal(state, answers);
+                int reopen = reveal.Beats.ToList().FindIndex(b => b.Id == "reopen");
+                float musicAt = -1f;
+                for (int i = 0; i < reveal.Beats.Count; i++)
+                {
+                    foreach (var cue in reveal.Beats[i].Signals.Where(s => s.Channel == CueChannel.Music))
+                    {
+                        Assert.AreEqual(-1f, musicAt, "one music cue");
+                        musicAt = reveal.BeatStart(i) + cue.At;
+                    }
+                }
+
+                Assert.GreaterOrEqual(musicAt, 0f);
+                Assert.AreEqual(reveal.BeatStart(reopen), musicAt + score, 0.02f,
+                    "the score ends as the reopening starts, so the theme returns there and not over the owl's knocks");
+                Assert.Less(musicAt, reveal.BeatStart(1), "it starts with the first sticker");
+            }
+
+            Assert.AreEqual(0f, C01Cutscenes.RevealMusicAt(5f), "never before the first frame");
+        }
+
+        [Test]
+        public void WitnessesActAndSoundInCutscenesAsInPlay()
+        {
+            var (state, answers) = Stamped(new[] { N.ValeDoor, N.BeaFlash, N.SillSnag }, new[] { N.FloorHum, N.WoodenPiece },
+                new[] { N.OwlBooth, N.LooseArm });
+            var reveal = C01Cutscenes.Reveal(state, answers);
+            var bea = reveal.Beats.Single(b => b.StickerId == N.BeaFlash);
+            Assert.IsTrue(bea.Cast.Any(c => c.Actor == CastActor.Bea && c.Kind == CastCueKind.Gesture && c.Clip == CharacterClips.ShadeEyes));
+            Assert.IsFalse(reveal.Beats.SelectMany(b => b.Cast).Any(c => c.Clip == CharacterClips.Point), "no pointing at a thing");
+            var vale = reveal.Beats.Single(b => b.StickerId == N.ValeDoor);
+            Assert.IsTrue(vale.Cast.Any(c => c.Actor == CastActor.Vale && c.Clip == CharacterClips.CheckWatch), "when he looked");
+
+            // Each babble sounds like the speaker's matching line in play (LineVoices).
+            var expected = new Dictionary<string, string>
+            {
+                { "sticker:" + N.BeaFlash, CutsceneAudio.BabbleAsIn(CastActor.Bea, LocalizationKeys.CaseLines.BeaSawCape) },
+                { "sticker:" + N.ValeDoor, CutsceneAudio.BabbleAsIn(CastActor.Vale, LocalizationKeys.CaseLines.ValeDoorShut) },
+            };
+            Assert.AreEqual("bea.surprised", expected["sticker:" + N.BeaFlash]);
+            Assert.AreEqual("vale.neutral", expected["sticker:" + N.ValeDoor]);
+            foreach (var pair in expected)
+            {
+                Assert.AreEqual(pair.Value,
+                    reveal.Beats.Single(b => b.Id == pair.Key).Signals.Single(s => s.Channel == CueChannel.Babble).Id, pair.Key);
+            }
+
+            var reopen = reveal.Beats.Single(b => b.Id == "reopen").Signals.Where(s => s.Channel == CueChannel.Babble).Select(s => s.Id);
+            CollectionAssert.AreEqual(new[] { "kit.happy", "june.happy" }, reopen);
+            foreach (var cue in reveal.Beats.Concat(C01Cutscenes.Opening.Beats).SelectMany(b => b.Signals)
+                         .Where(s => s.Channel == CueChannel.Babble))
+            {
+                Assert.IsTrue(CutsceneAudio.TryParseBabble(cue.Id, out _, out _), cue.Id);
+            }
+
+            foreach (SpookyStreet.Core.Audio.BabbleEmotion e in Enum.GetValues(typeof(SpookyStreet.Core.Audio.BabbleEmotion)))
+            {
+                Assert.AreEqual(e.ToString(), CutsceneAudio.EmotionOf(e).ToString(), "the two emotion lists agree");
+            }
+
+            var window = C01Cutscenes.Opening.Beats.Single(b => b.Id == "window");
+            Assert.AreEqual("pip.thinking", window.Signals.Single(s => s.Channel == CueChannel.Babble).Id, "Pip wonders at the glow");
         }
 
         [Test]
@@ -731,6 +807,7 @@ namespace SpookyStreet.Tests.Core
             {
                 CharacterClips.Walk, CharacterClips.Talk, CharacterClips.Point, CharacterClips.SitIdle, CharacterClips.SitTalk,
                 CharacterClips.Wave, CharacterClips.OpenBooth, CharacterClips.KneeTap, CharacterClips.Idle,
+                CharacterClips.ShadeEyes, CharacterClips.CheckWatch, CharacterClips.Listen, CharacterClips.Ponder,
             };
             var (state, answers) = Canonical();
             foreach (var cutscene in new[] { C01Cutscenes.Opening, C01Cutscenes.Reveal(state, answers) })

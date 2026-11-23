@@ -240,7 +240,7 @@ namespace SpookyStreet.Player
         }
 
         /// <summary>Ground speed above which a glance does not start, and at which a playing one ends (m/s).</summary>
-        public const float GlanceMaxSpeed = 0.6f;
+        public const float GlanceMaxSpeed = PipClips.GlanceMaxSpeed;
 
         /// <summary>
         /// Plays a one-shot clip (e.g. <see cref="PipClips.Roll"/>, <see cref="PipClips.Interact"/>) over every

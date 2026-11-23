@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SpookyStreet.Core.Animation;
 using SpookyStreet.Core.Case;
 
 namespace SpookyStreet.Core.Nonverbal
@@ -167,6 +168,47 @@ namespace SpookyStreet.Core.Nonverbal
             }
 
             return best;
+        }
+
+        /// <summary>
+        /// Pip glances only toward an area at least this far to one side of where she faces (degrees). Nearer ahead it
+        /// is already in front of her; the breeze and the glow show it.
+        /// </summary>
+        public const float GlanceMinAngle = 30f;
+
+        /// <summary>
+        /// Pip's hint glance (S003a, D26 §6): the clip she plays when a hint shows the tier-1 nudge, or null. She glances
+        /// only for the nudge (never the trail or a demo), only while she stands (on the ground, below
+        /// <see cref="PipClips.GlanceMaxSpeed"/>), not under reduced motion, and only when the area lies to one side
+        /// (<see cref="GlanceMinAngle"/>); the side is the one the area's centre lies on (<see cref="GlanceTarget"/>),
+        /// so the glance says "that way" and never picks out a thing. Plan vectors: her facing, and her offset to the
+        /// target.
+        /// </summary>
+        public static string PipGlance(bool nudge, bool grounded, float speed, bool reducedMotion, float forwardX,
+            float forwardZ, float toX, float toZ)
+        {
+            if (!nudge || !grounded || speed > PipClips.GlanceMaxSpeed || reducedMotion)
+            {
+                return null;
+            }
+
+            if (Math.Abs(PipClips.GlanceAngle(forwardX, forwardZ, toX, toZ)) < GlanceMinAngle)
+            {
+                return null;
+            }
+
+            return PipClips.GlanceToward(forwardX, forwardZ, toX, toZ);
+        }
+
+        /// <summary>Where Pip's glance turns: the hint area's centre (its floor point), never an object in it.</summary>
+        public static StagePoint GlanceTarget(HintArea area)
+        {
+            if (area == null)
+            {
+                throw new ArgumentNullException(nameof(area));
+            }
+
+            return area.Centre;
         }
 
         /// <summary>The control a move demonstration presses (the Jump control; held for the high jump and the glide).</summary>

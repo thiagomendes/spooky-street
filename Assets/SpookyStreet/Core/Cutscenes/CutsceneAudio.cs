@@ -13,9 +13,9 @@ namespace SpookyStreet.Core.Cutscenes
     }
 
     /// <summary>
-    /// The audio vocabulary of cutscene cues (S003 wiring provides the sounds): music cue IDs as the audio branch names
-    /// them, and babble cues as "speaker.emotion" (e.g. "bea.happy"). Data only; the runtime plays them through a hook
-    /// that does nothing until the audio wiring lands.
+    /// The audio vocabulary of cutscene cues: music cue IDs of the imported score (<c>VoiceMusicEvents</c>), and babble
+    /// cues as "speaker.emotion" (e.g. "bea.happy") in the voice library's emotions. Data only; the runtime plays them
+    /// through <c>ICutsceneAudio</c> (<c>GameCutsceneAudio</c>).
     /// </summary>
     public static class CutsceneAudio
     {
@@ -24,6 +24,20 @@ namespace SpookyStreet.Core.Cutscenes
 
         public static string Babble(CastActor speaker, BabbleEmotion emotion) =>
             speaker.ToString().ToLowerInvariant() + "." + emotion.ToString().ToLowerInvariant();
+
+        /// <summary>
+        /// A babble in the emotion the speaker's line <paramref name="lineKey"/> has in play (<see cref="Audio.LineVoices"/>),
+        /// so a character sounds the same in a cutscene as when the child talks to them.
+        /// </summary>
+        public static string BabbleAsIn(CastActor speaker, string lineKey) =>
+            Babble(speaker, EmotionOf(Audio.LineVoices.For(lineKey)));
+
+        /// <summary>The cutscene emotion of a voice emotion (the two enums share their names).</summary>
+        public static BabbleEmotion EmotionOf(Audio.BabbleEmotion emotion) =>
+            (BabbleEmotion)Enum.Parse(typeof(BabbleEmotion), emotion.ToString());
+
+        /// <summary>Length of a music cue (seconds, from the imported masters), 0 for an unknown id.</summary>
+        public static float MusicSeconds(string cueId) => (float)Audio.VoiceMusicEvents.MusicSeconds(cueId);
 
         /// <summary>Splits a babble cue ID into its speaker and emotion; false when it is not "speaker.emotion".</summary>
         public static bool TryParseBabble(string id, out CastActor speaker, out BabbleEmotion emotion)

@@ -980,6 +980,10 @@ namespace SpookyStreet.Case
             }
         }
 
+        /// <summary>The witness or cast member who speaks as <paramref name="speaker"/> (null for Pip and captions).</summary>
+        internal Witness WitnessOf(Speaker speaker) =>
+            speaker == Speaker.Pip || speaker == Speaker.Caption ? null : WitnessFor(speaker);
+
         private Witness WitnessFor(Speaker speaker)
         {
             var cast = _game.Witnesses;

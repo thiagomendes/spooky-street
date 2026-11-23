@@ -328,6 +328,13 @@ namespace SpookyStreet.Tests.PlayMode
             float until = Time.unscaledTime + 5f;
             while (!Director.Cutscenes.Playing && Time.unscaledTime < until) yield return null;
             Assert.IsTrue(Director.Cutscenes.Playing, "the reveal plays once the notebook closes");
+            // The score starts so that it ends as Kit reopens her booth (S003a), a moment into the first sticker.
+            until = Time.unscaledTime + 5f;
+            while (Plays(VoiceMusicEvents.MusicReveal) == 0 && Director.Cutscenes.Playing && Time.unscaledTime < until)
+            {
+                yield return null;
+            }
+
             yield return Frames(2);
             Assert.AreEqual(1, Plays(VoiceMusicEvents.MusicReveal), "the cutscene's reveal cue");
             Assert.AreEqual(1, Stops(VoiceMusicEvents.MusicCaseClosed), "it replaces the sting");
