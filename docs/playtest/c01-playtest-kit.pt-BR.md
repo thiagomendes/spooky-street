@@ -22,12 +22,16 @@ resposta. Queremos ver, com crianças reais de 6 a 9 anos (e de 9 a 12 para os e
 4. Elas sentem o "aha!" quando o conjunto certo desenha o quadrinho?
 5. No fim, conseguem explicar com as próprias palavras a entrada pelo lado da casa ou de onde vêm as batidas?
 6. Elas querem continuar jogando?
+7. Quando voltam, o resumo do "Continue" ajuda a retomar, e elas percebem que a rua se lembra?
 
 O caso só é considerado aprovado por crianças depois que estas sessões forem observadas e registradas.
 
 ## 2. O que tem no build (confira antes da primeira sessão)
 
-Jogue o build do TestFlight uma vez inteiro, de "New game" até o carimbo "Case closed", e confira:
+A ficha segue o caso como ele fica no `main` depois de `feature/s002.5b-merge` (f82727c: atrações das pistas, dicas
+por área, a lembrança enevoada da Bea, a memória da rua e o resumo em figuras do "Continue", por cima das vozes e
+músicas). Antes da primeira sessão, jogue o build do TestFlight uma vez inteiro, de "New game" até o carimbo "Case
+closed", depois feche e abra o app de novo, e confira:
 
 - **Abertura** (cerca de 20 s, dá para pular): Candlebrook ao anoitecer, as caixas de mudança, a janela redonda
   acesa, a Bea acenando. O jogo começa na varanda.
@@ -36,15 +40,28 @@ Jogue o build do TestFlight uma vez inteiro, de "New game" até o carimbo "Case 
   linha de texto em inglês (leitura híbrida, D23.1).
 - **Figurinhas de pista:** 12 na bandeja (o brilho da Bea, a porta do Vale, a vista do banco, a porta emperrada, a
   fita de papel-alumínio = a pista falsa honesta, o pano prateado, o fio no peitoril, o chão que treme, a peça de
-  madeira, o painel da coruja, a coruja de madeira, o braço solto) e o doce guardado como lembrança.
+  madeira, o painel da coruja, a coruja de madeira, o braço solto) e o doce guardado como lembrança. A coruja de
+  madeira pode ser olhada na varanda (acima da porta) ou vem com a reverência da coruja.
+- **Atrações das pistas:** cada pista física, inclusive a pista falsa, chama a atenção sozinha enquanto a Pip está
+  perto e ela ainda não foi achada: o pano tremula e brilha, o fio do peitoril se levanta, a poeira pula no chão do
+  corredor a cada batida, a luz da grade pisca, o painel da coruja chacoalha, o braço solto balança, os olhos da
+  coruja de madeira refletem a lâmpada, a fita cintila. Sem seta, sem anel. O cata-vento do telhado zune antes de
+  cada ciclo de batidas, mas **não** é figurinha.
 - **Três perguntas**, que aparecem quando o mundo as levanta, uma por página, com 2 ou 3 espaços vazios, uma bandeja
   compartilhada e um "?" para cada pista ainda não achada.
 - **Conferência:** espaços cheios, uma pausa; errado: os espaços tremem, as figurinhas voltam balançando, a Pip
   pensa; certo: brilho laranja, o quadrinho com as figurinhas da própria criança, *Found it!*. A partir da 3ª
   tentativa errada as figurinhas que servem ficam; depois da 5ª a pista falsa é posta de lado.
-- **Rádio (botão Hint):** um toque por nível para o passo atual: nível 1 um brilho e o olhar de um personagem,
-  nível 2 a trilha de morcegos de papel, nível 3 uma mão transparente mostrando o que fazer. Dentro do caderno ele
-  mostra a Pip pensando (duas figuras) e acende um "?" com o lugar da pista.
+- **Lembranças:** o olho nas figurinhas da Bea e do Sr. Vale toca a lembrança deles só quando a criança pede (a da
+  Bea é um risco prateado enevoado lá no alto, por cima da cerca viva; a do Vale mostra a porta fechada). Nunca tocam
+  sozinhas.
+- **Rádio (botão Hint):** cada toque sobe um nível para o passo atual e aponta para uma **área**, nunca para um
+  objeto: nível 1 uma brisa de folhas até a área, um brilho quente suave sobre ela, uma testemunha olhando para lá e
+  uma frase sensorial ("A breeze keeps tugging toward the side yard."); nível 2 morcegos de papel voam até lá e
+  circulam a área; nível 3 só na subida até a janela do sótão (perto do caixote, em cima do caixote, no toldo): a mão
+  transparente no botão Jump mostra o movimento. Em outros lugares o rádio para no nível 2 (dois pontinhos; outro
+  toque solta os morcegos de novo). Nunca "Use", "Talk" ou uma dedução. Dentro do caderno ele mostra a Pip pensando
+  (duas figuras) e acende um "?" com o lugar da pista que falta.
 - **Movimentos:** andar, pular, segurar para pular mais alto, planar; pulo na parede e subir na borda em superfícies
   marcadas (dicas de uma vez só acima do botão Jump).
 - **Casa:** a janela do sótão (virada de página para um interior maior), a June no sótão, o trinco, o corredor, a
@@ -52,15 +69,23 @@ Jogue o build do TestFlight uma vez inteiro, de "New game" até o carimbo "Case 
 - **Final:** na varanda, o show da coruja da tia Kit; a Kit pergunta "So, detective, what happened here?" e abre o
   caderno se ainda houver pergunta aberta; o carimbo precisa das três perguntas resolvidas; depois a cena da
   revelação (cerca de 28 s, montada com as figurinhas da criança).
-- **Som:** batidas, chão que treme, pano tremulando, sons do caderno, vozes de "balbucio", música.
-- **Helper:** em Settings, atrás do portão dos pais, **desligado** por padrão. Deixe desligado.
+- **A rua se lembra:** depois do carimbo, na **próxima vez que o jogo carrega**: a barraca da Kit aberta e acesa, com
+  a Kit nela, a coruja do telhado se curvando de vez em quando (a cada 9 s mais ou menos), um adesivo de coruja na
+  cestinha da bicicleta da Bea, a porta da frente aberta por fora, a June do lado de fora, ao pé do caminho da casa da
+  árvore (ela ainda conversa ali). A lâmpada e o adesivo da Bea aparecem já no carimbo; o resto depois de recarregar.
+- **Resumo em figuras no "Continue":** na tela de título, com um jogo salvo: um cartão "Last time" ao lado do
+  Continue, com a figura de onde a Pip estava, as figuras e as palavras da pergunta aberta, até quatro figurinhas da
+  criança e "N stickers", e quatro pontinhos de capítulo (um por pergunta resolvida, mais um). Um caso encerrado
+  mostra o carimbo "Case closed". Nunca mostra resposta nem caminho.
+- **Som:** batidas, chão que treme, zunido do cata-vento, sons do caderno, vozes de "balbucio", música.
+- **Helper:** em Settings, atrás do portão dos pais, **desligado** por padrão. Deixe desligado (se ligado, uma
+  parada longa só oferece o empurrãozinho do nível 1).
 
-Diferenças conhecidas em relação ao design (para não interpretar errado):
-
-- O nível 1 ainda faz brilhar o próprio alvo e o nível 3 pode mostrar o "Use". Anote o nível de cada toque no rádio
-  e conte "deduziu sozinha" só nas colocações do caderno.
-- A figurinha da coruja de madeira chega com a reverência da coruja. A pista bônus do cata-vento, a demonstração da
-  mão arrastando, as paradas de capítulo e o resumo em figuras no "Continue" ainda não estão no build.
+Não está no build (não procure): o cata-vento como figurinha bônus e seu quadrinho, a demonstração única da mão
+arrastando uma figurinha, o cartão de despedida nas paradas de capítulo (os capítulos aparecem só como os pontinhos
+do resumo), a cena "a rua se lembra" e um cumprimento novo da Bea. As dicas seguem o caminho habitual do caso
+(apontam a área do próximo passo); uma criança que joga numa ordem diferente pode receber um empurrãozinho para um
+lugar onde já esteve: anote se isso a confundir.
 
 ## 3. Quem joga
 
@@ -188,16 +213,37 @@ linha curta de texto em inglês embaixo. A ideia é que quem ainda não lê ente
 - Depois do carimbo a criança pode continuar explorando. Anote se ela **pede** para continuar antes de você dizer
   qualquer coisa: é o sinal de "quer continuar".
 
-## 7. Tempo (por criança, cerca de 45 minutos)
+### 6.7 A volta: o resumo do "Continue" e a rua que se lembra
+
+As mudanças da rua só aparecem **na próxima vez que o jogo carrega** depois do carimbo, e o resumo só aparece na
+tela de título com um jogo salvo. O celular guarda um só jogo salvo, e o "New game" da próxima criança apaga os dois.
+Então teste a volta **com a mesma criança, antes de outra jogar**:
+
+1. Depois das perguntas do fim (§8), feche o app de vez (deslize para cima) e espere um minuto.
+2. Devolva o celular: "Quer voltar para a rua um pouquinho?" Não fale do cartão nem das mudanças.
+3. Na tela de título: a criança olha o cartão "Last time"? Reconhece as figurinhas dela ou o carimbo? Toca em
+   Continue sem ajuda?
+4. Na rua (uns 5 minutos, livre): a criança **percebe alguma mudança** sem ninguém perguntar (a barraca da Kit acesa,
+   a coruja se curvando, a coruja na bicicleta da Bea, a porta aberta, a June do lado de fora)? Anote as palavras
+   dela. Só no fim você pode perguntar uma vez: "Tem alguma coisa diferente de antes?"
+5. Se a criança parou antes do carimbo (limite de tempo), a mesma volta testa o resumo de um caso **não terminado**:
+   o cartão ajuda a lembrar a pergunta aberta e onde ela estava? (Os quatro pontinhos mostram o progresso.)
+
+Se a família puder voltar outro dia e nenhuma outra criança tiver jogado no celular nesse meio-tempo, faça essa volta
+nesse dia: é o melhor teste de "no dia seguinte" e também mostra se a criança vai atrás dos morcegos de papel.
+
+## 7. Tempo (por criança, cerca de 50 minutos)
 
 | Parte | Minutos |
 |---|---|
 | Boas-vindas, consentimento, conferência | 5 |
 | Jogo (esperado 17–30 para uma criança pequena jogando pela primeira vez, 12–18 para uma leitora mais velha) | até 40 |
 | Perguntas do fim | 5–10 |
+| A volta: fechar o app, abrir de novo, resumo e rua mudada (§6.7) | 5–7 |
 | No dia seguinte: pergunta de lembrança, feita pelo responsável em casa | 2 |
 
-Deixe 10–15 minutos entre crianças para preparar o celular (New game, Helper desligado) e terminar as anotações.
+Deixe 10–15 minutos entre crianças para preparar o celular (New game, que também apaga as mudanças da rua; Helper
+desligado) e terminar as anotações.
 
 ## 8. Perguntas do fim da sessão
 
@@ -246,41 +292,45 @@ hora de início · dupla? · responsável presente · mudanças na preparação.
 
 | # | Momento (o que o jogo mostra) | Tempo | O que a criança fez | Empacou? (min) | Nível da dica | Falou em voz alta | Emoção A/C/F/T | Deduziu sozinha? |
 |---|---|---|---|---|---|---|---|---|
-| 1 | Cena de abertura: assistiu ou pulou? | | | | | | | — |
-| 2 | Chegada na varanda, primeiro movimento (para onde?) | | | | | | | — |
-| 3 | Primeira batida: as três batidas; reage ou olha para a casa? | | | | | | | — |
-| 4 | Primeiro balanço do disco do caderno (pergunta nova): percebeu? abriu? | | | | | | | — |
-| 5 | Fala com a Bea (figurinha: o brilho da Bea) | | | | | | | — |
-| 6 | Fala com o Sr. Vale (figurinha: a porta do Vale) | | | | | | | — |
-| 7 | O facilitador pergunta uma vez: "O que você acha que aconteceu?" (anote a teoria) | | | | | | | S/N teoria |
-| 8 | Senta no banco (figurinha: a vista do banco) | | | | | | | — |
-| 9 | Tenta a porta da frente (figurinha: porta emperrada) | | | | | | | — |
-| 10 | Bicicleta da Bea: fita de papel-alumínio (figurinha, a pista falsa) | | | | | | | — |
-| 11 | Acha o quintal lateral (tempo desde o início) | | | | | | | — |
-| 12 | Pano prateado no corrimão da rampa: o brilho chamou sem o rádio? (figurinha) | | | | | | | — |
-| 13 | Casa da árvore e ponte; apareceram as dicas de pular ou planar? | | | | | | | — |
-| 14 | Peitoril do sótão: fio prateado (figurinha) | | | | | | | — |
-| 15 | Entra pela janela do sótão (virada de página), encontra a June | | | | | | | — |
-| 16 | Primeiro uso do caderno com duas ou mais figurinhas: arrasta ou toca sem ajuda? | | | | | | | — |
-| 17 | "How did June get in?" (Como a June entrou?): tentativas, usou a pista falsa?, rosto no balanço | | | | | | | S/M/T/N |
-| 18 | Levanta o trinco com a June, a porta da frente abre | | | | | | | — |
-| 19 | O corredor: o chão treme (figurinha) | | | | | | | — |
-| 20 | Grade da oficina: a peça de madeira (figurinha) | | | | | | | — |
-| 21 | Painel da coruja (figurinha) | | | | | | | — |
-| 22 | "Where are the knocks coming from?" (De onde vêm as batidas?): tentativas, rosto | | | | | | | S/M/T/N |
-| 23 | Braço solto: girou a manivela antes de encaixar? encaixou o braço? (figurinha) | | | | | | | — |
-| 24 | Gira a manivela: a coruja se curva no telhado (figurinha: coruja de madeira) | | | | | | | — |
-| 25 | "What should the knocks move?" (O que as batidas deveriam mover?): tentativas, rosto | | | | | | | S/M/T/N |
-| 26 | Varanda: o show da coruja da Kit; a Kit pergunta "So, detective?" | | | | | | | — |
-| 27 | Carimbo "Case closed", cena da revelação: assistiu ou pulou? reação às próprias figurinhas? | | | | | | | — |
-| 28 | Página do caso: "x of y clues" (anote x e y) | | | | | | | — |
-| 29 | O doce guardado pelo Sr. Vale (bônus) | | | | | | | — |
-| 30 | Exploração livre: pede para continuar antes de alguém perguntar? | | | | | | | — |
-| D1 | Rádio, nível 1 (brilho e olhar): cada toque, tempo e passo | | | | 1 | | | — |
-| D2 | Rádio, nível 2 (trilha de morcegos): cada toque, tempo e passo | | | | 2 | | | — |
-| D3 | Rádio, nível 3 (mão transparente): cada toque, tempo e passo | | | | 3 | | | — |
+| 1 | Cena de abertura: assistiu ou pulou? | | | |  | | | — |
+| 2 | Chegada na varanda, primeiro movimento (para onde?) | | | |  | | | — |
+| 3 | Primeira batida: as três batidas; reage ou olha para a casa? | | | |  | | | — |
+| 4 | Primeiro balanço do disco do caderno (pergunta nova): percebeu? abriu? | | | |  | | | — |
+| 5 | Fala com a Bea (figurinha: o brilho da Bea) | | | |  | | | — |
+| 6 | Fala com o Sr. Vale (figurinha: a porta do Vale) | | | |  | | | — |
+| 7 | O facilitador pergunta uma vez: "O que você acha que aconteceu?" (anote a teoria) | | | |  | | | S/N teoria |
+| 8 | Senta no banco (figurinha: a vista do banco) | | | |  | | | — |
+| 9 | Tenta a porta da frente (figurinha: porta emperrada) | | | |  | | | — |
+| 10 | Olha a coruja de madeira acima da porta; os olhos refletindo a lâmpada chamaram? (figurinha: coruja de madeira) | | | |  | | | — |
+| 11 | Bicicleta da Bea: a fita cintila; examina a fita de papel-alumínio (figurinha, a pista falsa) | | | |  | | | — |
+| 12 | Acha o quintal lateral (tempo desde o início) | | | |  | | | — |
+| 13 | Pano prateado no corrimão da rampa: o tremular e o brilho chamaram sem o rádio? (figurinha) | | | |  | | | — |
+| 14 | Casa da árvore e ponte; apareceram as dicas de pular ou planar? percebe o cata-vento zunindo? | | | |  | | | — |
+| 15 | Peitoril do sótão: o fio prateado se levantando (figurinha) | | | |  | | | — |
+| 16 | Entra pela janela do sótão (virada de página), encontra a June | | | |  | | | — |
+| 17 | Primeiro uso do caderno com duas ou mais figurinhas: arrasta ou toca sem ajuda? | | | |  | | | — |
+| 18 | Toca no olho da figurinha da Bea ou do Vale (lembrança)? reação ao risco enevoado | | | |  | | | — |
+| 19 | "How did June get in?" (Como a June entrou?): tentativas, usou a pista falsa?, rosto no balanço | | | |  | | | S/M/T/N |
+| 20 | Levanta o trinco com a June, a porta da frente abre | | | |  | | | — |
+| 21 | O corredor: poeira pulando a cada batida, o chão treme (figurinha) | | | |  | | | — |
+| 22 | Grade da oficina: luz piscando, a peça de madeira (figurinha) | | | |  | | | — |
+| 23 | Painel da coruja chacoalhando (figurinha) | | | |  | | | — |
+| 24 | "Where are the knocks coming from?" (De onde vêm as batidas?): tentativas, rosto | | | |  | | | S/M/T/N |
+| 25 | Braço solto balançando: girou a manivela antes de encaixar? encaixou o braço? (figurinha) | | | |  | | | — |
+| 26 | Gira a manivela: a coruja se curva no telhado (figurinha da coruja de madeira, se não achou na varanda) | | | |  | | | — |
+| 27 | "What should the knocks move?" (O que as batidas deveriam mover?): tentativas, rosto | | | |  | | | S/M/T/N |
+| 28 | Varanda: o show da coruja da Kit; a Kit pergunta "So, detective?" | | | |  | | | — |
+| 29 | Carimbo "Case closed", cena da revelação: assistiu ou pulou? reação às próprias figurinhas? | | | |  | | | — |
+| 30 | Página do caso: "x of y clues" (anote x e y) | | | |  | | | — |
+| 31 | O doce guardado pelo Sr. Vale (bônus) | | | |  | | | — |
+| 32 | Exploração livre: pede para continuar antes de alguém perguntar? | | | |  | | | — |
+| V1 | Na volta (§6.7): o cartão "Last time": olha? reconhece figurinhas ou carimbo? toca em Continue sozinha? | | | |  | | | — |
+| V2 | Na volta: percebe a rua mudada sem perguntarem? (barraca da Kit acesa, coruja se curvando, coruja na bicicleta da Bea, porta aberta, June do lado de fora) | | | |  | | | — |
+| D1 | Rádio, nível 1 (brisa de folhas e brilho quente sobre uma área, uma testemunha olha): cada toque, tempo, passo; a criança foi até a área? | | | | 1 | | | — |
+| D2 | Rádio, nível 2 (morcegos de papel circulam a área): cada toque, tempo, passo | | | | 2 | | | — |
+| D3 | Rádio, nível 3 (mão transparente no Jump, só na subida até a janela do sótão): cada toque, qual movimento | | | | 3 | | | — |
 | D4 | Rádio no caderno (Pip pensando e um "?" com o lugar): cada toque, qual pergunta | | | | M | | | — |
-| X | Perdeu a câmera ou o controle, caiu, se assustou, quis parar | | | | | | | — |
+| X | Perdeu a câmera ou o controle, caiu, se assustou, quis parar | | | |  | | | — |
 
 **Contagens no fim:** pistas achadas antes do primeiro toque no rádio ___ de 12 · total de toques no rádio ___ ·
 conjuntos errados por pergunta (entrada ___ batidas ___ mover ___) · a pista falsa enganou? sim/não · se corrigiu
@@ -300,6 +350,7 @@ Por criança:
 - [ ] Pediu para continuar jogando numa parada.
 - [ ] No dia seguinte: recontou o que aconteceu e quem ajudou.
 - [ ] Teve uma teoria própria depois da Bea e do Sr. Vale (qualquer teoria vale).
+- [ ] Na volta: usou o resumo do Continue sem ajuda e percebeu pelo menos uma mudança na rua sem perguntarem.
 - [ ] A pista falsa: enganou e ela se corrigiu, ou não enganou (as duas servem; anote qual).
 
 Meta do grupo (todas as crianças juntas):
@@ -311,6 +362,7 @@ Meta do grupo (todas as crianças juntas):
 - [ ] A maioria das perguntas resolvidas tem um "aha!".
 - [ ] Os responsáveis acham o jogo confiável, sem precisar perguntar.
 - [ ] Qualquer confusão vista em **duas** sessões vai para a lista de revisão de design.
+- [ ] Na volta, **a maioria** das crianças percebe uma mudança na rua sem perguntarem (a rua se lembra).
 - [ ] (Se houver segunda sessão) **3 de 5** vão atrás dos morcegos de papel ou de lugares antigos sem ninguém pedir.
 
 ## 11. Depois das sessões
@@ -354,6 +406,7 @@ aparecem depois que a criança acerta.
 | [The floor shakes: knock, knock… knock] | [O chão treme: toc, toc… toc] |
 | [A wooden piece lifts three times behind the owl panel.] | [Uma peça de madeira sobe três vezes atrás do painel da coruja.] |
 | A painted owl, wings folded. | Uma coruja pintada, de asas fechadas. |
+| A wooden owl, high above the door. Very still. | Uma coruja de madeira, bem acima da porta. Bem paradinha. |
 | [Tap. The striped arm swings in the air.] | [Tec. O braço listrado balança no ar.] |
 | [Click!] | [Clique!] |
 | [Three knocks. Outside, the owl bows three times.] | [Três batidas. Lá fora, a coruja se curva três vezes.] |
@@ -376,6 +429,7 @@ aparecem depois que a criança acerta.
 | Kit's wooden owl, outside the house. | A coruja de madeira da Kit, do lado de fora da casa. |
 | A striped arm, hanging loose. | Um braço listrado, pendurado solto. |
 | Found it! | Achei! |
+| Last time / {N} stickers (título) | Da última vez / {N} figurinhas |
 | Case closed | Caso encerrado |
 | *Only after the child solves that question:* Not by the front door: up high on the hidden side, in at the attic window. | Não pela porta da frente: lá no alto, no lado escondido, pela janela do sótão. |
 | *Only after solving:* Under the floor! A wooden piece lifts and knocks. | Debaixo do chão! Uma peça de madeira sobe e bate. |
@@ -383,4 +437,7 @@ aparecem depois que a criança acerta.
 
 Dicas do rádio: se a criança pedir para ler uma dica, leia também literalmente (exemplos: "A breeze keeps tugging
 toward the side yard." = "Uma brisa fica puxando para o quintal lateral."; "Listen low down in the hall." = "Escuta
-lá embaixo, no corredor."). A dica já foi pedida pela criança: anote o nível e leia sem acrescentar nada.
+lá embaixo, no corredor."; "Follow the bats up to the attic." = "Siga os morcegos até o sótão."). As frases do nível 3
+são sobre movimentos: "Tap Jump to hop up!" = "Toque em Jump para subir!"; "Hold Jump to jump higher!" = "Segure Jump
+para pular mais alto!"; "Hold Jump while falling to glide!" = "Segure Jump enquanto cai para planar!". A dica já foi
+pedida pela criança: anote o nível e leia sem acrescentar nada.

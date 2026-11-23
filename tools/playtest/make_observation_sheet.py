@@ -30,32 +30,35 @@ RULE = colors.HexColor("#9a9a9a")
 SHADE = colors.HexColor("#ececec")
 QUESTION = colors.HexColor("#fbe7cf")
 HINT = colors.HexColor("#e3ecf7")
+RETURN = colors.HexColor("#e6f2e1")
 
 # (row id, moment, kind) — kind: "q" notebook question (deduction column open), "t" theory prompt,
-# "h" radio log (hint column holds the tier), "" ordinary moment (deduction column shaded).
+# "h" radio log (hint column holds the tier), "v" coming back after reopening the app, "" ordinary moment (deduction column shaded).
 ROWS = [
-    ("1", "Abertura (cena): assistiu / pulou? · chegada: 1º movimento para onde?", ""),
-    ("2", "Três batidas: reage, olha a casa? · disco do caderno balança: viu? abriu?", ""),
-    ("3", "Fala com a Bea (brilho) · fala com o Sr. Vale (porta do Vale)", ""),
-    ("4", "Pergunte 1 vez: “O que você acha que aconteceu?” (anote a teoria)", "t"),
-    ("5", "Banco (vista) · porta da frente emperrada · fita na bicicleta (pista falsa)", ""),
-    ("6", "Acha o quintal lateral (tempo) · pano prateado na rampa: achou sem rádio?", ""),
-    ("7", "Casa da árvore, ponte (dicas de pulo/planar?) · fio no peitoril", ""),
-    ("8", "Janela do sótão (virada de página) · encontra a June", ""),
-    ("9", "1º uso do caderno com 2+ figurinhas: arrasta ou toca sem ajuda?", ""),
-    ("10", "Como a June entrou? — tentativas ___ · usou a fita? · rosto no balanço", "q"),
-    ("11", "Trinco com a June, porta abre · corredor: o chão treme", ""),
-    ("12", "Grade: peça de madeira · painel da coruja", ""),
-    ("13", "De onde vêm as batidas? — tentativas ___ · rosto no balanço", "q"),
-    ("14", "Braço solto: manivela antes de encaixar? · encaixa · coruja se curva no telhado", ""),
-    ("15", "O que as batidas deveriam mover? — tentativas ___ · rosto", "q"),
-    ("16", "Varanda: show da Kit · “So, detective?” · carimbo Case closed", ""),
-    ("17", "Revelação: assistiu/pulou? reação às figurinhas dela? · “__ of __ clues”", ""),
-    ("18", "Exploração livre: pede para continuar sem ninguém perguntar? · doce do Sr. Vale", ""),
-    ("D1", "Rádio nível 1 (brilho + olhar): cada toque, tempo e passo", "h1"),
-    ("D2", "Rádio nível 2 (trilha de morcegos): cada toque, tempo e passo", "h2"),
-    ("D3", "Rádio nível 3 (mão transparente): cada toque, tempo e passo", "h3"),
-    ("D4", "Rádio no caderno (Pip pensando + “?” com lugar): cada toque, qual pergunta", "hM"),
+    ("1", "Abertura (cena): assistiu / pulou? \u00b7 chegada: 1\u00ba movimento para onde?", ""),
+    ("2", "Três batidas: reage, olha a casa? \u00b7 disco do caderno balança: viu? abriu?", ""),
+    ("3", "Fala com a Bea (brilho) \u00b7 fala com o Sr. Vale (porta do Vale)", ""),
+    ("4", "Pergunte 1 vez: \u201cO que você acha que aconteceu?\u201d (anote a teoria)", "t"),
+    ("5", "Banco (vista) \u00b7 porta emperrada \u00b7 coruja de madeira acima da porta", ""),
+    ("6", "Fita cintilando na bicicleta (pista falsa) \u00b7 acha o quintal lateral (tempo)", ""),
+    ("7", "Pano tremulando na rampa: achou sem rádio? \u00b7 ponte: dicas de pulo?", ""),
+    ("8", "Fio no peitoril \u00b7 janela do sótão (virada de página) \u00b7 encontra a June", ""),
+    ("9", "1\u00ba uso do caderno (2+ figurinhas): arrasta sem ajuda? \u00b7 olho da lembrança?", ""),
+    ("10", "Como a June entrou? \u2014 tentativas ___ \u00b7 usou a fita? \u00b7 rosto no balanço", "q"),
+    ("11", "Trinco com a June, porta abre \u00b7 corredor: poeira pula, o chão treme", ""),
+    ("12", "Grade: luz pisca, peça de madeira \u00b7 painel da coruja chacoalha", ""),
+    ("13", "De onde vêm as batidas? \u2014 tentativas ___ \u00b7 rosto no balanço", "q"),
+    ("14", "Braço solto balança: manivela antes de encaixar? \u00b7 encaixa \u00b7 coruja se curva", ""),
+    ("15", "O que as batidas deveriam mover? \u2014 tentativas ___ \u00b7 rosto", "q"),
+    ("16", "Varanda: show da Kit \u00b7 \u201cSo, detective?\u201d \u00b7 carimbo Case closed", ""),
+    ("17", "Revelação: assistiu/pulou? reação às figurinhas dela? \u00b7 \u201c__ of __ clues\u201d", ""),
+    ("18", "Exploração livre: pede para continuar sem ninguém perguntar? \u00b7 doce do Sr. Vale", ""),
+    ("V1", "Volta (app reaberto): cartão \u201cLast time\u201d: olha? toca Continue sozinha?", "v"),
+    ("V2", "Volta: nota a rua mudada sem perguntarem? (Kit, coruja, bicicleta, June)", "v"),
+    ("D1", "Rádio nível 1 (folhas + brilho na área): cada toque, tempo \u00b7 foi à área?", "h1"),
+    ("D2", "Rádio nível 2 (morcegos circulam a área): cada toque, tempo e passo", "h2"),
+    ("D3", "Rádio nível 3 (mão no Jump, só na subida ao sótão): toque, movimento", "h3"),
+    ("D4", "Rádio no caderno (Pip pensando + \u201c?\u201d com lugar): cada toque, qual pergunta", "hM"),
     ("X", "Perdeu câmera/controle, caiu, se assustou, quis parar", ""),
 ]
 
@@ -83,6 +86,7 @@ CHILD_CRITERIA = [
     "Pediu para continuar jogando",
     "Teoria própria depois da Bea e do Sr. Vale",
     "Dia seguinte: reconta o que houve e quem ajudou",
+    "Na volta: notou a rua mudada sem perguntarem",
 ]
 
 GROUP_GATE = (
@@ -92,8 +96,8 @@ GROUP_GATE = (
 )
 
 LEGEND = (
-    "Tempo mm:ss desde que pegou o celular \u00b7 P/P2 = você fez pergunta neutra \u00b7 Dica: 1 brilho, 2 morcegos, "
-    "3 mão, M Pip pensando \u00b7 R = você leu a fala (apêndice A) \u00b7 Emoção: A alegria, C confusão, "
+    "Tempo mm:ss desde que pegou o celular \u00b7 P/P2 = você fez pergunta neutra \u00b7 Dica: 1 folhas, 2 morcegos, "
+    "3 mão no Jump, M Pip pensando \u00b7 R = você leu a fala (apêndice A) \u00b7 Emoção: A alegria, C confusão, "
     "F frustração, T tédio \u00b7 Deduziu: S sozinha, M após Pip pensando, T tentativa e erro, N não resolveu"
 )
 
@@ -174,7 +178,7 @@ def draw(out: Path) -> None:
     # Table.
     table_top = top - 18.5 * mm
     head_h = 6.6 * mm
-    row_h = 6.1 * mm
+    row_h = 5.5 * mm
     xs = [margin]
     for _, w in COLUMNS:
         xs.append(xs[-1] + w * mm)
@@ -196,8 +200,8 @@ def draw(out: Path) -> None:
         if kind == "q":
             c.setFillColor(QUESTION)
             c.rect(margin, y_bot, xs[-1] - margin, row_h, stroke=0, fill=1)
-        elif kind.startswith("h"):
-            c.setFillColor(HINT)
+        elif kind.startswith("h") or kind == "v":
+            c.setFillColor(RETURN if kind == "v" else HINT)
             c.rect(margin, y_bot, xs[-1] - margin, row_h, stroke=0, fill=1)
         if kind not in ("q", "t"):
             c.setFillColor(SHADE)  # the deduction column does not apply
