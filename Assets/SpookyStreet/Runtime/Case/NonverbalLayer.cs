@@ -3,6 +3,7 @@ using SpookyStreet.App;
 using SpookyStreet.Characters;
 using SpookyStreet.Core.Art;
 using SpookyStreet.Core.Case;
+using SpookyStreet.Core.Characters;
 using SpookyStreet.Core.Flow;
 using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.Save;
@@ -18,8 +19,8 @@ namespace SpookyStreet.Case
     /// The animated non-verbal UX in the running case (docs/nonverbal-ux.md §12, D23), kept beside
     /// <see cref="CaseDirector"/> so the director only creates it and forwards hint requests and resets:
     /// settings (<see cref="NonverbalSettingsStore"/>) and the seen-replays set (<see cref="NonverbalProgressStore"/>)
-    /// beside the case save; gesture cues to the speaking witness and the speaker tail;
-    /// the memory replay trigger (<see cref="MemoryReplayPolicy.OnLineDismissed"/>, seen marked before playing,
+    /// beside the case save; gesture cues to the speaking witness and the speaker tail; the testimony gestures of the
+    /// lines that have one (<see cref="LineGestures"/>, S003a); the memory replay trigger (<see cref="MemoryReplayPolicy.OnLineDismissed"/>, seen marked before playing,
     /// played once the conversation closes); the notebook's strips and replay eyes; the radio's tier-2 bat trail and
     /// the opt-in tier-3 helper; the parent-gated Helper toggle. One hybrid reading mode (D23.1): every line plays its
     /// vignette with its text line, so there is no words setting and no first-launch choice.
@@ -100,6 +101,7 @@ namespace SpookyStreet.Case
             dialogue.SpeakerAnchor = SpeakerHead;
             dialogue.LineDismissed += OnLineDismissed;
             dialogue.GestureCue += OnGesture;
+            dialogue.LineShown += OnLineShown;
             dialogue.Finished += OnDialogueFinished; // after the director's own handler: the modal is closed by now
 
             var notebook = director.Notebook;
@@ -207,6 +209,69 @@ namespace SpookyStreet.Case
             // Bea points at the side window June went in by; a missing clip does nothing (no error).
             Vector3? aim = line.Speaker == Speaker.Bea ? MemoryReplay.StagingFor(ReplayPlace.TreehouseWindow).Mark : (Vector3?)null;
             witness.PlayGesture(gesture, aim);
+        }
+
+        private Witness _gestureBy;
+        private string _gestureLine;
+        private LineGesture _gesture;
+        private float _gestureAt = -1f;
+
+        /// <summary>The testimony gesture last played for a line (tests): its clip, or null.</summary>
+        public string LastTestimonyGesture { get; private set; }
+
+        /// <summary>The witness who played <see cref="LastTestimonyGesture"/>.</summary>
+        public Witness LastTestimonyGestureBy { get; private set; }
+
+        /// <summary>A line with a testimony gesture (<see cref="LineGestures"/>) cues its speaker after the line's delay.</summary>
+        private void OnLineShown(ScriptLine line, string text)
+        {
+            _gestureAt = -1f;
+            _gestureBy = null;
+            if (!LineGestures.TryGet(line.Key, out var gesture))
+            {
+                return;
+            }
+
+            var witness = _director.WitnessOf(line.Speaker);
+            if (witness == null)
+            {
+                return;
+            }
+
+            _gestureBy = witness;
+            _gestureLine = line.Key;
+            _gesture = gesture;
+            _gestureAt = Time.time + gesture.Delay;
+            TickTestimonyGesture();
+        }
+
+        /// <summary>
+        /// Plays the pending gesture once its delay is up, only while its line is still on screen (game time: the pause
+        /// holds it; a tap past the line drops it).
+        /// </summary>
+        private void TickTestimonyGesture()
+        {
+            if (_gestureAt < 0f || Time.time < _gestureAt)
+            {
+                return;
+            }
+
+            _gestureAt = -1f;
+            var witness = _gestureBy;
+            _gestureBy = null;
+            var dialogue = _director.Dialogue;
+            if (witness == null || !witness.isActiveAndEnabled || !dialogue.IsOpen || dialogue.CurrentLine.Key != _gestureLine)
+            {
+                return;
+            }
+
+            var at = _gesture.Aim;
+            Vector3? aim = at.HasValue ? new Vector3(at.Value.X, at.Value.Y, at.Value.Z) : (Vector3?)null;
+            if (witness.PlayGesture(_gesture.Clip, aim))
+            {
+                LastTestimonyGesture = _gesture.Clip;
+                LastTestimonyGestureBy = witness;
+            }
         }
 
         private void OnLineDismissed(ScriptLine line)
@@ -556,6 +621,7 @@ namespace SpookyStreet.Case
         private void Update()
         {
             RefreshHintBadge();
+            TickTestimonyGesture();
 
             // Raised captions sit just above the speech bubble (it is taller than the v1 card).
             var dialogue = _director.Dialogue;

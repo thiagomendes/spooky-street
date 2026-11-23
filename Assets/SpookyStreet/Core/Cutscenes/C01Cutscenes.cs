@@ -3,6 +3,7 @@ using SpookyStreet.Core.Animation;
 using SpookyStreet.Core.Case;
 using SpookyStreet.Core.World;
 using Keys = SpookyStreet.Core.Localization.LocalizationKeys.Cutscenes;
+using Lines = SpookyStreet.Core.Localization.LocalizationKeys.CaseLines;
 using N = SpookyStreet.Core.Case.CaseNotebook;
 
 namespace SpookyStreet.Core.Cutscenes
@@ -34,8 +35,12 @@ namespace SpookyStreet.Core.Cutscenes
     /// <summary>
     /// Case 01's cutscenes (D28, narrative bible §5, <c>docs/world-and-cases.md</c> case 01 slots): the opening, where
     /// Pip arrives as the new kid on Lantern Lane in Candlebrook and play starts on the arrival porch, and the reveal
-    /// payoff, staged from the stickers the child placed. Only existing clips are used (Walk, Wave, Point, OpenBooth);
-    /// the gesture, babble and music pass is data for S003a. Babble and music IDs are placeholders until then.
+    /// payoff, staged from the stickers the child placed. Only exported clips are used (Walk, Wave, OpenBooth and the
+    /// S003a testimony gestures ShadeEyes and CheckWatch; no hand-keyed animation). The S003a pass (docs/S003a-pass.md)
+    /// set the gestures, the babble (each witness in the emotion of the matching line in play, <see cref="Audio.LineVoices"/>
+    /// via <see cref="CutsceneAudio.BabbleAsIn"/>) and the music: the street theme opens the opening; the reveal score is
+    /// timed to end as Aunt Kit reopens her booth, so the street theme comes back from its start there and never over
+    /// the owl's three knocks (<see cref="RevealMusicAt"/>).
     /// </summary>
     public static class C01Cutscenes
     {
@@ -87,7 +92,8 @@ namespace SpookyStreet.Core.Cutscenes
                 new CutsceneBeat("window", 4f,
                         new CameraShot(P(0.9f, 1.85f, -12.4f), P(0f, 5.55f, 10.9f), 17f)
                             .DriftTo(P(0.9f, 1.85f, -12.4f), P(0f, 5.65f, 10.9f), 14.5f))
-                    .Caption(Keys.OpeningWindow),
+                    .Caption(Keys.OpeningWindow)
+                    .Babble(1.6f, CutsceneAudio.Babble(CastActor.Pip, BabbleEmotion.Thinking)),
 
                 // 4. A neighbour waves hello: Bea by her bicycle.
                 new CutsceneBeat("wave", 3.5f,
@@ -166,9 +172,40 @@ namespace SpookyStreet.Core.Cutscenes
                 beats.Add(StoryBeat(RevealOrder[q], beats));
             }
 
+            float reopenAt = 0f;
+            foreach (var beat in beats)
+            {
+                reopenAt += beat.Duration;
+            }
+
             beats.Add(ReopenBeat(beats));
             beats.Add(SeedBeat(beats));
+            MusicAt(beats, RevealMusicAt(reopenAt), CutsceneAudio.MusicReveal);
             return new Cutscene(RevealId, beats, 0.8f, null, hidePip: true);
+        }
+
+        /// <summary>
+        /// When the reveal score starts (seconds into the reveal) so that it ends as the reopening beat starts at
+        /// <paramref name="reopenAt"/>: its quiet ending then lies under the owl's bows and the street theme comes back
+        /// from its start (the music plan's rule after a cue) as Aunt Kit opens her booth. Never before the first frame.
+        /// </summary>
+        public static float RevealMusicAt(float reopenAt) =>
+            System.Math.Max(0f, reopenAt - CutsceneAudio.MusicSeconds(CutsceneAudio.MusicReveal));
+
+        /// <summary>Adds a music cue at an absolute time of the cutscene, inside the beat that holds it.</summary>
+        private static void MusicAt(List<CutsceneBeat> beats, float at, string id)
+        {
+            float start = 0f;
+            for (int i = 0; i < beats.Count; i++)
+            {
+                if (at < start + beats[i].Duration || i == beats.Count - 1)
+                {
+                    beats[i].Music(System.Math.Min(System.Math.Max(0f, at - start), beats[i].Duration), id);
+                    return;
+                }
+
+                start += beats[i].Duration;
+            }
         }
 
         /// <summary>The framing of one sticker's place (where the child found it).</summary>
@@ -222,15 +259,23 @@ namespace SpookyStreet.Core.Cutscenes
             if (before.Count == 0)
             {
                 // The reveal starts clean: June and Kit step out of frame until their own beats.
-                beat.Cue(CastCue.Hide(0f, CastActor.June)).Cue(CastCue.Hide(0f, CastActor.Kit)).Music(0f, CutsceneAudio.MusicReveal);
+                beat.Cue(CastCue.Hide(0f, CastActor.June)).Cue(CastCue.Hide(0f, CastActor.Kit));
             }
 
             switch (stickerId)
             {
                 case N.BeaFlash:
-                    beat.Cue(CastCue.Gesture(0.1f, CastActor.Bea, CharacterClips.Point, P(-4.5f, 3f, 14f)));
+                    // Where she looked, as in her testimony: a hand over her eyes, up high by the side of the house.
+                    beat.Cue(CastCue.Gesture(0.1f, CastActor.Bea, CharacterClips.ShadeEyes, P(-4.5f, 3f, 14f)))
+                        .Babble(0.25f, CutsceneAudio.BabbleAsIn(CastActor.Bea, Lines.BeaSawCape));
                     break;
                 case N.ValeDoor:
+                    // When he looked: his watch, then his eyes back on the door he saw shut.
+                    beat.World(0f, CutsceneWorld.DoorShut)
+                        .Cue(CastCue.Gesture(0f, CastActor.Vale, CharacterClips.CheckWatch, P(0f, 1.4f, 10.9f)))
+                        .Cue(CastCue.LookAt(0f, CastActor.Vale, P(0f, 1.4f, 10.9f), StickerSeconds))
+                        .Babble(0.3f, CutsceneAudio.BabbleAsIn(CastActor.Vale, Lines.ValeDoorShut));
+                    break;
                 case N.BenchView:
                     beat.World(0f, CutsceneWorld.DoorShut)
                         .Cue(CastCue.LookAt(0f, CastActor.Vale, P(0f, 1.4f, 10.9f), StickerSeconds));
@@ -303,8 +348,8 @@ namespace SpookyStreet.Core.Cutscenes
                 .Cue(CastCue.Show(0f, CastActor.Kit))
                 .Cue(CastCue.OneShot(0.2f, CastActor.Kit, CharacterClips.OpenBooth))
                 .Cue(CastCue.OneShot(1f, CastActor.June, CharacterClips.Wave))
-                .Babble(0.4f, CutsceneAudio.Babble(CastActor.Kit, BabbleEmotion.Happy))
-                .Babble(1.1f, CutsceneAudio.Babble(CastActor.June, BabbleEmotion.Happy));
+                .Babble(0.4f, CutsceneAudio.BabbleAsIn(CastActor.Kit, Lines.KitFirstShow))
+                .Babble(1.1f, CutsceneAudio.BabbleAsIn(CastActor.June, Lines.JuneGoOutside));
         }
 
         private static CutsceneBeat SeedBeat(List<CutsceneBeat> before)

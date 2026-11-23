@@ -3,6 +3,7 @@ using SpookyStreet.Characters;
 using SpookyStreet.Core.Case;
 using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.Core.World;
+using SpookyStreet.Player;
 using SpookyStreet.UI.Nonverbal;
 using UnityEngine;
 
@@ -13,7 +14,8 @@ namespace SpookyStreet.Case
     /// <c>mf_hint_tiers</c>): both point to an authored <see cref="HintArea"/>, never to an object.
     /// <para>Tier 1, the nudge: a breeze carries a handful of paper-thin leaves from Pip toward the area, where they
     /// swirl and settle, while a soft warm glow (an unlit pool on the floor plus a dim warm light, under the bloom
-    /// threshold) rises over the whole area and fades; the nearest witness in view glances that way for about 2 s.
+    /// threshold) rises over the whole area and fades; the nearest witness in view glances that way for about 2 s, and
+    /// Pip, if she stands, glances toward the side the area lies on (<see cref="HintPresentation.PipGlance"/>, S003a).
     /// <see cref="HintPresentation.BreezeSeconds"/> per press, or until the objective changes.</para>
     /// <para>Tier 2, the trail: paper bats launch from Pip, fly to the area's ring and circle the area once before they
     /// fade (<see cref="HintPresentation.TrailPose"/>); there is no goal sticker. Two waves 4 s apart, then silence
@@ -112,6 +114,10 @@ namespace SpookyStreet.Case
         /// <summary>The character who glanced toward the last tier-1 area (null when nobody was in view).</summary>
         public Witness Looker { get; private set; }
 
+        /// <summary>Pip's glance clip for the last tier-1 nudge (null when she did not glance: moving, in the air, reduced
+        /// motion, the area ahead of her, or no glance clips).</summary>
+        public string PipGlance { get; private set; }
+
         /// <summary>A tier-1 radio press (or the Helper): the breeze and the glow over the objective's area. False in free roam.</summary>
         public bool StartBreeze(CaseObjective objective)
         {
@@ -132,8 +138,35 @@ namespace SpookyStreet.Case
                 Looker.LookAt(ToVector(area.Centre) + Vector3.up * HintPresentation.AreaLift, HintPresentation.LookSeconds);
             }
 
+            PipGlance = GlanceToward(area);
             TickBreeze();
             return true;
+        }
+
+        private PipAnimator _pipAnimator;
+
+        /// <summary>Pip turns her head toward the side the area lies on, if the rule lets her (standing, area to a side).</summary>
+        private string GlanceToward(HintArea area)
+        {
+            if (_pip == null)
+            {
+                return null;
+            }
+
+            if (_pipAnimator == null)
+            {
+                _pipAnimator = _pip.GetComponentInChildren<PipAnimator>();
+            }
+
+            var motor = _pip.GetComponent<PipMotor>();
+            bool grounded = motor == null || motor.Grounded;
+            float speed = motor != null ? motor.HorizontalSpeed : 0f;
+            Vector3 target = ToVector(HintPresentation.GlanceTarget(area));
+            Vector3 forward = _pip.forward;
+            Vector3 to = target - _pip.position;
+            bool reduced = ReducedMotion != null && ReducedMotion();
+            string clip = HintPresentation.PipGlance(true, grounded, speed, reduced, forward.x, forward.z, to.x, to.z);
+            return clip != null && _pipAnimator != null && _pipAnimator.PlayGlance(target) ? _pipAnimator.OneShot : null;
         }
 
         public void StopBreeze()

@@ -41,6 +41,9 @@ namespace SpookyStreet.Core.Animation
         /// <summary>How far her face turns from straight ahead in a glance clip, degrees (pip_anims.GLANCE_TURN).</summary>
         public const float GlanceTurn = 89f;
 
+        /// <summary>Ground speed above which a glance does not start, and at which a playing one ends (m/s).</summary>
+        public const float GlanceMaxSpeed = 0.6f;
+
         /// <summary>Every clip the game knows, in a stable order (the animator's mixer inputs follow it).</summary>
         public static readonly string[] All =
         {
