@@ -100,7 +100,7 @@ namespace SpookyStreet.Tests.PlayMode
             (Speaker.Pip, new[]
             {
                 Lines.ExamineStreamer, Lines.ExamineCloth, Lines.ExamineSill, Lines.ExamineDoorStuck, Lines.ExamineBowl,
-                Lines.ExamineBowlSweet, Lines.ExamineOwlPanel,
+                Lines.ExamineBowlSweet, Lines.ExamineOwlPanel, Lines.ExamineOwlBooth,
             }),
         };
 
@@ -160,8 +160,8 @@ namespace SpookyStreet.Tests.PlayMode
         [UnityTest]
         public IEnumerator MemoryReplaysNeverAutoPlayAndOnlyHazyOnesAreOffered()
         {
-            // D26 §7: the first hearing only offers the memory in the notebook; nothing auto-plays, and Bea's
-            // replay (which still re-enacts June's route) stays withheld until it is restaged as a hazy flash.
+            // D26 §7: the first hearing only offers the memory in the notebook; nothing auto-plays. Since S002.5b
+            // Bea's is restaged as a hazy silver blur, so both witnesses' stickers offer theirs.
             yield return StartGame();
             var director = Director;
             var replay = director.Nonverbal.MemoryReplay;
@@ -182,10 +182,11 @@ namespace SpookyStreet.Tests.PlayMode
             var notebook = director.Notebook;
             notebook.ShowPage(notebook.PageQuestions.IndexOf(CaseNotebook.Question(CaseNotebook.QuestionEntry)));
             yield return Frames(2);
-            Assert.AreEqual(1, notebook.ReplayEyes.Count, "only Vale's sticker offers its memory");
-            Assert.IsNotNull(notebook.TraySticker(CaseNotebook.ValeDoor).transform.Find("WatchAgain"));
-            Assert.IsNull(notebook.TraySticker(CaseNotebook.BeaFlash).transform.Find("WatchAgain"));
-            notebook.ReplayEyes[0].onClick.Invoke();
+            Assert.AreEqual(2, notebook.ReplayEyes.Count, "Bea's and Vale's stickers offer their memories");
+            var valeEye = notebook.TraySticker(CaseNotebook.ValeDoor).transform.Find("WatchAgain");
+            Assert.IsNotNull(valeEye);
+            Assert.IsNotNull(notebook.TraySticker(CaseNotebook.BeaFlash).transform.Find("WatchAgain"));
+            valeEye.GetComponentInChildren<UnityEngine.UI.Button>(true).onClick.Invoke();
             yield return Frames(2);
             Assert.IsFalse(notebook.IsOpen);
             Assert.IsTrue(replay.Active, "the eye replays the memory on demand");
@@ -243,11 +244,12 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsFalse(layer.Guide.Active, "tier 1 has no trail");
             layer.RadioButton.onClick.Invoke(); // tier 2: where
             Assert.IsTrue(layer.Guide.Active, "tier 2 starts the bat trail");
+            Assert.IsNotNull(layer.Guide.TrailArea, "the trail leads to an area");
             yield return Wait(1.0f);
-            Assert.Greater(layer.Guide.VisibleBats, 0, "paper bats fly the route");
+            Assert.Greater(layer.Guide.VisibleBats, 0, "paper bats fly toward the area");
             Assert.LessOrEqual(layer.Guide.VisibleBats, BatTrailSchedule.MaxConcurrentBats);
-            yield return Wait(1.2f);
-            Assert.IsTrue(layer.Guide.BeaconVisible, "the goal sticker pulses once the first bats arrive");
+            yield return Wait(1.6f);
+            Assert.Greater(layer.Guide.CirclingBats, 0, "the first bats circle the area (no goal sticker since S002.5b)");
 
             // Meeting the objective stops the trail.
             var objective = CaseHints.ObjectiveFor(director.State);

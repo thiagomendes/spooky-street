@@ -45,7 +45,7 @@ namespace SpookyStreet.Case
         private Camera _camera;
         private CanvasGroup _hudGroup;
         private CaseSaveStore _store;
-        private HintSession _hints = new HintSession();
+        private HintSession _hints;
         private Witness _talking;
         private bool _modal;
         private int _reenableFrame = -1;
@@ -194,6 +194,7 @@ namespace SpookyStreet.Case
             _pip = game.Pip;
             _ui = game.Ui;
             _camera = game.CameraRig.OutputCamera;
+            _hints = new HintSession { MoveAt = HintMoveAt };
 
             BuildUi();
             int sightMask = Physics.DefaultRaycastLayers & ~(1 << _pip.gameObject.layer);
@@ -438,7 +439,7 @@ namespace SpookyStreet.Case
             Answers = CaseAnswers.Empty;
             Notebook.Session.Reset();
             AnchorId = CaseAnchors.Start;
-            _hints = new HintSession();
+            _hints = new HintSession { MoveAt = HintMoveAt };
             _askAfterDialogue = false;
             CloseModals();
             Captions.Clear();
@@ -459,6 +460,13 @@ namespace SpookyStreet.Case
 
         /// <summary>The tier the radio gives next.</summary>
         public HintTier NextHintTier => _hints.NextTier(State);
+
+        /// <summary>The move that blocks Pip where she stands (tier 3 exists only then, D26 §6), or None.</summary>
+        public HintMove HintMoveAt(CaseObjective objective)
+        {
+            var p = _pip.transform.position;
+            return HintMoves.For(objective, p.x, p.y, p.z);
+        }
 
         // ------------------------------------------------------------------------------------------------- title
 

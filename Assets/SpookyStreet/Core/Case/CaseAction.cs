@@ -43,6 +43,9 @@ namespace SpookyStreet.Core.Case
         /// <summary>Use on the owl-painted service panel in the workshop: the panel opens on the mechanism.</summary>
         ExamineOwlPanel,
 
+        /// <summary>Use on the porch below Aunt Kit's wooden owl (S002.5b): the owl-booth sticker, seen still.</summary>
+        ExamineOwlBooth,
+
         /// <summary>
         /// The child placed a full set of stickers on a notebook question (D26). The reducer writes the solved fact
         /// only for a right set of found stickers on a raised question.

@@ -28,6 +28,7 @@ namespace SpookyStreet.Core.Nonverbal
         public const string PipBowl = "vg.pip.bowl";
         public const string PipBowlSweet = "vg.pip.bowl_sweet";
         public const string PipOwlPanel = "vg.pip.owl_panel";
+        public const string PipOwlBooth = "vg.pip.owl_booth";
 
         // Bea, Mr. Vale, June, Aunt Kit.
         public const string BeaRepeat = "vg.bea.repeat";
@@ -66,7 +67,7 @@ namespace SpookyStreet.Core.Nonverbal
             BuildValeSavedSweet(),
             BuildJuneGreet(), BuildJuneDoorSticks(), BuildDoorOpenWow(JuneDoorAlreadyOpen, true), BuildJuneLatchReminder(),
             BuildJuneLatchThanks(), BuildJuneListenFloor(), BuildJuneGoOutside(), BuildJuneClosed(),
-            BuildKitFirstShow(), BuildKitThanks(), BuildPipOwlPanel(), BuildKitAsk(),
+            BuildKitFirstShow(), BuildKitThanks(), BuildPipOwlPanel(), BuildKitAsk(), BuildPipOwlBooth(),
         };
 
         /// <summary>Line key → vignette for every line outside the original key five.</summary>
@@ -104,6 +105,7 @@ namespace SpookyStreet.Core.Nonverbal
             (Lines.KitThanks, KitThanks),
             (Lines.ExamineOwlPanel, PipOwlPanel),
             (Lines.KitAsk, KitAsk),
+            (Lines.ExamineOwlBooth, PipOwlBooth),
         };
 
         // ------------------------------------------------------------------------------------------- captions
@@ -655,6 +657,20 @@ namespace SpookyStreet.Core.Nonverbal
                 {
                     Still("grille", "grille", 0.50f, 0.36f, 1.3f),
                     Pop("owl", "owl", 0.4f, 0.50f, 0.58f, 1.1f),
+                    Pop("eye", "eye", 1.2f, 0.80f, 0.62f, 0.8f),
+                },
+                new VignetteCue[0]);
+        }
+
+        /// <summary>"A wooden owl, high above the door. Very still.": the booth, the owl up above it (it stays still), Pip's eye.</summary>
+        private static Vignette BuildPipOwlBooth()
+        {
+            return new Vignette(PipOwlBooth, 2.4f, 0,
+                Beats(0.2f, 0.7f, 0.9f, 2.0f),
+                new[]
+                {
+                    Still("booth", "booth", 0.46f, 0.36f, 1.2f),
+                    Pop("owl", "owl", 0.4f, 0.46f, 0.74f, 0.8f),
                     Pop("eye", "eye", 1.2f, 0.80f, 0.62f, 0.8f),
                 },
                 new VignetteCue[0]);

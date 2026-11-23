@@ -83,6 +83,12 @@ namespace SpookyStreet.Core.Case
         public const string PointFrontDoor = "front_door";
         public const string PointCandyBowl = "candy_bowl";
 
+        /// <summary>The porch spot below Aunt Kit's wooden owl (S002.5b): look up at the owl that stays still.</summary>
+        public const string PointOwlBooth = "owl_booth";
+
+        /// <summary>Where the wooden owl puppet hangs on the house front (OwlPuppet pivot, above the front door).</summary>
+        public static readonly StagePoint WoodenOwl = new StagePoint(EnvironmentLayout.HouseX, 6.7f, EnvironmentLayout.HouseZ - 2.02f);
+
         /// <summary>Spec §5: choose a Use target within about 1.6 m (larger for targets behind a collider).</summary>
         public const float DefaultReach = 1.6f;
 
@@ -257,6 +263,10 @@ namespace SpookyStreet.Core.Case
                 // The candy bowl sits on the arrival porch crate; a short reach keeps it off the Use disc at the spawn.
                 new InteractionPoint(PointCandyBowl, CaseAction.Of(CaseActionKind.ExamineCandyBowl),
                     new StagePoint(bowl.X, bowl.Y, bowl.Z), 1.15f, 0.45f),
+                // On the porch's east side, clear of the door's reach, looking up at the wooden owl (D26 owl booth).
+                new InteractionPoint(PointOwlBooth, CaseAction.Of(CaseActionKind.ExamineOwlBooth),
+                    new StagePoint(EnvironmentLayout.HouseX + 1.9f, 0.6f, EnvironmentLayout.HouseZ - 3.1f), 1.4f, 1.7f,
+                    PointSide.Outside),
             };
         }
     }

@@ -171,6 +171,14 @@ namespace SpookyStreet.Core.Case
 
         public static readonly IReadOnlyList<InteractionPoint> InteriorPoints = BuildInteriorPoints();
 
+        /// <summary>
+        /// True for a Use target that only exists once the street remembers a closed case (D29): June at her
+        /// treehouse. The street's memories rest while their case is open, and area hints only run while it is open
+        /// (a closed case is free roam), so such a target never shares the street with a hint and the hint areas'
+        /// clearance ignores it.
+        /// </summary>
+        public static bool OnlyOnceRemembered(string pointId) => pointId == PointJuneTreehouse;
+
         private static IReadOnlyList<InteractionPoint> _allPoints;
 
         /// <summary>Every Use target of the case, exterior then interior (built on first use: partial-class field
@@ -224,6 +232,9 @@ namespace SpookyStreet.Core.Case
                     return view.June == JunePlacement.Treehouse;
                 case PointKit:
                     return view.KitPresent;
+                case PointOwlBooth:
+                    // Kit stands at her booth for the reopening: her own target takes the porch then.
+                    return !view.KitPresent;
                 case PointServicePanel:
                     return !view.ServicePanelOpen;
                 case PointLinkArm:

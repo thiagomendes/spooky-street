@@ -72,6 +72,7 @@ namespace SpookyStreet.Core.Localization
             public const string ExamineCloth = "c01.examine.cloth";
             public const string ExamineSill = "c01.examine.sill";
             public const string ExamineOwlPanel = "c01.examine.owl_panel";
+            public const string ExamineOwlBooth = "c01.examine.owl_booth";
             public const string ExamineDoorStuck = "c01.examine.door_stuck";
             public const string ExamineBowl = "c01.examine.bowl";
             public const string ExamineBowlSweet = "c01.examine.bowl_sweet";
@@ -112,6 +113,7 @@ namespace SpookyStreet.Core.Localization
                 ExamineCloth,
                 ExamineSill,
                 ExamineOwlPanel,
+                ExamineOwlBooth,
                 ExamineDoorStuck,
                 ExamineBowl,
                 ExamineBowlSweet,
@@ -209,76 +211,67 @@ namespace SpookyStreet.Core.Localization
             };
         }
 
-        /// <summary>Radio hints: objective titles and three tiers per objective (S002).</summary>
+        /// <summary>Radio hints (S002, retiered by S002.5b, D26 §6): a sensory area line and an area trail line per
+        /// objective, and one line per demonstrable move for tier 3 (the per-objective action lines are retired).</summary>
         public static class Hints
         {
             public const string HudHint = "ui.hud.hint";
             public const string ArrivalObserve = "c01.hint.arrival.observe";
             public const string ArrivalLocate = "c01.hint.arrival.locate";
-            public const string ArrivalAct = "c01.hint.arrival.act";
             public const string CheckViewObserve = "c01.hint.check_view.observe";
             public const string CheckViewLocate = "c01.hint.check_view.locate";
-            public const string CheckViewAct = "c01.hint.check_view.act";
             public const string FindWayInObserve = "c01.hint.find_way_in.observe";
             public const string FindWayInLocate = "c01.hint.find_way_in.locate";
-            public const string FindWayInAct = "c01.hint.find_way_in.act";
             public const string MeetJuneObserve = "c01.hint.meet_june.observe";
             public const string MeetJuneLocate = "c01.hint.meet_june.locate";
-            public const string MeetJuneAct = "c01.hint.meet_june.act";
             public const string OpenDoorObserve = "c01.hint.open_door.observe";
             public const string OpenDoorLocate = "c01.hint.open_door.locate";
-            public const string OpenDoorAct = "c01.hint.open_door.act";
             public const string FindSourceObserve = "c01.hint.find_source.observe";
             public const string FindSourceLocate = "c01.hint.find_source.locate";
-            public const string FindSourceAct = "c01.hint.find_source.act";
             public const string LinkArmObserve = "c01.hint.link_arm.observe";
             public const string LinkArmLocate = "c01.hint.link_arm.locate";
-            public const string LinkArmAct = "c01.hint.link_arm.act";
             public const string TurnCrankObserve = "c01.hint.turn_crank.observe";
             public const string TurnCrankLocate = "c01.hint.turn_crank.locate";
-            public const string TurnCrankAct = "c01.hint.turn_crank.act";
             public const string ReturnObserve = "c01.hint.return_to_porch.observe";
             public const string ReturnLocate = "c01.hint.return_to_porch.locate";
-            public const string ReturnAct = "c01.hint.return_to_porch.act";
             public const string FreeRoamObserve = "c01.hint.free_roam.observe";
             public const string FreeRoamAllFound = "c01.hint.free_roam.all_found";
             public const string FreeRoamLocate = "c01.hint.free_roam.locate";
-            public const string FreeRoamAct = "c01.hint.free_roam.act";
+            public const string MoveJump = "ui.hint.move.jump";
+            public const string MoveHighJump = "ui.hint.move.high_jump";
+            public const string MoveGlide = "ui.hint.move.glide";
+            public const string MoveWallKick = "ui.hint.move.wall_kick";
+            public const string MoveLedge = "ui.hint.move.ledge";
 
             public static readonly string[] All =
             {
                 HudHint,
                 ArrivalObserve,
                 ArrivalLocate,
-                ArrivalAct,
                 CheckViewObserve,
                 CheckViewLocate,
-                CheckViewAct,
                 FindWayInObserve,
                 FindWayInLocate,
-                FindWayInAct,
                 MeetJuneObserve,
                 MeetJuneLocate,
-                MeetJuneAct,
                 OpenDoorObserve,
                 OpenDoorLocate,
-                OpenDoorAct,
                 FindSourceObserve,
                 FindSourceLocate,
-                FindSourceAct,
                 LinkArmObserve,
                 LinkArmLocate,
-                LinkArmAct,
                 TurnCrankObserve,
                 TurnCrankLocate,
-                TurnCrankAct,
                 ReturnObserve,
                 ReturnLocate,
-                ReturnAct,
                 FreeRoamObserve,
                 FreeRoamAllFound,
                 FreeRoamLocate,
-                FreeRoamAct,
+                MoveJump,
+                MoveHighJump,
+                MoveGlide,
+                MoveWallKick,
+                MoveLedge,
             };
         }
 
