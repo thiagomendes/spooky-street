@@ -19,6 +19,12 @@ namespace SpookyStreet.Core.Case
 
         /// <summary>On the porch for the reopening, and from then on.</summary>
         Porch,
+
+        /// <summary>
+        /// Outside by the foot of her treehouse way, once the street remembers case 01 (D29; applied on load, so the
+        /// reopening keeps her on the porch).
+        /// </summary>
+        Treehouse,
     }
 
     public enum OwlState
@@ -94,6 +100,15 @@ namespace SpookyStreet.Core.Case
                 state.Has(CaseFact.CaseClosed),
                 state.Has(CaseFact.FoundSweet));
         }
+
+        /// <summary>
+        /// This view with what the street remembers laid over it (<c>Core.Street.StreetView.Apply</c>, D29): each flag
+        /// can only open, never close, so applying it twice changes nothing.
+        /// </summary>
+        public CaseWorldView WithStreet(bool boothOpen, bool frontDoorOpen, bool owlBows, bool juneOutside) =>
+            new CaseWorldView(PaperBatFallen, frontDoorOpen ? DoorState.Open : FrontDoor,
+                juneOutside ? JunePlacement.Treehouse : June, ServicePanelOpen, owlBows ? OwlState.Bowing : Owl,
+                BoothOpen || boothOpen, SweetTaken);
 
         public bool Equals(CaseWorldView other) =>
             PaperBatFallen == other.PaperBatFallen && FrontDoor == other.FrontDoor && June == other.June &&

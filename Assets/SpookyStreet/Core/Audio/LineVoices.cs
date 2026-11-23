@@ -20,6 +20,7 @@ namespace SpookyStreet.Core.Audio
             { Keys.ExamineCloth, BabbleEmotion.Thinking },
             { Keys.ExamineSill, BabbleEmotion.Thinking },
             { Keys.ExamineOwlPanel, BabbleEmotion.Thinking },
+            { Keys.ExamineOwlBooth, BabbleEmotion.Thinking },
             { Keys.ExamineDoorStuck, BabbleEmotion.Neutral },
             { Keys.ExamineBowl, BabbleEmotion.Happy },
             { Keys.ExamineBowlSweet, BabbleEmotion.Happy },
