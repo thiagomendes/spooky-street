@@ -1,9 +1,11 @@
+using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
 using SpookyStreet.Audio;
 using SpookyStreet.Core.Audio;
 using SpookyStreet.Core.Save;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace SpookyStreet.Tests.PlayMode
 {
@@ -27,7 +29,9 @@ namespace SpookyStreet.Tests.PlayMode
             {
                 if (Missing.Contains(resourcePath)) return null;
                 Loaded.Add(resourcePath);
-                return AudioClip.Create(resourcePath, 4800, 1, 48000, false);
+                // Voices last 2 s, so a duck can be read while one plays; everything else 0.1 s.
+                int samples = resourcePath.Contains("/voice_") ? 96000 : 4800;
+                return AudioClip.Create(resourcePath, samples, 1, 48000, false);
             }
         }
 
@@ -191,6 +195,72 @@ namespace SpookyStreet.Tests.PlayMode
             var source = rig.PlayAt(AudioEvents.ClueKnocksDistant, Vector3.zero);
             Assert.AreEqual(knocks.MinDistance, source.minDistance);
             Assert.AreEqual(knocks.MaxDistance, source.maxDistance);
+        }
+
+        [UnityTest]
+        public IEnumerator VoiceDucksMusicAndTheBedSmoothlyAndAStopOrTheEndReleasesIt()
+        {
+            rig.ClearLog();
+            var music = rig.PlayTake(VoiceMusicEvents.MusicStreetTheme, 1, 0.2f);
+            Assert.IsTrue(music.loop);
+            Assert.AreEqual(0f, music.volume, "a loop crossfading in starts silent");
+            yield return new WaitForSecondsRealtime(0.4f);
+            float open = AudioMix.DbToLinear(VoiceMusicEvents.MusicTrimDb);
+            Assert.AreEqual(open, music.volume, 1e-3f, "faded in to its level");
+            var bed = rig.Play(AudioEvents.AmbNight);
+            Assert.AreEqual(1f, bed.volume, 1e-4f);
+            Assert.IsFalse(rig.VoiceActive, "no voice, no duck (the run 113 reading cannot come from here)");
+
+            var voice = rig.PlayTake("voice_pip_happy", 3);
+            Assert.AreEqual("Audio/voice_pip_happy/voice_pip_happy_t3", voice.clip.name, "the chosen take plays");
+            Assert.AreEqual(3, rig.Log[rig.Log.Count - 1].Take);
+            Assert.IsTrue(rig.VoiceActive);
+            Assert.IsTrue(rig.IsPlaying("voice_pip_happy"));
+            yield return null;
+            Assert.Less(rig.DuckDb, 0f, "the duck starts");
+            Assert.Greater(rig.DuckDb, AudioMix.VoiceDuckDb, "and ramps in, no step");
+            yield return new WaitForSecondsRealtime(0.3f);
+            Assert.AreEqual(AudioMix.VoiceDuckDb, rig.DuckDb, 1e-3f);
+            Assert.AreEqual(open * AudioMix.DbToLinear(AudioMix.VoiceDuckDb), music.volume, 1e-3f, "music dips");
+            Assert.AreEqual(AudioMix.DbToLinear(AudioMix.VoiceDuckDb), bed.volume, 1e-3f, "the bed dips");
+            Assert.AreEqual(1f, rig.Play(AudioEvents.NoteCorrectGlow).volume, 1e-4f, "effects never duck");
+
+            // The pause holds the voice and its duck; the resume carries on.
+            rig.SetGamePaused(true);
+            Assert.IsTrue(rig.IsHeld("voice_pip_happy"));
+            yield return new WaitForSecondsRealtime(0.2f);
+            Assert.IsTrue(rig.VoiceActive, "a held voice still ducks");
+            rig.SetGamePaused(false);
+            Assert.IsTrue(rig.VoiceActive);
+
+            rig.Stop("voice_pip_happy", 0.05f);
+            Assert.IsFalse(rig.VoiceActive, "a stopped voice no longer ducks");
+            Assert.IsFalse(rig.IsPlaying("voice_pip_happy"));
+            yield return new WaitForSecondsRealtime(1f);
+            Assert.AreEqual(0f, rig.DuckDb, 1e-3f, "the duck lets go");
+            Assert.AreEqual(open, music.volume, 1e-3f);
+            int ducks = 0, unducks = 0;
+            foreach (var e in rig.Log)
+            {
+                if (e.Kind == AudioLogKind.Duck) ducks++;
+                if (e.Kind == AudioLogKind.Unduck) unducks++;
+            }
+
+            Assert.AreEqual(1, ducks);
+            Assert.AreEqual(1, unducks);
+
+            // A voice that plays to its end releases the duck too (fake voices last 2 s).
+            rig.PlayTake("voice_vale_neutral", 1);
+            yield return null;
+            Assert.IsTrue(rig.VoiceActive);
+            yield return new WaitForSecondsRealtime(2.2f);
+            Assert.IsFalse(rig.VoiceActive, "the duck ends with the clip");
+
+            // Music stops fade out from where a fade-in left them.
+            rig.Stop(VoiceMusicEvents.MusicStreetTheme, 0.2f);
+            Assert.IsFalse(rig.IsLooping(VoiceMusicEvents.MusicStreetTheme));
+            yield return new WaitForSecondsRealtime(0.4f);
+            Assert.IsNull(rig.SourceOf(VoiceMusicEvents.MusicStreetTheme));
         }
 
         [Test]

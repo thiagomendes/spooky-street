@@ -15,7 +15,7 @@ namespace SpookyStreet.Tests.Core
         private static readonly AudioCatalog Catalog = AudioEvents.CreateCatalog();
 
         [Test]
-        public void ApprovedEffectsAreInTheCatalogAndVoicesAndMusicAreNot()
+        public void ApprovedEffectsAreInTheCatalogAndOnlyTheV2VoicesAndMusic()
         {
             Assert.AreEqual(18, AudioImportPlan.Approved.Length);
             Assert.IsEmpty(Catalog.Validate());
@@ -28,8 +28,10 @@ namespace SpookyStreet.Tests.Core
 
             foreach (var def in Catalog.Events)
             {
-                bool replaced = def.Id.StartsWith("voice_") || def.Id.StartsWith("music_");
-                Assert.AreEqual(!replaced, AudioImportPlan.IsApproved(def.Id), def.Id + " (D20.1: voices and music are replaced)");
+                // D20.1 rejected the S003 formant voices and the plucked motif; D20.2 approved their v2 replacements.
+                bool rejected = (def.Id.StartsWith("voice_") || def.Id.StartsWith("music_")) &&
+                                !VoiceMusicEvents.IsVoice(def.Id) && !VoiceMusicEvents.IsMusic(def.Id);
+                Assert.AreEqual(!rejected, AudioImportPlan.IsApproved(def.Id), def.Id + " (D20.1, D20.2)");
             }
         }
 

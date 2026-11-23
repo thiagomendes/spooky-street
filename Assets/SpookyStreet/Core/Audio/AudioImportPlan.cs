@@ -23,6 +23,12 @@ namespace SpookyStreet.Core.Audio
 
         /// <summary>Long beds: decoded from disk while playing, a few kilobytes of memory.</summary>
         Streaming,
+
+        /// <summary>
+        /// Many short clips (the 150 babble phrase takes): kept as Vorbis in memory and decoded while playing, about
+        /// 25 KiB each instead of about 170 KiB of PCM. A babble does not need a frame-exact start.
+        /// </summary>
+        CompressedInMemory,
     }
 
     /// <summary>Import settings of one clip, as plain data (applied by <c>Editor/AudioImportRules.cs</c>).</summary>
@@ -58,9 +64,10 @@ namespace SpookyStreet.Core.Audio
     }
 
     /// <summary>
-    /// Which sounds are in the game (D20.1: the approved effects; voices and music are being replaced) and how each
-    /// imports: Vorbis quality per category, mono for 3D one-shots, decompress-on-load for short sounds and streaming
-    /// for the night bed. Engine-free so the rules are unit tested; the editor postprocessor only applies them.
+    /// Which sounds are in the game (D20.1: the approved effects; D20.2: the v2 voices and music,
+    /// <see cref="VoiceMusicEvents"/>) and how each imports: Vorbis quality per category, mono for 3D one-shots,
+    /// decompress-on-load for short effects, compressed in memory for the babble phrases and streaming for the night
+    /// bed and the music. Engine-free so the rules are unit tested; the editor postprocessor only applies them.
     /// </summary>
     public static class AudioImportPlan
     {
@@ -77,10 +84,16 @@ namespace SpookyStreet.Core.Audio
             AudioEvents.NoteStickerWobble, AudioEvents.NoteCorrectGlow, AudioEvents.UiTap, AudioEvents.AmbNight,
         };
 
-        public static bool IsApproved(string id) => Array.IndexOf(Approved, id) >= 0;
+        /// <summary>An approved effect, or one of the approved v2 voices and music (D20.2).</summary>
+        public static bool IsApproved(string id) =>
+            Array.IndexOf(Approved, id) >= 0 || VoiceMusicEvents.IsVoice(id) || VoiceMusicEvents.IsMusic(id);
 
-        /// <summary>File extension of the stored takes: the night bed is Ogg Vorbis, the rest are WAV masters.</summary>
-        public static string FileExtension(string id) => id == AudioEvents.AmbNight ? ".ogg" : ".wav";
+        /// <summary>
+        /// File extension of the stored takes: the night bed, the voices and the music are Ogg Vorbis, the effects are
+        /// WAV masters.
+        /// </summary>
+        public static string FileExtension(string id) =>
+            id == AudioEvents.AmbNight || VoiceMusicEvents.IsVoice(id) || VoiceMusicEvents.IsMusic(id) ? ".ogg" : ".wav";
 
         /// <summary>The category the sound was mastered in (the page turn is a notebook sound in master.py).</summary>
         public static AudioCategory CategoryOf(string id)
@@ -124,7 +137,9 @@ namespace SpookyStreet.Core.Audio
             var category = CategoryOf(def.Id);
             bool stream = category == AudioCategory.Ambience || category == AudioCategory.Music;
             return new AudioImportSettings(category, QualityFor(category),
-                stream ? AudioLoad.Streaming : AudioLoad.DecompressOnLoad,
+                stream ? AudioLoad.Streaming
+                : category == AudioCategory.Voice ? AudioLoad.CompressedInMemory
+                : AudioLoad.DecompressOnLoad,
                 forceMono: def.Spatial && !def.Loop,
                 loadInBackground: stream);
         }

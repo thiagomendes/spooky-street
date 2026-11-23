@@ -117,7 +117,8 @@ namespace SpookyStreet.Core.Audio
         /// <summary>
         /// Pause (spec §5) suspends the game's sound: effects, voices and the bed hold where they are and resume in
         /// place, so a knock never loses its sync with the animation. Music keeps playing under the pause card, and the
-        /// UI tap still answers the pause menu's own buttons.
+        /// UI tap still answers the pause menu's own buttons. (Under the pause the music is lowered a little,
+        /// <see cref="MusicPlan.PausedTrimDb"/>.)
         /// </summary>
         public static bool PausesWithGame(AudioEventDef def) => def.Bus != AudioBus.Music && def.Id != AudioEvents.UiTap;
 
@@ -172,11 +173,30 @@ namespace SpookyStreet.Core.Audio
             }
         }
 
+        /// <summary>The duck comes in fast as a voice starts (−6 dB in 0.15 s)…</summary>
+        public const float DuckAttackDbPerSecond = 40f;
+
+        /// <summary>…and lets go gently after it ends (back in about 0.6 s).</summary>
+        public const float DuckReleaseDbPerSecond = 10f;
+
+        /// <summary>Music and ambience dip under a voice line; effects and voices never do.</summary>
+        public static bool DucksUnderVoice(AudioBus bus) => bus == AudioBus.Music || bus == AudioBus.Ambience;
+
+        /// <summary>The voice duck one frame later: toward <see cref="VoiceDuckDb"/> while a voice plays, back to 0 after.</summary>
+        public static float StepDuck(float currentDb, bool voiceActive, float dt) =>
+            voiceActive
+                ? Approach(currentDb, VoiceDuckDb, DuckAttackDbPerSecond * dt)
+                : Approach(currentDb, 0f, DuckReleaseDbPerSecond * dt);
+
         /// <summary>Linear gain for one play: bus level, event trim and voice ducking.</summary>
-        public static float PlayGain(AudioEventDef def, float busDb, bool voiceActive, float busTrimDb = 0f)
+        public static float PlayGain(AudioEventDef def, float busDb, bool voiceActive, float busTrimDb = 0f) =>
+            PlayGain(def, busDb, voiceActive ? VoiceDuckDb : 0f, busTrimDb);
+
+        /// <summary>Linear gain for one play with a ducking depth (dB, 0 or below; music and ambience only).</summary>
+        public static float PlayGain(AudioEventDef def, float busDb, float duckDb, float busTrimDb)
         {
             var db = busDb + def.VolumeDb + busTrimDb;
-            if (voiceActive && (def.Bus == AudioBus.Music || def.Bus == AudioBus.Ambience)) db += VoiceDuckDb;
+            if (DucksUnderVoice(def.Bus)) db += duckDb;
             return busDb <= MinDb ? 0f : DbToLinear(db);
         }
 

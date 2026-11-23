@@ -66,6 +66,12 @@ namespace SpookyStreet.UI
         /// <summary>The player closed a line with next (not Skip): the memory replay trigger (§12 step 4).</summary>
         public event Action<ScriptLine> LineDismissed;
 
+        /// <summary>A line is on screen, with its words as shown (the speaker's babble starts, S003).</summary>
+        public event Action<ScriptLine, string> LineShown;
+
+        /// <summary>The conversation closed: finished, skipped or cancelled (the babble stops).</summary>
+        public event Action Closed;
+
         /// <summary>A vignette's world cue on its first pass: the speaker plays this gesture clip (Bea: "Point").</summary>
         public event Action<ScriptLine, string> GestureCue;
 
@@ -355,6 +361,7 @@ namespace SpookyStreet.UI
             Vignette.Stop();
             ShowsVignette = false;
             gameObject.SetActive(false);
+            Closed?.Invoke();
         }
 
         private void Close()
@@ -387,6 +394,7 @@ namespace SpookyStreet.UI
             _gate.Begin(_advance.IsPressed());
             _tapped = false;
             _flutter = 0f;
+            LineShown?.Invoke(line, _line.text);
         }
 
         /// <summary>Bubble (with or without its text line) or the v1 card; the face disc and pips follow.</summary>
