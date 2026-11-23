@@ -168,7 +168,7 @@ Notes for the cutscene and wiring pass:
 
 ## Evidence
 
-- Local: `./tools/check-local.sh` passes (core tests: 584 passed).
+- Local: `./tools/check-local.sh` passes (core tests: 618 passed after merging `origin/main` at 65854fc).
 - CI: see "CI" below.
 
 ## CI
