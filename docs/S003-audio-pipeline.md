@@ -77,7 +77,7 @@ were cut off abruptly at their buffer ends, and the grass and page turn had too 
 was shortened, the hum was made less organ-like (faster harmonic roll-off plus a woody rumble), and the voices got
 wider melodies, formant wander and syllable arches.
 
-## Unity side (minimal, not wired)
+## Unity side (minimal, not wired; the effects are wired since `docs/S003-sfx-wiring.md`)
 
 - `Core/Audio/AudioCatalog.cs` (engine-free): `AudioBus`, `AudioEventDef` (takes, trim, pitch jitter, loop,
   spatial, minimum interval, markers, resource path `Audio/{id}/{id}_t{n}`) and `AudioCatalog` with validation.

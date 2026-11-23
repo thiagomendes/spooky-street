@@ -1,3 +1,4 @@
+using SpookyStreet.Audio;
 using SpookyStreet.CameraSystem;
 using SpookyStreet.Case;
 using SpookyStreet.Characters;
@@ -64,6 +65,9 @@ namespace SpookyStreet.App
         /// <summary>Case 01 in the world (S002): state, saves, interactions, dialogue, captions and notebook.</summary>
         public CaseDirector Director { get; private set; }
 
+        /// <summary>The approved sound effects wired to play (S003): steps, moves, clue sounds, UI taps, the night bed.</summary>
+        public GameAudio Audio { get; private set; }
+
         private void Awake()
         {
             // Last loaded scene wins; a reload (tests, "back to title" later) replaces the previous instance.
@@ -124,6 +128,8 @@ namespace SpookyStreet.App
             // After this component's own StateChanged handler, so Continue can move Pip after the new-game spawn.
             Director = CaseDirector.Create(this);
             Adopt(Director.gameObject);
+            Audio = GameAudio.Create(this);
+            Adopt(Audio.gameObject);
             ApplySuspension(Flow.State);
         }
 

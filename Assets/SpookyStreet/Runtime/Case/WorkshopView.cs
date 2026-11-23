@@ -1,3 +1,4 @@
+using System;
 using SpookyStreet.Core.Case;
 using SpookyStreet.Core.World;
 using SpookyStreet.World;
@@ -66,6 +67,15 @@ namespace SpookyStreet.Case
 
         /// <summary>Wind-driven cycles run (they never start before the arrival knocks were heard).</summary>
         public bool WindEnabled { get; set; }
+
+        /// <summary>True when the current (or last) cycle was started by the wind rather than the crank.</summary>
+        public bool WindCycle { get; private set; }
+
+        /// <summary>Raised when a knock cycle starts; true for a wind-driven one (the rooftop wheel's whirr, S003).</summary>
+        public event Action<bool> CycleStarted;
+
+        /// <summary>Raised on each knock contact (0-based), the frame the follower drops onto the cam (the cam tap).</summary>
+        public event Action<int> Knocked;
 
         public Transform Owl => _owl;
         public Transform Cam => _cam;
@@ -183,13 +193,13 @@ namespace SpookyStreet.Case
         /// <summary>One knock cycle from the crank or the wind. The owl bows only when the arm is linked.</summary>
         public void PlayCycle()
         {
-            Begin(MechanismMotion.KnockTimes, MechanismMotion.CycleSeconds, ArmLinked);
+            Begin(MechanismMotion.KnockTimes, MechanismMotion.CycleSeconds, ArmLinked, false);
         }
 
         /// <summary>The crank turned before the arm: a single tap, the cam a third of a turn, no bow (spec §3).</summary>
         public void PlayGap()
         {
-            Begin(MechanismMotion.GapKnockTimes, MechanismMotion.GapCycleSeconds, false);
+            Begin(MechanismMotion.GapKnockTimes, MechanismMotion.GapCycleSeconds, false, false);
         }
 
         /// <summary>Owl bows for good from now on (the test crank worked).</summary>
@@ -198,7 +208,7 @@ namespace SpookyStreet.Case
             OwlBowing = true;
         }
 
-        private void Begin(float[] knocks, float length, bool bow)
+        private void Begin(float[] knocks, float length, bool bow, bool wind)
         {
             if (Playing)
             {
@@ -213,6 +223,8 @@ namespace SpookyStreet.Case
             KnocksThisCycle = 0;
             BowsThisCycle = 0;
             FollowerLift = 0f;
+            WindCycle = wind;
+            CycleStarted?.Invoke(wind);
         }
 
         private void ApplyArm()
@@ -285,7 +297,7 @@ namespace SpookyStreet.Case
                     _windClock += dt;
                     if (_windClock >= WindIntervalSeconds)
                     {
-                        Begin(MechanismMotion.KnockTimes, MechanismMotion.CycleSeconds, OwlBowing);
+                        Begin(MechanismMotion.KnockTimes, MechanismMotion.CycleSeconds, OwlBowing, true);
                     }
                 }
 
@@ -300,10 +312,16 @@ namespace SpookyStreet.Case
             int knocks = MechanismMotion.KnocksBy(t, _knocks);
             if (knocks > KnocksThisCycle)
             {
+                int first = KnocksThisCycle;
                 KnocksThisCycle = knocks;
                 if (_bowThisCycle)
                 {
                     BowsThisCycle = knocks;
+                }
+
+                for (int k = first; k < knocks; k++)
+                {
+                    Knocked?.Invoke(k);
                 }
             }
 

@@ -30,3 +30,5 @@ docs/evidence/** -filter -diff -merge binary
 # Original game models and their baked textures stay in plain git (LFS is unreachable from cloud sessions).
 Assets/SpookyStreet/Content/Resources/Models/** -filter -diff -merge binary
 Assets/SpookyStreet/Content/Resources/UI/** -filter -diff -merge binary
+# Approved sound effects (S003, D20.1): WAV masters and the Ogg night bed, also in plain git.
+Assets/SpookyStreet/Content/Resources/Audio/** -filter -diff -merge binary

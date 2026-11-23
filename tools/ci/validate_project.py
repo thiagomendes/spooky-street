@@ -74,6 +74,9 @@ def check_project_settings():
         "allowedAutorotateToLandscapeLeft": "1",
         "appleEnableAutomaticSigning": "0",
         "runInBackground": "0",
+        # iOS audio session Ambient (S003): respects the silent switch and mixes with other apps' audio.
+        "muteOtherAudioSources": "0",
+        "Prepare IOS For Recording": "0",
     }
     for key, expected in expectations.items():
         match = re.search(rf"^  {key}: (\S+)", settings, re.M)

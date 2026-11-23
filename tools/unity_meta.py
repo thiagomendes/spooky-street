@@ -40,6 +40,9 @@ TEMPLATES = {
     # the remaining defaults on first import.
     ".fbx": "ModelImporter:\n  externalObjects: {}\n" + COMMON_TAIL,
     ".png": "TextureImporter:\n  externalObjects: {}\n" + COMMON_TAIL,
+    # Audio import settings (Vorbis quality, load type, mono) are applied by Editor/AudioImportRules.cs.
+    ".wav": "AudioImporter:\n  externalObjects: {}\n" + COMMON_TAIL,
+    ".ogg": "AudioImporter:\n  externalObjects: {}\n" + COMMON_TAIL,
     ".ttf": "TrueTypeFontImporter:\n  externalObjects: {}\n  serializedVersion: 4\n  fontSize: 16\n"
             "  forceTextureCase: -2\n  characterSpacing: 0\n  characterPadding: 1\n  includeFontData: 1\n"
             "  fontNames: []\n  fallbackFontReferences: []\n  customCharacters: \n  fontRenderingMode: 0\n"
