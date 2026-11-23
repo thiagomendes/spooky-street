@@ -703,7 +703,11 @@ namespace SpookyStreet.Case
             }
             else
             {
-                PlayLines(action, step.Lines);
+                // A friend who remembers case 01 greets Pip with a changed line (S003a; rests during a replay).
+                var lines = action.Kind == CaseActionKind.Talk && Street != null
+                    ? Street.Retell(action.Speaker, step.Lines)
+                    : step.Lines;
+                PlayLines(action, lines);
             }
             Stepped?.Invoke(step);
             return step;

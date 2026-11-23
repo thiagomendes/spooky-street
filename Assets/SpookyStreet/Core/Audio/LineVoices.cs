@@ -56,6 +56,12 @@ namespace SpookyStreet.Core.Audio
             { Keys.KitFirstShow, BabbleEmotion.Happy },
             { Keys.KitAsk, BabbleEmotion.Thinking },
             { Keys.KitThanks, BabbleEmotion.Happy },
+
+            // The street remembers (S003a): glad to see Pip again; Kit a little wistful about the owl's old friends.
+            { Keys.BeaRemembers, BabbleEmotion.Happy },
+            { Keys.ValeRemembers, BabbleEmotion.Happy },
+            { Keys.JuneRemembers, BabbleEmotion.Happy },
+            { Keys.KitRemembers, BabbleEmotion.Thinking },
         };
 
         /// <summary>The line keys with a voice row.</summary>

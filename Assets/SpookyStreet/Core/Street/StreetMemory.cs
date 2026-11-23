@@ -291,6 +291,23 @@ namespace SpookyStreet.Core.Street
 
         public bool JuneOutside => Shows(StreetMemory.JuneOutside);
 
+        /// <summary>
+        /// True when the world shows what <paramref name="caseId"/> left on the street (any of its memories): the street
+        /// remembers that case and it is not open again for a replay. Its friends' changed greetings follow this.
+        /// </summary>
+        public bool Remembers(string caseId)
+        {
+            foreach (var memory in StreetMemories.ForCase(caseId))
+            {
+                if (Shows(memory))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>True when any memory shows.</summary>
         public bool Any
         {

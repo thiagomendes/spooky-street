@@ -87,6 +87,7 @@ namespace SpookyStreet.Core.Nonverbal
                 BuildBeaSawCape(), BuildBeaDoorOpen(), BuildValeDoorShut(), BuildValeWasShut(), BuildJuneResolve(),
             };
             all.AddRange(BuildLineVignettes());
+            all.AddRange(BuildStreetVignettes());
             return all.ToArray();
         }
 

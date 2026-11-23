@@ -84,19 +84,22 @@ namespace SpookyStreet.Tests.PlayMode
         /// <summary>Every case 01 line by speaker, with the speaker who says it.</summary>
         private static readonly (Speaker Speaker, string[] Keys)[] LinesBySpeaker =
         {
-            (Speaker.Bea, new[] { Lines.BeaSawCape, Lines.BeaRepeat, Lines.BeaDoorOpen, Lines.BeaClosed }),
+            (Speaker.Bea, new[]
+            {
+                Lines.BeaSawCape, Lines.BeaRepeat, Lines.BeaDoorOpen, Lines.BeaClosed, Lines.BeaRemembers,
+            }),
             (Speaker.Vale, new[]
             {
                 Lines.ValeDoorShut, Lines.ValeInviteSit, Lines.ValeRepeat, Lines.ValeWasShut, Lines.ValeOpenNow,
-                Lines.ValeClosed, Lines.ValeSavedSweet,
+                Lines.ValeClosed, Lines.ValeSavedSweet, Lines.ValeRemembers,
             }),
             (Speaker.June, new[]
             {
                 Lines.JuneGreet, Lines.JuneGreetShortcut, Lines.JuneDoorSticks, Lines.JuneDoorAlreadyOpen,
                 Lines.JuneLatchReminder, Lines.JuneLatchThanks, Lines.JuneListenFloor, Lines.JuneGoOutside,
-                Lines.JuneResolve, Lines.JuneClosed,
+                Lines.JuneResolve, Lines.JuneClosed, Lines.JuneRemembers,
             }),
-            (Speaker.Kit, new[] { Lines.KitFirstShow, Lines.KitThanks, Lines.KitAsk }),
+            (Speaker.Kit, new[] { Lines.KitFirstShow, Lines.KitThanks, Lines.KitAsk, Lines.KitRemembers }),
             (Speaker.Pip, new[]
             {
                 Lines.ExamineStreamer, Lines.ExamineCloth, Lines.ExamineSill, Lines.ExamineDoorStuck, Lines.ExamineBowl,

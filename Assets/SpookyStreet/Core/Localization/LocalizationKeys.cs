@@ -101,6 +101,12 @@ namespace SpookyStreet.Core.Localization
             public const string KitThanks = "c01.line.kit.thanks";
             public const string KitAsk = "c01.line.kit.ask";
 
+            // The street remembers case 01 (S003a, D29): each friend's changed greeting on a later visit.
+            public const string BeaRemembers = "c01.line.bea.remembers";
+            public const string ValeRemembers = "c01.line.vale.remembers";
+            public const string JuneRemembers = "c01.line.june.remembers";
+            public const string KitRemembers = "c01.line.kit.remembers";
+
             public static readonly string[] All =
             {
                 CaptionArrivalKnocks,
@@ -141,6 +147,10 @@ namespace SpookyStreet.Core.Localization
                 KitFirstShow,
                 KitThanks,
                 KitAsk,
+                BeaRemembers,
+                ValeRemembers,
+                JuneRemembers,
+                KitRemembers,
             };
         }
 
