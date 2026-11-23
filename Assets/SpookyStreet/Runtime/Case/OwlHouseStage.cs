@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using SpookyStreet.Core.Case;
+using SpookyStreet.Core.Movement;
 using SpookyStreet.App;
 using SpookyStreet.Core.World;
 using SpookyStreet.Player;
@@ -234,6 +235,9 @@ namespace SpookyStreet.Case
 
                 var go = SlabCollider(root, slab);
                 go.layer = slab.Kind == SlabKind.Walk ? _safeLayer : 0;
+                // S003: the shed's west side is the one marked slab (CollisionRules.TraversalMarks).
+                SurfaceMarks marks = CollisionRules.MarksForSlab(slab.Name, out float faceX, out float faceZ);
+                ClimbSurface.Mark(go, marks, new Vector3(faceX, 0f, faceZ));
                 if (slab.Name == CaseRouteLayout.DoorBlockerName)
                 {
                     _doorBlocker = go;

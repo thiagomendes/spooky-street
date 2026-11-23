@@ -22,7 +22,8 @@ namespace SpookyStreet.Tests.PlayMode
     /// lens and Pip's head and chest. "Solid" is every collider in the scene and every drawn mesh of the interior, the
     /// workshop mechanism and the cabin (given temporary mesh colliders for the check, so the beams, rails and dressing
     /// that have no collider count too). Pip fills a reasonable share of the frame, the character Pip is about to talk
-    /// to stays in clear view as well, and the lens never leaves the room (so no frame shows the void).
+    /// to stays in clear view as well, and the lens never leaves the room (so no frame shows the void). No drawn surface
+    /// sits against the lens (S002 attic framing: a screen grid of rays finds the art within 0.4 m over at most 5 %).
     /// </summary>
     public class InteriorFramingTests : InputTestFixture
     {
@@ -186,6 +187,55 @@ namespace SpookyStreet.Tests.PlayMode
             return Mathf.Clamp01(top.y) - Mathf.Clamp01(feet.y);
         }
 
+        /// <summary>Indoors, drawn surfaces within 0.4 m of the lens may cover at most this share of the screen.</summary>
+        private const float MaxNearShare = 0.05f;
+
+        /// <summary>The stair is a 1.5 m wide flight between walls: a little more of them may be close.</summary>
+        private const float MaxNearShareStair = 0.15f;
+
+        /// <summary>
+        /// The share of a 24 x 12 grid of screen rays whose first drawn surface or collider (not Pip, not a character)
+        /// is closer to the lens than <paramref name="within"/>.
+        /// </summary>
+        private float NearScreenShare(Camera camera, float within)
+        {
+            foreach (var probe in _probes)
+            {
+                probe.enabled = probe.GetComponent<Renderer>() is Renderer r && r.enabled && r.gameObject.activeInHierarchy;
+            }
+
+            Physics.SyncTransforms();
+            int mask = ~(1 << Game.Pip.gameObject.layer);
+            const int columns = 24;
+            const int rows = 12;
+            int covered = 0;
+            for (int i = 0; i < columns; i++)
+            {
+                for (int k = 0; k < rows; k++)
+                {
+                    var ray = camera.ViewportPointToRay(new Vector3((i + 0.5f) / columns, (k + 0.5f) / rows, 0f));
+                    foreach (var hit in Physics.RaycastAll(ray, within, mask, QueryTriggerInteraction.Ignore))
+                    {
+                        var t = hit.collider.transform;
+                        if (t.IsChildOf(Game.Pip.transform) || t.GetComponentInParent<Witness>() != null)
+                        {
+                            continue;
+                        }
+
+                        covered++;
+                        break;
+                    }
+                }
+            }
+
+            foreach (var probe in _probes)
+            {
+                probe.enabled = false;
+            }
+
+            return covered / (float)(columns * rows);
+        }
+
         private static float YawToward(Vector3 from, Vector3 to) =>
             Mathf.Atan2(to.x - from.x, to.z - from.z) * Mathf.Rad2Deg;
 
@@ -239,6 +289,7 @@ namespace SpookyStreet.Tests.PlayMode
                 ("attic, at the stair rail", Attic(-1.2f, 4.4f), 270f),
                 ("attic, at the stair top", Attic(0.6f, 6.3f), 180f),
                 ("attic, in the alcove facing in", Attic(-3.0f, 1.5f), 90f),
+                ("attic, by the trunk facing the window (TestFlight 23 frame)", Attic(-1.5f, 1.15f), 270f),
                 ("stair, lower flight going up", OnLowerFlight(3.8f), 0f),
                 ("stair, lower flight going down", OnLowerFlight(4.8f), 180f),
                 ("stair, landing", new Vector3(-2.85f, CaseRouteLayout.LandingY, Ifz + 6.3f), 90f),
@@ -281,6 +332,17 @@ namespace SpookyStreet.Tests.PlayMode
                     if (Physics.CheckSphere(lens, 0.1f, ~(1 << Game.Pip.gameObject.layer), QueryTriggerInteraction.Ignore))
                     {
                         failures.Add($"{where}: the lens is inside a collider");
+                    }
+
+                    // S002 attic framing: no drawn surface against the lens. Rays through a 24 x 12 grid of screen
+                    // points find the art within 0.4 m over no more than a post's width (within 1.0 m is logged).
+                    float near = NearScreenShare(camera, 0.4f);
+                    Debug.Log($"[InteriorFramingTests] {sample.Name}: art within 0.4 m {near:P0}, within 1.0 m " +
+                              $"{NearScreenShare(camera, 1.0f):P0} of the screen");
+                    bool stair = sample.Name.StartsWith("stair", System.StringComparison.Ordinal);
+                    if (!cabin && near > (stair ? MaxNearShareStair : MaxNearShare))
+                    {
+                        failures.Add($"{where}: the art is within 0.4 m of the lens over {near:P0} of the screen");
                     }
 
                     float share = ScreenShare(camera, out bool headInFrame);

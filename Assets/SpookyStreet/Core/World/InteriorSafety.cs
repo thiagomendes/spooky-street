@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace SpookyStreet.Core.World
 {
@@ -31,8 +32,17 @@ namespace SpookyStreet.Core.World
         /// <summary>Pip was in the interior space but not on its walkable area (off every floor, inside a solid, out of the shell).</summary>
         OffWalkable,
 
-        /// <summary>Pip was pushed with the stick for <see cref="InteriorRescue.StuckSeconds"/> without leaving a small spot.</summary>
+        /// <summary>
+        /// Pip was pushed with the stick for <see cref="InteriorRescue.StuckSeconds"/> without leaving a small spot, and
+        /// the spot is shut in (<see cref="InteriorSafety.Enclosed"/>). Pushing against a wall in open floor never is.
+        /// </summary>
         Stuck,
+
+        /// <summary>
+        /// Not a move: Pip is standing on a character's head (June). The runtime slides her gently off, toward
+        /// <see cref="InteriorRescue.SlideX"/>, <see cref="InteriorRescue.SlideZ"/>, every frame this is returned.
+        /// </summary>
+        SlideOff,
     }
 
     /// <summary>
@@ -134,6 +144,57 @@ namespace SpookyStreet.Core.World
             return Math.Min(best, maxDistance);
         }
 
+        /// <summary>How far Pip must be able to get in a direction for it to count as a way on.</summary>
+        public const float FreeReach = 0.6f;
+
+        /// <summary>Directions tried round Pip (every 45°).</summary>
+        public const int Directions = 8;
+
+        /// <summary>Fewer ways on than this and Pip is shut in.</summary>
+        public const int MinFreeDirections = 2;
+
+        /// <summary>
+        /// How many of the eight compass directions a standing Pip at (x, y, z) can get <see cref="FreeReach"/> along
+        /// (walking, stepping up, stepping off an edge or into a threshold's exit zone:
+        /// <see cref="InteriorWalkMap.EscapeRun"/>). Against a wall in open floor that is five or more.
+        /// </summary>
+        public static int FreeDirections(float x, float y, float z, bool doorOpen)
+        {
+            var slabs = InteriorWalkMap.Solids(doorOpen);
+            int free = 0;
+            for (int i = 0; i < Directions; i++)
+            {
+                double a = i * 2.0 * Math.PI / Directions;
+                if (InteriorWalkMap.EscapeRun(slabs, x, y, z, (float)Math.Sin(a), (float)Math.Cos(a), FreeReach) >=
+                    FreeReach - 1e-3f)
+                {
+                    free++;
+                }
+            }
+
+            return free;
+        }
+
+        /// <summary>
+        /// True when Pip at (x, y, z) is shut in: fewer than <see cref="MinFreeDirections"/> ways on within
+        /// <see cref="FreeReach"/>, or boxed in under a stair flight (the walk map's only pockets, never reachable on
+        /// foot). Only then does a long push count as stuck.
+        /// </summary>
+        public static bool Enclosed(float x, float y, float z, bool doorOpen) =>
+            UnderAFlight(x, y, z) || FreeDirections(x, y, z, doorOpen) < MinFreeDirections;
+
+        /// <summary>Pip's head under the treads of either flight, in the boxed-in space below the stair.</summary>
+        public static bool UnderAFlight(float x, float y, float z)
+        {
+            float head = y + CaseRouteLayout.PipHeight * 0.8f;
+            bool westWell = x < CaseRouteLayout.StairBayX && z > CaseRouteLayout.StairFootZ &&
+                            z < CaseRouteLayout.LandingZ;
+            bool upperWell = !westWell && x >= CaseRouteLayout.StairBayX && x < CaseRouteLayout.StairTopX &&
+                             z > CaseRouteLayout.UpperFlightMinZ;
+            return (westWell && head < CaseRouteLayout.LowerFlightAt(z)) ||
+                   (upperWell && head < CaseRouteLayout.UpperFlightAt(x));
+        }
+
         /// <summary>
         /// The safe anchor nearest Pip's feet (height counts double, so the floor Pip is on wins). With
         /// <paramref name="awayFrom"/> the anchors within <see cref="InteriorRescue.AwayDistance"/> of Pip are skipped
@@ -167,8 +228,10 @@ namespace SpookyStreet.Core.World
 
     /// <summary>
     /// The interior safety net (TestFlight 23): if Pip is ever in the interior space but off its walkable area, or
-    /// is pushed with the stick for several seconds without leaving a small spot, Pip is set down gently on the
-    /// nearest safe anchor (the runtime adds a small paper puff). Feed it one frame at a time. Pure.
+    /// is pushed with the stick for several seconds without leaving a small spot that is shut in
+    /// (<see cref="InteriorSafety.Enclosed"/>), Pip is set down gently on the nearest safe anchor (the runtime adds a
+    /// small paper puff). Pushing against a wall in open floor never moves her; standing on a character's head slides
+    /// her gently off instead (S002 attic framing). Feed it one frame at a time. Pure.
     /// </summary>
     public sealed class InteriorRescue
     {
@@ -190,6 +253,16 @@ namespace SpookyStreet.Core.World
         /// <summary>The safety net watches this band round the interior (the street never reaches it: its boundary is at z 18).</summary>
         public const float SpaceMargin = 4f;
 
+        /// <summary>How fast Pip is slid off a character's head (metres per second; she drops off the edge).</summary>
+        public const float SlideSpeed = 1.4f;
+
+        /// <summary>A character's capsule (June): radius and height (EnvironmentLayout.WitnessRadius / WitnessHeight).</summary>
+        public const float CharacterRadius = EnvironmentLayout.WitnessRadius;
+
+        public const float CharacterHeight = EnvironmentLayout.WitnessHeight;
+
+        private readonly List<(float X, float Y, float Z)> _characters = new List<(float X, float Y, float Z)>(2);
+
         private float _off;
         private float _stuck;
         private bool _hasSpot;
@@ -199,10 +272,79 @@ namespace SpookyStreet.Core.World
 
         public bool DoorOpen { get; set; }
 
+        /// <summary>The shut-in test (defaults to <see cref="InteriorSafety.Enclosed"/>; tests may replace it).</summary>
+        public Func<float, float, float, bool, bool> Enclosure { get; set; }
+
+        /// <summary>Long pushes that were checked and found Pip free (diagnostics, tests).</summary>
+        public int EnclosureChecks { get; private set; }
+
         /// <summary>Seconds pushed in the current spot (tests, diagnostics).</summary>
         public float StuckTime => _stuck;
 
         public float OffTime => _off;
+
+        /// <summary>Where to slide Pip (a horizontal unit direction) while <see cref="RescueReason.SlideOff"/> is returned.</summary>
+        public float SlideX { get; private set; }
+
+        public float SlideZ { get; private set; }
+
+        /// <summary>Characters standing in the interior this frame (feet), set before <see cref="Step"/>.</summary>
+        public void ClearCharacters() => _characters.Clear();
+
+        public void AddCharacter(float x, float y, float z) => _characters.Add((x, y, z));
+
+        /// <summary>
+        /// True when Pip's feet at (x, y, z) rest on the character standing at (cx, cy, cz): on her head or held on
+        /// the rounded shoulder of her capsule (CI run 1 of this fix: Pip slid to 0.52 m off June's axis and hung there
+        /// at 0.97 m), within the two capsules' radii (and a little skin) and above her middle.
+        /// </summary>
+        public static bool OnCharacter(float x, float y, float z, float cx, float cy, float cz)
+        {
+            float dx = x - cx;
+            float dz = z - cz;
+            float reach = CharacterRadius + CaseRouteLayout.PipRadius + CharacterSkin;
+            return dx * dx + dz * dz < reach * reach && y > cy + CharacterHeight * 0.5f &&
+                   y < cy + CharacterHeight + 0.5f;
+        }
+
+        /// <summary>Slack round the two capsules (the CharacterController's skin and contact offset).</summary>
+        public const float CharacterSkin = 0.1f;
+
+        /// <summary>
+        /// The way to slide Pip off a character's head: straight away from the head's centre, or, with Pip right on
+        /// top of it, toward the most open direction round the character.
+        /// </summary>
+        public void SlideDirection(float x, float z, float cx, float cy, float cz, out float dirX, out float dirZ)
+        {
+            float dx = x - cx;
+            float dz = z - cz;
+            float len = (float)Math.Sqrt(dx * dx + dz * dz);
+            if (len > 0.05f)
+            {
+                dirX = dx / len;
+                dirZ = dz / len;
+                return;
+            }
+
+            var slabs = InteriorWalkMap.Solids(DoorOpen);
+            float best = -1f;
+            dirX = 1f;
+            dirZ = 0f;
+            for (int i = 0; i < InteriorSafety.Directions; i++)
+            {
+                double a = i * 2.0 * Math.PI / InteriorSafety.Directions;
+                float sx = (float)Math.Sin(a);
+                float sz = (float)Math.Cos(a);
+                float r = CharacterRadius + CaseRouteLayout.PipRadius + 0.05f;
+                float run = InteriorWalkMap.EscapeRun(slabs, cx + sx * r, cy, cz + sz * r, sx, sz, InteriorSafety.FreeReach);
+                if (run > best + 1e-3f)
+                {
+                    best = run;
+                    dirX = sx;
+                    dirZ = sz;
+                }
+            }
+        }
 
         public void Reset()
         {
@@ -224,6 +366,13 @@ namespace SpookyStreet.Core.World
         public static bool OnWalkableArea(float x, float y, float z, bool doorOpen)
         {
             if (!CaseRouteLayout.Inside(x, z) || y < CaseRouteLayout.FloorY - 0.4f || y > CaseRouteLayout.ApexY)
+            {
+                return false;
+            }
+
+            // In the front wall's thickness (the hall slab runs on under it), beside or above the doorway: no floor.
+            if (z < CaseRouteLayout.InnerMinZ - 0.05f &&
+                (Math.Abs(x) >= CaseRouteLayout.DoorHalfWidth || y > CaseRouteLayout.FloorY + 0.3f))
             {
                 return false;
             }
@@ -288,6 +437,24 @@ namespace SpookyStreet.Core.World
                 return RescueReason.None;
             }
 
+            // On a character's head (June): never a teleport, she is slid gently off.
+            if (grounded)
+            {
+                foreach (var c in _characters)
+                {
+                    if (OnCharacter(x, y, z, c.X, c.Y, c.Z))
+                    {
+                        _off = 0f;
+                        _stuck = 0f;
+                        _hasSpot = false;
+                        SlideDirection(x, z, c.X, c.Y, c.Z, out float sx, out float sz);
+                        SlideX = sx;
+                        SlideZ = sz;
+                        return RescueReason.SlideOff;
+                    }
+                }
+            }
+
             // Off the walkable area: standing where there is no floor, sunk into a solid, or out of the shell at all
             // (in the air too: nothing out there can be landed on).
             bool outOfShell = !CaseRouteLayout.Inside(x, z) || y < CaseRouteLayout.FloorY - 0.4f;
@@ -328,8 +495,17 @@ namespace SpookyStreet.Core.World
             _stuck += dt;
             if (_stuck >= StuckSeconds)
             {
-                Reset();
-                return RescueReason.Stuck;
+                // A long push only rescues where the walk map says Pip is shut in: against a wall in open floor she is
+                // just pushing, and is never moved. The spot is checked again after another full push.
+                bool enclosed = Enclosure != null ? Enclosure(x, y, z, DoorOpen) : InteriorSafety.Enclosed(x, y, z, DoorOpen);
+                _stuck = 0f;
+                if (enclosed)
+                {
+                    Reset();
+                    return RescueReason.Stuck;
+                }
+
+                EnclosureChecks++;
             }
 
             return RescueReason.None;

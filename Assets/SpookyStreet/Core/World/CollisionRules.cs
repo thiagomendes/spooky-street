@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SpookyStreet.Core.Movement;
 
 namespace SpookyStreet.Core.World
 {
@@ -88,6 +89,36 @@ namespace SpookyStreet.Core.World
         public static ColliderPart Capsule(string name, float ax, float ay, float az, float bx, float by, float bz,
             float radius) =>
             new ColliderPart(name, ColliderShape.Capsule, ax, ay, az, bx, by, bz, 0f, radius);
+    }
+
+    /// <summary>
+    /// One marked surface (S003): a recipe part (<see cref="Model"/> and the part's name) or an authored stage slab
+    /// (<see cref="Model"/> null, <see cref="Part"/> the slab's name), with what it allows and, optionally, the one face it
+    /// applies to (outward normal; the model's own frame for parts, world for slabs; (0, 0) for every side).
+    /// </summary>
+    public readonly struct TraversalMark
+    {
+        public TraversalMark(string model, string part, SurfaceMarks marks, float faceX, float faceZ, string note)
+        {
+            Model = model;
+            Part = part;
+            Marks = marks;
+            FaceX = faceX;
+            FaceZ = faceZ;
+            Note = note;
+        }
+
+        public string Model { get; }
+        public string Part { get; }
+        public SurfaceMarks Marks { get; }
+        public float FaceX { get; }
+        public float FaceZ { get; }
+        public string Note { get; }
+
+        /// <summary>True when the mark covers only one face.</summary>
+        public bool OneFace => FaceX != 0f || FaceZ != 0f;
+
+        public override string ToString() => (Model != null ? Model + "/" : "") + Part + " " + Marks;
     }
 
     /// <summary>How one model blocks Pip: solid (with its parts) or decoration that Pip and the camera pass.</summary>
@@ -333,6 +364,64 @@ namespace SpookyStreet.Core.World
 
         /// <summary>The awning route piece (tools/blender/env/props.py build_awning).</summary>
         public const string Awning = "Awning";
+
+        // --- Traversal marks (S003): the only surfaces that start a wall slide, a wall jump or a ledge grab ----------
+
+        /// <summary>
+        /// Every climbable wall and grabbable ledge in Lantern Lane. Everything else, the house siding and every other
+        /// deck, rail, roof and route edge included, is unmarked and never triggers the moves. Level content is frozen
+        /// (S003), so these only mark existing colliders: the tall shed's west side under the treehouse (a slide and
+        /// kick into the open yard pocket between the shed, the deck and ramp leg 2), the front-yard gate posts (short
+        /// kicks) and the street lamp's arm (the first ledge, by the arrival path). The treehouse deck has no open edge
+        /// with room to climb onto: the cabin walls stand 0.18 m in from its free edge and rails close the others, so
+        /// its edge stays unmarked (docs/S003-wall-ledge.md).
+        /// </summary>
+        public static readonly TraversalMark[] TraversalMarks =
+        {
+            new TraversalMark(null, "Shed_RoofSouth", SurfaceMarks.WallJump, -1f, 0f,
+                "the tall shed's clapboard west side (x -7.95, 0-2.4 m) under the treehouse; kicks go west, away from the route"),
+            new TraversalMark(EnvironmentLayout.FenceGate, "PostWest", SurfaceMarks.WallJump, 0f, 0f,
+                "front-yard gate post (1.28 m): short slides and kicks"),
+            new TraversalMark(EnvironmentLayout.FenceGate, "PostEast", SurfaceMarks.WallJump, 0f, 0f,
+                "front-yard gate post (1.28 m): short slides and kicks"),
+            new TraversalMark(EnvironmentLayout.StreetLamp, "Head", SurfaceMarks.Ledge, 0f, 0f,
+                "the street lamp's arm and lantern head (top 3.0 m, 0.97 x 0.7 m): catch it from a high jump and climb up"),
+        };
+
+        /// <summary>Marks of an authored stage slab (<see cref="CaseRouteLayout.Slabs"/>) and the face they apply to (world).</summary>
+        public static SurfaceMarks MarksForSlab(string slab, out float faceX, out float faceZ) =>
+            FindMark(null, slab, out faceX, out faceZ);
+
+        /// <summary>Marks of a recipe part and the face they apply to, in the model's own frame ((0, 0): every side).</summary>
+        public static SurfaceMarks MarksForPart(string model, string part, out float faceX, out float faceZ)
+        {
+            if (model == null)
+            {
+                faceX = 0f;
+                faceZ = 0f;
+                return SurfaceMarks.None;
+            }
+
+            return FindMark(model, part, out faceX, out faceZ);
+        }
+
+        private static SurfaceMarks FindMark(string model, string part, out float faceX, out float faceZ)
+        {
+            foreach (var mark in TraversalMarks)
+            {
+                if (string.Equals(mark.Model, model, StringComparison.Ordinal) &&
+                    string.Equals(mark.Part, part, StringComparison.Ordinal))
+                {
+                    faceX = mark.FaceX;
+                    faceZ = mark.FaceZ;
+                    return mark.Marks;
+                }
+            }
+
+            faceX = 0f;
+            faceZ = 0f;
+            return SurfaceMarks.None;
+        }
 
         private static Dictionary<string, ColliderRecipe> Index(ColliderRecipe[] table)
         {

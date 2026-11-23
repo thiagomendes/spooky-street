@@ -18,7 +18,9 @@ namespace SpookyStreet.Player
     /// Weights ease toward their targets so transitions never pop, and the graph runs on game time, so pause
     /// (timeScale 0) freezes Pip mid-pose. Motor moves drive it directly: the glide pose follows
     /// <see cref="PipMotor.Gliding"/>, a roll (ground roll or dive landing) plays Roll timed to the roll, the third
-    /// chain jump tucks into the same clip as a flip, and jumping out of a roll cancels it.
+    /// chain jump tucks into the same clip as a flip, and jumping out of a roll cancels it. S003: the wall slide and
+    /// the ledge hang follow <see cref="PipMotor.WallSliding"/> and <see cref="PipMotor.Hanging"/>; a wall kick restarts
+    /// JumpStart and a climb plays it as a one-shot (Pip.fbx has no WallJump or LedgeClimb clip yet).
     /// </summary>
     public sealed class PipAnimator : MonoBehaviour
     {
@@ -49,6 +51,7 @@ namespace SpookyStreet.Player
         private bool _gliding;
         private bool _wallSliding;
         private bool _ledgeHanging;
+        private bool _kickPending;
         private int _oneShotSlot = -1;
         private float _oneShotRemaining;
         private float _cyclePhase;
@@ -251,6 +254,19 @@ namespace SpookyStreet.Player
                 return;
             }
 
+            if (step.WallJumped)
+            {
+                // S003: no WallJump clip exists yet; the kick restarts the take-off and the air arc follows.
+                _kickPending = true;
+            }
+
+            if (step.ClimbStarted)
+            {
+                // S003: no LedgeClimb clip exists yet; the take-off push plays over the climb, then Land on top.
+                PlayOneShot(PipClips.Resolve(PipClips.JumpStart, _slot.ContainsKey),
+                    _motor != null && _motor.TuningData != null ? _motor.TuningData.LedgeClimbTime : 0f);
+            }
+
             if (step.RollStarted)
             {
                 PlayOneShot(PipClips.Roll, _motor != null && _motor.TuningData != null ? _motor.TuningData.RollDuration : 0f);
@@ -306,9 +322,11 @@ namespace SpookyStreet.Player
                 VerticalSpeed = _motor != null ? _motor.VerticalSpeed : 0f,
                 HorizontalSpeed = speed,
                 Gliding = _gliding || (_motor != null && _motor.Gliding),
-                WallSliding = _wallSliding,
-                LedgeHanging = _ledgeHanging,
+                WallSliding = _wallSliding || (_motor != null && _motor.WallSliding),
+                LedgeHanging = _ledgeHanging || (_motor != null && _motor.Hanging),
+                Kicked = _kickPending,
             };
+            _kickPending = false;
 
             PipPose pose = _tracker.Step(input, dt);
             if (_tracker.TookOff)

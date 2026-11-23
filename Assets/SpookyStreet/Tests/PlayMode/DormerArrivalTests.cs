@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using Lines = SpookyStreet.Core.Localization.LocalizationKeys.CaseLines;
 
 namespace SpookyStreet.Tests.PlayMode
 {
@@ -67,7 +68,7 @@ namespace SpookyStreet.Tests.PlayMode
             }
         }
 
-        private static IEnumerator StartGame()
+        private static IEnumerator StartGame(bool hearKnocks = true)
         {
             yield return SceneManager.LoadSceneAsync(SceneName, LoadSceneMode.Single);
             yield return null;
@@ -85,6 +86,11 @@ namespace SpookyStreet.Tests.PlayMode
             }
 
             Assert.AreEqual(GameState.Playing, Game.Flow.State);
+            if (!hearKnocks)
+            {
+                yield break;
+            }
+
             // The arrival cue first, so no conversation holds the thresholds.
             Director.Perform(CaseAction.Of(CaseActionKind.HearKnocks));
             yield return SkipModals();
@@ -234,6 +240,56 @@ namespace SpookyStreet.Tests.PlayMode
             Vector3 lens = Game.CameraRig.OutputCamera.transform.position;
             Assert.IsTrue(InteriorCamera.InAir(lens.x, lens.y, lens.z), $"{context}: the lens {lens:F2} is in the attic's air");
             Assert.AreEqual(0, Director.Rescues, $"{context}: the safety net has nothing to do");
+            Assert.AreNotEqual(Lines.CaptionArrivalKnocks, Director.Captions.CurrentKey,
+                $"{context}: the street's knock caption does not follow Pip indoors");
+            AssertFramed(context);
+        }
+
+        /// <summary>
+        /// S002 attic framing: no architecture fills the arrival frame. In the scene, rays through a 24 × 12 grid of
+        /// screen points find no collider within 0.4 m of the lens over more than a post's width; in the Core model
+        /// (<see cref="InteriorCamera.FrameCover"/>) no wall or slope beside the lens fills more than an eighth of it.
+        /// </summary>
+        private static void AssertFramed(string context)
+        {
+            var cam = Game.CameraRig.OutputCamera;
+            float near = ScreenShareCloserThan(cam, 0.4f);
+            Vector3 lens = cam.transform.position;
+            float pitch = Mathf.DeltaAngle(0f, cam.transform.eulerAngles.x);
+            float frame = InteriorCamera.FrameCover(lens.x, lens.y, lens.z, cam.transform.eulerAngles.y, pitch,
+                Director.House.DoorOpen);
+            TestContext.WriteLine($"{context}: {Director.Framing.Shot}, lens {lens:F2}, colliders within 0.4 m " +
+                                  $"{near:P0} of the screen, frame cover {frame:P0}");
+            Assert.LessOrEqual(near, 0.03f, $"{context}: nothing solid against the lens ({near:P0} of the screen)");
+            Assert.LessOrEqual(frame, 0.15f, $"{context}: no wall fills the frame ({frame:P0}, {Director.Framing.Shot})");
+        }
+
+        /// <summary>The share of a 24 × 12 grid of screen rays that hit a collider (not Pip or a character) within <paramref name="within"/>.</summary>
+        private static float ScreenShareCloserThan(Camera cam, float within)
+        {
+            const int columns = 24;
+            const int rows = 12;
+            int hits = 0;
+            for (int i = 0; i < columns; i++)
+            {
+                for (int k = 0; k < rows; k++)
+                {
+                    var ray = cam.ViewportPointToRay(new Vector3((i + 0.5f) / columns, (k + 0.5f) / rows, 0f));
+                    foreach (var hit in Physics.RaycastAll(ray, within, ~0, QueryTriggerInteraction.Ignore))
+                    {
+                        if (hit.collider.transform.IsChildOf(Game.Pip.transform) ||
+                            hit.collider.GetComponentInParent<SpookyStreet.Characters.Witness>() != null)
+                        {
+                            continue;
+                        }
+
+                        hits++;
+                        break;
+                    }
+                }
+            }
+
+            return hits / (float)(columns * rows);
         }
 
         /// <summary>From the arrival Pip walks along each world direction as far as the attic allows there (at most 2 m).</summary>
@@ -318,14 +374,13 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Enter(Approach.Straight);
             yield return AssertArrival(Approach.Straight, 0);
 
-            // Pushing south into the trunk by the front wall: no way on, so after a few seconds Pip is set down elsewhere.
-            int puffs = Game.Feedback != null ? Game.Feedback.PuffsPlayed : 0;
-            Vector3 wedged = new Vector3(-1.3f, CaseRouteLayout.LoftY + 0.03f, CaseRouteLayout.InteriorFrontZ + 1.12f);
-            Game.Pip.Teleport(wedged);
+            // Pushing south into the trunk by the front gable from open floor: a child just pushing. Never moved.
+            Vector3 byTrunk = new Vector3(-1.3f, CaseRouteLayout.LoftY + 0.03f, CaseRouteLayout.InteriorFrontZ + 1.12f);
+            Game.Pip.Teleport(byTrunk);
             Director.CutCamera();
             yield return Wait(0.3f);
             float t = 0f;
-            while (Director.Rescues == 0 && t < InteriorRescue.StuckSeconds + 2f)
+            while (t < 2f * InteriorRescue.StuckSeconds + 1f)
             {
                 Steer(Vector3.back);
                 t += Time.deltaTime;
@@ -333,7 +388,30 @@ namespace SpookyStreet.Tests.PlayMode
             }
 
             Set(_pad.leftStick, Vector2.zero, queueEventOnly: true);
-            Assert.AreEqual(1, Director.Rescues, "pushed without getting anywhere: the safety net moves Pip");
+            Assert.AreEqual(0, Director.Rescues, $"{t:F1} s of pushing into the trunk from open floor never moves Pip");
+            Assert.GreaterOrEqual(Director.Rescue.EnclosureChecks, 1, "the long pushes were checked and found free");
+            Assert.Less(Vector3.Distance(Game.Pip.transform.position, byTrunk), 0.5f, "Pip is still by the trunk");
+
+            // Shut in: boxed in under the upper flight (unreachable on foot; as if glitched in), pushing north against
+            // the back wall. After a few seconds Pip is set down elsewhere.
+            int puffs = Game.Feedback != null ? Game.Feedback.PuffsPlayed : 0;
+            Vector3 wedged = new Vector3(-1.5f, CaseRouteLayout.FloorY + 0.03f, CaseRouteLayout.InteriorFrontZ + 6.55f);
+            Assert.IsTrue(InteriorSafety.Enclosed(wedged.x, wedged.y - 0.03f, wedged.z, Director.House.DoorOpen),
+                "under the stair is shut in");
+            Game.Pip.Teleport(wedged);
+            Director.CutCamera();
+            yield return Wait(0.3f);
+            t = 0f;
+            while (Director.Rescues == 0 && t < InteriorRescue.StuckSeconds + 2f)
+            {
+                Steer(Vector3.forward);
+                t += Time.deltaTime;
+                yield return null;
+            }
+
+            Set(_pad.leftStick, Vector2.zero, queueEventOnly: true);
+            Assert.AreEqual(1, Director.Rescues, $"shut in under the stair: the safety net moves Pip (Pip at " +
+                                                 $"{Game.Pip.transform.position:F2})");
             Assert.AreEqual(RescueReason.Stuck, Director.LastRescue);
             Assert.GreaterOrEqual(t, InteriorRescue.StuckSeconds - 0.2f, "only after several seconds of pushing");
             Vector3 pip = Game.Pip.transform.position;
@@ -372,6 +450,80 @@ namespace SpookyStreet.Tests.PlayMode
             pip = Game.Pip.transform.position;
             Assert.IsTrue(InteriorRescue.OnWalkableArea(pip.x, pip.y, pip.z, Director.House.DoorOpen), "standing on a floor");
             AssertLensInShell("after the second rescue");
+        }
+
+        /// <summary>
+        /// D26: captions describe what Pip perceives. If the knocks first come due while Pip is already inside the owl
+        /// house (a save resumed indoors), they are heard through the floor from the workshop below: the floor hum
+        /// caption, never "[Three knocks from the blue house] (to the right)".
+        /// </summary>
+        [UnityTest]
+        [Timeout(120000)]
+        public IEnumerator KnocksHeardIndoorsAreCaptionedAsTheFloorHum()
+        {
+            yield return StartGame(false);
+            Assert.IsFalse(Director.State.Has(CaseFact.HeardKnocks), "the knocks have not come yet");
+            Game.Pip.Teleport(Arrival + Vector3.up * 0.03f);
+            Game.Pip.transform.rotation = Quaternion.Euler(0f, Thresholds.DormerInside.ArriveYaw, 0f);
+            Director.CutCamera();
+            float until = Time.time + 2f;
+            while (!Director.State.Has(CaseFact.HeardKnocks) && Time.time < until)
+            {
+                yield return null;
+            }
+
+            Assert.IsTrue(Director.State.Has(CaseFact.HeardKnocks), "the knocks still come (the story beat is kept)");
+            for (int i = 0; i < 3; i++)
+            {
+                yield return null;
+            }
+
+            Assert.AreEqual(Lines.CaptionFoyerHum, Director.Captions.CurrentKey, "heard through the floor indoors");
+            Assert.IsTrue(Director.Captions.HasDirectionCue, "pointing at the workshop below");
+            yield return SkipModals();
+        }
+
+        /// <summary>
+        /// Pip landing on June's head (a jump from the trunk, say) is never teleported: the safety net slides her gently
+        /// off June, and she drops to the attic floor beside her.
+        /// </summary>
+        [UnityTest]
+        [Timeout(120000)]
+        public IEnumerator StandingOnJuneSlidesPipOffBesideHer()
+        {
+            yield return StartGame();
+            yield return Enter(Approach.Straight);
+            yield return AssertArrival(Approach.Straight, 0);
+            var june = Director.Cast != null ? Director.Cast.June : null;
+            if (june == null || !june.isActiveAndEnabled)
+            {
+                Assert.Ignore("June is not staged in the attic.");
+            }
+
+            Vector3 j = june.transform.position;
+            Vector3 onHead = j + new Vector3(0.08f, InteriorRescue.CharacterHeight + 0.05f, 0f);
+            Game.Pip.Teleport(onHead);
+            int slides = Director.SlideOffFrames;
+            float until = Time.time + 3f;
+            bool landed = false;
+            while (Time.time < until)
+            {
+                Vector3 p = Game.Pip.transform.position;
+                if (Game.Pip.Grounded && p.y < j.y + 0.3f)
+                {
+                    landed = true;
+                    break;
+                }
+
+                yield return null;
+            }
+
+            Vector3 pip = Game.Pip.transform.position;
+            TestContext.WriteLine($"on June's head: {Director.SlideOffFrames - slides} slide frames, landed at {pip:F2}");
+            Assert.AreEqual(0, Director.Rescues, "never teleported off June");
+            Assert.IsTrue(landed, $"Pip came down off June onto the floor (at {pip:F2})");
+            Assert.Less(new Vector2(pip.x - j.x, pip.z - j.z).magnitude, 1.5f, "beside June, not set down elsewhere");
+            Assert.IsTrue(InteriorRescue.OnWalkableArea(pip.x, pip.y, pip.z, Director.House.DoorOpen), "on the attic floor");
         }
     }
 }

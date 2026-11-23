@@ -26,6 +26,12 @@ namespace SpookyStreet.Core.Animation
         /// and a brief vertical speed line.
         /// </summary>
         BoostPuff = 16,
+
+        /// <summary>A kick off a marked wall: a puff of paper confetti and stars bursting from the wall (S003).</summary>
+        WallKickPuff = 32,
+
+        /// <summary>A ledge caught: a small felt dust puff where the hands land on the edge (S003).</summary>
+        LedgeGrabDust = 64,
     }
 
     /// <summary>
@@ -54,6 +60,27 @@ namespace SpookyStreet.Core.Animation
 
         /// <summary>Stretch kick when a dive starts (the cape snaps back).</summary>
         public const float DiveSnapStretch = -0.08f;
+
+        /// <summary>Stretch kick when Pip kicks off a wall (S003): like a second chain jump.</summary>
+        public const float WallKickStretch = -0.09f;
+
+        /// <summary>Squash kick when Pip catches a ledge: her arms take the weight.</summary>
+        public const float LedgeCatchSquash = 0.06f;
+
+        /// <summary>Squash kick when a wall slide starts: the grip.</summary>
+        public const float WallGripSquash = 0.04f;
+
+        /// <summary>
+        /// The hanging body leans this far toward the wall (degrees, about the feet), so the LedgeHang clip's raised
+        /// hand meets the edge while her chest stays clear of the face (measured on the clip in Blender).
+        /// </summary>
+        public const float HangLeanDegrees = 10f;
+
+        /// <summary>And slides this far toward the wall (metres) from the motor's hang spot.</summary>
+        public const float HangShift = 0.1f;
+
+        /// <summary>How fast the hang lean eases in and out (fraction per second).</summary>
+        public const float HangLeanRate = 8f;
 
         /// <summary>Take-off stretch kick for chain stage 1, 2 or 3: it grows with the chain.</summary>
         public static float TakeOffStretch(int stage) => stage >= 3 ? -0.13f : stage == 2 ? -0.09f : -0.04f;
@@ -97,6 +124,16 @@ namespace SpookyStreet.Core.Animation
                 bursts |= MoveBursts.BoostPuff;
             }
 
+            if (step.WallJumped)
+            {
+                bursts |= MoveBursts.WallKickPuff;
+            }
+
+            if (step.LedgeGrabbed)
+            {
+                bursts |= MoveBursts.LedgeGrabDust;
+            }
+
             return bursts;
         }
 
@@ -110,6 +147,8 @@ namespace SpookyStreet.Core.Animation
                 case MoveBursts.DiveStreak: return 4;
                 case MoveBursts.DiveDust: return 7;
                 case MoveBursts.BoostPuff: return 8;
+                case MoveBursts.WallKickPuff: return 9;
+                case MoveBursts.LedgeGrabDust: return 4;
                 default: return 0;
             }
         }
