@@ -15,9 +15,9 @@ using UnityEngine.TestTools;
 namespace SpookyStreet.Tests.Visual
 {
     /// <summary>
-    /// S002.5b frames (D26, docs/S002.5b-clues-hints.md): the silver cloth's glint on the treehouse route (54), the
-    /// tier-1 breeze and warm glow over the side yard (55), the tier-2 bats circling it (56), Bea's hazy memory with
-    /// its silver blur (57), and the tier-3 move demo at the crate on touch (34) and with a keyboard (36), which replace
+    /// S002.5b frames (D26, docs/S002.5b-clues-hints.md): the silver cloth's glint on the treehouse route (58), the
+    /// tier-1 breeze and warm glow over the side yard (59), the tier-2 bats circling it (60), Bea's hazy memory with
+    /// its silver blur (61), and the tier-3 move demo at the crate on touch (34) and with a keyboard (36), which replace
     /// the S002 Use demo frames of the same numbers.
     /// </summary>
     [Category("Visual")]
@@ -161,7 +161,7 @@ namespace SpookyStreet.Tests.Visual
             yield return Stand(new Vector3(CaseRouteLayout.RoofMinX + 1.3f, CaseRouteLayout.TreehouseY, CaseRouteLayout.BridgeZ - 0.2f),
                 clothAt, 1.2f);
             var brain = Frame(new Vector3(-4.3f, 3.55f, 13.15f), clothAt + new Vector3(-0.35f, -0.15f, 0f));
-            Assert.IsTrue(view.IsPlaying(ClueAttractions.Cloth), "54_cloth_glint: the cloth calls from the route");
+            Assert.IsTrue(view.IsPlaying(ClueAttractions.Cloth), "58_cloth_glint: the cloth calls from the route");
             float timeout = Time.time + cloth.Period + 1f;
             while (!view.GlintVisible(ClueAttractions.Cloth) && Time.time < timeout)
             {
@@ -169,8 +169,8 @@ namespace SpookyStreet.Tests.Visual
             }
 
             yield return Wait(0.1f);
-            Assert.IsTrue(view.GlintVisible(ClueAttractions.Cloth), "54_cloth_glint: the glint should be up");
-            yield return Shot("54_cloth_glint");
+            Assert.IsTrue(view.GlintVisible(ClueAttractions.Cloth), "58_cloth_glint: the glint should be up");
+            yield return Shot("58_cloth_glint");
             Release(brain);
 
             // 51: the bench is found, so the hint leads to the side yard. From the west sidewalk, tier 1: leaves ride a
@@ -184,21 +184,21 @@ namespace SpookyStreet.Tests.Visual
             // A raised view behind Pip, over the hedge and clear of the street maple, so the side yard is in the frame.
             brain = Frame(new Vector3(-8.2f, 4.8f, -2.4f), yardAt + new Vector3(0.6f, 0.4f, -0.6f));
             layer.RadioButton.onClick.Invoke();
-            Assert.IsTrue(layer.Guide.BreezeActive, "55_hint_breeze: tier 1 should nudge");
-            Assert.AreSame(yard, layer.Guide.BreezeArea, "55_hint_breeze: toward the side yard");
+            Assert.IsTrue(layer.Guide.BreezeActive, "59_hint_breeze: tier 1 should nudge");
+            Assert.AreSame(yard, layer.Guide.BreezeArea, "59_hint_breeze: toward the side yard");
             yield return Wait(1.9f);
-            Assert.Greater(layer.Guide.VisibleLeaves, 0, "55_hint_breeze: leaves should be in the air");
-            Assert.IsTrue(layer.Guide.GlowVisible, "55_hint_breeze: the area should glow");
-            yield return Shot("55_hint_breeze");
+            Assert.Greater(layer.Guide.VisibleLeaves, 0, "59_hint_breeze: leaves should be in the air");
+            Assert.IsTrue(layer.Guide.GlowVisible, "59_hint_breeze: the area should glow");
+            yield return Shot("59_hint_breeze");
 
             // 52: tier 2 from the same spot: the paper bats fly to the side yard and circle it.
             layer.RadioButton.onClick.Invoke();
             director.Captions.Clear();
-            Assert.IsTrue(layer.Guide.Active, "56_hint_bats: tier 2 should start the trail");
-            Assert.AreSame(yard, layer.Guide.TrailArea, "56_hint_bats: to the side yard");
+            Assert.IsTrue(layer.Guide.Active, "60_hint_bats: tier 2 should start the trail");
+            Assert.AreSame(yard, layer.Guide.TrailArea, "60_hint_bats: to the side yard");
             yield return Wait(2.6f);
-            Assert.Greater(layer.Guide.CirclingBats, 0, "56_hint_bats: bats should be circling the area");
-            yield return Shot("56_hint_bats");
+            Assert.Greater(layer.Guide.CirclingBats, 0, "60_hint_bats: bats should be circling the area");
+            yield return Shot("60_hint_bats");
             layer.Guide.Stop();
             Release(brain);
 
@@ -240,14 +240,14 @@ namespace SpookyStreet.Tests.Visual
             yield return Wait(0.4f);
             director.Dialogue.Skip();
             yield return Wait(0.6f);
-            Assert.IsFalse(replay.Active, "57_replay_blur: no replay on its own");
+            Assert.IsFalse(replay.Active, "61_replay_blur: no replay on its own");
             director.OpenNotebook();
             yield return Wait(0.3f);
             var notebook = director.Notebook;
             notebook.ShowPage(notebook.PageQuestions.IndexOf(CaseNotebook.Question(CaseNotebook.QuestionEntry)));
             yield return Wait(0.3f);
             var eye = notebook.TraySticker(CaseNotebook.BeaFlash).transform.Find("WatchAgain");
-            Assert.IsNotNull(eye, "57_replay_blur: Bea's sticker offers her memory");
+            Assert.IsNotNull(eye, "61_replay_blur: Bea's sticker offers her memory");
             eye.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
             float timeout = Time.time + 4f;
             while (!replay.StreakVisible && Time.time < timeout)
@@ -256,10 +256,10 @@ namespace SpookyStreet.Tests.Visual
             }
 
             yield return Wait(0.15f); // mid-streak, echoes trailing
-            Assert.IsTrue(replay.Active, "57_replay_blur: the memory plays");
-            Assert.IsTrue(replay.StreakVisible, "57_replay_blur: the silver streak should be crossing");
-            Assert.IsFalse(replay.Ghost.gameObject.activeSelf, "57_replay_blur: no June");
-            yield return Shot("57_replay_blur");
+            Assert.IsTrue(replay.Active, "61_replay_blur: the memory plays");
+            Assert.IsTrue(replay.StreakVisible, "61_replay_blur: the silver streak should be crossing");
+            Assert.IsFalse(replay.Ghost.gameObject.activeSelf, "61_replay_blur: no June");
+            yield return Shot("61_replay_blur");
         }
     }
 }

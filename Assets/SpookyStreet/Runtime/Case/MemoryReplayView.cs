@@ -487,7 +487,7 @@ namespace SpookyStreet.Case
 
                 s.transform.SetPositionAndRotation(at, face * Quaternion.Euler(0f, 0f, roll));
                 float swell = Mathf.Sin(Mathf.Clamp01(ui) * Mathf.PI);
-                float length = (_reduced ? 1.4f : 2.4f) * (1f - 0.12f * i);
+                float length = (_reduced ? 1.8f : 3.2f) * (1f - 0.12f * i);
                 float native = s.sprite != null ? s.sprite.bounds.size.x : 1f;
                 float k = length / Mathf.Max(0.01f, native);
                 s.transform.localScale = new Vector3(k, k * (0.9f + 0.5f * swell), 1f);
