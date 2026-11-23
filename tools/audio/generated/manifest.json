@@ -1,0 +1,1408 @@
+{
+ "about": "tools/audio/generated/manifest.json: what was generated, with which model, prompt, voice, seed and parameters, plus the post-processing that turned it into game audio. Reproducibility record for D20.1 (the services are not guaranteed to be deterministic, so the source outputs themselves are kept next to this file).",
+ "voice_sources": {
+  "pip/neutral_t1": {
+   "file": "voice/pip/neutral_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Laomedeia",
+   "emotion": "neutral",
+   "transcript": "Wa-bo-no. lo-ma wi-na mi-pi no-mee ta-pa, ni-la.",
+   "prompt": "Speaker direction (do not read aloud): a curious, friendly little girl, about eight, new in town, asking questions with wonder. Friendly and matter-of-fact, just chatting. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Wa-bo-no. lo-ma wi-na mi-pi no-mee ta-pa, ni-la.",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1223955708,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Laomedeia"
+      }
+     }
+    }
+   },
+   "response_id": "jYkDa4vZFKi5xdIPuZPhiAM",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "pip/neutral_t2": {
+   "file": "voice/pip/neutral_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Laomedeia",
+   "emotion": "neutral",
+   "transcript": "Pi-ti-ni. li-ta lo-mee, na-di, na-wo-ta.",
+   "prompt": "Speaker direction (do not read aloud): a curious, friendly little girl, about eight, new in town, asking questions with wonder. Friendly and matter-of-fact, just chatting. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Pi-ti-ni. li-ta lo-mee, na-di, na-wo-ta.",
+   "revision": 3,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1375552838,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Laomedeia"
+      }
+     }
+    }
+   },
+   "response_id": "lIsDa_3IEZ-_xdIPsPCZkAE",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "pip/happy_t1": {
+   "file": "voice/pip/happy_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Laomedeia",
+   "emotion": "happy",
+   "transcript": "To-pi ni-la pi-po! pa-na, wa-wo!",
+   "prompt": "Speaker direction (do not read aloud): a curious, friendly little girl, about eight, new in town, asking questions with wonder. Delighted and bubbly, smiling all the way through, with a little laugh in the voice. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: To-pi ni-la pi-po! pa-na, wa-wo!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1751256270,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Laomedeia"
+      }
+     }
+    }
+   },
+   "response_id": "k4kDa_CZL9vBxdIP_-iy8AY",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "pip/happy_t2": {
+   "file": "voice/pip/happy_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Laomedeia",
+   "emotion": "happy",
+   "transcript": "Wo-ta! mi-bi! wi-lo mi-do, do-ni!",
+   "prompt": "Speaker direction (do not read aloud): a curious, friendly little girl, about eight, new in town, asking questions with wonder. Delighted and bubbly, smiling all the way through, with a little laugh in the voice. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Wo-ta! mi-bi! wi-lo mi-do, do-ni!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1902861684,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Laomedeia"
+      }
+     }
+    }
+   },
+   "response_id": "l4kDa5tx3svk2g-EvZTgCQ",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "pip/surprised_t1": {
+   "file": "voice/pip/surprised_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Laomedeia",
+   "emotion": "surprised",
+   "transcript": "Li-po na-po da-wo! pi-mi-wi wi-li?!",
+   "prompt": "Speaker direction (do not read aloud): a curious, friendly little girl, about eight, new in town, asking questions with wonder. Amazed and surprised: gasps, big rising 'oh!' moments, wide-eyed wonder. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Li-po na-po da-wo! pi-mi-wi wi-li?!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1113067800,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Laomedeia"
+      }
+     }
+    }
+   },
+   "response_id": "mokDa7aGBeKA1sgPxdXIqAE",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "pip/surprised_t2": {
+   "file": "voice/pip/surprised_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Laomedeia",
+   "emotion": "surprised",
+   "transcript": "Lo-wo-do ma-da? ba-ti lo-no? no-wi bo-wo?!",
+   "prompt": "Speaker direction (do not read aloud): a curious, friendly little girl, about eight, new in town, asking questions with wonder. Amazed and surprised: gasps, big rising 'oh!' moments, wide-eyed wonder. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Lo-wo-do ma-da? ba-ti lo-no? no-wi bo-wo?!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1532051618,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Laomedeia"
+      }
+     }
+    }
+   },
+   "response_id": "nIkDa9zKNIqr5NoP7NPbyQc",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "pip/thinking_t1": {
+   "file": "voice/pip/thinking_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Laomedeia",
+   "emotion": "thinking",
+   "transcript": "Ta-ni? wo-mo ma-mo pi-mo? ta-ma-bi?",
+   "prompt": "Speaker direction (do not read aloud): a curious, friendly little girl, about eight, new in town, asking questions with wonder. Puzzling something out: hesitant, musing, little pauses and 'hmm' sounds, rising unsure endings. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Ta-ni? wo-mo ma-mo pi-mo? ta-ma-bi?",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1105978610,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Laomedeia"
+      }
+     }
+    }
+   },
+   "response_id": "oIkDa7GWC6vdytMP4f6QuQE",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "pip/thinking_t2": {
+   "file": "voice/pip/thinking_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Laomedeia",
+   "emotion": "thinking",
+   "transcript": "No-wa-to, wi-lo-mi po-la? na-to? wa-mee?",
+   "prompt": "Speaker direction (do not read aloud): a curious, friendly little girl, about eight, new in town, asking questions with wonder. Puzzling something out: hesitant, musing, little pauses and 'hmm' sounds, rising unsure endings. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: No-wa-to, wi-lo-mi po-la? na-to? wa-mee?",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1491252552,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Laomedeia"
+      }
+     }
+    }
+   },
+   "response_id": "o4kDa9f5D5bhytMP-6-j6AQ",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "pip/whisper_t1": {
+   "file": "voice/pip/whisper_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Laomedeia",
+   "emotion": "whisper",
+   "transcript": "Di-wa bi-ba, mi-ba no-to. ti-lo lo-to...",
+   "prompt": "Speaker direction (do not read aloud): a curious, friendly little girl, about eight, new in town, asking questions with wonder. Whispering a secret, close and quiet, breathy and conspiratorial. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Di-wa bi-ba, mi-ba no-to. ti-lo lo-to...",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 71132164,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Laomedeia"
+      }
+     }
+    }
+   },
+   "response_id": "pokDa93NKry-uMYP2KLE0AI",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "pip/whisper_t2": {
+   "file": "voice/pip/whisper_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Laomedeia",
+   "emotion": "whisper",
+   "transcript": "Ba-ta da-ti. na-ti-ma... po-mee... ba-pi-lo. la-mi...",
+   "prompt": "Speaker direction (do not read aloud): a curious, friendly little girl, about eight, new in town, asking questions with wonder. Whispering a secret, close and quiet, breathy and conspiratorial. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Ba-ta da-ti. na-ti-ma... po-mee... ba-pi-lo. la-mi...",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 489960894,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Laomedeia"
+      }
+     }
+    }
+   },
+   "response_id": "qYkDa82IO7il5NoP9p2-oA8",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "bea/neutral_t1": {
+   "file": "voice/bea/neutral_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Zephyr",
+   "emotion": "neutral",
+   "transcript": "Za-zi te-zi gi-be, ta-da-ke ze-be pe-ti, ze-gi.",
+   "prompt": "Speaker direction (do not read aloud): a fast, confident little girl, about seven, very sure of herself, rapid-fire and bouncy. Friendly and matter-of-fact, just chatting. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Za-zi te-zi gi-be, ta-da-ke ze-be pe-ti, ze-gi.",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1110438997,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Zephyr"
+      }
+     }
+    }
+   },
+   "response_id": "MIoDa7-nJvCjiLMP0K66qA8",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "bea/neutral_t2": {
+   "file": "voice/bea/neutral_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Zephyr",
+   "emotion": "neutral",
+   "transcript": "Pe-da-zi. zoo-koo da-gi, ga-koo za-ge zoo-pi. pe-ge-pe.",
+   "prompt": "Speaker direction (do not read aloud): a fast, confident little girl, about seven, very sure of herself, rapid-fire and bouncy. Friendly and matter-of-fact, just chatting. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Pe-da-zi. zoo-koo da-gi, ga-koo za-ge zoo-pi. pe-ge-pe.",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1529259503,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Zephyr"
+      }
+     }
+    }
+   },
+   "response_id": "M4oDa4TZHa2CytMP97qMyQY",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "bea/happy_t1": {
+   "file": "voice/bea/happy_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Zephyr",
+   "emotion": "happy",
+   "transcript": "Be-te da-ga ki-ba! ti-ge ka-da-ti koo-pe pe-za!",
+   "prompt": "Speaker direction (do not read aloud): a fast, confident little girl, about seven, very sure of herself, rapid-fire and bouncy. Delighted and bubbly, smiling all the way through, with a little laugh in the voice. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Be-te da-ga ki-ba! ti-ge ka-da-ti koo-pe pe-za!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1245120444,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Zephyr"
+      }
+     }
+    }
+   },
+   "response_id": "NooDa7GlLZjYytMP9oDkwAY",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "bea/happy_t2": {
+   "file": "voice/bea/happy_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Zephyr",
+   "emotion": "happy",
+   "transcript": "Gi-za bi-ba bi-te-da! de-di! bi-da!",
+   "prompt": "Speaker direction (do not read aloud): a fast, confident little girl, about seven, very sure of herself, rapid-fire and bouncy. Delighted and bubbly, smiling all the way through, with a little laugh in the voice. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Gi-za bi-ba bi-te-da! de-di! bi-da!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1396594182,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Zephyr"
+      }
+     }
+    }
+   },
+   "response_id": "OYoDa4yBIris5NoPu4Pq2Ag",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "bea/surprised_t1": {
+   "file": "voice/bea/surprised_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Zephyr",
+   "emotion": "surprised",
+   "transcript": "Ga-pi-pe? ka-za di-ta-pe ti-be pe-zi pi-ba bi-da?!",
+   "prompt": "Speaker direction (do not read aloud): a fast, confident little girl, about seven, very sure of herself, rapid-fire and bouncy. Amazed and surprised: gasps, big rising 'oh!' moments, wide-eyed wonder. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Ga-pi-pe? ka-za di-ta-pe ti-be pe-zi pi-ba bi-da?!",
+   "revision": 1,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 496467483,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Zephyr"
+      }
+     }
+    }
+   },
+   "response_id": "kYsDa9SYA5qpytMPi7X_GA",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "bea/surprised_t2": {
+   "file": "voice/bea/surprised_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Zephyr",
+   "emotion": "surprised",
+   "transcript": "Ti-za ze-pe! ki-di za-gi zi-gi?!",
+   "prompt": "Speaker direction (do not read aloud): a fast, confident little girl, about seven, very sure of herself, rapid-fire and bouncy. Amazed and surprised: gasps, big rising 'oh!' moments, wide-eyed wonder. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Ti-za ze-pe! ki-di za-gi zi-gi?!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 77475745,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Zephyr"
+      }
+     }
+    }
+   },
+   "response_id": "P4oDa4qzL7-sxdIPqpjkgQY",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "bea/thinking_t1": {
+   "file": "voice/bea/thinking_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Zephyr",
+   "emotion": "thinking",
+   "transcript": "Ze-koo-ka ke-ta ti-ke zoo-pe-bi za-pe?",
+   "prompt": "Speaker direction (do not read aloud): a fast, confident little girl, about seven, very sure of herself, rapid-fire and bouncy. Puzzling something out: hesitant, musing, little pauses and 'hmm' sounds, rising unsure endings. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Ze-koo-ka ke-ta ti-ke zoo-pe-bi za-pe?",
+   "revision": 5,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1852515422,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Zephyr"
+      }
+     }
+    }
+   },
+   "response_id": "jYsDa_enNfCjiLMPndXCoAM",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "bea/thinking_t2": {
+   "file": "voice/bea/thinking_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Zephyr",
+   "emotion": "thinking",
+   "transcript": "Za-ba? za-ti da-ge-ti zi-be... ga-ti za-pe?",
+   "prompt": "Speaker direction (do not read aloud): a fast, confident little girl, about seven, very sure of herself, rapid-fire and bouncy. Puzzling something out: hesitant, musing, little pauses and 'hmm' sounds, rising unsure endings. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Za-ba? za-ti da-ge-ti zi-be... ga-ti za-pe?",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 2002941412,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Zephyr"
+      }
+     }
+    }
+   },
+   "response_id": "RYoDa4a9MZKg5NoP6IHO0Qc",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "bea/whisper_t1": {
+   "file": "voice/bea/whisper_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Zephyr",
+   "emotion": "whisper",
+   "transcript": "Ze-ke-za... pe-de ke-pi be-zi be-di-koo...",
+   "prompt": "Speaker direction (do not read aloud): a fast, confident little girl, about seven, very sure of herself, rapid-fire and bouncy. Whispering a secret, close and quiet, breathy and conspiratorial. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Ze-ke-za... pe-de ke-pi be-zi be-di-koo...",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 249988269,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Zephyr"
+      }
+     }
+    }
+   },
+   "response_id": "Z4oDa6rrGc2jo_UPw7XnoQ8",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "bea/whisper_t2": {
+   "file": "voice/bea/whisper_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Zephyr",
+   "emotion": "whisper",
+   "transcript": "Ta-be-zoo pi-pa. pe-be. be-ke-ze ze-koo...",
+   "prompt": "Speaker direction (do not read aloud): a fast, confident little girl, about seven, very sure of herself, rapid-fire and bouncy. Whispering a secret, close and quiet, breathy and conspiratorial. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Ta-be-zoo pi-pa. pe-be. be-ke-ze ze-koo...",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 401593623,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Zephyr"
+      }
+     }
+    }
+   },
+   "response_id": "aooDa5WKDr2jo_UP1tKIqQQ",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "vale/neutral_t1": {
+   "file": "voice/vale/neutral_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sadaltager",
+   "emotion": "neutral",
+   "transcript": "Haw-maw. haw-bo-baw ra-ro-hoo bo-mo-bo, ra-la roo-ra.",
+   "prompt": "Speaker direction (do not read aloud): a slow, kind, dry-humoured old grandfather on a park bench, warm, gentle and unhurried. Friendly and matter-of-fact, just chatting. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Haw-maw. haw-bo-baw ra-ro-hoo bo-mo-bo, ra-la roo-ra.",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 403936359,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sadaltager"
+      }
+     }
+    }
+   },
+   "response_id": "bIoDa7qiK9GOytMPnpaBUA",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "vale/neutral_t2": {
+   "file": "voice/vale/neutral_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sadaltager",
+   "emotion": "neutral",
+   "transcript": "Hoo-lo, waw-woon maw-law ro-baw wa-haw law-wo.",
+   "prompt": "Speaker direction (do not read aloud): a slow, kind, dry-humoured old grandfather on a park bench, warm, gentle and unhurried. Friendly and matter-of-fact, just chatting. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Hoo-lo, waw-woon maw-law ro-baw wa-haw law-wo.",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 18531805,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sadaltager"
+      }
+     }
+    }
+   },
+   "response_id": "cIoDa_zNBq7hytMPx622wQo",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "vale/happy_t1": {
+   "file": "voice/vale/happy_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sadaltager",
+   "emotion": "happy",
+   "transcript": "Ha-lo hoo-bo lom-ba-rom! ra-law wa-baw, ho-maw!",
+   "prompt": "Speaker direction (do not read aloud): a slow, kind, dry-humoured old grandfather on a park bench, warm, gentle and unhurried. Delighted and bubbly, smiling all the way through, with a little laugh in the voice. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Ha-lo hoo-bo lom-ba-rom! ra-law wa-baw, ho-maw!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 566192135,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sadaltager"
+      }
+     }
+    }
+   },
+   "response_id": "c4oDa6WwG7WOiLMPjtfuiAk",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "vale/happy_t2": {
+   "file": "voice/vale/happy_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sadaltager",
+   "emotion": "happy",
+   "transcript": "Hawn-ha haw-lom ma-bo ro-ra waw-ro!",
+   "prompt": "Speaker direction (do not read aloud): a slow, kind, dry-humoured old grandfather on a park bench, warm, gentle and unhurried. Delighted and bubbly, smiling all the way through, with a little laugh in the voice. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Hawn-ha haw-lom ma-bo ro-ra waw-ro!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 951466429,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sadaltager"
+      }
+     }
+    }
+   },
+   "response_id": "dooDa_-fOZKsuMYP_ImrsAE",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "vale/surprised_t1": {
+   "file": "voice/vale/surprised_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sadaltager",
+   "emotion": "surprised",
+   "transcript": "Hoo-bom! baw-roo! haw-bo ra-bom! waw-ma?!",
+   "prompt": "Speaker direction (do not read aloud): a slow, kind, dry-humoured old grandfather on a park bench, warm, gentle and unhurried. Amazed and surprised: gasps, big rising 'oh!' moments, wide-eyed wonder. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Hoo-bom! baw-roo! haw-bo ra-bom! waw-ma?!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1029017870,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sadaltager"
+      }
+     }
+    }
+   },
+   "response_id": "eooDa8zSFLiPwbUPifuK2Q4",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "vale/surprised_t2": {
+   "file": "voice/vale/surprised_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sadaltager",
+   "emotion": "surprised",
+   "transcript": "Ha-ma! law-baw hoo-waw hoo-baw? law-wo-roo mam-roo?!",
+   "prompt": "Speaker direction (do not read aloud): a slow, kind, dry-humoured old grandfather on a park bench, warm, gentle and unhurried. Amazed and surprised: gasps, big rising 'oh!' moments, wide-eyed wonder. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Ha-ma! law-baw hoo-waw hoo-baw? law-wo-roo mam-roo?!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 610058420,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sadaltager"
+      }
+     }
+    }
+   },
+   "response_id": "fYoDa7WBJuiswbUPgbaQ2As",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "vale/thinking_t1": {
+   "file": "voice/vale/thinking_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sadaltager",
+   "emotion": "thinking",
+   "transcript": "Hawn-bo? waw-baw-ho ho-la... bo-waw... baw-ro?",
+   "prompt": "Speaker direction (do not read aloud): a slow, kind, dry-humoured old grandfather on a park bench, warm, gentle and unhurried. Puzzling something out: hesitant, musing, little pauses and 'hmm' sounds, rising unsure endings. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Hawn-bo? waw-baw-ho ho-la... bo-waw... baw-ro?",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 644237758,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sadaltager"
+      }
+     }
+    }
+   },
+   "response_id": "gYoDa_u5FdCio_UP8cmQmQ0",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "vale/thinking_t2": {
+   "file": "voice/vale/thinking_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sadaltager",
+   "emotion": "thinking",
+   "transcript": "Mo-wa ba-bo-baw ro-baw... roo-maw wa-ho?",
+   "prompt": "Speaker direction (do not read aloud): a slow, kind, dry-humoured old grandfather on a park bench, warm, gentle and unhurried. Puzzling something out: hesitant, musing, little pauses and 'hmm' sounds, rising unsure endings. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Mo-wa ba-bo-baw ro-baw... roo-maw wa-ho?",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1064245252,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sadaltager"
+      }
+     }
+    }
+   },
+   "response_id": "hIoDa-SWO6qbo_UPmKqmkAo",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "vale/whisper_t1": {
+   "file": "voice/vale/whisper_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sadaltager",
+   "emotion": "whisper",
+   "transcript": "Lo-mawn-haw wo-bo la-law law-wo, lo-waw...",
+   "prompt": "Speaker direction (do not read aloud): a slow, kind, dry-humoured old grandfather on a park bench, warm, gentle and unhurried. Whispering a secret, close and quiet, breathy and conspiratorial. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Lo-mawn-haw wo-bo la-law law-wo, lo-waw...",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1423631519,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sadaltager"
+      }
+     }
+    }
+   },
+   "response_id": "iIoDa_6vBpvbytMPz4KP6QY",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "vale/whisper_t2": {
+   "file": "voice/vale/whisper_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sadaltager",
+   "emotion": "whisper",
+   "transcript": "Law-hoo. waw-la ra-wawn, ha-wom. la-ma, raw-ro. ha-hoom...",
+   "prompt": "Speaker direction (do not read aloud): a slow, kind, dry-humoured old grandfather on a park bench, warm, gentle and unhurried. Whispering a secret, close and quiet, breathy and conspiratorial. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Law-hoo. waw-la ra-wawn, ha-wom. la-ma, raw-ro. ha-hoom...",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1305720101,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sadaltager"
+      }
+     }
+    }
+   },
+   "response_id": "i4oDa-O1JuTJ0_gPgIvIsA4",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "june/neutral_t1": {
+   "file": "voice/june/neutral_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Achernar",
+   "emotion": "neutral",
+   "transcript": "Pi-shu-su tsi-chi nu-shi tsu-mi, na-ni-nu chu-na-ni.",
+   "prompt": "Speaker direction (do not read aloud): a mischievous girl, about nine, whispering secrets and trying not to giggle. Friendly and matter-of-fact, just chatting. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Pi-shu-su tsi-chi nu-shi tsu-mi, na-ni-nu chu-na-ni.",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 113681648,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Achernar"
+      }
+     }
+    }
+   },
+   "response_id": "j4oDa_XSDdr9ytMPkarr6As",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "june/neutral_t2": {
+   "file": "voice/june/neutral_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Achernar",
+   "emotion": "neutral",
+   "transcript": "Tsee-chu-nu mi-tsu pu-ma. shee-sa-mee. tsee-sha-sa.",
+   "prompt": "Speaker direction (do not read aloud): a mischievous girl, about nine, whispering secrets and trying not to giggle. Friendly and matter-of-fact, just chatting. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Tsee-chu-nu mi-tsu pu-ma. shee-sa-mee. tsee-sha-sa.",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 533722442,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Achernar"
+      }
+     }
+    }
+   },
+   "response_id": "sIoDa_24KenQ0_gP-I6RwAc",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "june/happy_t1": {
+   "file": "voice/june/happy_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Achernar",
+   "emotion": "happy",
+   "transcript": "Pu-mee-chu, cha-tsee mi-su-pi shu-tsee-pi mu-mi-shi!",
+   "prompt": "Speaker direction (do not read aloud): a mischievous girl, about nine, whispering secrets and trying not to giggle. Delighted and bubbly, smiling all the way through, with a little laugh in the voice. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Pu-mee-chu, cha-tsee mi-su-pi shu-tsee-pi mu-mi-shi!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1483741284,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Achernar"
+      }
+     }
+    }
+   },
+   "response_id": "tIoDa9rGB9u-xdIP2_GCyQo",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "june/happy_t2": {
+   "file": "voice/june/happy_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Achernar",
+   "emotion": "happy",
+   "transcript": "Ni-su! na-pi pi-si! pi-chu-chi! tsa-nu!",
+   "prompt": "Speaker direction (do not read aloud): a mischievous girl, about nine, whispering secrets and trying not to giggle. Delighted and bubbly, smiling all the way through, with a little laugh in the voice. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Ni-su! na-pi pi-si! pi-chu-chi! tsa-nu!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1098467806,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Achernar"
+      }
+     }
+    }
+   },
+   "response_id": "t4oDa7vrB8HhytMP4u3IwAE",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "june/surprised_t1": {
+   "file": "voice/june/surprised_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Achernar",
+   "emotion": "surprised",
+   "transcript": "Mee-shee? si-sa! shu-chi-sa? shee-pa nu-sa! ma-shee?!",
+   "prompt": "Speaker direction (do not read aloud): a mischievous girl, about nine, whispering secrets and trying not to giggle. Amazed and surprised: gasps, big rising 'oh!' moments, wide-eyed wonder. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Mee-shee? si-sa! shu-chi-sa? shee-pa nu-sa! ma-shee?!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 629973930,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Achernar"
+      }
+     }
+    }
+   },
+   "response_id": "uooDa-D8Db2G1sgP3auf8AQ",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "june/surprised_t2": {
+   "file": "voice/june/surprised_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Achernar",
+   "emotion": "surprised",
+   "transcript": "Si-tsi? chi-tsee! cha-pi-shi tsi-pa? ma-chi?!",
+   "prompt": "Speaker direction (do not read aloud): a mischievous girl, about nine, whispering secrets and trying not to giggle. Amazed and surprised: gasps, big rising 'oh!' moments, wide-eyed wonder. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Si-tsi? chi-tsee! cha-pi-shi tsi-pa? ma-chi?!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1015411216,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Achernar"
+      }
+     }
+    }
+   },
+   "response_id": "vYoDa7aVIM2r5NoPyNy4-Qg",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "june/thinking_t1": {
+   "file": "voice/june/thinking_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Achernar",
+   "emotion": "thinking",
+   "transcript": "Shi-shu-cha, ni-ma-mi, nu-tsee? sha-cha... si-pi... chu-shi?",
+   "prompt": "Speaker direction (do not read aloud): a mischievous girl, about nine, whispering secrets and trying not to giggle. Puzzling something out: hesitant, musing, little pauses and 'hmm' sounds, rising unsure endings. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Shi-shu-cha, ni-ma-mi, nu-tsee? sha-cha... si-pi... chu-shi?",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1209244265,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Achernar"
+      }
+     }
+    }
+   },
+   "response_id": "wIoDa4ukLpfDxdIP2ZnVuQg",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "june/thinking_t2": {
+   "file": "voice/june/thinking_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Achernar",
+   "emotion": "thinking",
+   "transcript": "Tsa-sha tsu-sa shi-tsa, mi-mee-na ma-ni pa-ma-na?",
+   "prompt": "Speaker direction (do not read aloud): a mischievous girl, about nine, whispering secrets and trying not to giggle. Puzzling something out: hesitant, musing, little pauses and 'hmm' sounds, rising unsure endings. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Tsa-sha tsu-sa shi-tsa, mi-mee-na ma-ni pa-ma-na?",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1360710611,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Achernar"
+      }
+     }
+    }
+   },
+   "response_id": "xIoDa7PWHvSbo_UPqZPj4Q8",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "june/whisper_t1": {
+   "file": "voice/june/whisper_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Achernar",
+   "emotion": "whisper",
+   "transcript": "Shi-tsee si-sa cha-tsee-sha... ma-mi-ni... nu-sa...",
+   "prompt": "Speaker direction (do not read aloud): a mischievous girl, about nine, whispering secrets and trying not to giggle. Whispering a secret, close and quiet, breathy and conspiratorial. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Shi-tsee si-sa cha-tsee-sha... ma-mi-ni... nu-sa...",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1242551304,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Achernar"
+      }
+     }
+    }
+   },
+   "response_id": "yIoDa6nVB7GE1sgPi87G0QY",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "june/whisper_t2": {
+   "file": "voice/june/whisper_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Achernar",
+   "emotion": "whisper",
+   "transcript": "Mu-shee-nu ni-tsa-shee shu-chu... shi-tsu-su shee-shi...",
+   "prompt": "Speaker direction (do not read aloud): a mischievous girl, about nine, whispering secrets and trying not to giggle. Whispering a secret, close and quiet, breathy and conspiratorial. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Mu-shee-nu ni-tsa-shee shu-chu... shi-tsu-su shee-shi...",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1392936370,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Achernar"
+      }
+     }
+    }
+   },
+   "response_id": "y4oDa-jnGbO5wbUPipbksAw",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "kit/neutral_t1": {
+   "file": "voice/kit/neutral_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sulafat",
+   "emotion": "neutral",
+   "transcript": "May-bay, bay-vah lo-mee. rah-mah, bah-bo-bah. bah-lah, vo-vee.",
+   "prompt": "Speaker direction (do not read aloud): a theatrical, warm, grand aunt who used to act on stage, sweeping and dramatic but kind. Friendly and matter-of-fact, just chatting. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: May-bay, bay-vah lo-mee. rah-mah, bah-bo-bah. bah-lah, vo-vee.",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1652041730,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sulafat"
+      }
+     }
+    }
+   },
+   "response_id": "zooDa_vpGs-6xdIPmaeDwQU",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "kit/neutral_t2": {
+   "file": "voice/kit/neutral_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sulafat",
+   "emotion": "neutral",
+   "transcript": "Dah-ra tay-vee-lah, do-ta. vah-lay-da ma-da-ma.",
+   "prompt": "Speaker direction (do not read aloud): a theatrical, warm, grand aunt who used to act on stage, sweeping and dramatic but kind. Friendly and matter-of-fact, just chatting. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Dah-ra tay-vee-lah, do-ta. vah-lay-da ma-da-ma.",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 2071034296,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sulafat"
+      }
+     }
+    }
+   },
+   "response_id": "8IoDa-ibKs2FytMPlIjk-As",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "kit/happy_t1": {
+   "file": "voice/kit/happy_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sulafat",
+   "emotion": "happy",
+   "transcript": "Vah-lo! ra-dah ray-vay, vo-vay to-ma-ba ta-to!",
+   "prompt": "Speaker direction (do not read aloud): a theatrical, warm, grand aunt who used to act on stage, sweeping and dramatic but kind. Delighted and bubbly, smiling all the way through, with a little laugh in the voice. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Vah-lo! ra-dah ray-vay, vo-vay to-ma-ba ta-to!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 470017350,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sulafat"
+      }
+     }
+    }
+   },
+   "response_id": "84oDa7W_NvrAxdIP5sKo2Aw",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "kit/happy_t2": {
+   "file": "voice/kit/happy_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sulafat",
+   "emotion": "happy",
+   "transcript": "Do-vee! bay-mee! lay-mee bay-da! tah-may!",
+   "prompt": "Speaker direction (do not read aloud): a theatrical, warm, grand aunt who used to act on stage, sweeping and dramatic but kind. Delighted and bubbly, smiling all the way through, with a little laugh in the voice. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Do-vee! bay-mee! lay-mee bay-da! tah-may!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 84587772,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sulafat"
+      }
+     }
+    }
+   },
+   "response_id": "94oDa_7wB9Gp5NoPu4Dk2QU",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "kit/surprised_t1": {
+   "file": "voice/kit/surprised_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sulafat",
+   "emotion": "surprised",
+   "transcript": "Ta-la? lah-vah? ray-bah! tay-ro-do lah-rah bo-ree?!",
+   "prompt": "Speaker direction (do not read aloud): a theatrical, warm, grand aunt who used to act on stage, sweeping and dramatic but kind. Amazed and surprised: gasps, big rising 'oh!' moments, wide-eyed wonder. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Ta-la? lah-vah? ray-bah! tay-ro-do lah-rah bo-ree?!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 1728613152,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sulafat"
+      }
+     }
+    }
+   },
+   "response_id": "-ooDa_fWJ86tytMP5pmr6AU",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "kit/surprised_t2": {
+   "file": "voice/kit/surprised_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sulafat",
+   "emotion": "surprised",
+   "transcript": "Lo-mee ba-ta may-tah! la-va? bo-va-vo ba-mee-do lay-lo?!",
+   "prompt": "Speaker direction (do not read aloud): a theatrical, warm, grand aunt who used to act on stage, sweeping and dramatic but kind. Amazed and surprised: gasps, big rising 'oh!' moments, wide-eyed wonder. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Lo-mee ba-ta may-tah! la-va? bo-va-vo ba-mee-do lay-lo?!",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 2114050714,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sulafat"
+      }
+     }
+    }
+   },
+   "response_id": "_ooDa8_UB8igo_UPoOvskQU",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "kit/thinking_t1": {
+   "file": "voice/kit/thinking_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sulafat",
+   "emotion": "thinking",
+   "transcript": "Lo-da, mah-bay-tah, lo-ro? rah-la-vee do-bay-vee? tah-lo?",
+   "prompt": "Speaker direction (do not read aloud): a theatrical, warm, grand aunt who used to act on stage, sweeping and dramatic but kind. Puzzling something out: hesitant, musing, little pauses and 'hmm' sounds, rising unsure endings. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Lo-da, mah-bay-tah, lo-ro? rah-la-vee do-bay-vee? tah-lo?",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 465876949,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sulafat"
+      }
+     }
+    }
+   },
+   "response_id": "AYsDa5b2KNr9ytMPkarr6As",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "kit/thinking_t2": {
+   "file": "voice/kit/thinking_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sulafat",
+   "emotion": "thinking",
+   "transcript": "To-da lay-mah bay-lo? bay-dah ta-vay-tay may-rah... ree-bah?",
+   "prompt": "Speaker direction (do not read aloud): a theatrical, warm, grand aunt who used to act on stage, sweeping and dramatic but kind. Puzzling something out: hesitant, musing, little pauses and 'hmm' sounds, rising unsure endings. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: To-da lay-mah bay-lo? bay-dah ta-vay-tay may-rah... ree-bah?",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 47048303,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sulafat"
+      }
+     }
+    }
+   },
+   "response_id": "BYsDa42VEPyOytMPy-PiyQ8",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "kit/whisper_t1": {
+   "file": "voice/kit/whisper_t1.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sulafat",
+   "emotion": "whisper",
+   "transcript": "Lay-rah-ree, to-vah, vo-ray. ro-lay. to-may-bah...",
+   "prompt": "Speaker direction (do not read aloud): a theatrical, warm, grand aunt who used to act on stage, sweeping and dramatic but kind. Whispering a secret, close and quiet, breathy and conspiratorial. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Lay-rah-ree, to-vah, vo-ray. ro-lay. to-may-bah...",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 783374586,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sulafat"
+      }
+     }
+    }
+   },
+   "response_id": "CIsDa_2xLrKt5NoPq8uyyAc",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  },
+  "kit/whisper_t2": {
+   "file": "voice/kit/whisper_t2.flac",
+   "model": "gemini-3.8-flash-tts",
+   "voice": "Sulafat",
+   "emotion": "whisper",
+   "transcript": "Tay-day bo-may tah-da, ray-vah-ray va-do...",
+   "prompt": "Speaker direction (do not read aloud): a theatrical, warm, grand aunt who used to act on stage, sweeping and dramatic but kind. Whispering a secret, close and quiet, breathy and conspiratorial. The transcript is made-up cartoon gibberish: perform it with full emotion and natural, lively rhythm, never as real words.\nTranscript: Tay-day bo-may tah-da, ray-vah-ray va-do...",
+   "revision": 0,
+   "generation_config": {
+    "responseModalities": [
+     "AUDIO"
+    ],
+    "seed": 934807872,
+    "speechConfig": {
+     "voiceConfig": {
+      "prebuiltVoiceConfig": {
+       "voiceName": "Sulafat"
+      }
+     }
+    }
+   },
+   "response_id": "DIsDa-SlHKyjo_UP6_6K4AQ",
+   "seed_note": "generationConfig.seed is sent; the service does not promise identical audio"
+  }
+ },
+ "music_sources": {
+  "music_street_theme/s101": {
+   "file": "music/music_street_theme/s101.mp3",
+   "model": "lyria-3-pro-preview",
+   "model_version": "lyria-3.5",
+   "prompt": "A gentle, curious, cosy theme for the street of a children's mystery game at Halloween dusk. D minor, 96 BPM, 4/4, a steady light pulse from start to end. The main motif is a little three-note figure in the rhythm of a door knock: short, short, long (two eighth notes then a held quarter note), rising D, F, A, answered by a gentle falling phrase. The motif is stated on celesta and pizzicato, then the clarinet sings a warm answering melody. Instrumentation: pizzicato strings, celesta, glockenspiel, soft clarinet and flute, a bassoon on the bass line, harp, light woodblock and brushed percussion. Keep the same tempo and texture throughout so it can loop: no slow intro, no big ending, no fade out. Mood: Halloween-cosy, curious and gentle, warm and a little mischievous, like a storybook night walk on a friendly street; spooky-not-scary for children aged 6 to 9. No vocals, no choir, no organ, no heavy brass, no horror stingers, no dissonant clusters, no sudden loud hits. Instrumental only.",
+   "generation_config": {
+    "seed": 101
+   },
+   "mime": "audio/mpeg",
+   "structure_text": "[[A0]]\n[[B1]]\n[[C2]]\n[[D3]]\n[[B4]]\n[[C5]]\n[[E6]]",
+   "response_id": "npADa9uvDLG_xdIP1aGO0QU"
+  },
+  "music_street_theme/s202": {
+   "file": "music/music_street_theme/s202.mp3",
+   "model": "lyria-3-pro-preview",
+   "model_version": "lyria-3.5",
+   "prompt": "A gentle, curious, cosy theme for the street of a children's mystery game at Halloween dusk. D minor, 96 BPM, 4/4, a steady light pulse from start to end. The main motif is a little three-note figure in the rhythm of a door knock: short, short, long (two eighth notes then a held quarter note), rising D, F, A, answered by a gentle falling phrase. The motif is stated on celesta and pizzicato, then the clarinet sings a warm answering melody. Instrumentation: pizzicato strings, celesta, glockenspiel, soft clarinet and flute, a bassoon on the bass line, harp, light woodblock and brushed percussion. Keep the same tempo and texture throughout so it can loop: no slow intro, no big ending, no fade out. Mood: Halloween-cosy, curious and gentle, warm and a little mischievous, like a storybook night walk on a friendly street; spooky-not-scary for children aged 6 to 9. No vocals, no choir, no organ, no heavy brass, no horror stingers, no dissonant clusters, no sudden loud hits. Instrumental only.",
+   "generation_config": {
+    "seed": 202
+   },
+   "mime": "audio/mpeg",
+   "structure_text": "[[A0]]\n[[B1]]\n[[C2]]\n[[D3]]\n[[E4]]",
+   "response_id": "vZADa5DTNN66xdIP_vDTuAg"
+  },
+  "music_street_theme/s303": {
+   "file": "music/music_street_theme/s303.mp3",
+   "model": "lyria-3-pro-preview",
+   "model_version": "lyria-3.5",
+   "prompt": "A gentle, curious, cosy theme for the street of a children's mystery game at Halloween dusk. D minor, 96 BPM, 4/4, a steady light pulse from start to end. The main motif is a little three-note figure in the rhythm of a door knock: short, short, long (two eighth notes then a held quarter note), rising D, F, A, answered by a gentle falling phrase. The motif is stated on celesta and pizzicato, then the clarinet sings a warm answering melody. Instrumentation: pizzicato strings, celesta, glockenspiel, soft clarinet and flute, a bassoon on the bass line, harp, light woodblock and brushed percussion. Keep the same tempo and texture throughout so it can loop: no slow intro, no big ending, no fade out. Mood: Halloween-cosy, curious and gentle, warm and a little mischievous, like a storybook night walk on a friendly street; spooky-not-scary for children aged 6 to 9. No vocals, no choir, no organ, no heavy brass, no horror stingers, no dissonant clusters, no sudden loud hits. Instrumental only.",
+   "generation_config": {
+    "seed": 303
+   },
+   "mime": "audio/mpeg",
+   "structure_text": "[[A0]]\n[[B1]]\n[[C2]]\n[[D3]]\n[[C4]]\n[[E5]]\n[[F6]]",
+   "response_id": "35ADa6rvILqgytMPpP-6kQk"
+  },
+  "music_street_theme/s404": {
+   "file": "music/music_street_theme/s404.mp3",
+   "model": "lyria-3-pro-preview",
+   "model_version": "lyria-3.5",
+   "prompt": "A gentle, curious, cosy theme for the street of a children's mystery game at Halloween dusk. D minor, 96 BPM, 4/4, a steady light pulse from start to end. The main motif is a little three-note figure in the rhythm of a door knock: short, short, long (two eighth notes then a held quarter note), rising D, F, A, answered by a gentle falling phrase. The motif is stated on celesta and pizzicato, then the clarinet sings a warm answering melody. Instrumentation: pizzicato strings, celesta, glockenspiel, soft clarinet and flute, a bassoon on the bass line, harp, light woodblock and brushed percussion. Keep the same tempo and texture throughout so it can loop: no slow intro, no big ending, no fade out. Mood: Halloween-cosy, curious and gentle, warm and a little mischievous, like a storybook night walk on a friendly street; spooky-not-scary for children aged 6 to 9. No vocals, no choir, no organ, no heavy brass, no horror stingers, no dissonant clusters, no sudden loud hits. Instrumental only.",
+   "generation_config": {
+    "seed": 404
+   },
+   "mime": "audio/mpeg",
+   "structure_text": "[[A0]]\n[[B1]]\n[[C2]]\n[[C3]]\n[[D4]]",
+   "response_id": "_pADa97lCZPcytMP34eIYA",
+   "committed": false,
+   "note": "rejected at review (listening proxy: too bright / too dark / dry ending); source kept only locally in tools/audio/out/rejected_sources/"
+  },
+  "music_exploration/s111": {
+   "file": "music/music_exploration/s111.mp3",
+   "model": "lyria-3-pro-preview",
+   "model_version": "lyria-3.5",
+   "prompt": "A sparse, airy underscore for free play in a children's mystery game at Halloween dusk, a quieter variation of the street theme. D minor, 96 BPM, 4/4. The main motif is a little three-note figure in the rhythm of a door knock: short, short, long (two eighth notes then a held quarter note), rising D, F, A, answered by a gentle falling phrase. Only fragments of the motif, with lots of space between phrases: solo celesta and soft pizzicato, a sustained warm string pad, an occasional clarinet or flute answer, very light brushed percussion. Calm and unhurried, it must stay under gameplay sounds and never draw attention. Same tempo and texture throughout so it can loop: no intro, no ending, no fade out. Mood: Halloween-cosy, curious and gentle, warm and a little mischievous, like a storybook night walk on a friendly street; spooky-not-scary for children aged 6 to 9. No vocals, no choir, no organ, no heavy brass, no horror stingers, no dissonant clusters, no sudden loud hits. Instrumental only.",
+   "generation_config": {
+    "seed": 111
+   },
+   "mime": "audio/mpeg",
+   "structure_text": "[[A0]]\n[[A1]]\n[[A2]]\n[[A3]]\n[[A4]]",
+   "response_id": "IpEDa4_wEIXR0_gPzqrX6QY"
+  },
+  "music_exploration/s222": {
+   "file": "music/music_exploration/s222.mp3",
+   "model": "lyria-3-pro-preview",
+   "model_version": "lyria-3.5",
+   "prompt": "A sparse, airy underscore for free play in a children's mystery game at Halloween dusk, a quieter variation of the street theme. D minor, 96 BPM, 4/4. The main motif is a little three-note figure in the rhythm of a door knock: short, short, long (two eighth notes then a held quarter note), rising D, F, A, answered by a gentle falling phrase. Only fragments of the motif, with lots of space between phrases: solo celesta and soft pizzicato, a sustained warm string pad, an occasional clarinet or flute answer, very light brushed percussion. Calm and unhurried, it must stay under gameplay sounds and never draw attention. Same tempo and texture throughout so it can loop: no intro, no ending, no fade out. Mood: Halloween-cosy, curious and gentle, warm and a little mischievous, like a storybook night walk on a friendly street; spooky-not-scary for children aged 6 to 9. No vocals, no choir, no organ, no heavy brass, no horror stingers, no dissonant clusters, no sudden loud hits. Instrumental only.",
+   "generation_config": {
+    "seed": 222
+   },
+   "mime": "audio/mpeg",
+   "structure_text": "[[A0]]\n[[A1]]\n[[A2]]\n[[A3]]\n[[A4]]",
+   "response_id": "RZEDa5ChDIKp5NoP5PPE4Ak"
+  },
+  "music_exploration/s333": {
+   "file": "music/music_exploration/s333.mp3",
+   "model": "lyria-3-pro-preview",
+   "model_version": "lyria-3.5",
+   "prompt": "A sparse, airy underscore for free play in a children's mystery game at Halloween dusk, a quieter variation of the street theme. D minor, 96 BPM, 4/4. The main motif is a little three-note figure in the rhythm of a door knock: short, short, long (two eighth notes then a held quarter note), rising D, F, A, answered by a gentle falling phrase. Only fragments of the motif, with lots of space between phrases: solo celesta and soft pizzicato, a sustained warm string pad, an occasional clarinet or flute answer, very light brushed percussion. Calm and unhurried, it must stay under gameplay sounds and never draw attention. Same tempo and texture throughout so it can loop: no intro, no ending, no fade out. Mood: Halloween-cosy, curious and gentle, warm and a little mischievous, like a storybook night walk on a friendly street; spooky-not-scary for children aged 6 to 9. No vocals, no choir, no organ, no heavy brass, no horror stingers, no dissonant clusters, no sudden loud hits. Instrumental only.",
+   "generation_config": {
+    "seed": 333
+   },
+   "mime": "audio/mpeg",
+   "structure_text": "[[A0]]\n[[B1]]\n[[C2]]\n[[D3]]\n[[B4]]\n[[E5]]",
+   "response_id": "XJEDa4mNJJnFxdIPsuqJsQk"
+  },
+  "music_case_closed/s121": {
+   "file": "music/music_case_closed/s121.mp3",
+   "model": "lyria-3-clip-preview",
+   "model_version": "lyria-3-clip-preview",
+   "prompt": "A short, warm, joyful piece for the moment a child solves a mystery in a cosy Halloween children's game. D minor turning to D major, 96 BPM. The main motif is a little three-note figure in the rhythm of a door knock: short, short, long (two eighth notes then a held quarter note), rising D, F, A, answered by a gentle falling phrase. Celesta and pizzicato play the knock motif, the woodwinds answer, and the piece ends with a big, warm, satisfying final cadence on a D major chord with a harp glissando and a soft glockenspiel sparkle that rings out. Mood: Halloween-cosy, curious and gentle, warm and a little mischievous, like a storybook night walk on a friendly street; spooky-not-scary for children aged 6 to 9. No vocals, no choir, no organ, no heavy brass, no horror stingers, no dissonant clusters, no sudden loud hits. Instrumental only.",
+   "generation_config": {
+    "seed": 121
+   },
+   "mime": "audio/mpeg",
+   "structure_text": "<instrumental>",
+   "response_id": "fJEDa66jMO-go_UP35LE2QE"
+  },
+  "music_case_closed/s242": {
+   "file": "music/music_case_closed/s242.mp3",
+   "model": "lyria-3-clip-preview",
+   "model_version": "lyria-3-clip-preview",
+   "prompt": "A short, warm, joyful piece for the moment a child solves a mystery in a cosy Halloween children's game. D minor turning to D major, 96 BPM. The main motif is a little three-note figure in the rhythm of a door knock: short, short, long (two eighth notes then a held quarter note), rising D, F, A, answered by a gentle falling phrase. Celesta and pizzicato play the knock motif, the woodwinds answer, and the piece ends with a big, warm, satisfying final cadence on a D major chord with a harp glissando and a soft glockenspiel sparkle that rings out. Mood: Halloween-cosy, curious and gentle, warm and a little mischievous, like a storybook night walk on a friendly street; spooky-not-scary for children aged 6 to 9. No vocals, no choir, no organ, no heavy brass, no horror stingers, no dissonant clusters, no sudden loud hits. Instrumental only.",
+   "generation_config": {
+    "seed": 242
+   },
+   "mime": "audio/mpeg",
+   "structure_text": "<instrumental>",
+   "response_id": "hpEDa6P2ApyDwbUP3siB-As"
+  },
+  "music_case_closed/s363": {
+   "file": "music/music_case_closed/s363.mp3",
+   "model": "lyria-3-clip-preview",
+   "model_version": "lyria-3-clip-preview",
+   "prompt": "A short, warm, joyful piece for the moment a child solves a mystery in a cosy Halloween children's game. D minor turning to D major, 96 BPM. The main motif is a little three-note figure in the rhythm of a door knock: short, short, long (two eighth notes then a held quarter note), rising D, F, A, answered by a gentle falling phrase. Celesta and pizzicato play the knock motif, the woodwinds answer, and the piece ends with a big, warm, satisfying final cadence on a D major chord with a harp glissando and a soft glockenspiel sparkle that rings out. Mood: Halloween-cosy, curious and gentle, warm and a little mischievous, like a storybook night walk on a friendly street; spooky-not-scary for children aged 6 to 9. No vocals, no choir, no organ, no heavy brass, no horror stingers, no dissonant clusters, no sudden loud hits. Instrumental only.",
+   "generation_config": {
+    "seed": 363
+   },
+   "mime": "audio/mpeg",
+   "structure_text": "<instrumental>",
+   "response_id": "j5EDa4b5FePDxdIP3penyQ4",
+   "committed": false,
+   "note": "rejected at review (listening proxy: too bright / too dark / dry ending); source kept only locally in tools/audio/out/rejected_sources/"
+  },
+  "music_case_closed/s484": {
+   "file": "music/music_case_closed/s484.mp3",
+   "model": "lyria-3-clip-preview",
+   "model_version": "lyria-3-clip-preview",
+   "prompt": "A short, warm, joyful piece for the moment a child solves a mystery in a cosy Halloween children's game. D minor turning to D major, 96 BPM. The main motif is a little three-note figure in the rhythm of a door knock: short, short, long (two eighth notes then a held quarter note), rising D, F, A, answered by a gentle falling phrase. Celesta and pizzicato play the knock motif, the woodwinds answer, and the piece ends with a big, warm, satisfying final cadence on a D major chord with a harp glissando and a soft glockenspiel sparkle that rings out. Mood: Halloween-cosy, curious and gentle, warm and a little mischievous, like a storybook night walk on a friendly street; spooky-not-scary for children aged 6 to 9. No vocals, no choir, no organ, no heavy brass, no horror stingers, no dissonant clusters, no sudden loud hits. Instrumental only.",
+   "generation_config": {
+    "seed": 484
+   },
+   "mime": "audio/mpeg",
+   "structure_text": "<instrumental>",
+   "response_id": "npEDa7KJNv_nwbUPo-nu4A4"
+  },
+  "music_reveal/s131": {
+   "file": "music/music_reveal/s131.mp3",
+   "model": "lyria-3-clip-preview",
+   "model_version": "lyria-3-clip-preview",
+   "prompt": "Music for a magical 'aha!' reveal in a children's mystery game at Halloween: wonder and discovery. It begins hushed and curious with soft celesta and harp, builds with a rising flute and string swell, and blooms into a warm statement of the motif in D major. The main motif is a little three-note figure in the rhythm of a door knock: short, short, long (two eighth notes then a held quarter note), rising D, F, A, answered by a gentle falling phrase. Ends on a glowing, resolved D major chord that rings out. Instrumentation: pizzicato strings, celesta, glockenspiel, soft clarinet and flute, a bassoon on the bass line, harp, light woodblock and brushed percussion. Mood: Halloween-cosy, curious and gentle, warm and a little mischievous, like a storybook night walk on a friendly street; spooky-not-scary for children aged 6 to 9. No vocals, no choir, no organ, no heavy brass, no horror stingers, no dissonant clusters, no sudden loud hits. Instrumental only.",
+   "generation_config": {
+    "seed": 131
+   },
+   "mime": "audio/mpeg",
+   "structure_text": "<instrumental>",
+   "response_id": "ppEDa8U75qfF0g-hn9WACw"
+  },
+  "music_reveal/s262": {
+   "file": "music/music_reveal/s262.mp3",
+   "model": "lyria-3-clip-preview",
+   "model_version": "lyria-3-clip-preview",
+   "prompt": "Music for a magical 'aha!' reveal in a children's mystery game at Halloween: wonder and discovery. It begins hushed and curious with soft celesta and harp, builds with a rising flute and string swell, and blooms into a warm statement of the motif in D major. The main motif is a little three-note figure in the rhythm of a door knock: short, short, long (two eighth notes then a held quarter note), rising D, F, A, answered by a gentle falling phrase. Ends on a glowing, resolved D major chord that rings out. Instrumentation: pizzicato strings, celesta, glockenspiel, soft clarinet and flute, a bassoon on the bass line, harp, light woodblock and brushed percussion. Mood: Halloween-cosy, curious and gentle, warm and a little mischievous, like a storybook night walk on a friendly street; spooky-not-scary for children aged 6 to 9. No vocals, no choir, no organ, no heavy brass, no horror stingers, no dissonant clusters, no sudden loud hits. Instrumental only.",
+   "generation_config": {
+    "seed": 262
+   },
+   "mime": "audio/mpeg",
+   "structure_text": "<instrumental>",
+   "response_id": "r5EDa5nIJpGEytMP1vGn-AY"
+  },
+  "music_reveal/s393": {
+   "file": "music/music_reveal/s393.mp3",
+   "model": "lyria-3-clip-preview",
+   "model_version": "lyria-3-clip-preview",
+   "prompt": "Music for a magical 'aha!' reveal in a children's mystery game at Halloween: wonder and discovery. It begins hushed and curious with soft celesta and harp, builds with a rising flute and string swell, and blooms into a warm statement of the motif in D major. The main motif is a little three-note figure in the rhythm of a door knock: short, short, long (two eighth notes then a held quarter note), rising D, F, A, answered by a gentle falling phrase. Ends on a glowing, resolved D major chord that rings out. Instrumentation: pizzicato strings, celesta, glockenspiel, soft clarinet and flute, a bassoon on the bass line, harp, light woodblock and brushed percussion. Mood: Halloween-cosy, curious and gentle, warm and a little mischievous, like a storybook night walk on a friendly street; spooky-not-scary for children aged 6 to 9. No vocals, no choir, no organ, no heavy brass, no horror stingers, no dissonant clusters, no sudden loud hits. Instrumental only.",
+   "generation_config": {
+    "seed": 393
+   },
+   "mime": "audio/mpeg",
+   "structure_text": "<instrumental>",
+   "response_id": "uZEDa_DKLqSOytMP-Lq8-AQ",
+   "committed": false,
+   "note": "rejected at review (listening proxy: too bright / too dark / dry ending); source kept only locally in tools/audio/out/rejected_sources/"
+  },
+  "music_reveal/s524": {
+   "file": "music/music_reveal/s524.mp3",
+   "model": "lyria-3-clip-preview",
+   "model_version": "lyria-3-clip-preview",
+   "prompt": "Music for a magical 'aha!' reveal in a children's mystery game at Halloween: wonder and discovery. It begins hushed and curious with soft celesta and harp, builds with a rising flute and string swell, and blooms into a warm statement of the motif in D major. The main motif is a little three-note figure in the rhythm of a door knock: short, short, long (two eighth notes then a held quarter note), rising D, F, A, answered by a gentle falling phrase. Ends on a glowing, resolved D major chord that rings out. Instrumentation: pizzicato strings, celesta, glockenspiel, soft clarinet and flute, a bassoon on the bass line, harp, light woodblock and brushed percussion. Mood: Halloween-cosy, curious and gentle, warm and a little mischievous, like a storybook night walk on a friendly street; spooky-not-scary for children aged 6 to 9. No vocals, no choir, no organ, no heavy brass, no horror stingers, no dissonant clusters, no sudden loud hits. Instrumental only.",
+   "generation_config": {
+    "seed": 524
+   },
+   "mime": "audio/mpeg",
+   "structure_text": "<instrumental>",
+   "response_id": "xZEDa-yWBd3W0_gPt7u0gQ0"
+  }
+ },
+ "api_calls": {
+  "total": 154,
+  "by_kind_and_model": {
+   "listen:gemini-3.8-flash": 53,
+   "music:lyria-3-clip-preview": 12,
+   "music:lyria-3-pro-preview": 9,
+   "tts:gemini-2.5-pro-preview-tts": 1,
+   "tts:gemini-3.8-flash-tts": 79
+  },
+  "log": "calls.jsonl (one line per HTTP request, including probes, auditions and errors)"
+ },
+ "terms_and_privacy": {
+  "prompts": "contain no personal data: character directions, made-up syllables and music descriptions only",
+  "api_key": "never stored; injected by the session network proxy"
+ }
+}

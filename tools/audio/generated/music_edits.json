@@ -1,0 +1,116 @@
+{
+ "music_street_theme_s101": {
+  "seed": 101,
+  "source_s": 180.79,
+  "bpm": 76.1,
+  "loop_start_s": 58.501,
+  "loop_end_s": 134.283,
+  "bars": 32,
+  "beats_per_bar": 3,
+  "duration_s": 75.781
+ },
+ "music_street_theme_s202": {
+  "seed": 202,
+  "source_s": 179.17,
+  "bpm": 75.0,
+  "loop_start_s": 83.28,
+  "loop_end_s": 160.081,
+  "bars": 24,
+  "beats_per_bar": 4,
+  "duration_s": 76.801
+ },
+ "music_street_theme_s303": {
+  "seed": 303,
+  "source_s": 180.38,
+  "bpm": 75.0,
+  "loop_start_s": 74.48,
+  "loop_end_s": 132.086,
+  "bars": 24,
+  "beats_per_bar": 3,
+  "duration_s": 57.606
+ },
+ "music_exploration_s111": {
+  "seed": 111,
+  "source_s": 181.24,
+  "bpm": 75.1,
+  "loop_start_s": 53.669,
+  "loop_end_s": 130.469,
+  "bars": 24,
+  "beats_per_bar": 4,
+  "duration_s": 76.8
+ },
+ "music_exploration_s222": {
+  "seed": 222,
+  "source_s": 181.89,
+  "bpm": 75.0,
+  "loop_start_s": 79.259,
+  "loop_end_s": 156.055,
+  "bars": 24,
+  "beats_per_bar": 4,
+  "duration_s": 76.797
+ },
+ "music_exploration_s333": {
+  "seed": 333,
+  "source_s": 178.86,
+  "bpm": 75.1,
+  "loop_start_s": 41.648,
+  "loop_end_s": 105.647,
+  "bars": 20,
+  "beats_per_bar": 4,
+  "duration_s": 63.999
+ },
+ "music_case_closed_s121": {
+  "seed": 121,
+  "source_s": 30.77,
+  "bpm": 95.9,
+  "cut_start_s": 25.296,
+  "cut_end_s": 30.75,
+  "transposed_st": -1,
+  "duration_s": 5.778
+ },
+ "music_case_closed_s242": {
+  "seed": 242,
+  "source_s": 29.52,
+  "bpm": 95.8,
+  "cut_start_s": 23.344,
+  "cut_end_s": 29.5,
+  "transposed_st": 2,
+  "duration_s": 5.484
+ },
+ "music_case_closed_s484": {
+  "seed": 484,
+  "source_s": 30.77,
+  "bpm": 120.9,
+  "cut_start_s": 24.165,
+  "cut_end_s": 30.75,
+  "transposed_st": 2,
+  "duration_s": 5.866
+ },
+ "music_reveal_s131": {
+  "seed": 131,
+  "source_s": 30.43,
+  "bpm": 119.7,
+  "cut_start_s": 12.123,
+  "cut_end_s": 30.4,
+  "transposed_st": -1,
+  "duration_s": 19.364
+ },
+ "music_reveal_s262": {
+  "seed": 262,
+  "source_s": 30.77,
+  "bpm": 90.1,
+  "cut_start_s": 19.525,
+  "cut_end_s": 30.75,
+  "transposed_st": -1,
+  "duration_s": 11.892
+ },
+ "music_reveal_s524": {
+  "seed": 524,
+  "source_s": 30.75,
+  "bpm": 95.6,
+  "cut_start_s": 15.152,
+  "cut_end_s": 30.7,
+  "transposed_st": -1,
+  "duration_s": 16.472
+ }
+}

@@ -132,6 +132,9 @@ namespace SpookyStreet.Case
         /// <summary>The animated non-verbal UX (D23): replays, bat trail, reading settings (NonverbalLayer).</summary>
         public NonverbalLayer Nonverbal { get; private set; }
 
+        /// <summary>Case 01's cutscenes (S002.5b, D28): the opening, the reveal payoff, their seen set and rewatch.</summary>
+        public CaseCutscenes Cutscenes { get; private set; }
+
         /// <summary>The witness in the current conversation (null otherwise).</summary>
         public Witness Talking => _talking;
 
@@ -156,12 +159,17 @@ namespace SpookyStreet.Case
         /// <summary>Raised after every applied step.</summary>
         public event Action<CaseStep> Stepped;
 
-        /// <summary>Points saves at a fresh temporary folder (PlayMode and visual tests; call before loading the scene).</summary>
-        public static string UseTemporarySaveDirectory()
+        /// <summary>
+        /// Points saves at a fresh temporary folder (PlayMode and visual tests; call before loading the scene). A new
+        /// game then starts on the porch in control, as before the opening cutscene existed, unless
+        /// <paramref name="playOpening"/> asks for the opening (S002.5b cutscene tests).
+        /// </summary>
+        public static string UseTemporarySaveDirectory(bool playOpening = false)
         {
             string directory = Path.Combine(Application.temporaryCachePath, "case-saves-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
             SaveDirectoryOverride = directory;
+            CaseCutscenes.AutoPlayOpening = playOpening;
             return directory;
         }
 
@@ -218,6 +226,7 @@ namespace SpookyStreet.Case
 
             LoadSave();
             Nonverbal = NonverbalLayer.Create(this, game);
+            Cutscenes = CaseCutscenes.Create(this, game);
             _flow.StateChanged += OnStateChanged;
         }
 
@@ -406,6 +415,7 @@ namespace SpookyStreet.Case
             Bench.End();
             ApplyWorld();
             Nonverbal?.OnCaseReset();
+            Cutscenes?.OnCaseReset();
         }
 
         /// <summary>The radio (HUD disc or notebook): the next hint for the current objective (returns its key).</summary>
@@ -457,6 +467,8 @@ namespace SpookyStreet.Case
             ResetCase();
             _continuing = false;
             _flow.StartNewGame();
+            // D28: the opening plays on the arrival porch before control (Continue never plays it).
+            Cutscenes?.OnNewGame();
         }
 
         private void OnStateChanged(GameState previous, GameState current)
@@ -1118,6 +1130,30 @@ namespace SpookyStreet.Case
             }
         }
 
+        /// <summary>
+        /// A cutscene holds the screen (S002.5b): the HUD steps aside and gameplay input is off, as for a conversation;
+        /// on release control comes back on the next frame and the arrival triggers start from where Pip now stands.
+        /// </summary>
+        internal void HoldForCutscene(bool hold)
+        {
+            if (hold)
+            {
+                Bench.End();
+                Captions.Clear();
+                Prompt.Track(_camera, null, null);
+                SetModal(true);
+                return;
+            }
+
+            SetModal(false);
+            Vector3 pip = _pip.transform.position;
+            _walkedAtStart = _pip.DistanceWalked;
+            _onPorch = CaseStage.OnArrivalPorch(pip.x, pip.z);
+        }
+
+        /// <summary>Hides Pip while a cutscene frames the world without Pip (the reveal).</summary>
+        internal void HidePipForCutscene(bool hidden) => SetPipHidden(hidden);
+
         private void CloseModals()
         {
             if (_talking != null)
@@ -1154,6 +1190,12 @@ namespace SpookyStreet.Case
         {
             if (_game.Sky != null)
             {
+                // A cutscene frames the world from its own lens, wherever Pip stands.
+                if (Cutscenes != null && Cutscenes.Playing)
+                {
+                    pip = lens;
+                }
+
                 _game.Sky.Hidden = InteriorSafety.SkyHidden(pip.x, pip.z, lens.x, lens.z);
             }
         }

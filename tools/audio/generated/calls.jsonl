@@ -1,0 +1,154 @@
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "probe format", "secs": 3.7, "status": 200, "t": 1795393487}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "listen probe", "secs": 7.7, "status": 200, "t": 1795393516}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "probe sys38", "secs": 0.2, "status": 400, "t": 1795393535}
+{"kind": "tts", "model": "gemini-2.5-pro-preview-tts", "purpose": "probe tag25pro", "secs": 5.3, "status": 200, "t": 1795393535}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "listen probe", "secs": 0.5, "status": 400, "t": 1795393540}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "listen probe", "secs": 4.7, "status": 200, "t": 1795393550}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "probe dir38", "secs": 3.1, "status": 200, "t": 1795393567}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "probe tag38", "secs": 3.2, "status": 200, "t": 1795393570}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "listen probe", "secs": 5.2, "status": 200, "t": 1795393574}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "listen probe", "secs": 7.6, "status": 200, "t": 1795393579}
+{"kind": "music", "model": "lyria-3-clip-preview", "purpose": "probe format lyria-3-clip-preview", "secs": 0.4, "status": 400, "t": 1795393631}
+{"kind": "music", "model": "lyria-3-clip-preview", "purpose": "probe format lyria-3-clip-preview", "secs": 7.9, "status": 200, "t": 1795393634}
+{"kind": "music", "model": "lyria-3-pro-preview", "purpose": "probe format lyria-3-pro-preview", "secs": 30.6, "status": 200, "t": 1795393646}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "listen probe", "secs": 21.5, "status": 200, "t": 1795393683}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition pip Leda", "secs": 3.5, "status": 200, "t": 1795393724}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition pip Autonoe", "secs": 3.4, "status": 200, "t": 1795393727}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition pip Laomedeia", "secs": 3.0, "status": 200, "t": 1795393731}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition bea Zephyr", "secs": 2.8, "status": 200, "t": 1795393734}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition bea Sadachbia", "secs": 2.8, "status": 200, "t": 1795393737}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition bea Puck", "secs": 3.0, "status": 200, "t": 1795393739}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition vale Algenib", "secs": 3.5, "status": 200, "t": 1795393742}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition vale Charon", "secs": 3.4, "status": 200, "t": 1795393746}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition vale Sadaltager", "secs": 3.1, "status": 200, "t": 1795393749}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition vale Gacrux", "secs": 3.9, "status": 200, "t": 1795393752}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition june Enceladus", "secs": 0.3, "status": 429, "t": 1795393756}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition june Enceladus", "secs": 3.4, "status": 200, "t": 1795393786}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition june Achernar", "secs": 3.4, "status": 200, "t": 1795393790}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition june Despina", "secs": 2.9, "status": 200, "t": 1795393793}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition kit Sulafat", "secs": 3.3, "status": 200, "t": 1795393796}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition kit Pulcherrima", "secs": 3.4, "status": 200, "t": 1795393799}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "audition kit Vindemiatrix", "secs": 3.3, "status": 200, "t": 1795393803}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "judge", "secs": 26.1, "status": 200, "t": 1795393816}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source pip/neutral_t1", "secs": 3.5, "status": 200, "t": 1795393933}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source pip/neutral_t2", "secs": 3.0, "status": 200, "t": 1795393937}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source pip/happy_t1", "secs": 3.0, "status": 200, "t": 1795393940}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source pip/happy_t2", "secs": 3.1, "status": 200, "t": 1795393943}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source pip/surprised_t1", "secs": 2.8, "status": 200, "t": 1795393946}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source pip/surprised_t2", "secs": 3.2, "status": 200, "t": 1795393949}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source pip/thinking_t1", "secs": 3.0, "status": 200, "t": 1795393952}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source pip/thinking_t2", "secs": 3.4, "status": 200, "t": 1795393955}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source pip/whisper_t1", "secs": 3.2, "status": 200, "t": 1795393959}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source pip/whisper_t2", "secs": 3.2, "status": 200, "t": 1795393962}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "judge", "secs": 20.1, "status": 200, "t": 1795394070}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source bea/neutral_t1", "secs": 2.8, "status": 200, "t": 1795394096}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source bea/neutral_t2", "secs": 3.1, "status": 200, "t": 1795394099}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source bea/happy_t1", "secs": 2.8, "status": 200, "t": 1795394102}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source bea/happy_t2", "secs": 2.8, "status": 200, "t": 1795394105}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source bea/surprised_t1", "secs": 3.3, "status": 200, "t": 1795394108}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source bea/surprised_t2", "secs": 2.7, "status": 200, "t": 1795394112}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source bea/thinking_t1", "secs": 3.2, "status": 200, "t": 1795394114}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source bea/thinking_t2", "secs": 3.2, "status": 200, "t": 1795394118}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source bea/whisper_t1", "secs": 0.2, "status": 429, "t": 1795394121}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source bea/whisper_t1", "secs": 2.9, "status": 200, "t": 1795394151}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source bea/whisper_t2", "secs": 2.4, "status": 200, "t": 1795394154}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source vale/neutral_t1", "secs": 3.3, "status": 200, "t": 1795394157}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source vale/neutral_t2", "secs": 3.2, "status": 200, "t": 1795394160}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source vale/happy_t1", "secs": 3.4, "status": 200, "t": 1795394163}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source vale/happy_t2", "secs": 3.3, "status": 200, "t": 1795394167}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source vale/surprised_t1", "secs": 3.2, "status": 200, "t": 1795394170}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source vale/surprised_t2", "secs": 3.7, "status": 200, "t": 1795394173}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source vale/thinking_t1", "secs": 3.5, "status": 200, "t": 1795394177}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source vale/thinking_t2", "secs": 3.0, "status": 200, "t": 1795394181}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source vale/whisper_t1", "secs": 3.5, "status": 200, "t": 1795394184}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source vale/whisper_t2", "secs": 3.5, "status": 200, "t": 1795394187}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source june/neutral_t1", "secs": 3.0, "status": 200, "t": 1795394191}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source june/neutral_t2", "secs": 0.2, "status": 429, "t": 1795394194}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source june/neutral_t2", "secs": 3.5, "status": 200, "t": 1795394224}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source june/happy_t1", "secs": 2.9, "status": 200, "t": 1795394228}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source june/happy_t2", "secs": 3.1, "status": 200, "t": 1795394231}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source june/surprised_t1", "secs": 3.2, "status": 200, "t": 1795394234}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source june/surprised_t2", "secs": 3.1, "status": 200, "t": 1795394237}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source june/thinking_t1", "secs": 3.7, "status": 200, "t": 1795394241}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source june/thinking_t2", "secs": 3.5, "status": 200, "t": 1795394244}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source june/whisper_t1", "secs": 3.2, "status": 200, "t": 1795394248}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source june/whisper_t2", "secs": 2.9, "status": 200, "t": 1795394251}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source kit/neutral_t1", "secs": 3.7, "status": 200, "t": 1795394254}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source kit/neutral_t2", "secs": 0.3, "status": 429, "t": 1795394258}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source kit/neutral_t2", "secs": 3.2, "status": 200, "t": 1795394288}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source kit/happy_t1", "secs": 3.2, "status": 200, "t": 1795394292}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source kit/happy_t2", "secs": 3.4, "status": 200, "t": 1795394295}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source kit/surprised_t1", "secs": 3.4, "status": 200, "t": 1795394298}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source kit/surprised_t2", "secs": 3.4, "status": 200, "t": 1795394302}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source kit/thinking_t1", "secs": 3.5, "status": 200, "t": 1795394305}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source kit/thinking_t2", "secs": 3.3, "status": 200, "t": 1795394309}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source kit/whisper_t1", "secs": 3.7, "status": 200, "t": 1795394313}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source kit/whisper_t2", "secs": 3.6, "status": 200, "t": 1795394316}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review sources pip", "secs": 19.1, "status": 200, "t": 1795394334}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review sources bea", "secs": 19.6, "status": 200, "t": 1795394353}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review sources vale", "secs": 17.6, "status": 200, "t": 1795394372}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review sources june", "secs": 20.2, "status": 200, "t": 1795394390}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review sources kit", "secs": 17.2, "status": 200, "t": 1795394410}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source bea/thinking_t1", "secs": 3.0, "status": 200, "t": 1795394445}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source bea/surprised_t1", "secs": 2.8, "status": 200, "t": 1795394449}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "babble source pip/neutral_t2", "secs": 3.2, "status": 200, "t": 1795394452}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review sources pip", "secs": 19.3, "status": 200, "t": 1795394456}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review sources bea", "secs": 17.7, "status": 200, "t": 1795394475}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble pip", "secs": 24.4, "status": 200, "t": 1795394683}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble bea", "secs": 22.0, "status": 200, "t": 1795394707}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble vale", "secs": 22.2, "status": 200, "t": 1795394729}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble june", "secs": 20.2, "status": 200, "t": 1795394751}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble kit", "secs": 22.2, "status": 200, "t": 1795394771}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "judge", "secs": 16.9, "status": 200, "t": 1795394818}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble pip", "secs": 21.7, "status": 200, "t": 1795394922}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble bea", "secs": 19.3, "status": 200, "t": 1795394944}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble vale", "secs": 18.7, "status": 200, "t": 1795394963}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble june", "secs": 17.3, "status": 200, "t": 1795394982}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble kit", "secs": 20.2, "status": 200, "t": 1795394999}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "judge", "secs": 7.1, "status": 200, "t": 1795395027}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "judge", "secs": 14.4, "status": 200, "t": 1795395086}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "judge", "secs": 10.4, "status": 200, "t": 1795395123}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "judge", "secs": 12.7, "status": 200, "t": 1795395145}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "probe high pip_A", "secs": 3.6, "status": 200, "t": 1795395185}
+{"kind": "tts", "model": "gemini-3.8-flash-tts", "purpose": "probe high pip_B", "secs": 3.3, "status": 200, "t": 1795395189}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "judge", "secs": 20.6, "status": 200, "t": 1795395204}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble pip", "secs": 14.8, "status": 200, "t": 1795395283}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble bea", "secs": 19.8, "status": 200, "t": 1795395298}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble vale", "secs": 20.7, "status": 200, "t": 1795395318}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble june", "secs": 17.2, "status": 200, "t": 1795395338}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble kit", "secs": 20.8, "status": 200, "t": 1795395356}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble bea", "secs": 19.5, "status": 200, "t": 1795395437}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble june", "secs": 21.5, "status": 200, "t": 1795395457}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble pip", "secs": 22.2, "status": 200, "t": 1795395523}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble bea", "secs": 20.1, "status": 200, "t": 1795395545}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble vale", "secs": 15.8, "status": 200, "t": 1795395565}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble june", "secs": 21.9, "status": 200, "t": 1795395581}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble kit", "secs": 16.8, "status": 200, "t": 1795395603}
+{"kind": "music", "model": "lyria-3-clip-preview", "purpose": "probe audioin", "secs": 1.2, "status": 400, "t": 1795395638}
+{"kind": "music", "model": "lyria-3-pro-preview", "purpose": "probe short", "secs": 24.0, "status": 200, "t": 1795395640}
+{"kind": "music", "model": "lyria-3-clip-preview", "purpose": "probe sting_struct", "secs": 10.3, "status": 200, "t": 1795395679}
+{"kind": "music", "model": "lyria-3-pro-preview", "purpose": "music source music_street_theme/s101", "secs": 31.8, "status": 200, "t": 1795395742}
+{"kind": "music", "model": "lyria-3-pro-preview", "purpose": "music source music_street_theme/s202", "secs": 33.6, "status": 200, "t": 1795395774}
+{"kind": "music", "model": "lyria-3-pro-preview", "purpose": "music source music_street_theme/s303", "secs": 30.7, "status": 200, "t": 1795395807}
+{"kind": "music", "model": "lyria-3-pro-preview", "purpose": "music source music_street_theme/s404", "secs": 36.1, "status": 200, "t": 1795395838}
+{"kind": "music", "model": "lyria-3-pro-preview", "purpose": "music source music_exploration/s111", "secs": 34.9, "status": 200, "t": 1795395874}
+{"kind": "music", "model": "lyria-3-pro-preview", "purpose": "music source music_exploration/s222", "secs": 23.4, "status": 200, "t": 1795395909}
+{"kind": "music", "model": "lyria-3-pro-preview", "purpose": "music source music_exploration/s333", "secs": 32.0, "status": 200, "t": 1795395932}
+{"kind": "music", "model": "lyria-3-clip-preview", "purpose": "music source music_case_closed/s121", "secs": 9.4, "status": 200, "t": 1795395964}
+{"kind": "music", "model": "lyria-3-clip-preview", "purpose": "music source music_case_closed/s242", "secs": 9.3, "status": 200, "t": 1795395974}
+{"kind": "music", "model": "lyria-3-clip-preview", "purpose": "music source music_case_closed/s363", "secs": 15.5, "status": 200, "t": 1795395983}
+{"kind": "music", "model": "lyria-3-clip-preview", "purpose": "music source music_case_closed/s484", "secs": 7.2, "status": 200, "t": 1795395999}
+{"kind": "music", "model": "lyria-3-clip-preview", "purpose": "music source music_reveal/s131", "secs": 9.6, "status": 200, "t": 1795396006}
+{"kind": "music", "model": "lyria-3-clip-preview", "purpose": "music source music_reveal/s262", "secs": 10.1, "status": 200, "t": 1795396015}
+{"kind": "music", "model": "lyria-3-clip-preview", "purpose": "music source music_reveal/s393", "secs": 11.3, "status": 200, "t": 1795396026}
+{"kind": "music", "model": "lyria-3-clip-preview", "purpose": "music source music_reveal/s524", "secs": 7.9, "status": 200, "t": 1795396037}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "judge", "secs": 56.3, "status": 200, "t": 1795396088}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "judge", "secs": 48.3, "status": 200, "t": 1795396354}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "judge", "secs": 40.7, "status": 200, "t": 1795396534}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "judge", "secs": 38.9, "status": 200, "t": 1795396582}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "judge", "secs": 23.5, "status": 200, "t": 1795396915}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble pip", "secs": 21.0, "status": 200, "t": 1795397217}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble bea", "secs": 19.3, "status": 200, "t": 1795397238}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble vale", "secs": 22.9, "status": 200, "t": 1795397257}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble june", "secs": 20.5, "status": 200, "t": 1795397280}
+{"kind": "listen", "model": "gemini-3.8-flash", "purpose": "review babble kit", "secs": 21.9, "status": 200, "t": 1795397300}

@@ -70,18 +70,6 @@ namespace SpookyStreet.Core.Animation
         /// <summary>Squash kick when a wall slide starts: the grip.</summary>
         public const float WallGripSquash = 0.04f;
 
-        /// <summary>
-        /// The hanging body leans this far toward the wall (degrees, about the feet), so the LedgeHang clip's raised
-        /// hand meets the edge while her chest stays clear of the face (measured on the clip in Blender).
-        /// </summary>
-        public const float HangLeanDegrees = 10f;
-
-        /// <summary>And slides this far toward the wall (metres) from the motor's hang spot.</summary>
-        public const float HangShift = 0.1f;
-
-        /// <summary>How fast the hang lean eases in and out (fraction per second).</summary>
-        public const float HangLeanRate = 8f;
-
         /// <summary>Take-off stretch kick for chain stage 1, 2 or 3: it grows with the chain.</summary>
         public static float TakeOffStretch(int stage) => stage >= 3 ? -0.13f : stage == 2 ? -0.09f : -0.04f;
 

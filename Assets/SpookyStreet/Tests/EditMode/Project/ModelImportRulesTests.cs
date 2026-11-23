@@ -83,6 +83,42 @@ namespace SpookyStreet.Tests.Project
             Assert.IsTrue(PipAnimator.CanAnimate(loaded), "Idle clip not loadable from Resources");
         }
 
+        // tools/blender/export/pip_anims.py CLIPS, frames at 30 fps: WallKick 10, LedgeGrab 6, LedgeClimb 12 (the
+        // motor's 0.4 s climb), LedgeHang 48 (looping).
+        [TestCase("WallKick", 8f, 12f, false)]
+        [TestCase("LedgeGrab", 5f, 8f, false)]
+        [TestCase("LedgeClimb", 11f, 13f, false)]
+        [TestCase("LedgeHang", 40f, 56f, true)]
+        public void PipHasTheWallAndLedgeClips(string clipName, float minFrames, float maxFrames, bool loops)
+        {
+            var importer = AssetImporter.GetAtPath(PipFbx) as ModelImporter;
+            if (importer == null)
+            {
+                Assert.Ignore("Pip.fbx is not committed yet; the primitive avatar is in use.");
+            }
+
+            bool found = false;
+            foreach (var clip in importer.clipAnimations)
+            {
+                if (clip.name != clipName)
+                {
+                    continue;
+                }
+
+                found = true;
+                Assert.AreEqual(loops, clip.loopTime, clipName + " loop flag");
+                Assert.That(clip.lastFrame - clip.firstFrame, Is.InRange(minFrames, maxFrames), clipName + " length");
+            }
+
+            Assert.IsTrue(found, "Pip.fbx has no " + clipName + " take");
+            Assert.IsTrue(PipClips.IsKnown(clipName));
+            Assert.AreEqual(loops, PipClips.IsLooping(clipName));
+            var loaded = Resources.LoadAll<AnimationClip>(PipAvatar.ModelPath);
+            AnimationClip asset = PipAnimator.Find(loaded, clipName);
+            Assert.IsNotNull(asset, clipName + " not loadable from Resources");
+            Assert.That(asset.length * 30f, Is.InRange(minFrames, maxFrames), clipName + " seconds");
+        }
+
         [TestCase("Bea", "Idle", "Talk")]
         [TestCase("Vale", "SitIdle", "SitTalk")]
         public void WitnessModelsImportWithLoopingClipsAndAOneShotWave(string model, string rest, string engaged)

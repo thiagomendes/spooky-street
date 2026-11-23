@@ -58,6 +58,12 @@ namespace SpookyStreet.Controls
         /// <summary>On-screen controls; null until the HUD is built.</summary>
         public TouchControls Touch { get; set; }
 
+        /// <summary>
+        /// A stick pushed by a cutscene (S002.5b: Pip walks onto the porch through the motor, so the real walk and
+        /// collisions play). Screen/camera space like <see cref="ReadMove"/>; zero outside cutscenes.
+        /// </summary>
+        public Vector2 ScriptedMove { get; set; }
+
         public bool GameplayEnabled => _gameplay.enabled;
 
         public void SetGameplayEnabled(bool enabled)
@@ -85,6 +91,7 @@ namespace SpookyStreet.Controls
                 value += Touch.StickValue;
             }
 
+            value += ScriptedMove;
             return Vector2.ClampMagnitude(value, 1f);
         }
 

@@ -19,8 +19,11 @@ namespace SpookyStreet.Player
     /// (timeScale 0) freezes Pip mid-pose. Motor moves drive it directly: the glide pose follows
     /// <see cref="PipMotor.Gliding"/>, a roll (ground roll or dive landing) plays Roll timed to the roll, the third
     /// chain jump tucks into the same clip as a flip, and jumping out of a roll cancels it. S003: the wall slide and
-    /// the ledge hang follow <see cref="PipMotor.WallSliding"/> and <see cref="PipMotor.Hanging"/>; a wall kick restarts
-    /// JumpStart and a climb plays it as a one-shot (Pip.fbx has no WallJump or LedgeClimb clip yet).
+    /// the ledge hang follow <see cref="PipMotor.WallSliding"/> and <see cref="PipMotor.Hanging"/>. A wall kick plays
+    /// WallKick at once (the motor has just turned her away from the wall), a catch plays LedgeGrab into LedgeHang
+    /// frame 0, and a climb plays LedgeClimb over the motor's climb and ends on her feet with no landing. Each of the
+    /// three plays to its last frame, which is the first frame of what follows. Without those clips the kick
+    /// restarts JumpStart and the climb plays it as a one-shot, as before they existed.
     /// </summary>
     public sealed class PipAnimator : MonoBehaviour
     {
@@ -38,6 +41,9 @@ namespace SpookyStreet.Player
         [Tooltip("Seconds the Roll clip is played over as the third chain jump's flip.")]
         [SerializeField] private float flipDuration = 0.5f;
 
+        [Tooltip("Seconds LedgeGrab takes to fade in over the air pose (the clip is only 0.2 s long).")]
+        [SerializeField] private float grabFadeIn = 0.04f;
+
         private readonly Dictionary<string, int> _slot = new Dictionary<string, int>();
         private readonly PipPoseTracker _tracker = new PipPoseTracker();
         private PlayableGraph _graph;
@@ -54,6 +60,15 @@ namespace SpookyStreet.Player
         private bool _kickPending;
         private int _oneShotSlot = -1;
         private float _oneShotRemaining;
+
+        /// <summary>Seconds before the one-shot's end at which the blend back starts (0 plays it to its last frame).</summary>
+        private float _oneShotTail;
+
+        /// <summary>Weight change per second while a move's clip fades in (0 uses <see cref="blendRate"/>).</summary>
+        private float _oneShotFadeRate;
+
+        /// <summary>The clip restarted when the one-shot ends: the one whose first frame is its last.</summary>
+        private string _oneShotNext;
         private float _cyclePhase;
         private int _walkSlot = -1;
         private int _runSlot = -1;
@@ -62,7 +77,7 @@ namespace SpookyStreet.Player
 
         public PipPose Pose => _tracker.Pose;
 
-        /// <summary>The one-shot clip currently playing (Roll, Interact), or null.</summary>
+        /// <summary>The one-shot clip currently playing (Roll, Interact, WallKick, LedgeGrab, LedgeClimb), or null.</summary>
         public string OneShot { get; private set; }
 
         /// <summary>Names of the clips found when the graph was built (for tests and diagnostics).</summary>
@@ -232,7 +247,39 @@ namespace SpookyStreet.Player
             _playables[slot].SetSpeed(length / playFor);
             _oneShotSlot = slot;
             _oneShotRemaining = playFor;
+            // End early by one fade so the blend back overlaps the clip's tail instead of its held last frame.
+            _oneShotTail = 1f / Mathf.Max(0.01f, blendRate);
+            _oneShotFadeRate = 0f;
+            _oneShotNext = null;
             OneShot = clipName;
+            return true;
+        }
+
+        /// <summary>
+        /// Plays a move's own clip (S003: WallKick, LedgeGrab, LedgeClimb) to its last frame, then restarts
+        /// <paramref name="next"/>, whose first frame that is, so the hand-over shows no step. It fades in over
+        /// <paramref name="fadeIn"/> seconds, or cuts in at once when that is 0. False, with nothing played, when the
+        /// clip is missing.
+        /// </summary>
+        private bool PlayMove(string clipName, float duration, float fadeIn, string next)
+        {
+            if (!IsReady || !_slot.ContainsKey(clipName) || !PlayOneShot(clipName, duration))
+            {
+                return false;
+            }
+
+            _oneShotTail = 0f;
+            _oneShotNext = next;
+            if (fadeIn > 0f)
+            {
+                _oneShotFadeRate = 1f / fadeIn;
+            }
+            else
+            {
+                System.Array.Clear(_weights, 0, _weights.Length);
+                _weights[_oneShotSlot] = 1f;
+            }
+
             return true;
         }
 
@@ -240,6 +287,9 @@ namespace SpookyStreet.Player
         {
             _oneShotSlot = -1;
             _oneShotRemaining = 0f;
+            _oneShotTail = 0f;
+            _oneShotFadeRate = 0f;
+            _oneShotNext = null;
             OneShot = null;
         }
 
@@ -254,17 +304,26 @@ namespace SpookyStreet.Player
                 return;
             }
 
-            if (step.WallJumped)
+            if (step.WallJumped && !PlayMove(PipClips.WallKick, 0f, 0f, PipClips.JumpAir))
             {
-                // S003: no WallJump clip exists yet; the kick restarts the take-off and the air arc follows.
+                // Without a WallKick clip the kick restarts the take-off and the air arc follows.
                 _kickPending = true;
+            }
+
+            if (step.LedgeGrabbed)
+            {
+                PlayMove(PipClips.LedgeGrab, 0f, grabFadeIn, PipClips.LedgeHang);
             }
 
             if (step.ClimbStarted)
             {
-                // S003: no LedgeClimb clip exists yet; the take-off push plays over the climb, then Land on top.
-                PlayOneShot(PipClips.Resolve(PipClips.JumpStart, _slot.ContainsKey),
-                    _motor != null && _motor.TuningData != null ? _motor.TuningData.LedgeClimbTime : 0f);
+                float climbTime = _motor != null && _motor.TuningData != null ? _motor.TuningData.LedgeClimbTime : 0f;
+                // LedgeClimb starts on the hang pose, so the usual fade is enough. Without that clip the take-off push
+                // plays over the climb, then Land on top.
+                if (!PlayMove(PipClips.LedgeClimb, climbTime, 1f / Mathf.Max(0.01f, blendRate), null))
+                {
+                    PlayOneShot(PipClips.Resolve(PipClips.JumpStart, _slot.ContainsKey), climbTime);
+                }
             }
 
             if (step.RollStarted)
@@ -325,8 +384,17 @@ namespace SpookyStreet.Player
                 WallSliding = _wallSliding || (_motor != null && _motor.WallSliding),
                 LedgeHanging = _ledgeHanging || (_motor != null && _motor.Hanging),
                 Kicked = _kickPending,
+                Climbing = _motor != null && _motor.Climbing && _slot.ContainsKey(PipClips.LedgeClimb),
             };
             _kickPending = false;
+
+            // A move that is over before its clip: the kick reached the ground, another wall or a ledge, or the
+            // catch was let go.
+            if ((OneShot == PipClips.WallKick && (input.Grounded || input.WallSliding || input.LedgeHanging)) ||
+                (OneShot == PipClips.LedgeGrab && !input.LedgeHanging))
+            {
+                CancelOneShot();
+            }
 
             PipPose pose = _tracker.Step(input, dt);
             if (_tracker.TookOff)
@@ -343,9 +411,13 @@ namespace SpookyStreet.Player
             if (_oneShotSlot >= 0)
             {
                 _oneShotRemaining -= dt;
-                // End early by one fade so the blend back overlaps the clip's tail instead of its held last frame.
-                if (_oneShotRemaining <= 1f / Mathf.Max(0.01f, blendRate))
+                if (_oneShotRemaining <= _oneShotTail)
                 {
+                    if (_oneShotNext != null)
+                    {
+                        Restart(_oneShotNext);
+                    }
+
                     CancelOneShot();
                 }
                 else
@@ -362,7 +434,7 @@ namespace SpookyStreet.Player
             AdvanceLocomotionCycle(speed, dt);
 
             float total = 0f;
-            float step = blendRate * dt;
+            float step = (_oneShotSlot >= 0 ? Mathf.Max(blendRate, _oneShotFadeRate) : blendRate) * dt;
             for (int i = 0; i < _weights.Length; i++)
             {
                 _weights[i] = Mathf.MoveTowards(_weights[i], _targets[i], step);
