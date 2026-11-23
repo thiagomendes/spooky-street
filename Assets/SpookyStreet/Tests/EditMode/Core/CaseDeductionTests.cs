@@ -227,7 +227,7 @@ namespace SpookyStreet.Tests.Core
 
                     foreach (var fact in state.Apply(action).Gained)
                     {
-                        Assert.That(fact, Is.Not.AnyOf(CaseFact.SolvedEntry, CaseFact.SolvedSource, CaseFact.SolvedMoved),
+                        Assert.IsFalse(fact == CaseFact.SolvedEntry || fact == CaseFact.SolvedSource || fact == CaseFact.SolvedMoved,
                             $"{action} answered a question in {state}");
                         if (fact == CaseFact.CaseStamped)
                         {
