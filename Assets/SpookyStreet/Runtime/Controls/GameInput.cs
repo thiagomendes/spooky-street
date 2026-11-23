@@ -1,4 +1,6 @@
 using System;
+using SpookyStreet.Core.Flow;
+using SpookyStreet.Core.Nonverbal;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -142,6 +144,12 @@ namespace SpookyStreet.Controls
 
         public Vector2 ReadStickOrbit() => _gameplay.enabled ? LookStick.ReadValue<Vector2>() : Vector2.zero;
 
+        /// <summary>
+        /// A fresh <see cref="UiNavigateActions"/> map (S004 F1): every screen that takes gamepad and keyboard owns one,
+        /// enables it while it is open and disposes it with itself, so screens never fight over one map's state.
+        /// </summary>
+        public static UiNavigateActions CreateUiNavigate() => new UiNavigateActions();
+
         /// <summary>Which device family the first prompt should describe.</summary>
         public static PromptDevice DetectPromptDevice()
         {
@@ -163,6 +171,122 @@ namespace SpookyStreet.Controls
             _gameplay.Dispose();
             _system.Dispose();
         }
+    }
+
+    /// <summary>
+    /// The one UI navigation map (S004 F1, D25): move (d-pad, left stick, arrows, WASD), submit, back, page left and
+    /// right, and rewatch. Every screen's gamepad and keyboard control goes through these actions, never through a
+    /// device. The first binding of each action is the one <see cref="ControlGlyphs"/> draws (Enter, Escape, Q, R, V;
+    /// gamepad South, East, the bumpers, North), so a prompt always names a key or button that works. The bindings
+    /// are the notebook's from S002.5a, unchanged. Touch needs none of it: touch screens press their own buttons.
+    /// </summary>
+    public sealed class UiNavigateActions : IDisposable
+    {
+        public const string MapName = "UiNavigate";
+
+        private readonly InputActionMap _map;
+
+        internal UiNavigateActions()
+        {
+            _map = new InputActionMap(MapName);
+            Left = Button("Left", "<Keyboard>/leftArrow", ControlGlyphs.KeyLeft, "<Gamepad>/dpad/left", "<Gamepad>/leftStick/left");
+            Right = Button("Right", "<Keyboard>/rightArrow", ControlGlyphs.KeyRight, "<Gamepad>/dpad/right", "<Gamepad>/leftStick/right");
+            Up = Button("Up", "<Keyboard>/upArrow", ControlGlyphs.KeyUp, "<Gamepad>/dpad/up", "<Gamepad>/leftStick/up");
+            Down = Button("Down", "<Keyboard>/downArrow", ControlGlyphs.KeyDown, "<Gamepad>/dpad/down", "<Gamepad>/leftStick/down");
+            Submit = Button("Submit", ControlGlyphs.KeySubmit, "<Keyboard>/space", "<Keyboard>/e", ControlGlyphs.PadSubmit);
+            Back = Button("Back", ControlGlyphs.KeyBack, "<Keyboard>/backspace", ControlGlyphs.PadBack);
+            PageLeft = Button("PageLeft", ControlGlyphs.KeyPageLeft, "<Keyboard>/pageUp", ControlGlyphs.PadPageLeft);
+            PageRight = Button("PageRight", ControlGlyphs.KeyPageRight, "<Keyboard>/pageDown", ControlGlyphs.PadPageRight);
+            Rewatch = Button("Rewatch", ControlGlyphs.KeyRewatch, ControlGlyphs.PadRewatch);
+        }
+
+        public InputAction Left { get; }
+        public InputAction Right { get; }
+        public InputAction Up { get; }
+        public InputAction Down { get; }
+        public InputAction Submit { get; }
+        public InputAction Back { get; }
+        public InputAction PageLeft { get; }
+        public InputAction PageRight { get; }
+        public InputAction Rewatch { get; }
+
+        public InputActionMap Map => _map;
+
+        public bool Enabled => _map.enabled;
+
+        public void Enable() => _map.Enable();
+
+        public void Disable() => _map.Disable();
+
+        /// <summary>The action that prompt names (Submit, Back, PageLeft, PageRight, Rewatch); null for others.</summary>
+        public InputAction For(ControlPrompt prompt)
+        {
+            switch (prompt)
+            {
+                case ControlPrompt.Submit:
+                    return Submit;
+                case ControlPrompt.Back:
+                    return Back;
+                case ControlPrompt.PageLeft:
+                    return PageLeft;
+                case ControlPrompt.PageRight:
+                    return PageRight;
+                case ControlPrompt.Rewatch:
+                    return Rewatch;
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>
+        /// The direction pressed this frame (edge, never repeats while held), left before right before up before
+        /// down when several land together; null when none, or while the map is off.
+        /// </summary>
+        public UiDirection? DirectionPressed()
+        {
+            if (!_map.enabled)
+            {
+                return null;
+            }
+
+            if (Left.WasPressedThisFrame())
+            {
+                return UiDirection.Left;
+            }
+
+            if (Right.WasPressedThisFrame())
+            {
+                return UiDirection.Right;
+            }
+
+            if (Up.WasPressedThisFrame())
+            {
+                return UiDirection.Up;
+            }
+
+            if (Down.WasPressedThisFrame())
+            {
+                return UiDirection.Down;
+            }
+
+            return null;
+        }
+
+        /// <summary>Pressed this frame, and only while the map is on.</summary>
+        public bool Pressed(InputAction action) => _map.enabled && action != null && action.WasPressedThisFrame();
+
+        private InputAction Button(string name, params string[] bindings)
+        {
+            var action = _map.AddAction(name, InputActionType.Button, bindings[0]);
+            for (int i = 1; i < bindings.Length; i++)
+            {
+                action.AddBinding(bindings[i]);
+            }
+
+            return action;
+        }
+
+        public void Dispose() => _map.Dispose();
     }
 
     public enum PromptDevice

@@ -287,7 +287,7 @@ Capture frame numbers are reserved per stream, because S002.5b collided twice.
 - **Reuses.** `DeductionCursor`, `ControlSchemeTracker`, `ControlGlyphView`.
 - **Acceptance.** `UiFocusGraphTests` (every element reachable, no traps, back always exits). `DeductionCursorTests`
   and `CutscenePlayTests` unchanged and green.
-- **Frames.** None.
+- **Frames 80–81** (added in F1): 80 the focus outline on a notebook tray sticker (keyboard); 81 on a slot with a sticker held (gamepad).
 - **Cost and model.** 0.5 agent-day, Opus. No dependencies. No TestFlight.
 
 ### Stream A: keepsakes, the paper bats with meaning (waves 1–2)

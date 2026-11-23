@@ -2,13 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using SpookyStreet.Core.Art;
 using SpookyStreet.Core.Audio;
+using SpookyStreet.Controls;
 using SpookyStreet.Core.Case;
+using SpookyStreet.Core.Flow;
 using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.Localization;
 using SpookyStreet.UI.Nonverbal;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UiKeys = SpookyStreet.Core.Localization.LocalizationKeys.CaseUi;
 
@@ -86,19 +87,11 @@ namespace SpookyStreet.UI
         private PageView _comicView;
         private float _comicTime;
         private float _slideToFinal = -1f;
-        private Image _focusRing;
+        private UiFocus _focusRing;
         private bool _cursorVisible;
         private RectTransform _dragHome;
 
-        private InputActionMap _input;
-        private InputAction _left;
-        private InputAction _right;
-        private InputAction _up;
-        private InputAction _down;
-        private InputAction _use;
-        private InputAction _back;
-        private InputAction _prevPage;
-        private InputAction _nextPage;
+        private UiNavigateActions _input;
 
         // ------------------------------------------------------------------------------------- test and view hooks
 
@@ -1196,59 +1189,48 @@ namespace SpookyStreet.UI
 
         // ------------------------------------------------------------------------------------- keyboard and gamepad (D25)
 
+        /// <summary>The shared UI navigation map (S004 F1); <see cref="NotebookRewatch"/> reads its Rewatch action.</summary>
+        internal UiNavigateActions UiActions => _input;
+
+        /// <summary>The notebook's UiNavigate map is listening (on while open).</summary>
+        public bool UiActionsEnabled => _input != null && _input.Enabled;
+
+        /// <summary>The stitched focus outline on the cursor's target (null until the cursor first shows).</summary>
+        public UiFocus FocusOutline => _focusRing;
+
         private void BuildInput()
         {
-            _input = new InputActionMap("Notebook");
-            _left = KeyAction("Left", "<Keyboard>/leftArrow", "<Keyboard>/a", "<Gamepad>/dpad/left", "<Gamepad>/leftStick/left");
-            _right = KeyAction("Right", "<Keyboard>/rightArrow", "<Keyboard>/d", "<Gamepad>/dpad/right", "<Gamepad>/leftStick/right");
-            _up = KeyAction("Up", "<Keyboard>/upArrow", "<Keyboard>/w", "<Gamepad>/dpad/up", "<Gamepad>/leftStick/up");
-            _down = KeyAction("Down", "<Keyboard>/downArrow", "<Keyboard>/s", "<Gamepad>/dpad/down", "<Gamepad>/leftStick/down");
-            _use = KeyAction("Use", "<Keyboard>/enter", "<Keyboard>/space", "<Keyboard>/e", "<Gamepad>/buttonSouth");
-            _back = KeyAction("Back", "<Keyboard>/escape", "<Keyboard>/backspace", "<Gamepad>/buttonEast");
-            _prevPage = KeyAction("PreviousPage", "<Keyboard>/q", "<Keyboard>/pageUp", "<Gamepad>/leftShoulder");
-            _nextPage = KeyAction("NextPage", "<Keyboard>/r", "<Keyboard>/pageDown", "<Gamepad>/rightShoulder");
-        }
-
-        private InputAction KeyAction(string name, params string[] bindings)
-        {
-            var action = _input.AddAction(name, InputActionType.Button, bindings[0]);
-            for (int i = 1; i < bindings.Length; i++)
-            {
-                action.AddBinding(bindings[i]);
-            }
-
-            return action;
+            _input = GameInput.CreateUiNavigate();
         }
 
         private void TickInput()
         {
-            if (!IsOpen || _input == null || !_input.enabled)
+            if (!IsOpen || _input == null || !_input.Enabled)
             {
                 return;
             }
 
-            if (_left.WasPressedThisFrame())
+            switch (_input.DirectionPressed())
             {
-                Navigate(-1, 0);
-            }
-            else if (_right.WasPressedThisFrame())
-            {
-                Navigate(1, 0);
-            }
-            else if (_up.WasPressedThisFrame())
-            {
-                Navigate(0, -1);
-            }
-            else if (_down.WasPressedThisFrame())
-            {
-                Navigate(0, 1);
+                case UiDirection.Left:
+                    Navigate(-1, 0);
+                    break;
+                case UiDirection.Right:
+                    Navigate(1, 0);
+                    break;
+                case UiDirection.Up:
+                    Navigate(0, -1);
+                    break;
+                case UiDirection.Down:
+                    Navigate(0, 1);
+                    break;
             }
 
-            if (_use.WasPressedThisFrame())
+            if (_input.Pressed(_input.Submit))
             {
                 Submit();
             }
-            else if (_back.WasPressedThisFrame())
+            else if (_input.Pressed(_input.Back))
             {
                 if (_cursor.Held != null)
                 {
@@ -1260,11 +1242,11 @@ namespace SpookyStreet.UI
                     Close();
                 }
             }
-            else if (_prevPage.WasPressedThisFrame())
+            else if (_input.Pressed(_input.PageLeft))
             {
                 ShowPage(CurrentPage - 1);
             }
-            else if (_nextPage.WasPressedThisFrame())
+            else if (_input.Pressed(_input.PageRight))
             {
                 ShowPage(CurrentPage + 1);
             }
@@ -1384,7 +1366,7 @@ namespace SpookyStreet.UI
             {
                 if (_focusRing != null)
                 {
-                    _focusRing.gameObject.SetActive(false);
+                    _focusRing.Hide();
                 }
 
                 return;
@@ -1397,19 +1379,10 @@ namespace SpookyStreet.UI
                     Destroy(_focusRing.gameObject);
                 }
 
-                _focusRing = UiFactory.Sprite(view.Overlay, "Cursor", IconFactory.RoundedRect, new Color(0f, 0f, 0f, 0f),
-                    new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.one);
-                var thread = UiFactory.StitchLayer(_focusRing.transform, Palette.CandyCornYellow);
-                if (thread != null)
-                {
-                    thread.rectTransform.offsetMin = new Vector2(-6f, -6f);
-                    thread.rectTransform.offsetMax = new Vector2(6f, 6f);
-                }
+                _focusRing = UiFocus.Create(view.Overlay, "Cursor");
             }
 
-            _focusRing.gameObject.SetActive(true);
-            _focusRing.rectTransform.position = target.position;
-            _focusRing.rectTransform.sizeDelta = target.rect.size + new Vector2(16f, 16f);
+            _focusRing.Show(target);
         }
     }
 }

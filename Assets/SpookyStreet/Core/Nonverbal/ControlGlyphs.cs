@@ -29,6 +29,19 @@ namespace SpookyStreet.Core.Nonverbal
         /// <summary>The parent gate's first and second spot.</summary>
         GateA,
         GateB,
+
+        /// <summary>UI navigation (S004 F1): choose the focused element.</summary>
+        Submit,
+
+        /// <summary>UI navigation: leave the screen (or let go of what is held).</summary>
+        Back,
+
+        /// <summary>UI navigation: the previous and next page of a paged screen.</summary>
+        PageLeft,
+        PageRight,
+
+        /// <summary>UI navigation: watch a cutscene again from the notebook.</summary>
+        Rewatch,
     }
 
     /// <summary>How a glyph is drawn.</summary>
@@ -109,6 +122,13 @@ namespace SpookyStreet.Core.Nonverbal
         public const string KeyDown = "<Keyboard>/s";
         public const string KeyLeft = "<Keyboard>/a";
         public const string KeyRight = "<Keyboard>/d";
+
+        // UI navigation (S004 F1): the first binding of each GameInput UiNavigate action, so the glyph names a key that works.
+        public const string KeySubmit = "<Keyboard>/enter";
+        public const string KeyBack = "<Keyboard>/escape";
+        public const string KeyPageLeft = "<Keyboard>/q";
+        public const string KeyPageRight = "<Keyboard>/r";
+        public const string KeyRewatch = "<Keyboard>/v";
         public const string PadUse = "<Gamepad>/buttonWest";
         public const string PadJump = "<Gamepad>/buttonSouth";
         public const string PadNext = "<Gamepad>/buttonSouth";
@@ -116,6 +136,11 @@ namespace SpookyStreet.Core.Nonverbal
         public const string PadGateA = "<Gamepad>/leftShoulder";
         public const string PadGateB = "<Gamepad>/rightShoulder";
         public const string PadMove = "<Gamepad>/leftStick";
+        public const string PadSubmit = "<Gamepad>/buttonSouth";
+        public const string PadBack = "<Gamepad>/buttonEast";
+        public const string PadPageLeft = "<Gamepad>/leftShoulder";
+        public const string PadPageRight = "<Gamepad>/rightShoulder";
+        public const string PadRewatch = "<Gamepad>/buttonNorth";
 
         public static ControlGlyph For(ControlScheme scheme, ControlPrompt prompt)
         {
@@ -181,6 +206,16 @@ namespace SpookyStreet.Core.Nonverbal
                     return new ControlGlyph(GlyphShape.PadShoulder, PadGateA, PadButton.LeftShoulder, true);
                 case ControlPrompt.GateB:
                     return new ControlGlyph(GlyphShape.PadShoulder, PadGateB, PadButton.RightShoulder, true);
+                case ControlPrompt.Submit:
+                    return new ControlGlyph(GlyphShape.PadFace, PadSubmit, PadButton.South);
+                case ControlPrompt.Back:
+                    return new ControlGlyph(GlyphShape.PadFace, PadBack, PadButton.East);
+                case ControlPrompt.PageLeft:
+                    return new ControlGlyph(GlyphShape.PadShoulder, PadPageLeft, PadButton.LeftShoulder);
+                case ControlPrompt.PageRight:
+                    return new ControlGlyph(GlyphShape.PadShoulder, PadPageRight, PadButton.RightShoulder);
+                case ControlPrompt.Rewatch:
+                    return new ControlGlyph(GlyphShape.PadFace, PadRewatch, PadButton.North);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(prompt), prompt, "unknown prompt");
             }
@@ -206,6 +241,16 @@ namespace SpookyStreet.Core.Nonverbal
                     return new ControlGlyph(GlyphShape.Key, KeyGateA, PadButton.None, true);
                 case ControlPrompt.GateB:
                     return new ControlGlyph(GlyphShape.Key, KeyGateB, PadButton.None, true);
+                case ControlPrompt.Submit:
+                    return new ControlGlyph(GlyphShape.Key, KeySubmit);
+                case ControlPrompt.Back:
+                    return new ControlGlyph(GlyphShape.Key, KeyBack);
+                case ControlPrompt.PageLeft:
+                    return new ControlGlyph(GlyphShape.Key, KeyPageLeft);
+                case ControlPrompt.PageRight:
+                    return new ControlGlyph(GlyphShape.Key, KeyPageRight);
+                case ControlPrompt.Rewatch:
+                    return new ControlGlyph(GlyphShape.Key, KeyRewatch);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(prompt), prompt, "unknown prompt");
             }

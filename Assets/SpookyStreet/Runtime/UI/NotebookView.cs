@@ -7,7 +7,6 @@ using SpookyStreet.Localization;
 using SpookyStreet.UI.Nonverbal;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using HintKeys = SpookyStreet.Core.Localization.LocalizationKeys.Hints;
 using UiKeys = SpookyStreet.Core.Localization.LocalizationKeys.CaseUi;
