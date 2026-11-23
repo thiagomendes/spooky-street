@@ -262,4 +262,14 @@ the sting's wait does not run out.
 
 ## CI evidence
 
-Pending.
+- **Run 45109102852** (#135, commit `079651d`: this branch with origin/main `35acc67` merged in, which brings the
+  S002.5b cutscenes and Pip's climb clips): green.
+  - Static checks: passed (audio pipeline tests and the engine-free core tests included).
+  - Unity EditMode: 614/614, including `BabblePlannerTests` 21/21, `MusicPlanTests` 7/7, `AudioCatalogTests` 11/11,
+    `AudioWiringTests` 11/11, `AudioImportTests` 5/5 and `CutsceneTests` 22/22.
+  - Unity PlayMode: 114/114, including `VoicesMusicTests` 5/5, `AudioRigTests` 9/9, `GameAudioTests` 6/6,
+    `CutscenePlayTests` 5/5 and `DeductionNotebookTests` 4/4.
+  - Visual: 12/12.
+- **Run 45104608737** (#129, commit `17e9675`, before the cutscenes merged): green as well (the same suites
+  without the cutscene bridge).
+- Local: `./tools/check-local.sh` passes (578 core tests, 43 audio pipeline tests).
