@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using SpookyStreet.App;
 using SpookyStreet.Core.Case;
 using SpookyStreet.Core.Street;
@@ -168,6 +169,14 @@ namespace SpookyStreet.Case
 
         /// <summary>The case world view with the street's memories (as fixed at the last rebuild) laid over it.</summary>
         public CaseWorldView Compose(CaseWorldView view) => WorldView.Apply(view);
+
+        /// <summary>
+        /// What a friend says on a talk with the street's memories (as fixed at the last rebuild): the line from the
+        /// night case 01 was solved becomes their changed greeting (<see cref="StreetGreetings"/>). Like the world view,
+        /// the greetings arrive on the next load after the stamp and rest while case 01 is replayed.
+        /// </summary>
+        public IReadOnlyList<ScriptLine> Retell(Speaker speaker, IReadOnlyList<ScriptLine> lines) =>
+            StreetGreetings.Retell(speaker, lines, WorldView);
 
         /// <summary>After every case step: the stamp teaches the street, and the lamp and sticker follow at once.</summary>
         public void Observe(CaseState caseState)

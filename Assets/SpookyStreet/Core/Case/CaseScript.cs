@@ -100,6 +100,13 @@ namespace SpookyStreet.Core.Case
             // After the show, until the child has explained the case in the notebook (D26).
             { Keys.KitAsk, When(F(CaseFact.FrontOpen, CaseFact.TestedOwl), F(CaseFact.CaseStamped)) },
             { Keys.KitThanks, When(F(CaseFact.CaseStamped), None) },
+
+            // The street remembers case 01 (S003a, D29): changed greetings on a later visit. Conversation never picks
+            // them; StreetGreetings lays them over the closed lines only while the street shows case 01's memories.
+            { Keys.BeaRemembers, When(F(CaseFact.CaseStamped), None) },
+            { Keys.ValeRemembers, When(F(CaseFact.CaseStamped), None) },
+            { Keys.JuneRemembers, When(F(CaseFact.CaseStamped), None) },
+            { Keys.KitRemembers, When(F(CaseFact.CaseStamped), None) },
         };
 
         /// <summary>Every line key the case can play.</summary>

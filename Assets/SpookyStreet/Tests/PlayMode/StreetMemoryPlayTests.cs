@@ -6,6 +6,7 @@ using SpookyStreet.App;
 using SpookyStreet.Case;
 using SpookyStreet.Core.Case;
 using SpookyStreet.Core.Flow;
+using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.Core.Save;
 using SpookyStreet.Core.Street;
 using SpookyStreet.Localization;
@@ -216,14 +217,44 @@ namespace SpookyStreet.Tests.PlayMode
             AssertStreetRemembers("after reload");
             yield return Continue();
             AssertStreetRemembers("in play");
-            Director.Perform(CaseAction.Talk(Speaker.June));
+            // The street remembers in words (S003a): every friend greets Pip with a changed line.
+            yield return AssertGreets(Speaker.June, Lines.JuneRemembers, "June talks by her treehouse, with a new hello");
+            yield return AssertGreets(Speaker.Bea, Lines.BeaRemembers, "Bea, with the owl on her bike");
+        }
+
+        /// <summary>Talks to <paramref name="speaker"/> and checks the bubble plays <paramref name="key"/> with its
+        /// vignette and words, and that the talk leaves the case as it was.</summary>
+        private static IEnumerator AssertGreets(Speaker speaker, string key, string message)
+        {
+            var before = Director.State;
+            Director.Perform(CaseAction.Talk(speaker));
             yield return Wait(0.3f);
-            Assert.AreEqual(Lines.JuneClosed, Director.Dialogue.CurrentLine.Key, "June still talks, by her treehouse");
-            Director.Dialogue.Skip();
-            Director.Perform(CaseAction.Talk(Speaker.Bea));
-            yield return Wait(0.3f);
-            Assert.AreEqual(Lines.BeaClosed, Director.Dialogue.CurrentLine.Key, "her owl line, now with the owl on her bike");
-            Director.Dialogue.Skip();
+            var dialogue = Director.Dialogue;
+            Assert.IsTrue(dialogue.IsOpen, message);
+            Assert.AreEqual(key, dialogue.CurrentLine.Key, message);
+            Assert.AreEqual(speaker, dialogue.CurrentLine.Speaker, message);
+            Assert.AreEqual(Localizer.Get(key), dialogue.CurrentText, message + ": the words under the pictures");
+            Assert.IsTrue(dialogue.ShowsVignette, message + ": its vignette plays");
+            Assert.AreEqual(C01Vignettes.For(key).VignetteId, dialogue.Vignette.Current.Id, message);
+            Assert.AreSame(before, Director.State, message + ": a greeting changes no case fact");
+            dialogue.Skip();
+            yield return Frames(2);
+        }
+
+        [UnityTest]
+        [Timeout(90000)]
+        public IEnumerator ATalkAfterARememberedLoadPlaysTheChangedGreeting()
+        {
+            WriteCaseSave(StampedState(), CaseAnchors.ArrivalPorch);
+            yield return Load();
+            AssertStreetRemembers("stamped save");
+            yield return Continue();
+            Assert.IsTrue(Director.Street.WorldView.Remembers(CaseDefinition.CaseId));
+            yield return AssertGreets(Speaker.Bea, Lines.BeaRemembers, "Bea");
+            yield return AssertGreets(Speaker.Vale, Lines.ValeRemembers, "Mr. Vale");
+            yield return AssertGreets(Speaker.June, Lines.JuneRemembers, "June");
+            yield return AssertGreets(Speaker.Kit, Lines.KitRemembers, "Aunt Kit at her open booth");
+            yield return AssertGreets(Speaker.Kit, Lines.KitRemembers, "and again: the greeting is how she talks now");
         }
 
         [UnityTest]
@@ -252,6 +283,14 @@ namespace SpookyStreet.Tests.PlayMode
             AssertStreetResting("replay after reload");
             yield return Continue();
 
+            // The greetings rest with the other memories: the replay hears the first evening's lines.
+            Assert.IsFalse(Director.Street.WorldView.Remembers(CaseDefinition.CaseId));
+            Director.Perform(CaseAction.Talk(Speaker.Bea));
+            yield return Wait(0.3f);
+            Assert.AreEqual(Lines.BeaRepeat, Director.Dialogue.CurrentLine.Key, "Bea tells the replay what she saw");
+            Director.Dialogue.Skip();
+            yield return Frames(2);
+
             // Solving it again brings the lamp and the sticker back at the stamp, and the rest on the next load.
             var replayed = Director.State;
             foreach (var action in CanonicalActions())
@@ -272,6 +311,8 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(Director.Street.BoothLamp.enabled);
             yield return Load();
             AssertStreetRemembers("replay stamped again");
+            yield return Continue();
+            yield return AssertGreets(Speaker.Vale, Lines.ValeRemembers, "the greetings come back with the stamp");
         }
 
         [UnityTest]
@@ -292,6 +333,17 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(StreetOnDisk().IsEmpty);
             Assert.IsFalse(Director.Street.WorldView.Any);
             Assert.IsFalse(Director.Street.BoothLamp.enabled);
+            Assert.IsNull(StreetGreetings.For(Speaker.Bea, Director.Street.WorldView), "the greetings are forgotten too");
+            if (Director.Cutscenes.Playing)
+            {
+                Director.Cutscenes.Player.SkipNow();
+                yield return Frames(3);
+            }
+
+            Director.Perform(CaseAction.Talk(Speaker.Bea));
+            yield return Wait(0.3f);
+            Assert.AreEqual(Lines.BeaSawCape, Director.Dialogue.CurrentLine.Key, "Pip is the new kid again");
+            Director.Dialogue.Skip();
         }
 
         [UnityTest]

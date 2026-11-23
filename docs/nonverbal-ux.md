@@ -116,6 +116,10 @@ not case lines and keep the strip alone. Contact sheet of all of them, mid-anima
 | `line.june.closed` | `vg.june.closed` | 3.2 s · 2 | Knock rings come off a door while June bobs in the same rhythm; the moon rises (all night). |
 | `line.kit.first_show` | `vg.kit.first_show` | 3.0 s · 2 | A star pops over the owl booth (the show); Pip hops onto the porch (the best seat). |
 | `line.kit.thanks` | `vg.kit.thanks` | 3.2 s · 2 | The owl bows twice; a heart pops over Pip, then over June. |
+| `line.bea.remembers` | `vg.bea.remembers` | 3.0 s · 3 | S003a street greeting. Pip hops up to Bea's bike; the owl sticker on it bows once; an eye opens over the bike (lookout). |
+| `line.vale.remembers` | `vg.vale.remembers` | 3.0 s · 2 | S003a street greeting. An eye opens over Vale's bench; the owl bows twice for him. |
+| `line.june.remembers` | `vg.june.remembers` | 3.0 s · 2 | S003a street greeting. June hops out of the open door; a hand waves (come play). |
+| `line.kit.remembers` | `vg.kit.remembers` | 3.2 s · 2 | S003a street greeting. Inside the memory cloud the owl bows once; two "?" friends pop beside it. |
 
 ## 4. In-world memory replay (`nv2_memory_replay.gif`)
 *Superseded by D26 (`mystery-first.md` §7): the replay no longer auto-plays and no longer re-enacts June's route; it

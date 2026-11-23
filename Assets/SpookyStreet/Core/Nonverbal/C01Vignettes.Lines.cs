@@ -106,6 +106,10 @@ namespace SpookyStreet.Core.Nonverbal
             (Lines.ExamineOwlPanel, PipOwlPanel),
             (Lines.KitAsk, KitAsk),
             (Lines.ExamineOwlBooth, PipOwlBooth),
+            (Lines.BeaRemembers, BeaRemembers),
+            (Lines.ValeRemembers, ValeRemembers),
+            (Lines.JuneRemembers, JuneRemembers),
+            (Lines.KitRemembers, KitRemembers),
         };
 
         // ------------------------------------------------------------------------------------------- captions
