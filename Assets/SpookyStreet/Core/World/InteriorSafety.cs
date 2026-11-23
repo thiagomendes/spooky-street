@@ -294,17 +294,21 @@ namespace SpookyStreet.Core.World
         public void AddCharacter(float x, float y, float z) => _characters.Add((x, y, z));
 
         /// <summary>
-        /// True when Pip's feet at (x, y, z) rest on top of the character standing at (cx, cy, cz): over the head,
-        /// within the two capsules' radii.
+        /// True when Pip's feet at (x, y, z) rest on the character standing at (cx, cy, cz): on her head or held on
+        /// the rounded shoulder of her capsule (CI run 1 of this fix: Pip slid to 0.52 m off June's axis and hung there
+        /// at 0.97 m), within the two capsules' radii (and a little skin) and above her middle.
         /// </summary>
         public static bool OnCharacter(float x, float y, float z, float cx, float cy, float cz)
         {
             float dx = x - cx;
             float dz = z - cz;
-            float reach = CharacterRadius + CaseRouteLayout.PipRadius;
-            return dx * dx + dz * dz < reach * reach && y > cy + CharacterHeight - 0.35f &&
+            float reach = CharacterRadius + CaseRouteLayout.PipRadius + CharacterSkin;
+            return dx * dx + dz * dz < reach * reach && y > cy + CharacterHeight * 0.5f &&
                    y < cy + CharacterHeight + 0.5f;
         }
+
+        /// <summary>Slack round the two capsules (the CharacterController's skin and contact offset).</summary>
+        public const float CharacterSkin = 0.1f;
 
         /// <summary>
         /// The way to slide Pip off a character's head: straight away from the head's centre, or, with Pip right on

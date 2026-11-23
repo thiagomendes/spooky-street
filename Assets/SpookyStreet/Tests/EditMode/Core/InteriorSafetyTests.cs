@@ -422,6 +422,9 @@ namespace SpookyStreet.Tests.Core
             Assert.GreaterOrEqual(InteriorWalkMap.EscapeRun(june.X + rescue.SlideX * r, june.Y, june.Z + rescue.SlideZ * r,
                 rescue.SlideX, rescue.SlideZ, InteriorSafety.FreeReach, false), InteriorSafety.FreeReach - 1e-3f,
                 "slid toward open floor");
+            // Held on her rounded shoulder (CI run 1 of the fix: 0.52 m off her axis, 0.97 m up): still slid off.
+            Assert.AreEqual(RescueReason.SlideOff, rescue.Step(dt, june.X + 0.52f, june.Y + 0.97f, june.Z, true, 0f, true));
+            Assert.Greater(rescue.SlideX, 0.95f);
             // Beside her on the floor, or jumping over her: nothing to do.
             Assert.AreEqual(RescueReason.None, rescue.Step(dt, june.X + 0.6f, june.Y, june.Z, true, 1f, true));
             Assert.AreEqual(RescueReason.None, rescue.Step(dt, june.X, head + 0.2f, june.Z, false, 1f, true));
