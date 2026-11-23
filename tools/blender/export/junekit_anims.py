@@ -26,6 +26,7 @@ import math
 import numpy as np
 from mathutils import Matrix, Vector
 
+import gesture_fit as gf
 import pip_anims as pa
 from pip_anims import SIDES, TAU, bump, keyed, rx, ry, rz, smooth
 
@@ -600,6 +601,144 @@ def kit_wave(u):
     return plant(p)
 
 
+# --- testimony gestures (S003a) ---------------------------------------------------------------------------
+# One each, from their lines: June invites Pip to listen ("I came down to find the knocks. Listen…") and Kit
+# asks without telling ("So, detective, what happened here?"). Neither says where, what or who (D26).
+
+def _ramp(f, a, b):
+    return smooth((f - a) / (b - a))
+
+
+def _bell(f, centre, width):
+    return math.exp(-((f - centre) / width) ** 2)
+
+
+def _head_dir(q, v):
+    """A direction given in the head's own axes, as it points in the pose."""
+    return fk(q, RIG)[2]["Head"] @ Vector(v)
+
+
+_ARM = ("arm{S}_fwd", "arm{S}_out", "arm{S}_twist", "elbow{S}", "hand{S}_pitch", "hand{S}_side", "hand{S}_twist")
+
+LISTEN_FRAMES = 66
+# the knuckles of the cupped hand from the head joint (her own axes: left, back, up): beside her right ear,
+# outside her hair; the hand stands up behind the ear, palm forward
+JUNE_EAR = Vector((-0.215, 0.008, 0.11))
+LISTEN_ALONG = Vector((-0.34, -0.20, 0.92))
+LISTEN_BACK = Vector((-0.5, 0.86, 0.0))
+
+
+def june_listen(u):
+    """Shh, listen… She cups her right hand behind her ear and leans that ear out, eyes going wide and far
+    away, holds very still, leans a little further; then her eyes come back to the listener (hear it?) and
+    the hand comes down. She listens to nowhere in particular: the lean is to her own side, not at a place.
+    Starts and ends on Idle frame 0. Frames: up 0-13, listening 13-40, back to the listener 40-52, down 52-66."""
+    f = u * LISTEN_FRAMES
+    rest = june_idle(0.0)
+    up = _ramp(f, 0, 13) * (1 - _ramp(f, 52, 65))
+    arrive = _bell(f, 13.0, 2.8) * up
+    hush = _ramp(f, 11, 17) * (1 - _ramp(f, 39, 46))  # holding still, ear out
+    further = _bell(f, 30.0, 5.0) * up  # one slow lean further in
+    back = _ramp(f, 41, 48) * (1 - _ramp(f, 54, 63))  # looks back at the listener
+    heard = dict(rest)
+    heard.update(hx=-0.024, hy=-0.006, hip_roll=3.0, hip_yaw=3, spine_roll=-3.5, chest_roll=-5.0, spine_pitch=3,
+                 chest_pitch=2, spine_yaw=5, chest_yaw=9, neck_pitch=-2, head_yaw=15, head_roll=-13, head_pitch=-3,
+                 shoulderR=11, fingersR=34, thumbR=-10, cape_arm=0.7,
+                 capeR1_open=14, capeR2_open=38, capeR3_open=30,
+                 capeR2_flare=rest["capeR2_flare"] + 12, capeR3_flare=rest["capeR3_flare"] + 12,
+                 armL_fwd=7, elbowL=18, braid1_y=5, braid2_y=8, hat_side=-7, hat_back=2,
+                 footL=0, footR=0, toeL=0, toeR=0)
+    p = blend(rest, heard, up)
+    p.update(hx=p["hx"] - 0.008 * further, chest_roll=p["chest_roll"] - 2.0 * further - 1.5 * arrive,
+             spine_roll=p["spine_roll"] - 1.5 * further, head_roll=p["head_roll"] - 4 * further - 3 * arrive
+             + 7 * back, head_yaw=p["head_yaw"] + 3 * further - 12 * back, head_pitch=p["head_pitch"] - 3 * back,
+             chest_yaw=p["chest_yaw"] - 3 * back,
+             shoulderR=p["shoulderR"] + 3 * arrive, footR=5 * up + 4 * further, toeR=4 * up + 3 * further,
+             # everything that hangs swings in after her and settles
+             braid1_y=p["braid1_y"] + 6 * _bell(f, 10.0, 3.0) * up - 4 * _bell(f, 16.0, 3.5) * up - 5 * back,
+             braid2_y=p["braid2_y"] + 10 * _bell(f, 11.5, 3.2) * up - 6 * _bell(f, 18.0, 3.8) * up - 7 * back,
+             hat_side=p["hat_side"] - 6 * _bell(f, 12.0, 3.0) * up + 4 * _bell(f, 18.0, 3.5) * up + 6 * back,
+             hat_back=p["hat_back"] + 3 * further,
+             capeR2_flare=p["capeR2_flare"] + 4 * _bell(f, 11.0, 3.0) * up,
+             capeR3_flare=p["capeR3_flare"] + 7 * _bell(f, 13.0, 3.5) * up,
+             cape_sway=p["cape_sway"] - 2.5 * hush)
+    p["ground"] = 1.0
+    plant(p)
+    if up > 0:
+        # the hand: fitted to this frame's ear, then blended in, so it rides the head
+        q = dict(p)
+        q.update(armR_fwd=58, armR_out=58, armR_twist=20, elbowR=128, handR_pitch=0, handR_side=0, handR_twist=-30)
+        ear = point(q, "Head", RIG["Head"][1] + JUNE_EAR)
+        gf.fit_hand(fk, RIG, q, "R", ear, _head_dir(q, LISTEN_ALONG), _head_dir(q, LISTEN_BACK))
+        k = _ramp(f, 1, 12.5) * (1 - _ramp(f, 52.5, 64.5))
+        for key in _ARM:
+            key = key.format(S="R")
+            p[key] += (q[key] - p[key]) * k
+        swing = math.sin(math.pi * k) if 0 < k < 1 else 0.0
+        p["armR_out"] += 12 * swing  # the elbow leads, out through the cape
+        p["handR_pitch"] += 8 * further  # the cup opens a little as she strains to hear
+    return p
+
+
+PONDER_FRAMES = 66
+# the knuckles of her left hand from the head joint (her own axes): on her left cheek, the loose fist standing
+# up beside her face; and where the elbow goes from the shoulder joint: out to her side and forward, so the arm
+# makes a triangle beside her that reads from far away and lifts the shawl's wing clear of the forearm
+KIT_CHEEK = Vector((0.135, -0.085, 0.075))
+KIT_ELBOW = Vector((0.15, -0.15, -0.23))
+PONDER_ALONG = Vector((-0.45, 0.12, 0.88))
+PONDER_BACK = Vector((0.62, -0.78, 0.05))
+PONDER_TAPS = (27.0, 35.0)  # frames on which a finger taps her cheek
+
+
+def kit_ponder(u):
+    """Now then… what DID happen here? Her left hand comes up to her cheek, elbow out, her weight settles onto
+    one hip and her head tilts into the hand; two small taps (frames 27 and 35), then her head tips the other way and her
+    eyes come up to the listener, asking; and the hand comes down. Curious and warm, never knowing: she asks,
+    she does not tell. The lantern stays low. Starts and ends on Idle frame 0.
+    Frames: up 0-14, pondering 14-40, asks 40-53, down 53-66."""
+    f = u * PONDER_FRAMES
+    rest = kit_idle(0.0)
+    up = _ramp(f, 0, 14) * (1 - _ramp(f, 53, 65))
+    arrive = _bell(f, 14.0, 2.8) * up
+    tap = sum(_bell(f, t, 1.8) for t in PONDER_TAPS) * up
+    ask = _ramp(f, 40, 47) * (1 - _ramp(f, 55, 63))
+    hmm = dict(rest)
+    hmm.update(hx=-0.02, hip_roll=3.0, hip_yaw=-3, spine_roll=-2.0, chest_roll=-1.5, spine_pitch=2.5, chest_pitch=2,
+               spine_yaw=-3, chest_yaw=-5, neck_pitch=2, head_yaw=7, head_roll=9, head_pitch=4,
+               shoulderL=6, fingersL=64, thumbL=-18, shawl_follow=0.85,
+               armR_fwd=10, armR_out=4, elbowR=22, kneeL=9, legL_fwd=4)
+    p = blend(rest, hmm, up)
+    p.update(head_roll=p["head_roll"] - 15 * ask + 2 * arrive, head_yaw=p["head_yaw"] - 9 * ask,
+             head_pitch=p["head_pitch"] - 6 * ask + 2.5 * tap, chest_roll=p["chest_roll"] + 2 * ask,
+             hx=p["hx"] + 0.008 * ask, shoulderL=p["shoulderL"] + 2 * arrive + 1.5 * tap)
+    _kit_dangle(p, TAU * u * 1.5, 1.0 + 0.6 * up, lean=0.0)
+    still = dict(rest)
+    for key in ("skirt_x", "skirt_y", "tail_x", "tail_y", "ringL_x", "ringL_y", "ringR_x", "ringR_y", "lantern_x",
+                "lantern_y"):
+        p[key] = still[key] + (p[key] - still[key]) * up  # back to the idle's first frame at both ends
+    # the earrings swing with the tilts, the lantern with the weight shift
+    p["ringL_y"] += (8 * _bell(f, 11.0, 3.5) - 5 * _bell(f, 17.0, 4.0)) * up - 9 * ask
+    p["ringR_y"] += (8 * _bell(f, 12.0, 3.5) - 5 * _bell(f, 18.0, 4.0)) * up - 9 * ask
+    p["tail_y"] += 5 * _bell(f, 13.0, 4.0) * up - 5 * ask
+    p["lantern_y"] += (5 * _bell(f, 9.0, 4.0) - 3 * _bell(f, 17.0, 5.0)) * up
+    p["ground"] = 1.0
+    plant(p)
+    if up > 0:
+        q = dict(p)
+        q.update(armL_fwd=40, armL_out=40, armL_twist=10, elbowL=130, handL_pitch=0, handL_side=0, handL_twist=0)
+        cheek = point(q, "Head", RIG["Head"][1] + KIT_CHEEK) + _head_dir(q, (1.0, -0.4, 0.0)) * 0.012 * (1 - tap)
+        gf.fit_hand(fk, RIG, q, "L", cheek, _head_dir(q, PONDER_ALONG), _head_dir(q, PONDER_BACK),
+                    elbow=point(q, "UpperArm_L") + fk(q, RIG)[2]["Chest"] @ KIT_ELBOW)
+        k = _ramp(f, 1, 13.5) * (1 - _ramp(f, 53.5, 64.5))
+        for key in _ARM:
+            key = key.format(S="L")
+            p[key] += (q[key] - p[key]) * k
+        swing = math.sin(math.pi * k) if 0 < k < 1 else 0.0
+        p["armL_out"] += 9 * swing
+    return p
+
+
 # name, pose function, frames at 30 fps, loops, intended ground speed (m/s), note
 JUNE_CLIPS = [
     ("Idle", june_idle, 90, True, 0.0, "standing: looking out of the attic window, slow sweep, one peek on tiptoe"),
@@ -611,6 +750,9 @@ JUNE_CLIPS = [
      "standing: right hand points ahead and down into the house; on target frames 14-34; starts/ends on Idle 0"),
     ("Walk", june_walk, JUNE_WALK_FRAMES, True, JUNE_WALK_SPEED,
      "in place, 1.1 m per cycle (two 0.55 m steps): left heel strikes on frame 0, right on frame 15"),
+    ("Listen", june_listen, LISTEN_FRAMES, False, 0.0,
+     "testimony gesture, standing: right hand cupped behind her ear, leaning that ear out; hand at the ear "
+     "frames 13-52; starts and ends on Idle frame 0"),
 ]
 KIT_CLIPS = [
     ("Idle", kit_idle, 90, True, 0.0, "standing: weight shift, breathing, lantern swaying in her right hand"),
@@ -618,4 +760,7 @@ KIT_CLIPS = [
     ("OpenBooth", kit_open_booth, 60, False, 0.0,
      "standing: two-arm ta-da, lantern raised; peak held frames 22-40; starts and ends on Idle frame 0"),
     ("Wave", kit_wave, 45, False, 0.0, "standing: left-hand wave; starts and ends on Idle frame 0"),
+    ("Ponder", kit_ponder, PONDER_FRAMES, False, 0.0,
+     "testimony gesture, standing: left hand to her cheek, elbow out, head tilted, taps on frames 27 and 35, then "
+     "she looks up, asking; starts and ends on Idle frame 0"),
 ]

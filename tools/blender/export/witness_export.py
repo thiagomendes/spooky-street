@@ -15,14 +15,17 @@ Costume bones (none deform the body skin):
   Bea   Pumpkin (child of Chest: the whole pumpkin, leaf collar and stitched face), Ponytail_1, Ponytail_2;
         Index_L / _R (child of Hand: the index finger alone) and FingerTips_L / _R (child of Fingers: the
         second joint of the other three), so she can point with one finger; see split_hand
-  Vale  Cauldron (child of Hand_R, at the grip, like Pip's Pail), Bandage_Head / _ArmL / _ArmR / _Belly / _Knee
+  Vale  Cauldron (child of Hand_R, at the grip, like Pip's Pail), Bandage_Head / _ArmL / _ArmR / _Belly / _Knee;
+        Watch (child of LowerArm_L: his wristwatch, a small mesh of its own; see add_watch)
 Bea's bicycle is a separate static prop: see bike_export.py.
 """
 import json
+import math
 import os
 import re
 import sys
 
+import bmesh
 import bpy
 import numpy as np
 from mathutils import Vector
@@ -387,6 +390,168 @@ class Vale:
     @staticmethod
     def meta(P, info):
         return {"thigh_r": P.limb * 0.98 + 0.012}
+
+    @staticmethod
+    def refit(rig, objs, table):
+        return add_watch(rig, objs, table)
+
+
+WATCH, WATCH_BONE = "Vale_Watch", "Watch"
+WATCH_AT = 0.80  # along the left forearm, elbow to wrist: just above the cuff
+WATCH_BAND, WATCH_CASE, WATCH_DIAL = (0.13, 0.10, 0.24), (0.13, 0.10, 0.24), (0.95, 0.91, 0.81)
+
+
+def flat_texel(colour, normal, want, block=16):
+    """UV of the middle of the `block`-pixel square of the baked atlas that is one flat colour nearest to `want`
+    and whose normal map is flat too, so a small new part can be coloured without touching the textures.
+    `colour`, `normal`: (h, w, 3) arrays, rows bottom-up as Blender stores them."""
+    h, w = colour.shape[:2]
+    hb, wb = h // block, w // block
+
+    def blocks(px):
+        b = px[:hb * block, :wb * block].reshape(hb, block, wb, block, 3)
+        return b.mean(axis=(1, 3)), b.std(axis=(1, 3)).max(axis=2)
+    mean, std = blocks(colour)
+    n_mean, n_std = blocks(normal)
+    off = np.abs(n_mean - np.array([0.5, 0.5, 1.0])).max(axis=2)
+    ok = (std < 0.006) & (n_std < 0.006) & (off < 0.02)
+    if not ok.any():
+        raise RuntimeError("the atlas has no flat block to colour the watch from")
+    miss = np.where(ok, np.abs(mean - np.array(want)).sum(axis=2), 1e9)
+    # the first of the best blocks in reading order: the choice must not depend on bake noise
+    best = np.argwhere(miss <= miss.min() + 0.01)[0]
+    y, x = int(best[0]), int(best[1])
+    return ((x + 0.5) * block / w, (y + 0.5) * block / h), tuple(float(c) for c in mean[y, x]), block / w
+
+
+def add_watch(rig, objs, table):
+    """Mr. Vale's wristwatch (S003a): his testimony is about time and his gesture is checking it, so there has
+    to be something on that wrist. A dark strap and case with a pale dial and two hands on the outside of his
+    left forearm, over the wraps, rigid on its own bone `Watch` (child of LowerArm_L, turned about the forearm
+    with the hand). It is its own small mesh (`Vale_Watch`): the other
+    meshes, their UVs and the textures are not touched. Its UVs sit inside flat squares of the atlas that
+    already have the right colours (the dark of his trousers, the pale of the bandages), found by
+    `flat_texel` in the committed textures. Runs on the staged rig (fresh or from --cache) and does nothing if
+    the watch is already there. Returns the bone table with the new bone."""
+    if WATCH in bpy.data.objects:
+        return table
+    at = {b: (Vector(h), Vector(t)) for b, _p, h, t, _d in table}
+    elbow, wrist = at["LowerArm_L"][0], at["Hand_L"][0]
+    a = (wrist - elbow).normalized()  # along the forearm
+    b = Vector((1.0, 0.0, 0.0))
+    b = (b - a * b.dot(a)).normalized()  # out of the back of the wrist (the arm hangs palm to the thigh)
+    c = a.cross(b)
+    centre = elbow + (wrist - elbow) * WATCH_AT
+    # how thick the wrapped arm is there: the strap goes around everything
+    radii = []
+    for o in objs:
+        arm = o.vertex_groups.get("LowerArm_L")  # the skin and the wraps of that forearm, not the loose end
+        if arm is None:
+            continue
+        M = o.matrix_world
+        for v in o.data.vertices:
+            if not any(g.group == arm.index and g.weight > 0.5 for g in v.groups):
+                continue
+            r = (M @ v.co) - centre
+            if abs(r.dot(a)) < 0.014:
+                radii.append((r - a * r.dot(a)).length)
+    if len(radii) < 8:
+        raise RuntimeError("no arm found under the watch")
+    r_in = float(np.percentile(radii, 90)) + 0.002
+    r_out = r_in + 0.0035
+    bm = bmesh.new()
+    uv = bm.loops.layers.uv.new("UVMap")
+    folder = os.path.join(CHARACTERS, "Vale")
+    maps = []
+    for suffix in ("BaseColor", "Normal"):
+        img = bpy.data.images.load(os.path.join(folder, f"Vale_{suffix}.png"))
+        maps.append(np.array(img.pixels[:], dtype=np.float32).reshape(img.size[1], img.size[0], 4)[:, :, :3])
+        bpy.data.images.remove(img)
+    texels = {k: flat_texel(maps[0], maps[1], want)
+              for k, want in (("band", WATCH_BAND), ("case", WATCH_CASE), ("dial", WATCH_DIAL))}
+
+    parts = []  # per face, in creation order
+
+    def at_(u, v, w):
+        return centre + a * u + b * v + c * w
+
+    def face(points, part):
+        (cu, cv), _colour, size = texels[part]
+        f = bm.faces.new([bm.verts.new(p) for p in points])
+        parts.append(part)
+        f.smooth = True
+        for loop in f.loops:
+            # a small real footprint inside the flat square: zero-area UVs would give no tangents
+            r = loop.vert.co - centre
+            loop[uv].uv = (cu + size * 0.2 * max(-1.0, min(1.0, r.dot(a) / 0.03)),
+                           cv + size * 0.2 * max(-1.0, min(1.0, r.dot(c) / 0.05)))
+        return f
+
+    n, half = 16, 0.011
+    ring = [(math.cos(2 * math.pi * i / n), math.sin(2 * math.pi * i / n)) for i in range(n + 1)]
+    for (c0, s0), (c1, s1) in zip(ring, ring[1:]):
+        # strap: outside, and the two edges down to the wraps
+        face([at_(-half, r_out * c0, r_out * s0), at_(half, r_out * c0, r_out * s0),
+              at_(half, r_out * c1, r_out * s1), at_(-half, r_out * c1, r_out * s1)], "band")
+        for side in (-1, 1):
+            pts = [at_(side * half, r_out * c0, r_out * s0), at_(side * half, r_in * 0.9 * c0, r_in * 0.9 * s0),
+                   at_(side * half, r_in * 0.9 * c1, r_in * 0.9 * s1), at_(side * half, r_out * c1, r_out * s1)]
+            face(pts if side < 0 else pts[::-1], "band")
+    # the case: a short drum on the back of the wrist, its dial facing out
+    case_r, dial_r, low, high = 0.027, 0.0215, r_out - 0.002, r_out + 0.009
+    for (c0, s0), (c1, s1) in zip(ring, ring[1:]):
+        face([at_(case_r * c0, low, case_r * s0), at_(case_r * c1, low, case_r * s1),
+              at_(case_r * c1, high, case_r * s1), at_(case_r * c0, high, case_r * s0)], "case")
+        face([at_(case_r * c0, high, case_r * s0), at_(case_r * c1, high, case_r * s1),
+              at_(dial_r * c1, high + 0.0008, dial_r * s1), at_(dial_r * c0, high + 0.0008, dial_r * s0)], "case")
+        face([at_(dial_r * c0, high + 0.0008, dial_r * s0), at_(dial_r * c1, high + 0.0008, dial_r * s1),
+              at_(0.0, high + 0.0012, 0.0)], "dial")
+    # the hands: ten past ten, the way watches smile
+    for angle, length in ((math.radians(-58), 0.012), (math.radians(60), 0.0165)):
+        d = Vector((math.sin(angle), math.cos(angle)))  # in the dial's plane: (across c, toward the hand a)
+        side = Vector((d.y, -d.x)) * 0.0021
+        top = high + 0.0022
+
+        def on_dial(q):
+            return at_(q.y, top, q.x)
+        face([on_dial(-side - d * 0.002), on_dial(side - d * 0.002), on_dial(side + d * length),
+              on_dial(-side + d * length)], "case")
+    # every face looks away from the middle of its own part (the strap from the arm, the rest from the case)
+    middle = {"band": centre, "case": at_(0.0, (low + high) / 2, 0.0), "dial": at_(0.0, (low + high) / 2, 0.0)}
+    bm.faces.index_update()
+    bm.normal_update()
+    for f in bm.faces:
+        if f.normal.dot(f.calc_center_median() - middle[parts[f.index]]) < 0:
+            f.normal_flip()
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+    me = bpy.data.meshes.new(WATCH)
+    bm.to_mesh(me)
+    bm.free()
+    me.use_auto_smooth = True  # the strap's edges and the case's rim stay crisp
+    me.auto_smooth_angle = math.radians(50)
+    obj = bpy.data.objects.new(WATCH, me)
+    bpy.context.scene.collection.objects.link(obj)
+    model = next(o for o in objs if o.name == "Vale_Body")
+    for mat in model.data.materials:
+        me.materials.append(mat)
+    # its own bone, so it can turn about the forearm with the hand (witness_anims.fk): the rig has no forearm
+    # twist, and a watch that stayed put while the wrist turned over would face the wrong way
+    bone = (WATCH_BONE, "LowerArm_L", centre.copy(), centre + a * 0.03, False)
+    ce.activate(rig)
+    bpy.ops.object.mode_set(mode="EDIT")
+    eb = rig.data.edit_bones.new(WATCH_BONE)
+    eb.head, eb.tail = bone[2], bone[3]
+    eb.parent = rig.data.edit_bones["LowerArm_L"]
+    bpy.ops.object.mode_set(mode="OBJECT")
+    rig.pose.bones[WATCH_BONE].rotation_mode = "QUATERNION"
+    set_weights(obj, {WATCH_BONE: 1.0})
+    obj.parent = rig
+    obj.modifiers.new("Armature", "ARMATURE").object = rig
+    objs.append(obj)
+    print(f"[witness_export] watch: {tri_count(obj)} tris, strap radius {r_out:.4f} m, colours "
+          + ", ".join(f"{k} {tuple(round(x, 3) for x in t[1])} at uv {tuple(round(x, 4) for x in t[0])}"
+                      for k, t in texels.items()))
+    return table + [bone]
 
 
 WITNESSES = {"Bea": Bea, "Vale": Vale}

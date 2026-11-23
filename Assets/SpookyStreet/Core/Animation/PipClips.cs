@@ -31,12 +31,66 @@ namespace SpookyStreet.Core.Animation
         /// <summary>Pulling up and over a ledge in place, timed to the motor's climb (S003); ends on Idle frame 0.</summary>
         public const string LedgeClimb = "LedgeClimb";
 
+        /// <summary>The hint glance to Pip's left (S003a, D26): head and shoulders turn that way, she peers, and
+        /// comes back to Idle frame 0. It says "that way", toward an area; it never points at a thing.</summary>
+        public const string GlanceLeft = "GlanceLeft";
+
+        /// <summary>The hint glance to Pip's right (S003a); see <see cref="GlanceLeft"/>.</summary>
+        public const string GlanceRight = "GlanceRight";
+
+        /// <summary>How far her face turns from straight ahead in a glance clip, degrees (pip_anims.GLANCE_TURN).</summary>
+        public const float GlanceTurn = 89f;
+
         /// <summary>Every clip the game knows, in a stable order (the animator's mixer inputs follow it).</summary>
         public static readonly string[] All =
         {
             Idle, Walk, Run, JumpStart, JumpAir, Fall, Land, Glide, WallSlide, LedgeHang, Roll, Interact,
-            WallKick, LedgeGrab, LedgeClimb,
+            WallKick, LedgeGrab, LedgeClimb, GlanceLeft, GlanceRight,
         };
+
+        /// <summary>True for the two hint glance clips (exporter take prefixes are ignored).</summary>
+        public static bool IsGlance(string clipName)
+        {
+            string name = CleanClipName(clipName);
+            return name == GlanceLeft || name == GlanceRight;
+        }
+
+        /// <summary>
+        /// The glance clip for a place seen from Pip: <see cref="GlanceLeft"/> when it lies to her left,
+        /// <see cref="GlanceRight"/> when to her right (dead ahead and dead behind count as right). Ground-plane
+        /// vectors in Unity's axes (x right, z forward): her facing, and the offset from her to the place. Null when
+        /// either vector is too short to have a direction.
+        /// </summary>
+        public static string GlanceToward(float forwardX, float forwardZ, float toX, float toZ)
+        {
+            const float tiny = 1e-6f;
+            if (forwardX * forwardX + forwardZ * forwardZ < tiny || toX * toX + toZ * toZ < tiny)
+            {
+                return null;
+            }
+
+            // y of forward x to: negative when the place is to her left (Unity is left-handed, y up)
+            float side = forwardZ * toX - forwardX * toZ;
+            return side < 0f ? GlanceLeft : GlanceRight;
+        }
+
+        /// <summary>
+        /// The signed angle from Pip's facing to a place, degrees in (-180, 180], positive to her right; 0 when either
+        /// vector is too short. A glance reads best between about 30 and 150 degrees to one side: nearer ahead the
+        /// place is already in view, and behind her she should turn around first.
+        /// </summary>
+        public static float GlanceAngle(float forwardX, float forwardZ, float toX, float toZ)
+        {
+            const float tiny = 1e-6f;
+            if (forwardX * forwardX + forwardZ * forwardZ < tiny || toX * toX + toZ * toZ < tiny)
+            {
+                return 0f;
+            }
+
+            double side = forwardZ * toX - forwardX * toZ;
+            double along = forwardX * toX + forwardZ * toZ;
+            return (float)(Math.Atan2(side, along) * 180.0 / Math.PI);
+        }
 
         /// <summary>Clips that cycle; everything else plays once and holds its last frame.</summary>
         public static readonly string[] Looping =

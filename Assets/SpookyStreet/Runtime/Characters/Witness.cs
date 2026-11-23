@@ -95,12 +95,14 @@ namespace SpookyStreet.Characters
 
         /// <summary>
         /// Plays <paramref name="clip"/> once over the loop and, while it plays, turns the body toward
-        /// <paramref name="aimAt"/> (the clip's own aim is accepted; no IK), then turns back. Returns false and does
-        /// nothing, without logging, when the model has no such clip yet.
+        /// <paramref name="aimAt"/> (the clip's own aim is accepted; no IK), then turns back. A gesture that aims
+        /// nowhere (<see cref="CharacterClips.TurnsToAim"/>: CheckWatch, Listen, Ponder) plays without turning, so
+        /// Mr. Vale stays put on his bench. Returns false and does nothing, without logging, when the model has no
+        /// such clip (an unknown or not yet exported gesture never breaks a line or a cutscene).
         /// </summary>
         public bool PlayGesture(string clip, Vector3? aimAt)
         {
-            if (Avatar == null || !Avatar.HasClip(clip) || !Avatar.PlayOneShot(clip))
+            if (Avatar == null || string.IsNullOrEmpty(clip) || !Avatar.HasClip(clip) || !Avatar.PlayOneShot(clip))
             {
                 return false;
             }
@@ -113,7 +115,7 @@ namespace SpookyStreet.Characters
             _gesture = clip;
             _returning = false;
             _gestureYaw = _restYaw;
-            if (aimAt.HasValue)
+            if (aimAt.HasValue && CharacterClips.TurnsToAim(clip))
             {
                 Vector3 to = aimAt.Value - transform.position;
                 if (new Vector2(to.x, to.z).sqrMagnitude > 0.01f)
