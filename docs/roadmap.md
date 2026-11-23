@@ -16,7 +16,7 @@ state, cutscene system, frameworks), then pour content into them.**
 | S002 greybox mystery (case core, wiring, interior, vignettes, hints) | done, under review | the audit in §2 decides what is adapted |
 | **S002.5 Mystery first (new)** | agreed, next (a, then b) | **foundations:** case data model (true story doc, clues as stickers, testimonies, idea groups and slots), notebook deduction mechanic, area-based hints, partial testimonies and spoiler-free lines and captions, replay on demand, `street` state (what the street remembers), case page and Continue picture recap, the **reusable cutscene system** with case 01's opening and reveal payoff (blocked with existing clips), the case template in `docs/cases/` |
 | S003 representative finished corner + **audio** | next after S002.5 | audio synthesis pipeline (D20) with the clue sounds first: knocks, floor hum, cloth flutter, wind-wheel whirr, latch, sticker peel, wobble *tok*; babble voices; the diegetic attractions of the four new clue objects; character actions for testimonies and the hint glance; the gesture, babble and music pass on case 01's cutscenes (S003a) |
-| S004 entire slice + language delivery | later | paper bats with meaning (sketch pages, costume pieces, bat mobile), parent progress page behind the gate, language packs, accessibility pass (deduction by gamepad and keyboard), dialogue portraits, the troupe photo and crest seeds with case 01's "street remembers" and seed cutscenes |
+| S004 entire slice + language delivery | planned (`docs/S004-plan.md`, for owner review) | paper bats with meaning (sketch pages, costume pieces, bat mobile), parent progress page behind the gate, language packs, accessibility pass (deduction by gamepad and keyboard), dialogue portraits, the troupe photo and crest seeds with case 01's "street remembers" and seed cutscenes |
 | S005 release candidate | later | formative playtest of the mystery-first case (`mystery-first.md` §9, `engagement.md` §3) before RC; device profiling |
 | **S006 season framework (new)** | after case 01 ships | wall jump and ledge grab with revisit secrets in Lantern Lane; the place framework (second place, D24.1 threshold reuse); case 02 designed with the template |
 | S007+ cases 02–08 | 02–04 committed after case 01's playtest; 05–08 designed, not committed (D27) | one case per stage: design doc (template, with its cutscene slots) → owner approval → greybox → content; each case's cutscenes are built with it |
@@ -35,7 +35,7 @@ Build the system once, then add content per case, so nothing is re-animated late
 | System | S002.5b | engine-free `Core` cutscene data and evaluator (beats of camera shots, character clip and gesture cues, caption keys, babble and music cues, the reveal's per-sticker shots), tests at 30/60 fps; Runtime player with skip on every control scheme, rewatch from the case page, reduced-motion cuts, a seen set beside the replay seen set (`NonverbalProgressStore` pattern, outside the case save) | `MemoryReplay` Cinemachine blend and hold (`MemoryReplayPlayback`, `MemoryReplayTiming`), letterbox and skip disc, `VignettePlayer` for comic inserts, `ThresholdTravel` page-turn for scene cuts | 1.5 |
 | Case 01 opening and reveal payoff | S002.5b | the opening (Pip arrives as the new kid, ends on the arrival-porch composition, play starts in control); the reveal payoff staged from the child's stickers (owl show, Kit reopening) | existing clips (walk, talk, point, sit, crank) and captions; gesture IDs fall back to them | 1.5 |
 | Gesture, babble and music pass | S003a | data edits to the same cutscenes once gestures and babble exist; no new cutscene code | the S003 gesture and audio libraries | 0.5 |
-| Street remembers and seed | S004 | case 01's end cutscene (booth bows on the hour, Bea's owl) and seed (a puppet in Kit's photo glows) | the troupe photo and crest art of S004 | 0.5 |
+| Street remembers and seed | S004 | case 01's end cutscene (booth bows on the hour, Bea's owl) and seed (a puppet in Kit's photo glows); beats in `docs/S004-plan.md` §2.3 | the troupe photo and crest art of S004 | 1.5 (with the show clock and touch reward, S004 stream C) |
 | Per case | S007+ | intro, reveal payoffs, street remembers, seed, from each case's template; the finale's cutscenes with case 08 | system and libraries above | ≈ 1 per case |
 
 To avoid rework: no hand-keyed cinematic clips before the S003a gesture library; cutscene timing is data, so the
@@ -145,6 +145,18 @@ for the family playtest)
   cutscenes, the playtest script and observation sheet.
 - Streams: (A) audio, Opus; (B) character actions in Blender scripts, `fable`; (C) wiring and the playtest kit, Opus.
 - The owner gets: the build to play with children, plus the observation sheet from `mystery-first.md` §9.
+
+**4. S004: keepsakes, seeds, languages, parent page, accessibility** (about 18.5 agent-days; TestFlight: two
+builds). The full plan, content proposals and four open owner decisions are in `docs/S004-plan.md`.
+- Scope: 30 paper bats with meaning (three sketch pages, three costume pieces, the bat mobile), the troupe photo and
+  owl crest, the seed and "street remembers" cutscenes with the owl's show on the hour, language packs with pt-BR
+  first, the parent progress page with settings and credits, the accessibility pass, dialogue portraits.
+- Streams: (F1) UI navigation base, Opus; (A) keepsakes, Opus; (B) photo, crest and keepsake art, `fable`; (C)
+  cutscenes and show clock, Opus; (D) language packs and pt-BR, Opus; (E) parent page, settings, credits, Opus; (F2)
+  accessibility pass, Opus; (G) portraits, `fable` art and Opus wiring.
+- The owner gets two builds. TF1: bats that become sketch pages and costumes, Kit's troupe photo, a night that ends
+  on a seed, a street that welcomes the child back, and the game in Portuguese. TF2: the page for grown-ups,
+  accessibility settings, every screen by gamepad and keyboard, downloadable languages, and faces in dialogue.
 
 The open questions that blocked increment 1 (`mystery-first.md` §12 questions 1 and 2, the finale gate and
 wrong-try feedback) were decided by the owner on 2026-11-22 (D26: the recommendations). Nothing blocks S002.5a.
