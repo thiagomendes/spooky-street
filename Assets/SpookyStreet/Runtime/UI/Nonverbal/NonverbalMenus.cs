@@ -2,6 +2,7 @@ using System;
 using SpookyStreet.Controls;
 using SpookyStreet.Core.Art;
 using SpookyStreet.Core.Nonverbal;
+using SpookyStreet.Core.Save;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -12,8 +13,8 @@ namespace SpookyStreet.UI.Nonverbal
     /// <summary>
     /// The non-verbal UX menus (docs/nonverbal-ux.md §2.6, §8; D23.4, D23.5), on their own canvas above the title,
     /// pause and notices: the parent gate (two marked felt spots held together for 3 s, a candy ring fills; a fresh
-    /// <see cref="ParentGate"/> per guarded action) and the settings card with the <c>Helper</c> toggle, which sits
-    /// behind the gate. One hybrid reading mode (D23.1): no first-launch choice and no words toggle. Everything runs
+    /// <see cref="ParentGate"/> per guarded action) and the settings card with the <c>Helper</c> toggle and the music,
+    /// sounds and voices volume sliders (S003), which sits behind the gate. One hybrid reading mode (D23.1): no first-launch choice and no words toggle. Everything runs
     /// on unscaled time, so it works on the pause screen.
     /// </summary>
     public sealed class NonverbalMenus : MonoBehaviour
@@ -51,6 +52,21 @@ namespace SpookyStreet.UI.Nonverbal
 
         /// <summary>Called after a toggle changed <see cref="Settings"/> (save it).</summary>
         public Action<NonverbalSettings> SettingsChanged { get; set; }
+
+        /// <summary>The player's preferences the volume sliders show and change (set by the game's audio).</summary>
+        public PreferencesData Preferences { get; set; }
+
+        /// <summary>Called while a volume slider moves (apply it; the owner saves it once the slider rests).</summary>
+        public Action<PreferencesData> PreferencesChanged { get; set; }
+
+        /// <summary>Music volume (0–1, the <c>MusicVol</c> bus).</summary>
+        public Slider MusicSlider { get; private set; }
+
+        /// <summary>Sound effects volume (0–1, the <c>SFXVol</c> bus; the night bed follows it).</summary>
+        public Slider SoundsSlider { get; private set; }
+
+        /// <summary>Voices volume (0–1, the <c>VoiceVol</c> bus).</summary>
+        public Slider VoicesSlider { get; private set; }
 
         public static NonverbalMenus Create(Transform parent)
         {
@@ -322,12 +338,18 @@ namespace SpookyStreet.UI.Nonverbal
             var content = UiFactory.Stretch(UiFactory.Rect(scrim.transform, "Content"));
             content.gameObject.AddComponent<SafeAreaFitter>();
             var card = UiFactory.PaperCard(content, "SettingsCard", new Vector2(0.5f, 0.5f), Vector2.zero,
-                new Vector2(720f, 300f), -0.8f);
+                new Vector2(720f, 610f), -0.8f);
             var gear = UiFactory.Sprite(card.transform, "Gear", UiFactory.Baked(UiSpriteCatalog.IconGear), UiFactory.Ink,
                 new Vector2(0.5f, 1f), new Vector2(0f, -66f), new Vector2(72f, 72f));
             gear.preserveAspect = true;
             HelperToggle = Row(card.transform, "HelperRow", "pg.hands", NonverbalSettings.HelperLabelKey, -180f,
                 ToggleHelper, out _helperTick);
+            MusicSlider = VolumeRow(card.transform, "MusicRow", "pg.emo_tune", NvKeys.SettingsMusic, -296f,
+                v => SetVolume(p => p.MusicVolume = v));
+            SoundsSlider = VolumeRow(card.transform, "SoundsRow", "pg.knock_ring", NvKeys.SettingsSounds, -400f,
+                v => SetVolume(p => p.EffectsVolume = v));
+            VoicesSlider = VolumeRow(card.transform, "VoicesRow", "pg.emo_wow", NvKeys.SettingsVoices, -504f,
+                v => SetVolume(p => p.DialogueVolume = v));
             var close = UiFactory.FeltDisc(card.transform, "CloseSettings", UiSpriteCatalog.FeltDiscNight, Palette.WarmPaper,
                 UiSpriteCatalog.IconClose, Palette.WarmPaper, null, UiFactory.SystemDiscDiameter, Vector2.one,
                 new Vector2(-20f, -20f), 1f);
@@ -360,6 +382,62 @@ namespace SpookyStreet.UI.Nonverbal
             return button;
         }
 
+        /// <summary>A volume row: picture, label and a wide felt slider (a 64 pt thumb for small fingers).</summary>
+        private static Slider VolumeRow(Transform card, string name, string art, string key, float y,
+            UnityEngine.Events.UnityAction<float> onChange)
+        {
+            var row = UiFactory.Rect(card, name);
+            UiFactory.Place(row, new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(620f, 96f));
+            var icon = UiFactory.Sprite(row, "Picture", PuppetAtlas.Get(art), Color.white, new Vector2(0f, 0.5f),
+                new Vector2(44f, 0f), new Vector2(80f, 80f));
+            icon.preserveAspect = true;
+            var label = UiFactory.Label(row, "Label", key, 30, TextAnchor.MiddleLeft, UiFactory.Ink, UiFactory.BoldFont);
+            UiFactory.Place(label.rectTransform, new Vector2(0f, 0.5f), new Vector2(100f, 0f), new Vector2(170f, 64f),
+                new Vector2(0f, 0.5f));
+
+            var area = UiFactory.Rect(row, "Slider");
+            UiFactory.Place(area, new Vector2(1f, 0.5f), new Vector2(-170f, 0f), new Vector2(300f, 80f));
+            var hit = area.gameObject.AddComponent<Image>();
+            hit.color = new Color(1f, 1f, 1f, 0f); // the whole row height is grabbable
+            var track = UiFactory.Sprite(area, "Track", UiFactory.Circle, UiFactory.WithAlpha(UiFactory.Ink, 0.22f),
+                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(300f, 16f));
+            track.type = Image.Type.Simple;
+            var fillArea = UiFactory.Rect(area, "FillArea");
+            UiFactory.Place(fillArea, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(268f, 16f));
+            var fill = UiFactory.Panel(fillArea, "Fill", Palette.CandyCornYellow, false);
+            var handleArea = UiFactory.Rect(area, "HandleArea");
+            UiFactory.Place(handleArea, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(268f, 80f));
+            var handle = UiFactory.Sprite(handleArea, "Handle", UiFactory.Circle, Palette.HauntedPurple,
+                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(64f, 64f));
+            handle.rectTransform.anchorMin = new Vector2(0f, 0f);
+            handle.rectTransform.anchorMax = new Vector2(0f, 1f);
+            handle.rectTransform.sizeDelta = new Vector2(64f, -16f);
+            var slider = area.gameObject.AddComponent<Slider>();
+            slider.fillRect = fill.rectTransform;
+            slider.handleRect = handle.rectTransform;
+            slider.targetGraphic = handle;
+            slider.transition = Selectable.Transition.None;
+            slider.direction = Slider.Direction.LeftToRight;
+            slider.minValue = 0f;
+            slider.maxValue = 1f;
+            slider.value = 1f;
+            slider.onValueChanged.AddListener(onChange);
+            return slider;
+        }
+
+        private void SetVolume(Action<PreferencesData> change)
+        {
+            if (Preferences == null || _refreshing)
+            {
+                return;
+            }
+
+            change(Preferences);
+            PreferencesChanged?.Invoke(Preferences);
+        }
+
+        private bool _refreshing;
+
         /// <summary>The settings card with the Helper toggle (call from behind <see cref="RequireParent"/>).</summary>
         public void OpenSettings()
         {
@@ -384,6 +462,16 @@ namespace SpookyStreet.UI.Nonverbal
         private void RefreshSettings()
         {
             _helperTick.enabled = Settings != null && Settings.HelperAutoHints;
+            if (Preferences == null)
+            {
+                return;
+            }
+
+            _refreshing = true;
+            MusicSlider.SetValueWithoutNotify(Preferences.MusicVolume);
+            SoundsSlider.SetValueWithoutNotify(Preferences.EffectsVolume);
+            VoicesSlider.SetValueWithoutNotify(Preferences.DialogueVolume);
+            _refreshing = false;
         }
 
         /// <summary>Closes every menu (back to title from pause, scene teardown).</summary>

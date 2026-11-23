@@ -10,7 +10,8 @@ namespace SpookyStreet.Tests.PlayMode
     /// <summary>
     /// The code-built mixer (S003 foundation) with generated stand-in clips: takes rotate without repeats, bus volumes
     /// follow the exposed parameters and the saved sliders, spatial events play in 3D, loops loop, rapid repeats are
-    /// throttled, and a missing clip is skipped quietly. Not wired to gameplay: the sounds await owner approval.
+    /// throttled, and a missing clip is skipped quietly; the pause holds game sound but not the UI tap, the bus
+    /// shaping trims and filters the bed, loops fade out, and every play is logged (batchmode has no audio device).
     /// </summary>
     public class AudioRigTests
     {
@@ -105,6 +106,87 @@ namespace SpookyStreet.Tests.PlayMode
             for (var take = 1; take <= 5; take++) clips.Missing.Add("Audio/step_grass/step_grass_t" + take);
             Assert.IsNull(rig.Play(AudioEvents.StepGrass));
             Assert.IsNull(rig.Play("no_such_event"));
+        }
+
+        [Test]
+        public void PauseHoldsGameSoundButTheUiTapStillPlays()
+        {
+            var loop = rig.Play(AudioEvents.MoveGlideLoop);
+            var bed = rig.Play(AudioEvents.AmbNight);
+            Assert.IsFalse(rig.IsBusPaused(AudioBus.Sfx));
+            rig.SetGamePaused(true);
+            Assert.IsTrue(rig.GamePaused);
+            Assert.IsTrue(rig.IsBusPaused(AudioBus.Sfx));
+            Assert.IsTrue(rig.IsBusPaused(AudioBus.Ambience));
+            Assert.IsTrue(rig.IsBusPaused(AudioBus.Voice));
+            Assert.IsFalse(rig.IsBusPaused(AudioBus.Music), "music carries on under the pause card");
+            Assert.IsTrue(rig.IsPaused(loop), "the glide loop holds");
+            Assert.IsTrue(rig.IsPaused(bed), "the bed holds");
+            Assert.IsTrue(rig.IsLooping(AudioEvents.MoveGlideLoop), "held, not stopped");
+            Assert.IsNull(rig.Play(AudioEvents.StepGrass), "no game sound starts while paused");
+            var tap = rig.Play(AudioEvents.UiTap);
+            Assert.IsNotNull(tap, "the pause menu's buttons still tap");
+            Assert.IsTrue(tap.ignoreListenerPause);
+            Assert.AreNotSame(loop, tap, "a held loop is never stolen");
+            Assert.IsFalse(loop.ignoreListenerPause);
+
+            rig.SetGamePaused(false);
+            Assert.IsFalse(rig.IsPaused(loop));
+            Assert.IsFalse(rig.IsBusPaused(AudioBus.Sfx));
+            Assert.IsNotNull(rig.Play(AudioEvents.StepGrass));
+            int pauses = 0, resumes = 0;
+            foreach (var entry in rig.Log)
+            {
+                if (entry.Kind == AudioLogKind.Pause && entry.Bus == AudioBus.Sfx) pauses++;
+                if (entry.Kind == AudioLogKind.Resume && entry.Bus == AudioBus.Sfx) resumes++;
+            }
+
+            Assert.AreEqual(1, pauses);
+            Assert.AreEqual(1, resumes);
+        }
+
+        [Test]
+        public void BusShapingTrimsAndFiltersOneBus()
+        {
+            var bed = rig.Play(AudioEvents.AmbNight);
+            Assert.IsNull(bed.GetComponent<AudioLowPassFilter>(), "no filter until one is needed");
+            rig.SetBusShaping(AudioBus.Ambience, AudioMix.IndoorAmbienceDb, AudioMix.IndoorAmbienceLowPassHz);
+            Assert.AreEqual(AudioMix.DbToLinear(AudioMix.IndoorAmbienceDb), bed.volume, 1e-4f);
+            var filter = bed.GetComponent<AudioLowPassFilter>();
+            Assert.IsNotNull(filter);
+            Assert.IsTrue(filter.enabled);
+            Assert.AreEqual(AudioMix.IndoorAmbienceLowPassHz, rig.BusLowPassHz(AudioBus.Ambience), 1f);
+            Assert.AreEqual(1f, rig.Play(AudioEvents.NoteStickerWobble).volume, 1e-5f, "other buses untouched");
+
+            rig.SetBusShaping(AudioBus.Ambience, 0f, AudioMix.OpenLowPassHz);
+            Assert.AreEqual(1f, bed.volume, 1e-5f);
+            Assert.IsFalse(filter.enabled, "an open filter is switched off");
+        }
+
+        [Test]
+        public void PlaysAreLoggedWithTakeAndPlace()
+        {
+            rig.ClearLog();
+            rig.PlayAt(AudioEvents.ClueKnocksDistant, new Vector3(1f, 4f, 9f));
+            rig.Play(AudioEvents.UiTap);
+            rig.Play(AudioEvents.MoveGlideLoop);
+            rig.Stop(AudioEvents.MoveGlideLoop, 0.2f);
+            Assert.IsFalse(rig.IsLooping(AudioEvents.MoveGlideLoop), "stopping (fading) loops no longer count");
+            Assert.AreEqual(4, rig.Log.Count);
+            var knock = rig.Log[0];
+            Assert.AreEqual(AudioLogKind.Play, knock.Kind);
+            Assert.AreEqual(AudioEvents.ClueKnocksDistant, knock.EventId);
+            Assert.IsTrue(knock.Spatial);
+            Assert.AreEqual(new Vector3(1f, 4f, 9f), knock.Position);
+            Assert.That(knock.Take, Is.InRange(1, 4));
+            Assert.AreEqual(Time.frameCount, knock.Frame);
+            Assert.IsFalse(rig.Log[1].Spatial);
+            Assert.AreEqual(AudioLogKind.Stop, rig.Log[3].Kind);
+            Assert.AreEqual(1, rig.CountPlays(AudioEvents.UiTap));
+            var knocks = AudioEvents.CreateCatalog().Get(AudioEvents.ClueKnocksDistant);
+            var source = rig.PlayAt(AudioEvents.ClueKnocksDistant, Vector3.zero);
+            Assert.AreEqual(knocks.MinDistance, source.minDistance);
+            Assert.AreEqual(knocks.MaxDistance, source.maxDistance);
         }
 
         [Test]

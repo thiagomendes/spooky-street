@@ -2,8 +2,9 @@ namespace SpookyStreet.Core.Audio
 {
     /// <summary>
     /// The S003 first sound set (D20), rendered by <c>tools/audio/build.py</c>. Ids, take counts and markers must match
-    /// <c>tools/audio/spookyaudio/sounds.py</c> (checked by <c>tools/audio/tests/test_catalog_sync.py</c>).
-    /// Not wired to gameplay yet: the owner approves the sounds on the listening page first.
+    /// <c>tools/audio/spookyaudio/sounds.py</c> (checked by <c>tools/audio/tests/test_sounds.py</c>).
+    /// The owner approved the effects (D20.1); they are imported (<see cref="AudioImportPlan.Approved"/>) and wired by
+    /// <c>Runtime/Audio/GameAudio.cs</c>. The voices and music are being replaced and are not imported.
     /// </summary>
     public static class AudioEvents
     {
@@ -35,7 +36,8 @@ namespace SpookyStreet.Core.Audio
 
         /// <summary>
         /// Knock onsets inside every take of <see cref="ClueKnocksDistant"/>: short, short, pause, last (spec §6). The
-        /// cam contacts and owl bows sync to these frame for frame.
+        /// arrival beat's attic-light pulses and the paper bat (<c>KnockBeat</c>) run on these times, and the clip
+        /// starts on the beat's first frame, so light and sound land together.
         /// </summary>
         public static readonly float[] KnockOnsets = { 0.02f, 0.28f, 1.00f };
 
@@ -45,10 +47,13 @@ namespace SpookyStreet.Core.Audio
         public static AudioCatalog CreateCatalog()
         {
             var c = new AudioCatalog();
-            c.Add(new AudioEventDef(ClueKnocksDistant, AudioBus.Sfx, 4, spatial: true, markers: KnockOnsets));
+            // The knocks must carry from the owl house to the arrival porch (about 25 m), so they roll off late.
+            c.Add(new AudioEventDef(ClueKnocksDistant, AudioBus.Sfx, 4, spatial: true, markers: KnockOnsets,
+                minDistance: 12f, maxDistance: 70f));
             c.Add(new AudioEventDef(ClueFloorHum, AudioBus.Sfx, 3, markers: HumKnockOnsets));
-            c.Add(new AudioEventDef(ClueCamTap, AudioBus.Sfx, 5, pitchJitterSemitones: 0.3f, spatial: true));
-            c.Add(new AudioEventDef(ClueWindWheel, AudioBus.Sfx, 3, spatial: true));
+            c.Add(new AudioEventDef(ClueCamTap, AudioBus.Sfx, 5, pitchJitterSemitones: 0.3f, spatial: true,
+                minDistance: 2.5f, maxDistance: 14f));
+            c.Add(new AudioEventDef(ClueWindWheel, AudioBus.Sfx, 3, spatial: true, minDistance: 8f, maxDistance: 45f));
             c.Add(new AudioEventDef(StepWood, AudioBus.Sfx, 5, pitchJitterSemitones: 0.6f, minIntervalSeconds: 0.08f));
             c.Add(new AudioEventDef(StepGrass, AudioBus.Sfx, 5, pitchJitterSemitones: 0.6f, minIntervalSeconds: 0.08f));
             c.Add(new AudioEventDef(StepStone, AudioBus.Sfx, 5, pitchJitterSemitones: 0.6f, minIntervalSeconds: 0.08f));

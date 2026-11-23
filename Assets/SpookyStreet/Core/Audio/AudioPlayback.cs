@@ -103,6 +103,36 @@ namespace SpookyStreet.Core.Audio
         /// <summary>Music and ambience dip by this much while a voice line plays, so babble stays clear.</summary>
         public const float VoiceDuckDb = -6f;
 
+        /// <summary>The night bed inside the owl house: quieter and muffled, as if through the walls.</summary>
+        public const float IndoorAmbienceDb = -12f;
+
+        public const float IndoorAmbienceLowPassHz = 1100f;
+
+        /// <summary>A low-pass this high is no filter at all (it is switched off).</summary>
+        public const float OpenLowPassHz = 22000f;
+
+        /// <summary>How fast the bed follows Pip through a threshold (dB per second; the page-turn hides the change).</summary>
+        public const float AmbienceFadeDbPerSecond = 24f;
+
+        /// <summary>
+        /// Pause (spec §5) suspends the game's sound: effects, voices and the bed hold where they are and resume in
+        /// place, so a knock never loses its sync with the animation. Music keeps playing under the pause card, and the
+        /// UI tap still answers the pause menu's own buttons.
+        /// </summary>
+        public static bool PausesWithGame(AudioEventDef def) => def.Bus != AudioBus.Music && def.Id != AudioEvents.UiTap;
+
+        /// <summary>The ambience trim and low-pass for Pip outdoors or inside the house.</summary>
+        public static float AmbienceTrimDb(bool indoors) => indoors ? IndoorAmbienceDb : 0f;
+
+        public static float AmbienceLowPassHz(bool indoors) => indoors ? IndoorAmbienceLowPassHz : OpenLowPassHz;
+
+        /// <summary>Moves <paramref name="current"/> toward <paramref name="target"/> by at most <paramref name="maxDelta"/>.</summary>
+        public static float Approach(float current, float target, float maxDelta)
+        {
+            if (Math.Abs(target - current) <= maxDelta) return target;
+            return current + Math.Sign(target - current) * maxDelta;
+        }
+
         public static string Parameter(AudioBus bus)
         {
             switch (bus)
@@ -143,9 +173,9 @@ namespace SpookyStreet.Core.Audio
         }
 
         /// <summary>Linear gain for one play: bus level, event trim and voice ducking.</summary>
-        public static float PlayGain(AudioEventDef def, float busDb, bool voiceActive)
+        public static float PlayGain(AudioEventDef def, float busDb, bool voiceActive, float busTrimDb = 0f)
         {
-            var db = busDb + def.VolumeDb;
+            var db = busDb + def.VolumeDb + busTrimDb;
             if (voiceActive && (def.Bus == AudioBus.Music || def.Bus == AudioBus.Ambience)) db += VoiceDuckDb;
             return busDb <= MinDb ? 0f : DbToLinear(db);
         }
