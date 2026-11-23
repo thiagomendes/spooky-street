@@ -494,16 +494,17 @@ namespace SpookyStreet.Tests.PlayMode
 
             // The page flip: once per turn, never for the page it is already on.
             Rig.ClearLog();
-            int other = entry == 0 ? 1 : 0;
+            int other = notebook.CurrentPage == 0 ? 1 : 0; // a page it is not on yet
             notebook.ShowPage(other);
             yield return Wait(0.3f);
             Assert.AreEqual(1, Plays(AudioEvents.UiPageTurn), "turning a page flips paper");
+            int flips = other == entry ? 1 : 2;
             notebook.ShowPage(entry);
             yield return Wait(0.5f);
-            Assert.AreEqual(2, Plays(AudioEvents.UiPageTurn));
+            Assert.AreEqual(flips, Plays(AudioEvents.UiPageTurn));
             notebook.ShowPage(entry);
             yield return null;
-            Assert.AreEqual(2, Plays(AudioEvents.UiPageTurn), "no flip without a turn");
+            Assert.AreEqual(flips, Plays(AudioEvents.UiPageTurn), "no flip without a turn");
 
             // A wrong set by tap-tap: a peel per pick, a press per placement, then one wobble home.
             Rig.ClearLog();
