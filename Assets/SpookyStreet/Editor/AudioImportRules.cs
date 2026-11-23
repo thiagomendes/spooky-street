@@ -5,15 +5,17 @@ using UnityEngine;
 namespace SpookyStreet.EditorTools
 {
     /// <summary>
-    /// Import settings for every approved sound effect under <c>Content/Resources/Audio</c> (S003), kept in code like
+    /// Import settings for every approved sound under <c>Content/Resources/Audio</c> (S003; the voices and music of
+    /// D20.2), kept in code like
     /// <see cref="ModelImportRules"/> so they are reviewable and survive .meta regeneration (tools/unity_meta.py writes
     /// bare importer metas). The rules themselves are engine-free and unit tested (<see cref="AudioImportPlan"/>):
-    /// Vorbis at a quality per category, mono for 3D one-shots, decompress-on-load for short sounds and streaming for
-    /// the night bed, every clip at its 48 kHz master rate. The same settings apply on every platform (D25).
+    /// Vorbis at a quality per category, mono for 3D one-shots, decompress-on-load for short effects, compressed in
+    /// memory for the babble phrases and streaming for the night bed and the music, every clip at its 48 kHz master
+    /// rate. The same settings apply on every platform (D25).
     /// </summary>
     public sealed class AudioImportRules : AssetPostprocessor
     {
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
 
         /// <summary>The event definition a game audio path belongs to (null for anything else).</summary>
         public static AudioEventDef DefinitionFor(string assetPath)
@@ -25,13 +27,23 @@ namespace SpookyStreet.EditorTools
         /// <summary>The importer sample settings for a plan entry.</summary>
         public static AudioImporterSampleSettings SampleSettingsFor(AudioImportSettings plan) => new AudioImporterSampleSettings
         {
-            loadType = plan.Load == AudioLoad.Streaming ? AudioClipLoadType.Streaming : AudioClipLoadType.DecompressOnLoad,
+            loadType = LoadTypeFor(plan.Load),
             compressionFormat = AudioCompressionFormat.Vorbis,
             quality = plan.VorbisQuality,
             sampleRateSetting = AudioSampleRateSetting.PreserveSampleRate,
             sampleRateOverride = (uint)plan.SampleRate,
             preloadAudioData = plan.Load != AudioLoad.Streaming,
         };
+
+        public static AudioClipLoadType LoadTypeFor(AudioLoad load)
+        {
+            switch (load)
+            {
+                case AudioLoad.Streaming: return AudioClipLoadType.Streaming;
+                case AudioLoad.CompressedInMemory: return AudioClipLoadType.CompressedInMemory;
+                default: return AudioClipLoadType.DecompressOnLoad;
+            }
+        }
 
         private void OnPreprocessAudio()
         {

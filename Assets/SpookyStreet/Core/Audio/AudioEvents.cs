@@ -4,7 +4,8 @@ namespace SpookyStreet.Core.Audio
     /// The S003 first sound set (D20), rendered by <c>tools/audio/build.py</c>. Ids, take counts and markers must match
     /// <c>tools/audio/spookyaudio/sounds.py</c> (checked by <c>tools/audio/tests/test_sounds.py</c>).
     /// The owner approved the effects (D20.1); they are imported (<see cref="AudioImportPlan.Approved"/>) and wired by
-    /// <c>Runtime/Audio/GameAudio.cs</c>. The voices and music are being replaced and are not imported.
+    /// <c>Runtime/Audio/GameAudio.cs</c>. The S003 formant voices and plucked motif below were rejected and are never
+    /// imported; their v2 replacements (D20.2) are added by <see cref="VoiceMusicEvents.AddTo"/>.
     /// </summary>
     public static class AudioEvents
     {
@@ -75,6 +76,7 @@ namespace SpookyStreet.Core.Audio
             c.Add(new AudioEventDef(AmbNight, AudioBus.Ambience, 3, loop: true));
             c.Add(new AudioEventDef(MusicMotifPluck, AudioBus.Music, 3));
             c.Add(new AudioEventDef(MusicMotifWood, AudioBus.Music, 3));
+            VoiceMusicEvents.AddTo(c); // D20.2: the v2 voices and music
             return c;
         }
     }
