@@ -233,6 +233,62 @@ namespace SpookyStreet.Core.World
             return Math.Min(run, max);
         }
 
+        /// <summary>
+        /// How far a standing Pip at (x, y, z) can get along (dirX, dirZ), up to <paramref name="max"/> metres: walking,
+        /// stepping up at most the step offset, or stepping off an edge onto anything lower (a drop is a way on, and so
+        /// is a threshold's exit zone). The safety net's measure of whether Pip is shut in (<see cref="InteriorSafety.Enclosed"/>).
+        /// </summary>
+        public static float EscapeRun(float x, float y, float z, float dirX, float dirZ, float max, bool doorOpen) =>
+            EscapeRun(Solids(doorOpen), x, y, z, dirX, dirZ, max);
+
+        internal static float EscapeRun(StageSlab[] slabs, float x, float y, float z, float dirX, float dirZ, float max)
+        {
+            float len = (float)Math.Sqrt(dirX * dirX + dirZ * dirZ);
+            dirX /= len;
+            dirZ /= len;
+            const float step = 0.04f;
+            float h = y;
+            float run = 0f;
+            while (run < max)
+            {
+                float d = run + step;
+                float px = x + dirX * d;
+                float pz = z + dirZ * d;
+                // The capsule carried forward at the current height must fit (a wall stops it, an edge does not).
+                if (Blocked(slabs, px, pz, h + CaseRouteLayout.StepOffset + 0.02f, h + CaseRouteLayout.PipHeight))
+                {
+                    break;
+                }
+
+                bool found = false;
+                foreach (float top in Surfaces(slabs, px, pz))
+                {
+                    if (top <= h + CaseRouteLayout.StepOffset &&
+                        !Blocked(slabs, px, pz, top + CaseRouteLayout.StepOffset + 0.02f, top + CaseRouteLayout.PipHeight))
+                    {
+                        h = top;
+                        found = true;
+                        break;
+                    }
+                }
+
+                // A threshold's exit zone is a way out (its opening has no floor of its own).
+                if (Thresholds.NearAnyZone(px, h, pz, 0.05f))
+                {
+                    return max;
+                }
+
+                if (!found)
+                {
+                    break;
+                }
+
+                run = d;
+            }
+
+            return Math.Min(run, max);
+        }
+
         /// <summary>The interior's solid slabs (the inner door leaf only while latched).</summary>
         public static StageSlab[] Solids(bool doorOpen)
         {

@@ -67,6 +67,7 @@ namespace SpookyStreet.Case
         private Vector3 _lastPip;
         private bool _hasLastPip;
         private readonly InteriorRescue _rescue = new InteriorRescue();
+        private CharacterController _pipController;
 
         /// <summary>Times the interior safety net set Pip down on a safe anchor (tests, diagnostics).</summary>
         public int Rescues { get; private set; }
@@ -76,6 +77,9 @@ namespace SpookyStreet.Case
 
         /// <summary>Why the safety net last moved Pip.</summary>
         public RescueReason LastRescue { get; private set; }
+
+        /// <summary>Frames the safety net slid Pip off a character's head (June) instead of moving her (tests).</summary>
+        public int SlideOffFrames { get; private set; }
 
         /// <summary>A jump of Pip's position larger than this in one frame is a teleport: the camera cuts.</summary>
         public const float TeleportCutDistance = 6f;
@@ -850,7 +854,12 @@ namespace SpookyStreet.Case
                 if (CaseSpeakers.IsCaption(line.Speaker))
                 {
                     // Only a sound from somewhere (the knocks, the hum) gets a direction cue; what Pip sees does not.
-                    Captions.ShowKey(line.Key, CaptionDirection.IsDirectionalSound(line.Key) ? SourceOf(action) : null);
+                    // Captions describe what Pip perceives where she is (D26): indoors the knocks come up through the
+                    // floor from the workshop, never "from the blue house" off to one side.
+                    Vector3 at = _pip.transform.position;
+                    bool indoors = CaptionPerception.Indoors(at.x, at.z);
+                    string key = CaptionPerception.KeyFor(line.Key, indoors);
+                    Captions.ShowKey(key, CaptionDirection.IsDirectionalSound(key) ? SourceOf(action, indoors) : null);
                 }
                 else
                 {
@@ -876,10 +885,11 @@ namespace SpookyStreet.Case
             Dialogue.Play(spoken);
         }
 
-        /// <summary>World position a caption's direction cue points at (the attic window for the knocks).</summary>
-        private Func<Vector3?> SourceOf(CaseAction action)
+        /// <summary>World position a caption's direction cue points at (the attic window for the knocks on the street,
+        /// the workshop under the floor for the knocks heard indoors).</summary>
+        private Func<Vector3?> SourceOf(CaseAction action, bool indoors)
         {
-            if (action.Kind == CaseActionKind.HearKnocks && _game.Environment != null)
+            if (action.Kind == CaseActionKind.HearKnocks && !indoors && _game.Environment != null)
             {
                 Vector3 attic = _game.Environment.Anchors.AtticWindow;
                 return () => attic;
@@ -888,6 +898,7 @@ namespace SpookyStreet.Case
             var workshop = new Vector3(CaseRouteLayout.MechanismX + 0.5f, 0.9f, CaseRouteLayout.MechanismZ);
             switch (action.Kind)
             {
+                case CaseActionKind.HearKnocks:
                 case CaseActionKind.EnterFoyer:
                 case CaseActionKind.ExamineGrille:
                 case CaseActionKind.ExamineOwlPanel:
@@ -979,6 +990,8 @@ namespace SpookyStreet.Case
         /// <summary>Under the page: Pip is already at the arrival point; the camera cuts into the new place.</summary>
         private void OnCrossingMoved(ThresholdEnd leaving, ThresholdEnd arriving)
         {
+            // A sound still captioned belongs to the place Pip left (D26): the street's knocks are not heard indoors.
+            Captions.DropSounds();
             CutCamera();
             if (Debug.isDebugBuild)
             {
@@ -1151,8 +1164,29 @@ namespace SpookyStreet.Case
             bool controllable = !_modal && !crossing && _game.Controls.GameplayEnabled &&
                                 (Cutaway == null || !Cutaway.Active) && !FinalePlaying;
             _rescue.DoorOpen = House.DoorOpen;
+            _rescue.ClearCharacters();
+            var june = Cast != null ? Cast.June : null;
+            if (june != null && june.isActiveAndEnabled)
+            {
+                Vector3 j = june.transform.position;
+                _rescue.AddCharacter(j.x, j.y, j.z);
+            }
+
             var reason = _rescue.Step(dt, pip.x, pip.y, pip.z, _pip.Grounded, _game.Controls.ReadMove().magnitude,
                 controllable);
+            if (reason == RescueReason.SlideOff)
+            {
+                // On June's head: slid gently off her (Pip drops to the floor beside June), never teleported.
+                if (_pipController == null)
+                {
+                    _pipController = _pip.GetComponent<CharacterController>();
+                }
+
+                _pipController.Move(new Vector3(_rescue.SlideX, 0f, _rescue.SlideZ) * (InteriorRescue.SlideSpeed * dt));
+                SlideOffFrames++;
+                return false;
+            }
+
             if (reason == RescueReason.None)
             {
                 return false;
