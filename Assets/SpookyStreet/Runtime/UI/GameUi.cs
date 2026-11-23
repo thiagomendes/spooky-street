@@ -458,7 +458,7 @@ namespace SpookyStreet.UI
         /// <summary>The language screen's opener: a small paper pill with a globe and the current language, bottom-right.</summary>
         private static Button BuildLanguagePill(Transform parent, UnityEngine.Events.UnityAction open)
         {
-            var size = new Vector2(380f, 96f);
+            var size = new Vector2(500f, 96f);
             var pill = UiFactory.SecondaryButton(parent, "LanguageToggleDev", null, Vector2.right,
                 new Vector2(-size.x * 0.5f - 36f, 72f), size, open, UiSpriteCatalog.IconGlobe);
             pill.transform.localRotation = Quaternion.Euler(0f, 0f, -1f);

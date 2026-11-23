@@ -210,7 +210,8 @@ namespace SpookyStreet.UI
 
             _status = UiFactory.Label(_card, "Status", null, UiFactory.CaptionSize, TextAnchor.MiddleCenter,
                 UiFactory.WithAlpha(UiFactory.Ink, 0.85f), UiFactory.BoldFont);
-            UiFactory.Place(_status.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 136f), new Vector2(780f, 40f));
+            UiFactory.Place(_status.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 136f), new Vector2(780f, 46f));
+            _status.verticalOverflow = VerticalWrapMode.Overflow;
 
             MoreButton = UiFactory.SecondaryButton(_card, "MoreLanguages", K.More, new Vector2(0.5f, 0f),
                 new Vector2(0f, 70f), new Vector2(440f, 96f), RequestMore, UiSpriteCatalog.IconGlobe);
@@ -348,11 +349,12 @@ namespace SpookyStreet.UI
 
             var left = new Vector2(0f, 1f);
             row.Name = UiFactory.Label(root, "Name", null, 38, TextAnchor.MiddleLeft, UiFactory.Ink, UiFactory.BoldFont);
-            UiFactory.Place(row.Name.rectTransform, left, new Vector2(12f, -6f), new Vector2(300f, 54f), left);
+            UiFactory.Place(row.Name.rectTransform, left, new Vector2(12f, -4f), new Vector2(290f, 48f), left);
             row.Name.text = option.NativeName; // the language's own name, from its table: never translated
             row.Note = UiFactory.Label(root, "Note", null, UiFactory.CaptionSize, TextAnchor.MiddleLeft,
                 UiFactory.WithAlpha(UiFactory.Ink, 0.75f), UiFactory.BoldFont);
-            UiFactory.Place(row.Note.rectTransform, left, new Vector2(12f, -58f), new Vector2(320f, 34f), left);
+            UiFactory.Place(row.Note.rectTransform, left, new Vector2(12f, -50f), new Vector2(300f, 40f), left);
+            row.Note.verticalOverflow = VerticalWrapMode.Overflow; // one caption line; never clipped to nothing
             var note = row.Note.gameObject.AddComponent<LocalizedText>();
             long kb = Math.Max(1, (option.Size + 1023) / 1024);
             if (option.Downloading)
@@ -360,9 +362,9 @@ namespace SpookyStreet.UI
                 int percent = Mathf.RoundToInt(option.Progress * 100f);
                 note.SetKey(K.Downloading, () => new object[] { percent });
                 var track = UiFactory.Sprite(root, "ProgressTrack", null, UiFactory.WithAlpha(Palette.HauntedPurple, 0.25f),
-                    left, new Vector2(12f, -94f), new Vector2(300f, 8f));
+                    left, new Vector2(12f, -92f), new Vector2(300f, 8f));
                 track.rectTransform.pivot = left;
-                track.rectTransform.anchoredPosition = new Vector2(12f, -94f);
+                track.rectTransform.anchoredPosition = new Vector2(12f, -92f);
                 row.Progress = UiFactory.Sprite(track.transform, "Fill", null, Palette.JackOrange,
                     new Vector2(0f, 0.5f), Vector2.zero, new Vector2(300f * Mathf.Clamp01(option.Progress), 8f));
                 row.Progress.rectTransform.pivot = new Vector2(0f, 0.5f);
@@ -409,16 +411,16 @@ namespace SpookyStreet.UI
             if (unlocked && (option.Source == LanguageSource.Available || option.Outdated))
             {
                 string locale = option.Locale;
-                float x = option.Source == LanguageSource.Available ? -130f : -380f;
+                float x = option.Source == LanguageSource.Available ? -130f : -395f;
                 row.Download = UiFactory.SecondaryButton(root, "Download", option.Outdated ? K.Update : K.Download, right,
-                    new Vector2(x, 0f), new Vector2(option.Source == LanguageSource.Available ? 240f : 200f, 96f),
+                    new Vector2(x, 0f), new Vector2(option.Source == LanguageSource.Available ? 240f : 230f, 96f),
                     () => _languages.Download(locale), UiSpriteCatalog.IconArrow);
             }
             else if (option.Removable && !option.Downloading && row.Download == null)
             {
                 string locale = option.Locale;
-                row.Remove = UiFactory.SecondaryButton(root, "Remove", K.Remove, right, new Vector2(-380f, 0f),
-                    new Vector2(200f, 96f), () => RequestRemove(locale), UiSpriteCatalog.IconClose);
+                row.Remove = UiFactory.SecondaryButton(root, "Remove", K.Remove, right, new Vector2(-395f, 0f),
+                    new Vector2(230f, 96f), () => RequestRemove(locale), UiSpriteCatalog.IconClose);
             }
 
             return row;
