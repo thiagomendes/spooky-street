@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spooky Street Sounds</title>
+<meta name="description" content="Owner listening review of the first Spooky Street sound set, all synthesised from code.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Sniglet:wght@800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --felt: #2A2550; --felt-2: #342d63; --stitch: #F6D365; --paper: #F4E6C8; --paper-2: #EAD8B2;
+  --ink: #1E1A26; --ink-soft: #4A4458; --accent: #EE7F2D; --plum: #7A3E6E; --green: #8DBF3F;
+  --bg: #EFE2C4; --bg-dot: rgba(122, 62, 110, 0.07); --text: #1E1A26; --shadow: rgba(30, 26, 38, 0.6);
+  --warn: #B4381E;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1d1a33; --bg-dot: rgba(246, 211, 101, 0.05); --paper: #EDDDBC; --paper-2: #E0CDA6;
+    --shadow: rgba(0, 0, 0, 0.7);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1d1a33; --bg-dot: rgba(246, 211, 101, 0.05); --paper: #EDDDBC; --paper-2: #E0CDA6;
+  --shadow: rgba(0, 0, 0, 0.7);
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  background-image: radial-gradient(var(--bg-dot) 1px, transparent 1.4px); background-size: 7px 7px;
+  font: 16px/1.45 "Andika", system-ui, sans-serif;
+}
+header {
+  background: var(--felt); color: var(--paper);
+  background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1.5px), radial-gradient(rgba(0,0,0,0.18) 1px, transparent 1.5px);
+  background-size: 5px 5px, 7px 7px; background-position: 0 0, 2px 3px;
+  padding: 28px 16px 26px; border-bottom: 3px dashed var(--stitch); outline: 6px solid var(--felt);
+}
+.wrap { max-width: 820px; margin: 0 auto; }
+h1 { font-family: "Sniglet", "Andika", sans-serif; font-weight: 800; font-size: 34px; line-height: 1.1; margin: 0 0 8px; letter-spacing: 0.3px; }
+h1 span { color: var(--stitch); }
+header p { margin: 6px 0; max-width: 640px; }
+.how { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding: 0; list-style: none; }
+.how li { background: var(--felt-2); border: 2px dashed rgba(246, 211, 101, 0.55); border-radius: 14px; padding: 6px 12px; font-size: 14px; }
+main { padding: 8px 16px 48px; }
+h2 { font-family: "Sniglet", sans-serif; font-weight: 800; font-size: 24px; margin: 34px 0 12px; display: inline-block;
+     background: var(--plum); color: var(--paper); padding: 4px 16px 6px; border-radius: 10px 14px 9px 13px;
+     box-shadow: 3px 3px 0 var(--shadow); transform: rotate(-1deg); }
+.card {
+  background: var(--paper); color: var(--ink); border: 2px solid var(--ink); margin: 14px 0; padding: 14px 16px 12px;
+  border-radius: 10px 14px 12px 9px; box-shadow: 3px 4px 0 var(--shadow); position: relative;
+  background-image: linear-gradient(transparent 96%, rgba(122, 62, 110, 0.06) 96%); background-size: 100% 24px;
+}
+.card:nth-child(odd) { border-radius: 13px 9px 11px 14px; }
+.card h3 { font-family: "Sniglet", sans-serif; font-weight: 800; font-size: 20px; margin: 0 0 4px; line-height: 1.2; }
+.id { font: 12px/1.2 ui-monospace, Menlo, monospace; color: var(--ink-soft); }
+.desc { margin: 6px 0 4px; }
+.for, .listen { margin: 4px 0; font-size: 15px; }
+.for b, .listen b { color: var(--plum); }
+.listen { background: var(--paper-2); border-left: 4px solid var(--accent); padding: 4px 10px; border-radius: 0 8px 8px 0; }
+audio { width: 100%; margin: 8px 0 4px; height: 40px; }
+.takes { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 2px 0 6px; }
+.takes span { font-size: 14px; color: var(--ink-soft); margin-right: 2px; }
+button {
+  font: 700 14px/1 "Andika", sans-serif; color: var(--ink); background: var(--paper);
+  border: 2px solid var(--ink); border-radius: 999px; padding: 8px 12px; min-height: 36px; cursor: pointer;
+  box-shadow: 2px 2px 0 var(--shadow);
+}
+button[aria-pressed="true"] { background: var(--accent); }
+button:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--shadow); }
+button:focus-visible { outline: 3px solid var(--stitch); outline-offset: 2px; }
+.demo { margin-top: 6px; padding-top: 6px; border-top: 2px dashed rgba(30, 26, 38, 0.25); font-size: 14px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--ink-soft); margin-top: 6px; }
+.meta .bad { color: var(--warn); font-weight: 700; }
+details { margin-top: 6px; font-size: 14px; }
+summary { cursor: pointer; color: var(--plum); font-weight: 700; }
+details img { width: 100%; height: auto; border: 2px solid var(--ink); border-radius: 6px; margin-top: 6px; image-rendering: auto; }
+.legend { font-size: 13px; color: var(--ink-soft); }
+footer { padding: 18px 16px 40px; font-size: 14px; }
+footer .wrap { background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 12px; padding: 12px 16px; box-shadow: 3px 3px 0 var(--shadow); }
+table { border-collapse: collapse; font-size: 14px; margin: 6px 0; }
+td, th { padding: 2px 10px 2px 0; text-align: left; }
+@media (max-width: 520px) { h1 { font-size: 28px; } .card { padding: 12px; } }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>Spooky Street <span>sound check</span></h1>
+<p>25 sounds, 91 takes. Every one is synthesised from code (wood modes, cloth and paper
+noise, formant voices); no recordings or sound packs. Please approve or reject each by ear.</p>
+<ul class="how">
+<li>Listen on the iPhone speaker first, then headphones</li>
+<li>Tap the take numbers to hear the variations</li>
+<li>Loops repeat on their own: listen for the seam</li>
+</ul>
+</div></header>
+<main><div class="wrap">
+<section><h2>Clues</h2>
+<article class="card" id="clue_knocks_distant">
+<h3>The three knocks (from the street)</h3><div class="id">clue_knocks_distant</div>
+<p class="desc">Knock, knock… knock: hollow wooden knocks inside the blue house, muffled by the wall, with a little echo off the neighbouring houses.</p>
+<p class="for"><b>In the game:</b> Arrival clue: raises &#x27;Where are the knocks coming from?&#x27;. Mono, so the game places it at the house (direction and distance come from the 3D position).</p>
+<p class="listen"><b>Listen for:</b> Are all three knocks distinct on the phone speaker, with the pause before the last? Does it sound like it is inside a house, not in your ear, and still friendly rather than scary?</p>
+<audio class="main" controls preload="none" src="audio/clue_knocks_distant_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/clue_knocks_distant_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/clue_knocks_distant_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/clue_knocks_distant_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" data-src="audio/clue_knocks_distant_t4.mp3" aria-pressed="false" aria-label="Take 4">4</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>1.83–1.92 s</span><span>-20.0 to -20.0 LUFS (target -20)</span><span>peak ≤ -1.3 dBTP</span><span>clue</span><span>limiter up to 3.1 dB</span><span>sync points 0.02, 0.28, 1.00 s</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/clue_knocks_distant.png" alt="Waveform and spectrogram of The three knocks (from the street)"></details>
+</article>
+<article class="card" id="clue_floor_hum">
+<h3>Floor hum and knocks (inside the hall)</h3><div class="id">clue_floor_hum</div>
+<p class="desc">The floor starts to hum and tremble, three knocks thump up through the boards with a rattle of dust, then the hum fades.</p>
+<p class="for"><b>In the game:</b> Hall clue: becomes the floor-hum sticker; the knocks are under the floor.</p>
+<p class="listen"><b>Listen for:</b> Can you hear the hum on the phone (it is built from overtones, the speaker has no deep bass)? Do the knocks feel under your feet rather than on a door?</p>
+<audio class="main" controls preload="none" src="audio/clue_floor_hum_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/clue_floor_hum_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/clue_floor_hum_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/clue_floor_hum_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>4.20 s</span><span>-19.0 to -19.0 LUFS (target -19)</span><span>peak ≤ -1.3 dBTP</span><span>clue</span><span>limiter up to 2.6 dB</span><span>sync points 1.10, 1.36, 2.08 s</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/clue_floor_hum.png" alt="Waveform and spectrogram of Floor hum and knocks (inside the hall)"></details>
+</article>
+<article class="card" id="clue_cam_tap">
+<h3>Cam tap (workshop, close up)</h3><div class="id">clue_cam_tap</div>
+<p class="desc">A hard little wooden &#x27;tok&#x27;: the cam lobe tapping its follower, with a tiny settle.</p>
+<p class="for"><b>In the game:</b> Workshop: the machine&#x27;s knock source seen and heard close up; plays on each cam contact.</p>
+<p class="listen"><b>Listen for:</b> Does it read as the same family as the knocks, only closer and harder?</p>
+<audio class="main" controls preload="none" src="audio/clue_cam_tap_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/clue_cam_tap_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/clue_cam_tap_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/clue_cam_tap_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" data-src="audio/clue_cam_tap_t4.mp3" aria-pressed="false" aria-label="Take 4">4</button><button type="button" data-src="audio/clue_cam_tap_t5.mp3" aria-pressed="false" aria-label="Take 5">5</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>0.32–0.35 s</span><span>-21.0 to -21.0 LUFS (target -21)</span><span>peak ≤ -1.2 dBTP</span><span>clue</span><span>limiter up to 3.6 dB</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/clue_cam_tap.png" alt="Waveform and spectrogram of Cam tap (workshop, close up)"></details>
+</article>
+<article class="card" id="clue_wind_wheel">
+<h3>Wind wheel whirr (rooftop)</h3><div class="id">clue_wind_wheel</div>
+<p class="desc">The little rooftop wheel spins up, whirrs and slows, with a soft axle creak.</p>
+<p class="for"><b>In the game:</b> Bonus clue seen from the treehouse deck: it whirs before each knock cycle.</p>
+<p class="listen"><b>Listen for:</b> Whirr, not buzz? It should sound wooden and breezy.</p>
+<audio class="main" controls preload="none" src="audio/clue_wind_wheel_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/clue_wind_wheel_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/clue_wind_wheel_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/clue_wind_wheel_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>3.20 s</span><span>-18.0 to -18.0 LUFS (target -18)</span><span>peak ≤ -1.4 dBTP</span><span>clue</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/clue_wind_wheel.png" alt="Waveform and spectrogram of Wind wheel whirr (rooftop)"></details>
+</article></section><section><h2>Pip moving</h2>
+<article class="card" id="step_wood">
+<h3>Footsteps on wood</h3><div class="id">step_wood</div>
+<p class="desc">Pip&#x27;s light heel-and-toe on porch planks; one take has a tiny creak.</p>
+<p class="for"><b>In the game:</b> Porch, treehouse and the house interior floors.</p>
+<p class="listen"><b>Listen for:</b> In the walk preview: do steps vary enough not to sound like a machine gun? Light, a child?</p>
+<audio class="main" controls preload="none" src="audio/step_wood_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/step_wood_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/step_wood_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/step_wood_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" data-src="audio/step_wood_t4.mp3" aria-pressed="false" aria-label="Take 4">4</button><button type="button" data-src="audio/step_wood_t5.mp3" aria-pressed="false" aria-label="Take 5">5</button><button type="button" class="all">Play all</button></div>
+<div class="demo">In context: a walk across this surface (the takes mixed in turn)<audio controls preload="none" src="audio/step_wood_demo.mp3"></audio></div>
+<div class="meta"><span>0.22–0.25 s</span><span>-25.0 to -25.0 LUFS (target -25)</span><span>peak ≤ -5.3 dBTP</span><span>footstep</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/step_wood.png" alt="Waveform and spectrogram of Footsteps on wood"></details>
+</article>
+<article class="card" id="step_grass">
+<h3>Footsteps on grass</h3><div class="id">step_grass</div>
+<p class="desc">Soft brushy lawn steps with a gentle earth thud.</p>
+<p class="for"><b>In the game:</b> Yards and verges.</p>
+<p class="listen"><b>Listen for:</b> Grass, or does it sound like paper? Too hissy on the phone?</p>
+<audio class="main" controls preload="none" src="audio/step_grass_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/step_grass_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/step_grass_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/step_grass_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" data-src="audio/step_grass_t4.mp3" aria-pressed="false" aria-label="Take 4">4</button><button type="button" data-src="audio/step_grass_t5.mp3" aria-pressed="false" aria-label="Take 5">5</button><button type="button" class="all">Play all</button></div>
+<div class="demo">In context: a walk across this surface (the takes mixed in turn)<audio controls preload="none" src="audio/step_grass_demo.mp3"></audio></div>
+<div class="meta"><span>0.19–0.23 s</span><span>-25.0 to -25.0 LUFS (target -25)</span><span>peak ≤ -10.6 dBTP</span><span>footstep</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/step_grass.png" alt="Waveform and spectrogram of Footsteps on grass"></details>
+</article>
+<article class="card" id="step_stone">
+<h3>Footsteps on stone</h3><div class="id">step_stone</div>
+<p class="desc">Crisp, small soft-sole ticks on paving with a little grit.</p>
+<p class="for"><b>In the game:</b> Sidewalk, plaza and the porch steps.</p>
+<p class="listen"><b>Listen for:</b> Soft costume shoes, not high heels or tap shoes?</p>
+<audio class="main" controls preload="none" src="audio/step_stone_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/step_stone_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/step_stone_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/step_stone_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" data-src="audio/step_stone_t4.mp3" aria-pressed="false" aria-label="Take 4">4</button><button type="button" data-src="audio/step_stone_t5.mp3" aria-pressed="false" aria-label="Take 5">5</button><button type="button" class="all">Play all</button></div>
+<div class="demo">In context: a walk across this surface (the takes mixed in turn)<audio controls preload="none" src="audio/step_stone_demo.mp3"></audio></div>
+<div class="meta"><span>0.14–0.19 s</span><span>-25.0 to -25.0 LUFS (target -25)</span><span>peak ≤ -6.4 dBTP</span><span>footstep</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/step_stone.png" alt="Waveform and spectrogram of Footsteps on stone"></details>
+</article>
+<article class="card" id="move_jump">
+<h3>Jump</h3><div class="id">move_jump</div>
+<p class="desc">A soft push-off and the cape whooshing up with a couple of flaps.</p>
+<p class="for"><b>In the game:</b> Every jump; layered with the high-jump boost later.</p>
+<p class="listen"><b>Listen for:</b> Light and springy, not a sword swish?</p>
+<audio class="main" controls preload="none" src="audio/move_jump_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/move_jump_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/move_jump_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/move_jump_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" data-src="audio/move_jump_t4.mp3" aria-pressed="false" aria-label="Take 4">4</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>0.32 s</span><span>-22.0 to -22.0 LUFS (target -22)</span><span>peak ≤ -5.5 dBTP</span><span>movement</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/move_jump.png" alt="Waveform and spectrogram of Jump"></details>
+</article>
+<article class="card" id="move_land">
+<h3>Land</h3><div class="id">move_land</div>
+<p class="desc">A light thud, two quick soles, one cape flutter and a puff of dust.</p>
+<p class="for"><b>In the game:</b> Every landing (spec §5: soft footfall, one flutter of the cape).</p>
+<p class="listen"><b>Listen for:</b> Soft and friendly, no &#x27;ouch&#x27; feeling?</p>
+<audio class="main" controls preload="none" src="audio/move_land_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/move_land_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/move_land_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/move_land_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" data-src="audio/move_land_t4.mp3" aria-pressed="false" aria-label="Take 4">4</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>0.38–0.38 s</span><span>-22.1 to -22.0 LUFS (target -22)</span><span>peak ≤ -1.3 dBTP</span><span>movement</span><span>limiter up to 1.3 dB</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/move_land.png" alt="Waveform and spectrogram of Land"></details>
+</article>
+<article class="card" id="move_glide_open">
+<h3>Glide: cape opens</h3><div class="id">move_glide_open</div>
+<p class="desc">&#x27;Fwup&#x27;: the bat cape spreads, then flutters in the air and folds.</p>
+<p class="for"><b>In the game:</b> Start of the bat-cape glide, Pip&#x27;s signature move.</p>
+<p class="listen"><b>Listen for:</b> Does it sound like fabric wings? Is the flutter pleasant rather than a motor?</p>
+<audio class="main" controls preload="none" src="audio/move_glide_open_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/move_glide_open_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/move_glide_open_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/move_glide_open_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>1.40 s</span><span>-22.0 to -22.0 LUFS (target -22)</span><span>peak ≤ -1.2 dBTP</span><span>movement</span><span>limiter up to 0.8 dB</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/move_glide_open.png" alt="Waveform and spectrogram of Glide: cape opens"></details>
+</article>
+<article class="card" id="move_glide_loop">
+<h3>Glide: flutter loop</h3><div class="id">move_glide_loop</div>
+<p class="desc">A seamless two-second flutter that repeats while the glide lasts.</p>
+<p class="for"><b>In the game:</b> Held glide (loops under the opening sound).</p>
+<p class="listen"><b>Listen for:</b> With the player looping: can you hear the seam or a repeating pattern?</p>
+<audio class="main" controls preload="none" loop src="audio/move_glide_loop_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/move_glide_loop_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/move_glide_loop_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/move_glide_loop_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>2.00 s</span><span>-22.0 to -22.0 LUFS (target -22)</span><span>peak ≤ -4.8 dBTP</span><span>movement</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/move_glide_loop.png" alt="Waveform and spectrogram of Glide: flutter loop"></details>
+</article></section><section><h2>Notebook and UI</h2>
+<article class="card" id="ui_page_turn">
+<h3>Page turn (threshold)</h3><div class="id">ui_page_turn</div>
+<p class="desc">A big paper page lifting, sweeping over and landing with a soft flap.</p>
+<p class="for"><b>In the game:</b> The 0.5 s paper page-turn transition at the house thresholds (D24.1); also the notebook page flip.</p>
+<p class="listen"><b>Listen for:</b> Paper, not wind or a shaker? Does it fit a half-second transition?</p>
+<audio class="main" controls preload="none" src="audio/ui_page_turn_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/ui_page_turn_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/ui_page_turn_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/ui_page_turn_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" data-src="audio/ui_page_turn_t4.mp3" aria-pressed="false" aria-label="Take 4">4</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>0.78 s</span><span>-21.0 to -21.0 LUFS (target -21)</span><span>peak ≤ -6.6 dBTP</span><span>notebook</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/ui_page_turn.png" alt="Waveform and spectrogram of Page turn (threshold)"></details>
+</article>
+<article class="card" id="note_sticker_pick">
+<h3>Sticker: pick up</h3><div class="id">note_sticker_pick</div>
+<p class="desc">A sticker peeling off its backing: rising crackle and a small &#x27;tk&#x27;.</p>
+<p class="for"><b>In the game:</b> Lifting a clue sticker from the tray (mystery-first §5).</p>
+<p class="listen"><b>Listen for:</b> Satisfying peel? Not scratchy or harsh on the phone?</p>
+<audio class="main" controls preload="none" src="audio/note_sticker_pick_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/note_sticker_pick_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/note_sticker_pick_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/note_sticker_pick_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" data-src="audio/note_sticker_pick_t4.mp3" aria-pressed="false" aria-label="Take 4">4</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>0.31–0.34 s</span><span>-21.0 to -21.0 LUFS (target -21)</span><span>peak ≤ -6.3 dBTP</span><span>notebook</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/note_sticker_pick.png" alt="Waveform and spectrogram of Sticker: pick up"></details>
+</article>
+<article class="card" id="note_sticker_drop">
+<h3>Sticker: press in</h3><div class="id">note_sticker_drop</div>
+<p class="desc">A soft felt pat with a small wooden &#x27;tuk&#x27; and the glue gripping.</p>
+<p class="for"><b>In the game:</b> Placing a sticker on a question slot.</p>
+<p class="listen"><b>Listen for:</b> Does it feel like pressing something down, tactile and cosy?</p>
+<audio class="main" controls preload="none" src="audio/note_sticker_drop_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/note_sticker_drop_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/note_sticker_drop_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/note_sticker_drop_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" data-src="audio/note_sticker_drop_t4.mp3" aria-pressed="false" aria-label="Take 4">4</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>0.13–0.15 s</span><span>-21.0 to -21.0 LUFS (target -21)</span><span>peak ≤ -1.7 dBTP</span><span>notebook</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/note_sticker_drop.png" alt="Waveform and spectrogram of Sticker: press in"></details>
+</article>
+<article class="card" id="note_sticker_wobble">
+<h3>Sticker: wobble back</h3><div class="id">note_sticker_wobble</div>
+<p class="desc">A friendly rubbery &#x27;boing-oing&#x27; and a soft &#x27;tok&#x27; as the sticker hops home.</p>
+<p class="for"><b>In the game:</b> A wrong set: gentle, never a failure buzzer (D26).</p>
+<p class="listen"><b>Listen for:</b> Playful &#x27;try again&#x27;, not &#x27;wrong!&#x27;? Would a 6-year-old smile?</p>
+<audio class="main" controls preload="none" src="audio/note_sticker_wobble_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/note_sticker_wobble_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/note_sticker_wobble_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/note_sticker_wobble_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>0.75 s</span><span>-21.0 to -21.0 LUFS (target -21)</span><span>peak ≤ -1.9 dBTP</span><span>notebook</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/note_sticker_wobble.png" alt="Waveform and spectrogram of Sticker: wobble back"></details>
+</article>
+<article class="card" id="note_correct_glow">
+<h3>Correct: glow</h3><div class="id">note_correct_glow</div>
+<p class="desc">A warm rising celesta arpeggio that blooms into a soft glow with sparkles.</p>
+<p class="for"><b>In the game:</b> A right placement: the answer appears (no fanfare, a warm reward).</p>
+<p class="listen"><b>Listen for:</b> Warm and magical, not a slot-machine win? Not too long?</p>
+<audio class="main" controls preload="none" src="audio/note_correct_glow_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/note_correct_glow_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/note_correct_glow_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/note_correct_glow_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>2.12–2.22 s</span><span>-21.0 to -21.0 LUFS (target -21)</span><span>peak ≤ -7.1 dBTP</span><span>notebook</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/note_correct_glow.png" alt="Waveform and spectrogram of Correct: glow"></details>
+</article>
+<article class="card" id="ui_tap">
+<h3>UI tap</h3><div class="id">ui_tap</div>
+<p class="desc">A short, soft wooden &#x27;tup&#x27; of a felt button.</p>
+<p class="for"><b>In the game:</b> Every button and control (spec §6: sound on every control).</p>
+<p class="listen"><b>Listen for:</b> Pleasant after 100 taps? Too clicky or too dull?</p>
+<audio class="main" controls preload="none" src="audio/ui_tap_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/ui_tap_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/ui_tap_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/ui_tap_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" data-src="audio/ui_tap_t4.mp3" aria-pressed="false" aria-label="Take 4">4</button><button type="button" data-src="audio/ui_tap_t5.mp3" aria-pressed="false" aria-label="Take 5">5</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>0.12 s</span><span>-24.0 to -24.0 LUFS (target -24)</span><span>peak ≤ -5.5 dBTP</span><span>ui</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/ui_tap.png" alt="Waveform and spectrogram of UI tap"></details>
+</article></section><section><h2>Voices</h2>
+<article class="card" id="voice_pip">
+<h3>Babble: Pip</h3><div class="id">voice_pip</div>
+<p class="desc">The curious new kid: a bright child voice, medium pace, questions that rise.</p>
+<p class="for"><b>In the game:</b> Non-verbal babble under the caption when the character speaks (D20, D23.1). Each take is a different line.</p>
+<p class="listen"><b>Listen for:</b> Does it sound like this character? Cute and kind, never creepy or robotic? Too buzzy?</p>
+<audio class="main" controls preload="none" src="audio/voice_pip_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/voice_pip_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/voice_pip_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/voice_pip_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>2.34–2.70 s</span><span>-19.0 to -19.0 LUFS (target -19)</span><span>peak ≤ -2.9 dBTP</span><span>voice</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/voice_pip.png" alt="Waveform and spectrogram of Babble: Pip"></details>
+</article>
+<article class="card" id="voice_bea">
+<h3>Babble: Bea</h3><div class="id">voice_bea</div>
+<p class="desc">Fast and sure: higher, quicker, bouncier.</p>
+<p class="for"><b>In the game:</b> Non-verbal babble under the caption when the character speaks (D20, D23.1). Each take is a different line.</p>
+<p class="listen"><b>Listen for:</b> Does it sound like this character? Cute and kind, never creepy or robotic? Too buzzy?</p>
+<audio class="main" controls preload="none" src="audio/voice_bea_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/voice_bea_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/voice_bea_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/voice_bea_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>2.00–2.40 s</span><span>-19.0 to -19.0 LUFS (target -19)</span><span>peak ≤ -2.1 dBTP</span><span>voice</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/voice_bea.png" alt="Waveform and spectrogram of Babble: Bea"></details>
+</article>
+<article class="card" id="voice_vale">
+<h3>Babble: Mr. Vale</h3><div class="id">voice_vale</div>
+<p class="desc">Slow and dry: a kind old man, narrow melody, a gentle creak at the end of a thought.</p>
+<p class="for"><b>In the game:</b> Non-verbal babble under the caption when the character speaks (D20, D23.1). Each take is a different line.</p>
+<p class="listen"><b>Listen for:</b> Does it sound like this character? Cute and kind, never creepy or robotic? Too buzzy?</p>
+<audio class="main" controls preload="none" src="audio/voice_vale_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/voice_vale_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/voice_vale_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/voice_vale_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>4.09–4.21 s</span><span>-19.0 to -19.0 LUFS (target -19)</span><span>peak ≤ -3.8 dBTP</span><span>voice</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/voice_vale.png" alt="Waveform and spectrogram of Babble: Mr. Vale"></details>
+</article>
+<article class="card" id="voice_june">
+<h3>Babble: June</h3><div class="id">voice_june</div>
+<p class="desc">Conspiratorial: half-whispered, close, quick little bursts and a giggle.</p>
+<p class="for"><b>In the game:</b> Non-verbal babble under the caption when the character speaks (D20, D23.1). Each take is a different line.</p>
+<p class="listen"><b>Listen for:</b> Does it sound like this character? Cute and kind, never creepy or robotic? Too buzzy?</p>
+<audio class="main" controls preload="none" src="audio/voice_june_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/voice_june_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/voice_june_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/voice_june_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>2.49–2.69 s</span><span>-19.0 to -19.0 LUFS (target -19)</span><span>peak ≤ -1.4 dBTP</span><span>voice</span><span>limiter up to 0.9 dB</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/voice_june.png" alt="Waveform and spectrogram of Babble: June"></details>
+</article>
+<article class="card" id="voice_kit">
+<h3>Babble: Aunt Kit</h3><div class="id">voice_kit</div>
+<p class="desc">Theatrical: wide swoops, warm vibrato, generous vowels.</p>
+<p class="for"><b>In the game:</b> Non-verbal babble under the caption when the character speaks (D20, D23.1). Each take is a different line.</p>
+<p class="listen"><b>Listen for:</b> Does it sound like this character? Cute and kind, never creepy or robotic? Too buzzy?</p>
+<audio class="main" controls preload="none" src="audio/voice_kit_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/voice_kit_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/voice_kit_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/voice_kit_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>3.71–4.04 s</span><span>-19.0 to -19.0 LUFS (target -19)</span><span>peak ≤ -3.3 dBTP</span><span>voice</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/voice_kit.png" alt="Waveform and spectrogram of Babble: Aunt Kit"></details>
+</article></section><section><h2>Ambience and music</h2>
+<article class="card" id="amb_night">
+<h3>Night ambience loop</h3><div class="id">amb_night</div>
+<p class="desc">A gentle autumn night: soft gusts of wind, leaves skittering, two far-off crickets. Stereo, 24 s, loops seamlessly.</p>
+<p class="for"><b>In the game:</b> Bed under the street (spec §6: ambient life that never competes with evidence).</p>
+<p class="listen"><b>Listen for:</b> Calm, not spooky-scary? Is the loop point audible? Are the crickets too sharp?</p>
+<audio class="main" controls preload="none" loop src="audio/amb_night_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/amb_night_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/amb_night_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/amb_night_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>24.00 s</span><span>-28.0 to -28.0 LUFS (target -28)</span><span>peak ≤ -11.4 dBTP</span><span>ambience</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/amb_night.png" alt="Waveform and spectrogram of Night ambience loop"></details>
+</article>
+<article class="card" id="music_motif_pluck">
+<h3>Motif: plucked (opening)</h3><div class="id">music_motif_pluck</div>
+<p class="desc">The three-note motif in the knock rhythm (short, short, long) on a soft plucked string.</p>
+<p class="for"><b>In the game:</b> Opening music seed (spec §6: sparse plucked strings).</p>
+<p class="listen"><b>Listen for:</b> Gentle and curious? Does the string sound like a real instrument?</p>
+<audio class="main" controls preload="none" src="audio/music_motif_pluck_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/music_motif_pluck_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/music_motif_pluck_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/music_motif_pluck_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>3.78–3.84 s</span><span>-20.0 to -20.0 LUFS (target -20)</span><span>peak ≤ -3.8 dBTP</span><span>music</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/music_motif_pluck.png" alt="Waveform and spectrogram of Motif: plucked (opening)"></details>
+</article>
+<article class="card" id="music_motif_wood">
+<h3>Motif: wood with a warm chord (closure)</h3><div class="id">music_motif_wood</div>
+<p class="desc">The same motif on a wooden marimba, then a warmer rolled D major chord.</p>
+<p class="for"><b>In the game:</b> Case closure (spec §6: the motif on wood with a warmer final chord).</p>
+<p class="listen"><b>Listen for:</b> Does the final chord feel warm and &#x27;case solved&#x27;?</p>
+<audio class="main" controls preload="none" src="audio/music_motif_wood_t1.mp3"></audio>
+<div class="takes"><span>Takes:</span><button type="button" data-src="audio/music_motif_wood_t1.mp3" aria-pressed="true" aria-label="Take 1">1</button><button type="button" data-src="audio/music_motif_wood_t2.mp3" aria-pressed="false" aria-label="Take 2">2</button><button type="button" data-src="audio/music_motif_wood_t3.mp3" aria-pressed="false" aria-label="Take 3">3</button><button type="button" class="all">Play all</button></div>
+<div class="meta"><span>4.98–5.12 s</span><span>-20.0 to -20.0 LUFS (target -20)</span><span>peak ≤ -6.3 dBTP</span><span>music</span><span>all checks passed</span></div>
+<details><summary>Spectrogram (take 1)</summary><img loading="lazy" src="spectrograms/music_motif_wood.png" alt="Waveform and spectrogram of Motif: wood with a warm chord (closure)"></details>
+</article></section>
+</div></main>
+<footer><div class="wrap">
+<b>How these were made and checked.</b> Rendered at 48 kHz by <code>tools/audio/build.py</code>, mastered for a phone
+speaker (sub-bass removed, gentle compression, true peak at or under -1 dBTP) and loudness-matched per category:
+<table><tr><td>clue</td><td>-18 LUFS</td></tr><tr><td>movement</td><td>-22 LUFS</td></tr><tr><td>footstep</td><td>-25 LUFS</td></tr><tr><td>notebook</td><td>-21 LUFS</td></tr><tr><td>ui</td><td>-24 LUFS</td></tr><tr><td>voice</td><td>-19 LUFS</td></tr><tr><td>ambience</td><td>-28 LUFS</td></tr><tr><td>music</td><td>-20 LUFS</td></tr></table>
+<span class="legend">Each sound passed automatic checks for loudness, peak, clipping, DC offset, sub-bass, clicks
+and length. Machines cannot judge whether it sounds good: that is your call.</span>
+</div></footer>
+<script>
+document.querySelectorAll('.card').forEach(function (card) {
+  var audio = card.querySelector('audio.main');
+  var buttons = card.querySelectorAll('.takes button[data-src]');
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () {
+      buttons.forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
+      audio.src = b.dataset.src; audio.currentTime = 0;
+      var p = audio.play(); if (p && p.catch) p.catch(function () {});
+    });
+  });
+  var all = card.querySelector('button.all');
+  if (all) all.addEventListener('click', function () {
+    var i = 0;
+    function next() {
+      if (i >= buttons.length) { audio.onended = null; return; }
+      buttons[i].click(); i += 1;
+      audio.onended = function () { setTimeout(next, 450); };
+    }
+    next();
+  });
+});
+document.querySelectorAll('audio').forEach(function (a) {
+  a.addEventListener('play', function () {
+    document.querySelectorAll('audio').forEach(function (o) { if (o !== a) o.pause(); });
+  });
+});
+</script>
+</body>
+</html>

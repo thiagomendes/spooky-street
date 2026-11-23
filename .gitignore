@@ -62,3 +62,6 @@ tools/sky_preview/obj/
 
 # Agent worktrees created by Claude Code sessions (local only).
 .claude/worktrees/
+
+# Audio pipeline WAV masters (regenerate with tools/audio/build.py)
+/tools/audio/out/
