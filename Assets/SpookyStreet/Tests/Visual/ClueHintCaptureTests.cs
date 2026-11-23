@@ -45,9 +45,27 @@ namespace SpookyStreet.Tests.Visual
             base.TearDown();
         }
 
+        /// <summary>
+        /// Captures with game time held (a capture renders over several frames, longer than a glint or the memory's
+        /// streak lasts in batchmode), then lets time run again.
+        /// </summary>
         private static IEnumerator Shot(string name, Canvas canvas = null)
         {
             var game = GameBootstrap.Instance;
+            float scale = Time.timeScale;
+            Time.timeScale = 0f;
+            try
+            {
+                yield return Capture(game, name, canvas);
+            }
+            finally
+            {
+                Time.timeScale = scale;
+            }
+        }
+
+        private static IEnumerator Capture(GameBootstrap game, string name, Canvas canvas)
+        {
             yield return FrameCapture.Capture(game.CameraRig.OutputCamera, canvas != null ? canvas : game.Director.UiCanvas,
                 name, Width, Height);
             float magenta = FrameCapture.MagentaFraction(FrameCapture.LastFrame);
@@ -162,9 +180,9 @@ namespace SpookyStreet.Tests.Visual
             director.Bench.End();
             var yard = HintAreas.For(CaseObjective.FindWayIn);
             var yardAt = new Vector3(yard.Centre.X, yard.Centre.Y, yard.Centre.Z);
-            yield return Stand(new Vector3(-6.4f, 0.1f, 2.6f), yardAt);
-            // A raised view behind Pip, over the hedge, so the side yard itself is in the frame.
-            brain = Frame(new Vector3(-2.2f, 4.6f, -0.4f), yardAt + new Vector3(0.8f, 0.6f, -0.4f));
+            yield return Stand(new Vector3(-8.9f, 0.1f, 1.4f), yardAt);
+            // A raised view behind Pip, over the hedge and clear of the street maple, so the side yard is in the frame.
+            brain = Frame(new Vector3(-8.2f, 4.8f, -2.4f), yardAt + new Vector3(0.6f, 0.4f, -0.6f));
             layer.RadioButton.onClick.Invoke();
             Assert.IsTrue(layer.Guide.BreezeActive, "55_hint_breeze: tier 1 should nudge");
             Assert.AreSame(yard, layer.Guide.BreezeArea, "55_hint_breeze: toward the side yard");

@@ -26,8 +26,8 @@ namespace SpookyStreet.Case
     /// </summary>
     public sealed class ClueAttractionView : MonoBehaviour
     {
-        public const float GlintSize = 0.2f;
-        public const float GlintMinViewFraction = 0.024f;
+        public const float GlintSize = 0.26f;
+        public const float GlintMinViewFraction = 0.03f;
         public const float FlutterDegrees = 16f;
         public const float RattleDegrees = 2.2f;
         public const float WobbleDegrees = 10f;
