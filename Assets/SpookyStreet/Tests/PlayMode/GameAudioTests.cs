@@ -11,11 +11,13 @@ using SpookyStreet.Core.World;
 using SpookyStreet.Localization;
 using SpookyStreet.World;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using CaseLines = SpookyStreet.Core.Localization.LocalizationKeys.CaseLines;
+using N = SpookyStreet.Core.Case.CaseNotebook;
 
 namespace SpookyStreet.Tests.PlayMode
 {
@@ -195,7 +197,8 @@ namespace SpookyStreet.Tests.PlayMode
                 Assert.AreEqual(walk.Surface, audio.LastSurface);
                 Assert.AreEqual(walk.Name, audio.LastGround.name);
 
-                // Standing still: no more steps.
+                // Standing still (after the last stride of slowing down): no more steps.
+                yield return Wait(0.4f);
                 int standing = Plays(expected);
                 yield return Wait(0.5f);
                 Assert.AreEqual(standing, Plays(expected), "no steps while standing");
@@ -238,12 +241,14 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(taps + 1, Plays(AudioEvents.UiTap), "the Resume button taps");
             Assert.AreEqual(GameState.Playing, Game.Flow.State);
             Assert.IsFalse(Rig.IsBusPaused(AudioBus.Sfx));
-            Assert.IsFalse(Rig.IsHeld(AudioEvents.MoveGlideLoop));
-            Assert.IsTrue(Rig.IsLooping(AudioEvents.MoveGlideLoop), "the flutter resumes");
+            Assert.IsFalse(Rig.IsHeld(AudioEvents.MoveGlideLoop), "nothing is held after the pause");
+            // Pausing disables gameplay input, so the held Jump may read released on resume: the loop follows the cape.
+            Assert.AreEqual(pip.Gliding, Rig.IsLooping(AudioEvents.MoveGlideLoop), "the flutter follows the cape");
 
             // Folding the cape stops the loop; touching down plays the landing.
             Release(_keyboard.spaceKey, queueEventOnly: true);
             yield return Wait(0.3f);
+            Assert.IsFalse(pip.Gliding);
             Assert.IsFalse(Rig.IsLooping(AudioEvents.MoveGlideLoop), "the loop stops with the glide");
             float deadline = Time.time + 3f;
             while (!pip.Grounded && Time.time < deadline)
@@ -418,6 +423,128 @@ namespace SpookyStreet.Tests.PlayMode
             }
 
             Assert.AreEqual(0, Plays(AudioEvents.ClueWindWheel), "the rooftop wheel is not heard indoors");
+        }
+
+        /// <summary>Drives the world through the reducer (DeductionNotebookTests.Do).</summary>
+        private static IEnumerator Do(params CaseAction[] actions)
+        {
+            foreach (var action in actions)
+            {
+                Director.Perform(action);
+                Director.Dialogue.Skip();
+                Director.Cutaway.Skip();
+                yield return Frames(2);
+            }
+
+            Director.Captions.Clear();
+            yield return Wait(0.4f);
+        }
+
+        private static Vector2 ScreenOf(RectTransform rect) => RectTransformUtility.WorldToScreenPoint(null, rect.position);
+
+        /// <summary>A touch drag through the sticker's own handlers (DeductionNotebookTests.Drag).</summary>
+        private static IEnumerator Drag(string stickerId, int slot)
+        {
+            var notebook = Director.Notebook;
+            var sticker = notebook.TraySticker(stickerId);
+            Assert.IsNotNull(sticker, stickerId + " is in the tray");
+            var data = new PointerEventData(EventSystem.current) { position = ScreenOf(sticker.Rect), button = PointerEventData.InputButton.Left };
+            data.pressPosition = data.position;
+            ExecuteEvents.Execute(sticker.gameObject, data, ExecuteEvents.beginDragHandler);
+            yield return null;
+            Vector2 target = ScreenOf(notebook.Slots[slot].rectTransform);
+            for (int i = 1; i <= 4; i++)
+            {
+                data.position = Vector2.Lerp(data.pressPosition, target, i / 4f);
+                ExecuteEvents.Execute(sticker.gameObject, data, ExecuteEvents.dragHandler);
+                yield return null;
+            }
+
+            ExecuteEvents.Execute(sticker.gameObject, data, ExecuteEvents.endDragHandler);
+            yield return Frames(2);
+        }
+
+        private static IEnumerator Verdict()
+        {
+            float until = Time.time + 6f;
+            while (Director.Notebook.Checking && Time.time < until)
+            {
+                yield return null;
+            }
+
+            Assert.IsFalse(Director.Notebook.Checking, "the verdict arrives");
+        }
+
+        [UnityTest]
+        [Timeout(120000)]
+        public IEnumerator NotebookStickersPageAndVerdictsPlayTheirSounds()
+        {
+            yield return StartGame();
+            yield return Do(CaseAction.Of(CaseActionKind.HearKnocks), CaseAction.Talk(Speaker.Bea), CaseAction.Talk(Speaker.Vale),
+                CaseAction.Of(CaseActionKind.SitOnBench), CaseAction.Of(CaseActionKind.ExamineStreamer),
+                CaseAction.Of(CaseActionKind.ExamineCloth), CaseAction.Of(CaseActionKind.EnterAttic),
+                CaseAction.Of(CaseActionKind.ExamineSill));
+            Director.OpenNotebook();
+            yield return Frames(2);
+            var notebook = Director.Notebook;
+            Assert.IsTrue(notebook.IsOpen);
+            Assert.GreaterOrEqual(notebook.PageCount, 2);
+            int entry = notebook.PageQuestions.IndexOf(N.Question(N.QuestionEntry));
+            Assert.GreaterOrEqual(entry, 0);
+
+            // The page flip: once per turn, never for the page it is already on.
+            Rig.ClearLog();
+            int other = entry == 0 ? 1 : 0;
+            notebook.ShowPage(other);
+            yield return Wait(0.3f);
+            Assert.AreEqual(1, Plays(AudioEvents.UiPageTurn), "turning a page flips paper");
+            notebook.ShowPage(entry);
+            yield return Wait(0.5f);
+            Assert.AreEqual(2, Plays(AudioEvents.UiPageTurn));
+            notebook.ShowPage(entry);
+            yield return null;
+            Assert.AreEqual(2, Plays(AudioEvents.UiPageTurn), "no flip without a turn");
+
+            // A wrong set by tap-tap: a peel per pick, a press per placement, then one wobble home.
+            Rig.ClearLog();
+            foreach (string id in new[] { N.ValeDoor, N.Cloth, N.Streamer })
+            {
+                notebook.TapSticker(id);
+                yield return Wait(0.1f);
+                notebook.TapSlot(notebook.CurrentBoard.FirstEmpty());
+                yield return Wait(0.1f);
+            }
+
+            Assert.AreEqual(3, Plays(AudioEvents.NoteStickerPick), "lifting a sticker peels");
+            Assert.AreEqual(3, Plays(AudioEvents.NoteStickerDrop), "placing one presses it in");
+            Assert.AreEqual(0, Plays(AudioEvents.NoteStickerWobble), "nothing before the verdict");
+            yield return Verdict();
+            Assert.AreEqual(DeductionVerdict.Wrong, notebook.LastCheck.Verdict);
+            Assert.AreEqual(1, Plays(AudioEvents.NoteStickerWobble), "the wrong set wobbles home");
+            Assert.AreEqual(0, Plays(AudioEvents.NoteCorrectGlow));
+            Assert.AreEqual(0, Plays(AudioEvents.UiTap), "slots and stickers play their own sounds, not the tap");
+
+            // The right set, the first sticker by a touch drag: the glow comes before the comic.
+            Rig.ClearLog();
+            yield return Drag(N.SillSnag, notebook.CurrentBoard.FirstEmpty());
+            Assert.AreEqual(1, Plays(AudioEvents.NoteStickerPick), "the drag lifts it");
+            Assert.AreEqual(1, Plays(AudioEvents.NoteStickerDrop), "and drops it on the slot");
+            yield return Wait(0.1f);
+            foreach (string id in new[] { N.ValeDoor, N.BeaFlash })
+            {
+                notebook.TapSticker(id);
+                yield return Wait(0.1f);
+                notebook.TapSlot(notebook.CurrentBoard.FirstEmpty());
+                yield return Wait(0.1f);
+            }
+
+            float placedAt = Time.time;
+            yield return Verdict();
+            Assert.AreEqual(DeductionVerdict.Right, notebook.LastCheck.Verdict);
+            Assert.AreEqual(1, Plays(AudioEvents.NoteCorrectGlow), "the right set glows");
+            Assert.AreEqual(0, Plays(AudioEvents.NoteStickerWobble));
+            Assert.Greater(LastPlay(AudioEvents.NoteCorrectGlow).Value.GameTime, placedAt - 0.01f);
+            Assert.Greater(notebook.ComicPanels.Count, 0, "then the comic");
         }
 
         [UnityTest]

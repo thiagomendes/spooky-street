@@ -49,6 +49,7 @@ add events or settings only:
 - `WorkshopView` gains `Knocked(int)` and `CycleStarted(bool wind)`.
 - `NonverbalMenus` gains the volume sliders.
 - `GameBootstrap` gets one line that creates the audio.
+- `NotebookView` (after the deduction merge): seven `AudioCues` calls and the silent marker on the slots.
 
 | Sound | When | Where |
 |---|---|---|
@@ -90,22 +91,31 @@ fire on those exact frames, so the taps, the follower and the owl's bow line up.
 - **Other:** fade-out stops (`Stop(id, seconds)`), per-event 3D distances (`AudioEventDef.MinDistance` and
   `MaxDistance`), no Doppler, and 10 SFX sources (4 on each other bus).
 
-## Notebook hooks (to wire after `feature/s002.5a-deduction` merges)
+## Notebook sounds (wired after the `feature/s002.5a-deduction` merge)
 
-`NotebookView` and the deduction code are not edited here. `Core/Audio/AudioCues.cs` is engine-free and static, so
-Core or Runtime code can call it, and `GameAudio` plays each cue through the rig:
+`Core/Audio/AudioCues.cs` is engine-free and static, so Core or Runtime code can call it, and `GameAudio` plays each
+cue through the rig. After main brought in the deduction notebook (merge 3a1d535), the notebook calls the cues at
+these moments (`docs/S002.5a-deduction.md` §"Notebook"). Each is a single line, plus one marker line on the slots:
 
-| Call | Plays | Where it belongs in the new notebook |
+| Call | Plays | Where in the notebook |
 |---|---|---|
-| `AudioCues.StickerPick()` | `note_sticker_pick` | a sticker lifts off the tray or a slot (drag start, or the first tap of tap-tap) |
-| `AudioCues.StickerDrop()` | `note_sticker_drop` | a sticker is pressed into a question slot |
-| `AudioCues.StickerWobble()` | `note_sticker_wobble` | a wrong set wobbles back (D26) |
-| `AudioCues.CorrectGlow()` | `note_correct_glow` | a question is answered |
-| `AudioCues.PageTurn()` | `ui_page_turn` | a notebook page turns, if pages animate |
-| `AudioCues.UiTap()` | `ui_tap` | a tappable control that is not a uGUI `Button` |
+| `AudioCues.StickerPick()` | `note_sticker_pick` | a sticker lifts: drag start (`OnStickerDragBegan`), or a tap-tap or cursor pick (`CursorResult.Picked`) |
+| `AudioCues.StickerDrop()` | `note_sticker_drop` | a sticker lands on a slot: a drag drop or `CursorResult.Placed` |
+| `AudioCues.StickerWobble()` | `note_sticker_wobble` | a wrong set: as the stickers start wobbling home after the shake |
+| `AudioCues.CorrectGlow()` | `note_correct_glow` | a right set: as the stitches glow, 0.6 s before the comic draws itself |
+| `AudioCues.PageTurn()` | `ui_page_turn` | `ShowPage` turns to another page (arrows, swipe, keys); never for a snap on open |
+| `AudioCues.UiTap()` | `ui_tap` | spare, for a tappable control that is not a uGUI `Button` |
 
-Every `Button` already taps. Give sticker buttons a `UiTapSound` with `Silent = true` so they play the peel instead.
-With no listener (EditMode, or a scene without the rig), the calls do nothing.
+The question slots are uGUI buttons, so they carry a `UiTapSound` with `Silent = true`: they play the sticker's
+press, not the tap. Stickers are not buttons. The page arrows tap and also flip the page. With no listener
+(EditMode, or a scene without the rig), the calls do nothing. The PlayMode test
+`NotebookStickersPageAndVerdictsPlayTheirSounds` checks every cue through the rig's log:
+- page turns;
+- tap-tap picks and drops;
+- the wobble after a wrong verdict and not before;
+- a drag pick and drop;
+- the glow on the right set before the comic;
+- no taps from the slots.
 
 ## Settings and the iOS audio session
 
@@ -170,6 +180,7 @@ With no listener (EditMode, or a scene without the rig), the calls do nothing.
 - **Mechanism knocks outdoors:** wind cycles outdoors play only the wheel's whirr. The mechanism's knock rhythm
   (0.45, 0.85, 1.9 s) differs from the street-knock take (0.02, 0.28, 1.00 s), so the distant knocks are not
   replayed on wind cycles.
-- **Notebook sounds:** they are hooked (`AudioCues`) but not yet called, pending the notebook rebuild.
+- **Notebook sounds** are wired. Two sounds are not used: a sticker sent home by a tap plays no sound, and the "Case
+  closed" card has none.
 - **Music and voices:** the `MusicVol` and `VoiceVol` sliders work but nothing plays on those buses yet.
 - **No real AudioMixer asset:** the rig is the code-built mixer from S003. There is no reverb send for the indoor rooms.

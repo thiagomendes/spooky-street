@@ -149,9 +149,13 @@ namespace SpookyStreet.Tests.PlayMode
         public void BusShapingTrimsAndFiltersOneBus()
         {
             var bed = rig.Play(AudioEvents.AmbNight);
+            float open = bed.volume;
             Assert.IsNull(bed.GetComponent<AudioLowPassFilter>(), "no filter until one is needed");
             rig.SetBusShaping(AudioBus.Ambience, AudioMix.IndoorAmbienceDb, AudioMix.IndoorAmbienceLowPassHz);
-            Assert.AreEqual(AudioMix.DbToLinear(AudioMix.IndoorAmbienceDb), bed.volume, 1e-4f);
+            Assert.AreEqual(AudioMix.IndoorAmbienceDb, rig.BusTrimDb(AudioBus.Ambience));
+            // Relative to the open level: the trim is the only change (run 113 read an extra -6 dB here, see the doc).
+            Assert.AreEqual(open * AudioMix.DbToLinear(AudioMix.IndoorAmbienceDb), bed.volume, 1e-4f,
+                $"open {open}, voice active {rig.VoiceActive}");
             var filter = bed.GetComponent<AudioLowPassFilter>();
             Assert.IsNotNull(filter);
             Assert.IsTrue(filter.enabled);
@@ -159,7 +163,7 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(1f, rig.Play(AudioEvents.NoteStickerWobble).volume, 1e-5f, "other buses untouched");
 
             rig.SetBusShaping(AudioBus.Ambience, 0f, AudioMix.OpenLowPassHz);
-            Assert.AreEqual(1f, bed.volume, 1e-5f);
+            Assert.AreEqual(open, bed.volume, 1e-5f);
             Assert.IsFalse(filter.enabled, "an open filter is switched off");
         }
 
