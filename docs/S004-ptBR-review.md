@@ -271,6 +271,7 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `ui.verb.lift` | Lift | Levantar | 8/8 |  |
 | `ui.verb.connect` | Connect | Encaixar | 8/12 | "Encaixar" (snap into place) is a child's word. It says no more than "connect". |
 | `ui.verb.open` | Open | Abrir | 5/8 |  |
+| `ui.verb.knock` | Knock | Bater | 5/9 | "Bater" is what you do at a door. It names no result. |
 
 ## Story scenes
 
@@ -289,6 +290,15 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `c01.cutscene.reveal.moved` | Three knocks, three bows. | Três batidas, três reverências. | 31/36 |  |
 | `c01.cutscene.reveal.reopen` | Aunt Kit opens her booth again. | A Tia Kit abre seu teatrinho de novo. | 37/44 | "Teatrinho" = little puppet theatre, a warmer picture than "barraca" (stall). The kit still says "barraca" in its own prose. |
 | `c01.cutscene.reveal.photo` | In the hall, an old photo: Aunt Kit and friends. | No corredor, uma foto antiga: a Tia Kit e amigos. | 49/67 |  |
+| `ui.cutscene.watch_seed` | Watch: the old photo | Ver: a foto antiga | 18/29 |  |
+| `ui.cutscene.watch_street` | Watch: back on Lantern Lane | Ver: de volta à Rua das Lanternas | 33/39 |  |
+| `c01.cutscene.seed.owl` | [The little owl catches the light.] | [A corujinha reflete a luz.] | 28/50 | "Reflete a luz" = catches the light. It says nothing about why. |
+| `c01.cutscene.seed.moon` | [Then the moon, too.] | [Depois, a lua também.] | 23/31 |  |
+| `c01.cutscene.seed.crest` | [An owl crest, on the booth too.] | [Um brasão de coruja, no teatrinho também.] | 43/47 | "Brasão" for crest. "Teatrinho" for the booth, as in c01.cutscene.reveal.reopen. |
+| `c01.cutscene.street.lane` | Back on Lantern Lane. | De volta à Rua das Lanternas. | 29/31 |  |
+| `c01.cutscene.street.hour` | [Ding! Mr. Vale checks his watch.] | [Plim! O Sr. Vale olha o relógio.] | 34/48 | "Plim!" is the Brazilian little-bell sound. |
+| `c01.cutscene.street.show` | [Knock, knock… knock. The owl bows.] | [Toc, toc… toc. A coruja se curva.] | 35/51 | "Se curva", the same verb as the caption c01.caption.owl_bows. |
+| `c01.cutscene.street.bea` | [Bea waves at the owl.] | [A Bea acena para a coruja.] | 28/34 |  |
 
 ## Saves
 

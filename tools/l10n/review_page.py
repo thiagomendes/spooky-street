@@ -75,6 +75,11 @@ NOTES = {
     "ui.language.in_game": "\"Já vem no jogo\" = comes with the game.",
     "keepsake.page.lanterns": "\"Lanternas por toda a Rua das Lanternas\" keeps the English echo of the street's name.",
     "keepsake.page.friends": "\"Amigos\" (masculine plural) is the neutral form for a mixed group. It does not say who they are.",
+    "ui.verb.knock": "\"Bater\" is what you do at a door. It names no result.",
+    "c01.cutscene.seed.owl": "\"Reflete a luz\" = catches the light. It says nothing about why.",
+    "c01.cutscene.seed.crest": "\"Brasão\" for crest. \"Teatrinho\" for the booth, as in c01.cutscene.reveal.reopen.",
+    "c01.cutscene.street.hour": "\"Plim!\" is the Brazilian little-bell sound.",
+    "c01.cutscene.street.show": "\"Se curva\", the same verb as the caption c01.caption.owl_bows.",
     "ui.save.newer_heading": "\"Progresso\" for a save. A child understands it better than \"jogo salvo\".",
 }
 
