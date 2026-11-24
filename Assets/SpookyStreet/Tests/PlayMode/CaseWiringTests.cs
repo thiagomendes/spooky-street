@@ -340,7 +340,9 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(2, notebook.TrayStickers.Count);
             AssertEveryLabelDraws(notebook.gameObject);
             notebook.TapSticker(CaseNotebook.BenchView);
-            Assert.AreEqual(NoteKeys.NoteBench, director.Captions.CurrentKey);
+            // D32: the tap opens the sticker's memory card, whose caption replaces the note in the caption strip.
+            Assert.AreEqual(CaseNotebook.BenchView, notebook.MemorySticker, "the tap shows where it was found");
+            Assert.AreEqual(StickerMemories.For(CaseNotebook.BenchView).CaptionKey, notebook.MemoryCard.CaptionKey);
             Assert.AreEqual(CaseNotebook.BenchView, notebook.HeldSticker, "tap-tap: the sticker is picked up");
             notebook.Close();
         }

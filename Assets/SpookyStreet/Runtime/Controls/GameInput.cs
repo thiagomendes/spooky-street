@@ -198,6 +198,7 @@ namespace SpookyStreet.Controls
             PageLeft = Button("PageLeft", ControlGlyphs.KeyPageLeft, "<Keyboard>/pageUp", ControlGlyphs.PadPageLeft);
             PageRight = Button("PageRight", ControlGlyphs.KeyPageRight, "<Keyboard>/pageDown", ControlGlyphs.PadPageRight);
             Rewatch = Button("Rewatch", ControlGlyphs.KeyRewatch, ControlGlyphs.PadRewatch);
+            Inspect = Button("Inspect", ControlGlyphs.KeyInspect, "<Keyboard>/i", ControlGlyphs.PadInspect);
         }
 
         public InputAction Left { get; }
@@ -210,6 +211,9 @@ namespace SpookyStreet.Controls
         public InputAction PageRight { get; }
         public InputAction Rewatch { get; }
 
+        /// <summary>D32: open the focused sticker's memory card without picking it up (F, I, gamepad West).</summary>
+        public InputAction Inspect { get; }
+
         public InputActionMap Map => _map;
 
         public bool Enabled => _map.enabled;
@@ -218,7 +222,7 @@ namespace SpookyStreet.Controls
 
         public void Disable() => _map.Disable();
 
-        /// <summary>The action that prompt names (Submit, Back, PageLeft, PageRight, Rewatch); null for others.</summary>
+        /// <summary>The action that prompt names (Submit, Back, PageLeft, PageRight, Rewatch, Inspect); null for others.</summary>
         public InputAction For(ControlPrompt prompt)
         {
             switch (prompt)
@@ -233,6 +237,8 @@ namespace SpookyStreet.Controls
                     return PageRight;
                 case ControlPrompt.Rewatch:
                     return Rewatch;
+                case ControlPrompt.Inspect:
+                    return Inspect;
                 default:
                     return null;
             }

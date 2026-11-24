@@ -280,7 +280,7 @@ namespace SpookyStreet.Tests.PlayMode
                 foreach (var prompt in new[]
                          {
                              ControlPrompt.Submit, ControlPrompt.Back, ControlPrompt.PageLeft, ControlPrompt.PageRight,
-                             ControlPrompt.Rewatch,
+                             ControlPrompt.Rewatch, ControlPrompt.Inspect,
                          })
                 {
                     var action = actions.For(prompt);

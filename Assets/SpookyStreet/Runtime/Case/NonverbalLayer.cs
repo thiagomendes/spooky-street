@@ -46,6 +46,9 @@ namespace SpookyStreet.Case
 
         public MemoryReplayView MemoryReplay { get; private set; }
 
+        /// <summary>Draws the notebook's sticker memories (D32) from the real street and house.</summary>
+        public StickerMemoryStage MemoryStage { get; private set; }
+
         public HintGuide Guide { get; private set; }
 
         /// <summary>The diegetic clue attractions in the world (S002.5b).</summary>
@@ -108,6 +111,8 @@ namespace SpookyStreet.Case
             notebook.SeenReplays = () => _progress.Seen;
             notebook.WatchReplay = WatchOnDemand;
             notebook.CanAnimate = () => _flow.State == GameState.Playing;
+            MemoryStage = StickerMemoryStage.Create(director, game);
+            notebook.MemoryStage = MemoryStage;
 
             BuildRadio();
             Demo = HintGhostDemo.Create(_game.Ui.Hud.transform);

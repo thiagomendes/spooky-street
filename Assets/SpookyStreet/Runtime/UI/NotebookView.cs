@@ -426,6 +426,7 @@ namespace SpookyStreet.UI
                 _cursor.Drop();
                 HideThought();
                 HidePlace();
+                CloseMemory();
             }
 
             if (snap || ReducedMotion)
