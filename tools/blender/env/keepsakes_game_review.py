@@ -27,6 +27,7 @@ from env_lib import H
 
 ATLAS = {"TroupePhoto": "TroupePhoto", "OwlCrest": "OwlCrest", "PaperBatKeepsake": "Keepsakes", "BatMobile": "Keepsakes", "DressUpTrunk": "Keepsakes"}
 LANTERN = 0.9  # GlowLevels.KeepsakeLantern: under the bloom threshold
+CREST_SIGN = 0.6  # GlowLevels.CrestSign: lit paint
 PHOTO_AT = it.MECH @ it.PHOTO  # the photo's frame centre in owl-house builder space
 PROPS_X = 300.0
 
@@ -37,6 +38,7 @@ class Library(ir.Library):
             ir.NEW[model] = ATLAS[model]
         for k in (1, 2, 3):
             ir.GLOW[f"KeepsakeLantern{k}"] = LANTERN
+        ir.GLOW["CrestSign"] = CREST_SIGN
         return super().load(model, group, place, tag)
 
 

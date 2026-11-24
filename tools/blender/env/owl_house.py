@@ -383,11 +383,13 @@ CREST_AT = Vector((0.0, -2.07, FLOOR + POST - 0.125))
 def crest_sign(b, craft, P, M=None, reach=0.095):
     """The booth's sign: the owl crest carved and painted on a round board, on two brass hangers.
     Origin at the board's centre, on its back face; it faces -Y. `reach`: how far behind it the beam's face is."""
-    board = craft.timber(E["night"], "X", wear=0.25, bare=E["purple"])
     r = CREST_D / 2
+    tag = getattr(b, "glow_tag", None)
     with b.at(M if M is not None else T()):
         b.disc(P["trim_x"], r + 0.012, 0.022, T(0, -0.022, 0), segs=40, bevel=0.006)  # backing board, a bone edge all round
-        el.crest(b, craft, CREST_D, T(0, -0.022, 0), board=board)
+        b.glow_tag = "CrestSign"  # the painted face is lit paint: `CrestSign_Glow` in the game model
+        el.crest(b, craft, CREST_D, T(0, -0.022, 0), lit=1.0)
+        b.glow_tag = tag
         for sx in (-1, 1):
             x = sx * r * 0.5
             top = r * math.cos(math.asin(0.5))

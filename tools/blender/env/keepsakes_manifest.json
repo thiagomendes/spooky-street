@@ -55,10 +55,19 @@
   "px_per_m": 791
  },
  "OwlCrest": {
-  "triangles": 1798,
-  "children": {},
+  "triangles": 2040,
+  "children": {
+   "CrestSign_Glow": {
+    "triangles": 1612,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
   "atlas": "OwlCrest",
-  "px_per_m": 544
+  "px_per_m": 466
  },
  "PaperBatKeepsake": {
   "triangles": 474,

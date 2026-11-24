@@ -478,19 +478,22 @@ def crest_star_centres(d):
             for k in range(CREST_STARS)]
 
 
-def crest(b, craft, d, M, step=None, board=None, rim=True, fine=None):
+def crest(b, craft, d, M, step=None, board=None, rim=True, fine=None, lit=0.0):
     """The Players' owl crest (S004 plan section 2.2): a round, wordless emblem. A paper-lantern outline whose flame
     is a round owl's eye, ringed by five small stars; jack-o'-lantern orange and bone on night violet.
 
     Layered cut-outs like every painted motif: wall plane y = 0, viewer toward -Y, origin at the centre. `d` is the
     diameter. `step` is the thickness of one layer (default d / 45: carved relief on the 0.35 m booth sign; pass a
     paper thickness for the small ones). `board`: material of the disc (default: white paint, tinted night violet).
-    `fine`: round the curves for a close look (default: only from 0.2 m up)."""
+    `fine`: round the curves for a close look (default: only from 0.2 m up). `lit`: the paint also carries its
+    own colour as light at this strength (the booth's sign: under the eave it would otherwise be a dark disc
+    against the lit porch; the game exports it as a `*_Glow` part and sets the level, well under the bloom
+    threshold)."""
     fine = d >= 0.2 if fine is None else fine
     q = 1.0 if fine else 0.5
     r = d / 2
     step = d / 45 if step is None else step
-    paint = craft.paint()
+    paint = craft.tinted((1.0, 1.0, 1.0), 0.35, 0.06, 9.0, emission=lit) if lit else craft.paint()
     y = [0.0]
 
     def cut(outline, rgb, at=(0.0, 0.0), up=1.0, mat=None, bevel=0.0):

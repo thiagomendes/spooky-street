@@ -12,6 +12,8 @@ namespace SpookyStreet.Tests.Project
     /// The S004 seed and keepsake art as Unity imports it (S004 plan, stream B): static props with the named children
     /// the game drives, baked textures with their roles, the sketch pages as sprites, and the costume pieces where
     /// Pip's bones are. Missing files skip (not fail), like the other model import tests.
+    /// <para>Measures are taken in the prefab's world frame (Unity axes, Y up): an imported FBX root carries the
+    /// Z-up to Y-up turn, so children's local positions are still in the builder's axes (CI run 153).</para>
     /// </summary>
     public class KeepsakeArtImportTests
     {
@@ -56,6 +58,7 @@ namespace SpookyStreet.Tests.Project
             return total;
         }
 
+        /// <summary>Bounds of every mesh under the prefab, in the prefab's world frame (its root sits at the origin).</summary>
         private static Bounds ModelBounds(GameObject prefab)
         {
             bool any = false;
@@ -72,7 +75,7 @@ namespace SpookyStreet.Tests.Project
                 {
                     var corner = local.center + Vector3.Scale(local.extents,
                         new Vector3((i & 1) == 0 ? -1f : 1f, (i & 2) == 0 ? -1f : 1f, (i & 4) == 0 ? -1f : 1f));
-                    var p = prefab.transform.InverseTransformPoint(filter.transform.TransformPoint(corner));
+                    var p = filter.transform.TransformPoint(corner);
                     if (!any)
                     {
                         box = new Bounds(p, Vector3.zero);
@@ -158,12 +161,12 @@ namespace SpookyStreet.Tests.Project
             Assert.That(box.center.x, Is.EqualTo(0f).Within(0.02f), "origin at the frame centre");
             // Left to right as the Players stand (the model faces -Z, so its left is -X ... or +X if mirrored: the order
             // must be monotonic either way).
-            float first = parts[KeepsakeArt.Puppets[0]].localPosition.x;
-            float last = parts[KeepsakeArt.Puppets[4]].localPosition.x;
+            float first = parts[KeepsakeArt.Puppets[0]].position.x;
+            float last = parts[KeepsakeArt.Puppets[4]].position.x;
             float sign = Mathf.Sign(last - first);
             for (int i = 1; i < KeepsakeArt.Puppets.Length; i++)
             {
-                float step = parts[KeepsakeArt.Puppets[i]].localPosition.x - parts[KeepsakeArt.Puppets[i - 1]].localPosition.x;
+                float step = parts[KeepsakeArt.Puppets[i]].position.x - parts[KeepsakeArt.Puppets[i - 1]].position.x;
                 Assert.Greater(step * sign, 0.04f, KeepsakeArt.Puppets[i] + " stands beside the one before");
             }
 
@@ -180,6 +183,7 @@ namespace SpookyStreet.Tests.Project
             Assert.Less(box.size.z, 0.25f, "a flat sign on its two arms");
             Assert.That(Triangles(prefab), Is.InRange(500L, 5000L));
             Assert.IsNotNull(Resources.Load<Texture2D>(EnvResources + KeepsakeArt.OwlCrest + "_BaseColor"), "its own texture set");
+            Assert.IsTrue(Children(prefab).ContainsKey(KeepsakeArt.CrestFace), "the painted face is the lit part");
         }
 
         [Test]
@@ -188,8 +192,8 @@ namespace SpookyStreet.Tests.Project
             var prefab = Load(EnvResources + KeepsakeArt.PaperBat);
             var parts = Children(prefab);
             Assert.IsTrue(parts.ContainsKey(KeepsakeArt.WingLeft) && parts.ContainsKey(KeepsakeArt.WingRight));
-            var left = parts[KeepsakeArt.WingLeft].localPosition;
-            var right = parts[KeepsakeArt.WingRight].localPosition;
+            var left = parts[KeepsakeArt.WingLeft].position;
+            var right = parts[KeepsakeArt.WingRight].position;
             Assert.AreEqual(left.x, -right.x, 1e-3f, "the hinges mirror each other");
             Assert.AreEqual(left.y, right.y, 1e-3f);
             Assert.That(Mathf.Abs(left.x), Is.InRange(0.02f, 0.06f), "beside the body");
@@ -198,6 +202,61 @@ namespace SpookyStreet.Tests.Project
             Assert.That(box.min.y, Is.InRange(-0.01f, 0.03f), "origin at the body's lowest point");
             Assert.That(Triangles(prefab), Is.InRange(200L, 1500L), "thirty of them share the street");
             Assert.IsFalse(parts.ContainsKey("PaperBatKeepsake_Glow"), "paper, not a lamp");
+        }
+
+        private static Vector3 MeshCentre(Transform part)
+        {
+            return part.TransformPoint(part.GetComponent<MeshFilter>().sharedMesh.bounds.center);
+        }
+
+        [Test]
+        public void PaperBatWingsShutOverTheFrontByTheDocumentedTurn()
+        {
+            var prefab = Load(EnvResources + KeepsakeArt.PaperBat);
+            var bat = Object.Instantiate(prefab);
+            try
+            {
+                var parts = Children(bat);
+                foreach (var (name, sign) in new[] { (KeepsakeArt.WingLeft, -1f), (KeepsakeArt.WingRight, 1f) })
+                {
+                    var wing = parts[name];
+                    Vector3 open = MeshCentre(wing) - wing.position;
+                    // Open, the wings still lean a little toward the viewer: that side is the bat's front.
+                    float front = Mathf.Sign(open.z);
+                    Assert.Greater(Mathf.Abs(open.z), 0.003f, name + " leans toward the front when open");
+                    wing.localRotation *= Quaternion.AngleAxis(sign * KeepsakeArt.WingShutDegrees, Vector3.forward);
+                    Vector3 shut = MeshCentre(wing) - wing.position;
+                    Assert.Less(shut.x * open.x, 0f, name + " folds across the body");
+                    Assert.Greater(shut.z * front, 0.003f, name + " folds over the front, not behind");
+                    Assert.That(shut.y, Is.EqualTo(open.y).Within(0.003f), name + " turns about the upright fold");
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(bat);
+            }
+        }
+
+        [Test]
+        public void TrunkLidOpensUpAndBackByTheDocumentedTurn()
+        {
+            var prefab = Load(EnvResources + KeepsakeArt.DressUpTrunk);
+            var trunk = Object.Instantiate(prefab);
+            try
+            {
+                var lid = Children(trunk)[KeepsakeArt.TrunkLid];
+                Vector3 shut = MeshCentre(lid);
+                Vector3 back = lid.position - shut;
+                back.y = 0f;
+                lid.localRotation *= Quaternion.AngleAxis(KeepsakeArt.TrunkLidOpenDegrees, Vector3.right);
+                Vector3 open = MeshCentre(lid);
+                Assert.Greater(open.y, KeepsakeArt.TrunkSize + 0.2f, "the lid stands up over the trunk");
+                Assert.Greater(Vector3.Dot(open - lid.position, back.normalized), 0.02f, "and leans back past its hinge");
+            }
+            finally
+            {
+                Object.DestroyImmediate(trunk);
+            }
         }
 
         [Test]
@@ -216,7 +275,7 @@ namespace SpookyStreet.Tests.Project
             for (int n = 1; n <= KeepsakeArt.MobileHooks; n++)
             {
                 Assert.IsTrue(parts.ContainsKey(KeepsakeArt.Hook(n)), KeepsakeArt.Hook(n));
-                var at = parts[KeepsakeArt.Hook(n)].localPosition;
+                var at = parts[KeepsakeArt.Hook(n)].position;
                 Assert.Less(at.y, -0.3f, KeepsakeArt.Hook(n) + " hangs under the top hook");
                 Assert.Greater(at.y, -KeepsakeArt.MobileDrop, KeepsakeArt.Hook(n));
                 Assert.Less(new Vector2(at.x, at.z).magnitude, KeepsakeArt.MobileRadius, KeepsakeArt.Hook(n));
@@ -240,7 +299,7 @@ namespace SpookyStreet.Tests.Project
             var prefab = Load(EnvResources + KeepsakeArt.DressUpTrunk);
             var parts = Children(prefab);
             Assert.IsTrue(parts.ContainsKey(KeepsakeArt.TrunkLid));
-            var hinge = parts[KeepsakeArt.TrunkLid].localPosition;
+            var hinge = parts[KeepsakeArt.TrunkLid].position;
             Assert.AreEqual(KeepsakeArt.TrunkSize, hinge.y, 0.01f, "on the top edge");
             Assert.AreEqual(KeepsakeArt.TrunkSize / 2f, Mathf.Abs(hinge.z), 0.01f, "on the back edge");
             Assert.AreEqual(0f, hinge.x, 0.01f);
@@ -310,14 +369,14 @@ namespace SpookyStreet.Tests.Project
             Assert.IsTrue(bones.ContainsKey(KeepsakeArt.HatBone), "Pip.fbx has no " + KeepsakeArt.HatBone + " bone");
             Assert.IsTrue(bones.ContainsKey(KeepsakeArt.PailBone), "Pip.fbx has no " + KeepsakeArt.PailBone + " bone");
             Assert.IsTrue(bones.ContainsKey(KeepsakeArt.PipPailMesh), "Pip.fbx has no " + KeepsakeArt.PipPailMesh + " mesh to hide");
-            // Both are authored in Pip's model space in her rest pose: compare in each prefab's own root frame.
-            Vector3 head = pip.transform.InverseTransformPoint(bones[KeepsakeArt.HatBone].position);
-            Vector3 grip = pip.transform.InverseTransformPoint(bones[KeepsakeArt.PailBone].position);
+            // Both are authored in Pip's model space in her rest pose: compare in the prefabs' world frames.
+            Vector3 head = bones[KeepsakeArt.HatBone].position;
+            Vector3 grip = bones[KeepsakeArt.PailBone].position;
             var hatBox = ModelBounds(hat);
             var pailBox = ModelBounds(pail);
             Assert.That(hatBox.min.y - head.y, Is.InRange(0.15f, 0.32f), "the brim rests on her hair, above the head bone");
             Assert.Less(new Vector2(hatBox.center.x - head.x, hatBox.center.z - head.z).magnitude, 0.12f, "on her head, a little tilted");
-            Assert.That(hatBox.size.y, Is.InRange(0.08f, 0.2f), "a small hat");
+            Assert.That(hatBox.size.y, Is.InRange(0.08f, 0.24f), "a small hat");
             Assert.That(pailBox.max.y - grip.y, Is.InRange(-0.03f, 0.05f), "the handle's top is in her hand");
             Assert.Less(new Vector2(pailBox.center.x - grip.x, pailBox.center.z - grip.z).magnitude, 0.06f, "it hangs under her hand");
             Assert.That(pailBox.size.y, Is.InRange(0.18f, 0.34f));

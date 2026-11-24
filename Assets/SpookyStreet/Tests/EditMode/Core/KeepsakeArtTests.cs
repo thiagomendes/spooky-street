@@ -103,6 +103,11 @@ namespace SpookyStreet.Tests.Core
             }
 
             Assert.Less(GlowLevels.KeepsakeLantern, GlowLevels.Lamp, "below every practical lamp");
+            // The crest sign's painted face is lit paint: clearly under the bloom threshold and under the lanterns.
+            Assert.IsTrue(GlowLevels.IsGlowPart(KeepsakeArt.CrestFace));
+            Assert.AreEqual(GlowLevels.CrestSign, GlowLevels.IntensityFor(KeepsakeArt.CrestFace));
+            Assert.That(GlowLevels.CrestSign, Is.InRange(0.3f, 0.8f));
+            Assert.Less(GlowLevels.CrestSign, GlowLevels.KeepsakeLantern);
             Assert.Less(GlowLevels.KeepsakeLantern, GlowLevels.AtticWindow);
             Assert.AreEqual(GlowLevels.PaperBatEdge, GlowLevels.IntensityFor("PaperBat_Glow"), "the decorative bat keeps its edge");
         }

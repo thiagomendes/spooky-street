@@ -56,6 +56,9 @@ namespace SpookyStreet.Core.World
         // ---- the owl crest over the booth (its own model, so the Players' other machines can carry it later) ----
         public const string OwlCrest = "OwlCrest";
 
+        /// <summary>The sign's painted face: a glow part at <see cref="GlowLevels.CrestSign"/> (lit paint, no bloom).</summary>
+        public const string CrestFace = "CrestSign" + GlowLevels.Suffix;
+
         /// <summary>Diameter of the painted board: it must read from the plaza.</summary>
         public const float CrestDiameter = 0.35f;
 
@@ -79,10 +82,13 @@ namespace SpookyStreet.Core.World
 
         /// <summary>
         /// The bat is modelled open (cream inner fold and pencil lines showing). Shut, each wing turns about its
-        /// pivot's up axis by this many degrees over the front, so only the ink-black backs show:
-        /// <see cref="WingLeft"/> by -<see cref="WingShutDegrees"/>, <see cref="WingRight"/> by +<see cref="WingShutDegrees"/>.
+        /// upright fold by this many degrees (from the open pose, which already leans 12) over the front, so only the
+        /// ink-black backs show. The fold is the wing's
+        /// local Z (<c>Vector3.forward</c>): children of an imported model keep the builder's Z-up axes under the root's
+        /// turn. <see cref="WingLeft"/>: <c>rest * AngleAxis(-WingShutDegrees, forward)</c>; <see cref="WingRight"/>:
+        /// <c>rest * AngleAxis(+WingShutDegrees, forward)</c> (proved on the import by KeepsakeArtImportTests).
         /// </summary>
-        public const float WingShutDegrees = 168f;
+        public const float WingShutDegrees = 150f;
 
         public const string BatMobile = "BatMobile";
         public const int MobileRings = 3;
@@ -111,7 +117,10 @@ namespace SpookyStreet.Core.World
 
         public const string DressUpTrunk = "DressUpTrunk";
 
-        /// <summary>The trunk's lid: hinged on the back edge (its pivot); open is about -105 degrees about its right axis.</summary>
+        /// <summary>
+        /// The trunk's lid: hinged on the back edge (its pivot). Open: <c>rest * AngleAxis(TrunkLidOpenDegrees, right)</c>
+        /// in its own frame.
+        /// </summary>
         public const string TrunkLid = "TrunkLid";
         public const float TrunkLidOpenDegrees = -105f;
         public const float TrunkSize = 0.6f;

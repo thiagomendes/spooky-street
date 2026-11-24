@@ -12,7 +12,7 @@ target and the cutscene beats belong to streams A and C; they build on `Core/Wor
 | Asset | Files (under `Assets/SpookyStreet/Content/Resources/`) | Triangles | Texels | In the game now |
 |---|---|---|---|---|
 | Troupe photo | `Models/Environment/TroupePhoto.fbx` + `TroupePhoto_BaseColor/_Normal/_Emission.png` (1024) | 6,591 | 791 px/m | yes: on the hall partition |
-| Owl crest sign | `Models/Environment/OwlCrest.fbx` + `OwlCrest_*.png` (512) | 1,798 | 544 px/m | yes: over the booth |
+| Owl crest sign | `Models/Environment/OwlCrest.fbx` + `OwlCrest_*.png` (512) | 2,040 | 466 px/m | yes: over the booth |
 | Workshop mechanism (re-export, without the old photo) | `Models/Environment/WorkshopMechanism.fbx` + its three textures (1024) | 4,710 (was 5,420) | 222 px/m | yes |
 | Collectible paper bat | `Models/Environment/PaperBatKeepsake.fbx` (atlas `Keepsakes_*.png`, 1024) | 474 | 795 px/m | model only (stream A) |
 | Bat mobile | `Models/Environment/BatMobile.fbx` (atlas `Keepsakes`) | 2,866 | 373 px/m | model only (stream A) |
@@ -52,13 +52,16 @@ Manifests: `tools/blender/env/keepsakes_manifest.json`, `tools/blender/chars/cos
 
 1. **The photo and the crest are their own models**, not parts of `WorkshopMechanism` and `OwlHouse`. The mechanism
    atlas has 222 px/m and the house atlas 69 px/m; a 0.35 m crest would have been 24 texels wide, and the seed
-   cutscene pushes in on puppets 6 cm tall. With their own textures the photo has 791 px/m and the crest 544 px/m,
+   cutscene pushes in on puppets 6 cm tall. With their own textures the photo has 791 px/m and the crest 466 px/m,
    and the house FBX and its atlas are untouched (no re-bake of approved art). The crest model can also be hung on
    the Players' later machines. The builders still live where the plan says (`photo_motif` in `interior.py`,
    `crest()` in `env_lib.py`, placement in `owl_house.py`), and the review builds show them in place.
 2. **The crest hangs from the porch beam, on the door's axis**, 2.3–2.65 m up, in front of the bunting. From the
    plaza it sits right over the ticket shutter. On the door head itself (the plan's "over the shutter") the porch
    bunting hides it from the plaza, and the door leaf swings. It is dressing with no collider and no Use target.
+   **Its painted face is lit paint** (`CrestSign_Glow`, `GlowLevels.CrestSign` = 0.6, far under the bloom
+   threshold): CI run 153 showed the sign as a dark disc against the lit porch behind it (frames `70*` of that
+   run), because it hangs under the eave facing the night. The backing board and hangers stay unlit.
 3. **The photo** is 0.7 × 0.45 m, centred 1.76 m over the hall floor, between the dado rail and the frieze rail and
    left (north) of the service panel, so the push rod no longer crosses it. The game spawns `TroupePhoto` as a child
    of the mechanism named `KitPhoto`, so `CaseCutscenes.FindPhoto` works unchanged and the photo is shown and hidden
@@ -81,14 +84,18 @@ Manifests: `tools/blender/env/keepsakes_manifest.json`, `tools/blender/chars/cos
 
 All names and numbers are in `Assets/SpookyStreet/Core/World/KeepsakeArt.cs` (engine-free, tested).
 
+- **Frames.** A model's root carries the Z-up to Y-up turn, so read a child's place with `transform.position`
+  relative to the spawned root (or `root.InverseTransformPoint`), never with `localPosition` as if it were Y-up.
 - **Kits.** Keepsake props: `new ModelKit(materials, "Models/Environment") { FallbackAtlas = KeepsakeArt.KeepsakesAtlas }`.
   Costume pieces: `new ModelKit(materials, KeepsakeArt.CostumeFolder) { FallbackAtlas = KeepsakeArt.CostumeAtlas }`.
   `ModelKit.Spawn` gives `*_Glow` children their emissive material; `GlowLevels.KeepsakeLantern` (0.9, under the
   bloom threshold) applies to every part named `Keepsake*_Glow`.
 - **Paper bat** (`PaperBatKeepsake`). Origin at the body's lowest point, front toward the model's -Z, 0.34 m span.
-  Exported open. Shut: `Wing_L.localRotation = Euler(0, -WingShutDegrees, 0)` and
-  `Wing_R.localRotation = Euler(0, +WingShutDegrees, 0)` (168°; multiply onto the imported rotation). The flutter
-  is a blend between shut and 0. Shut, the bat is ink black with a small cream belly; open, the cream inner fold
+  Exported open. Shut: `Wing_L.localRotation = rest * Quaternion.AngleAxis(-WingShutDegrees, Vector3.forward)`
+  and `Wing_R.localRotation = rest * Quaternion.AngleAxis(+WingShutDegrees, Vector3.forward)` (150°). The hinge is
+  the wing's local **Z**: the children of an imported model keep the builder's Z-up axes under the root's turn
+  (this is what CI run 153 taught; `KeepsakeArtImportTests` proves the turn on the import). The flutter is a blend
+  between shut and 0. Shut, the bat is ink black with a small cream belly; open, the cream inner fold
   and its pencil lines show. That is the difference from the decorative `PaperBat`, which keeps its glowing edge.
 - **Bat mobile** (`BatMobile`). Origin at the hook on the eave; it hangs 1.02 m and is 0.66 m across. Children:
   `Ring1..3` (hoop with a gap), `Ring1..3_Close` (show at 10, 20, 30), `KeepsakeLantern1..3_Glow` (the lantern lit:
@@ -96,7 +103,8 @@ All names and numbers are in `Assets/SpookyStreet/Core/World/KeepsakeArt.cs` (en
   on a hook: `PaperBatKeepsake` at scale `MobileBatScale`, origin `MobileBatHang × scale` under the hook, wings
   nearly open, turned outward.
 - **Dress-up trunk** (`DressUpTrunk`). The porch crate's size (0.6 m) and build, so it can replace the crate on
-  the arrival porch. `TrunkLid` is hinged on the back edge; open is `TrunkLidOpenDegrees` about its right axis.
+  the arrival porch. `TrunkLid` is hinged on the back edge; open is
+  `rest * Quaternion.AngleAxis(TrunkLidOpenDegrees, Vector3.right)` (-105°, tested on the import).
   Inside lie the folded star cloth, the hat and the lantern (always there: showing only earned pieces is stream
   A's choice of when the lid opens, or a later split of the contents).
 - **Costume pieces.** The hat and the lantern pail are meshes in Pip's model space in her rest pose. Instantiate
@@ -129,7 +137,8 @@ All names and numbers are in `Assets/SpookyStreet/Core/World/KeepsakeArt.cs` (en
 - `Tests/EditMode/Project/KeepsakeArtImportTests.cs`: the seven models import as static props without imported
   materials; the four texture sets import with their roles and sizes; the photo's size, puppets and order; the
   crest's size; the bat's hinges; the mobile's rings, lanterns and hooks; the trunk's hinge; the sketch pages as
-  full-size sprites; the star cape at Pip's atlas size; the costume pieces where Pip's `Head` and `Pail` bones are.
+  full-size sprites; the star cape at Pip's atlas size; the costume pieces where Pip's `Head` and `Pail` bones are;
+  the wings shut over the front and the lid opens up and back by the documented turns.
 - `Tests/Visual/KeepsakeArtCaptureTests.cs`: frames `70_booth_crest` (plaza, gameplay camera) and
   `69_troupe_photo` (hall, gameplay camera), with review frames `70r_booth_crest_gate` and
   `69r_troupe_photo_close`; asserts both models are spawned where `KeepsakeArt` says.
@@ -151,7 +160,7 @@ These are the agent's scores from Blender renders. The in-game scores need the C
 
 ## 8. CI evidence
 
-See the end of this file (added after the validation run).
+CIEVIDENCE
 
 ## 9. What is left
 
