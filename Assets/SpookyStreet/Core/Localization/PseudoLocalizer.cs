@@ -6,16 +6,20 @@ namespace SpookyStreet.Core.Localization
 {
     /// <summary>
     /// Generates the engineering pseudo-language (spec §7: "+35% string expansion"). Letters become
-    /// accented look-alikes, text is padded and bracketed so truncation is obvious, and format
+    /// accented look-alikes that every bundled font draws (Sniglet has Latin-1 and a few Latin Extended-A letters
+    /// only, so the pseudo pack also exercises the font coverage check; letters with no such look-alike stay plain), text is padded and bracketed so truncation is obvious, and format
     /// placeholders such as {0} and rich-text tags such as &lt;b&gt; are preserved untouched.
     /// </summary>
     public static class PseudoLocalizer
     {
         public const string Locale = "qps-ploc";
+
+        /// <summary>The pseudo-language's name on the language screen (bracketed and accented like its strings).</summary>
+        public const string NativeName = "[Þšéüðö]";
         public const float DefaultExpansion = 0.35f;
 
         private const string Plain = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        private const string Accented = "áƀçđéƒğĥíĵķĺɱñóþǫŕšŧúṽŵẋýžÁƁÇĐÉƑĞĤÍĴĶĹṀÑÓÞǪŔŠŦÚṼŴẊÝŽ";
+        private const string Accented = "ábçðéƒghíȷkłmñöþqrštüvwxýžÅBÇÐÉFGHÍJKŁMÑÖÞQRŠTÜVWXÝŽ";
 
         public static string Transform(string source, float expansion = DefaultExpansion)
         {
@@ -63,10 +67,20 @@ namespace SpookyStreet.Core.Localization
             var entries = new List<StringEntry>(source.Count);
             foreach (var entry in source.Entries)
             {
-                entries.Add(new StringEntry(entry.Key, Transform(entry.Value, expansion), entry.Context));
+                Dictionary<PluralCategory, string> plural = null;
+                if (entry.IsPlural)
+                {
+                    plural = new Dictionary<PluralCategory, string>();
+                    foreach (var form in entry.Plural)
+                    {
+                        plural[form.Key] = Transform(form.Value, expansion);
+                    }
+                }
+
+                entries.Add(new StringEntry(entry.Key, Transform(entry.Value, expansion), entry.Context, plural));
             }
 
-            return new StringTable(Locale, "[Ƥšéúđó]", source.ContentVersion, entries);
+            return new StringTable(Locale, NativeName, source.ContentVersion, entries);
         }
     }
 }

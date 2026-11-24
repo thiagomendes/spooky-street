@@ -1,4 +1,5 @@
-# Pinned tools for static checks (ci.yml), App Store Connect status polling and the audio pipeline (tools/audio).
+# Pinned tools for static checks (ci.yml), App Store Connect status polling, the audio pipeline (tools/audio) and
+# the language pack checks (tools/l10n: fonttools reads the bundled fonts' character maps).
 yamllint==1.38.0
 actionlint-py==1.7.12.25
 shellcheck-py==0.11.0.1
@@ -6,3 +7,4 @@ PyJWT==2.15.1
 cryptography==50.0.2
 numpy==2.5.3
 scipy==1.18.1
+fonttools==4.68.0

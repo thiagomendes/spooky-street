@@ -161,7 +161,7 @@ def check_core_is_engine_free():
 
 def check_localization():
     table = json.loads(read("Assets/SpookyStreet/Content/Resources/Localization/en.json"))
-    check(table.get("schemaVersion") == 1 and table.get("locale") == "en", "en.json must be schema 1, locale en")
+    check(table.get("schemaVersion") in (1, 2) and table.get("locale") == "en", "en.json must be schema 1 or 2, locale en")
     keys = [e["key"] for e in table["entries"]]
     check(len(keys) == len(set(keys)), "en.json has duplicate keys")
     for entry in table["entries"]:

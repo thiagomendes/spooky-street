@@ -12,7 +12,10 @@ namespace SpookyStreet.Tests.Core
             "{\"key\":\"a\",\"value\":\"Alpha\",\"context\":\"ctx\"},{\"key\":\"fmt\",\"value\":\"Hi {0}\"}]}";
 
         /// <summary>Finds the bundled English table whether running in Unity or the dotnet test project.</summary>
-        public static string BundledEnglishJson()
+        public static string BundledEnglishJson() => File.ReadAllText(BundledEnglishPath());
+
+        /// <summary>Path of the bundled English table (its folder also holds languages.json).</summary>
+        public static string BundledEnglishPath()
         {
             string relative = Path.Combine("Assets", "SpookyStreet", "Content", "Resources", "Localization", "en.json");
             string dir = Directory.GetCurrentDirectory();
@@ -21,7 +24,7 @@ namespace SpookyStreet.Tests.Core
                 string candidate = Path.Combine(dir, relative);
                 if (File.Exists(candidate))
                 {
-                    return File.ReadAllText(candidate);
+                    return candidate;
                 }
 
                 dir = Path.GetDirectoryName(dir);
@@ -30,7 +33,7 @@ namespace SpookyStreet.Tests.Core
             string fromEnv = Environment.GetEnvironmentVariable("SSS_PROJECT_ROOT");
             if (!string.IsNullOrEmpty(fromEnv))
             {
-                return File.ReadAllText(Path.Combine(fromEnv, relative));
+                return Path.Combine(fromEnv, relative);
             }
 
             throw new FileNotFoundException("Could not locate " + relative);

@@ -31,6 +31,41 @@ namespace SpookyStreet.Core.Localization
             return value;
         }
 
+        /// <summary>Appends <paramref name="value"/> as a JSON string literal (null as <c>null</c>).</summary>
+        public static StringBuilder Quote(StringBuilder sb, string value)
+        {
+            if (value == null)
+            {
+                return sb.Append("null");
+            }
+
+            sb.Append('"');
+            foreach (char c in value)
+            {
+                switch (c)
+                {
+                    case '"': sb.Append("\\\""); break;
+                    case '\\': sb.Append("\\\\"); break;
+                    case '\n': sb.Append("\\n"); break;
+                    case '\r': sb.Append("\\r"); break;
+                    case '\t': sb.Append("\\t"); break;
+                    default:
+                        if (c < 0x20)
+                        {
+                            sb.Append("\\u").Append(((int)c).ToString("x4", CultureInfo.InvariantCulture));
+                        }
+                        else
+                        {
+                            sb.Append(c);
+                        }
+
+                        break;
+                }
+            }
+
+            return sb.Append('"');
+        }
+
         private sealed class Reader
         {
             private readonly string _text;

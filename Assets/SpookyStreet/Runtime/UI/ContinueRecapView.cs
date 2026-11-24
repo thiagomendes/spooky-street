@@ -204,7 +204,7 @@ namespace SpookyStreet.UI
                 count = _count.gameObject.AddComponent<LocalizedText>();
             }
 
-            count.SetKey(recap.StickersKey, () => new object[] { recap.StickerCount });
+            count.SetPlural(recap.StickersKey, () => recap.StickerCount, () => new object[] { recap.StickerCount });
         }
 
         private static void Clear(RectTransform parent)

@@ -67,6 +67,34 @@ namespace SpookyStreet.Core.Localization
             }
         }
 
+        /// <summary>
+        /// A count-dependent string: the form for <paramref name="count"/> under the rules of the table that has the
+        /// key (the active pack, else bundled English), formatted with <paramref name="args"/> (pass the count too
+        /// when the text shows it). Never throws.
+        /// </summary>
+        public string Plural(string key, long count, params object[] args)
+        {
+            string pattern;
+            if (!Active.TryGetPlural(key, count, out pattern) && !Fallback.TryGetPlural(key, count, out pattern))
+            {
+                pattern = Get(key);
+            }
+
+            if (args == null || args.Length == 0)
+            {
+                return pattern;
+            }
+
+            try
+            {
+                return string.Format(CultureInfo.InvariantCulture, pattern, args);
+            }
+            catch (FormatException)
+            {
+                return pattern;
+            }
+        }
+
         public static string MissingMarker(string key) => "⟦" + (key ?? "null") + "⟧";
     }
 }

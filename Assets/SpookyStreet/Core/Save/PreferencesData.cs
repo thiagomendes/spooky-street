@@ -14,6 +14,12 @@ namespace SpookyStreet.Core.Save
         /// <summary>Active language pack locale, e.g. "en". Never keyed off display text.</summary>
         public string Locale { get; set; } = DefaultLocale;
 
+        /// <summary>
+        /// The player picked <see cref="Locale"/> on the language screen. Until then each launch follows the device's
+        /// language when a matching pack is in the app or installed (S004 §2.4).
+        /// </summary>
+        public bool LocaleChosen { get; set; }
+
         public bool InvertY { get; set; }
 
         /// <summary>Camera orbit sensitivity multiplier, 0.25–3.</summary>
@@ -47,6 +53,7 @@ namespace SpookyStreet.Core.Save
             return new SaveJsonWriter()
                 .Number("schemaVersion", CurrentSchemaVersion)
                 .String("locale", p.Locale)
+                .Bool("localeChosen", p.LocaleChosen)
                 .Bool("invertY", p.InvertY)
                 .Number("cameraSensitivity", p.CameraSensitivity)
                 .Bool("reducedMotion", p.ReducedMotion)
@@ -82,7 +89,8 @@ namespace SpookyStreet.Core.Save
                 preferences.Locale = locale;
             }
 
-            if (SaveJsonReader.TryBool(root, "invertY", out bool b)) preferences.InvertY = b;
+            if (SaveJsonReader.TryBool(root, "localeChosen", out bool b)) preferences.LocaleChosen = b;
+            if (SaveJsonReader.TryBool(root, "invertY", out b)) preferences.InvertY = b;
             if (SaveJsonReader.TryBool(root, "reducedMotion", out b)) preferences.ReducedMotion = b;
             if (SaveJsonReader.TryBool(root, "haptics", out b)) preferences.Haptics = b;
             if (SaveJsonReader.TryBool(root, "largeCaptions", out b)) preferences.LargeCaptions = b;
