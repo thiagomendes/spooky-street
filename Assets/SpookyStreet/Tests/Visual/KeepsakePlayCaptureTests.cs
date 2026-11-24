@@ -175,6 +175,8 @@ namespace SpookyStreet.Tests.Visual
             var lamp = PaperBatLayout.All[20];
             pip.Teleport(new Vector3(1.4f, 0.05f, -7.6f));
             yield return Wait(0.6f);
+            Director.Captions.Clear();
+            yield return null;
             yield return CaptureFrom("85b_bat_lamp_head", new Vector3(0.2f, 1.9f, -5.6f),
                 new Vector3(lamp.X, lamp.Y - 0.6f, lamp.Z));
 

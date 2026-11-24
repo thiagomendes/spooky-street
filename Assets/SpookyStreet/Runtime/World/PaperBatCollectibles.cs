@@ -131,6 +131,10 @@ namespace SpookyStreet.World
             _feedback = game != null ? game.Feedback : null;
             MaterialLibrary materials = game != null ? game.Materials : null;
             var kit = materials != null ? new ModelKit(materials, EnvironmentDressing.ModelFolder) : null;
+            // The keepsake bat draws from the shared Keepsakes atlas (run 183: through the Env atlas it came out patchwork).
+            var keepsakeKit = materials != null
+                ? new ModelKit(materials, EnvironmentDressing.ModelFolder) { FallbackAtlas = KeepsakeArt.KeepsakesAtlas }
+                : null;
             UsesKeepsakeModel = kit != null && kit.Has(KeepsakeModel);
             bool greyboxMesh = kit != null && kit.Has(EnvironmentLayout.PaperBat);
             int index = 0;
@@ -155,7 +159,7 @@ namespace SpookyStreet.World
                 {
                     // Origin at the body's lowest point: on its surface when perched, centred when it hangs or floats.
                     float rest = float.IsNaN(spot.SitY) ? -ModelHalfHeight * ModelScale : spot.SitY - spot.Y;
-                    art = kit.Spawn(KeepsakeModel, wings, new Vector3(0f, rest, 0f), 0f, ModelScale);
+                    art = keepsakeKit.Spawn(KeepsakeModel, wings, new Vector3(0f, rest, 0f), 0f, ModelScale);
                     if (art != null)
                     {
                         view.WingLeft = ModelKit.FindDeep(art.transform, KeepsakeArt.WingLeft);

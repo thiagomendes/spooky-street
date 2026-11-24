@@ -177,6 +177,17 @@ namespace SpookyStreet.Tests.PlayMode
 
             Assert.IsTrue(mobile.LanternLit(1));
             Assert.IsFalse(mobile.LanternLit(2));
+
+            // Every keepsake prop draws from the Keepsakes atlas (run 183: the world's bats came out in the Env atlas).
+            var worldBat = Bats.ViewOf(PaperBatLayout.IdFor(20)).GetComponentInChildren<Renderer>(true);
+            var mobileBat = mobile.BatOn(1).GetComponentInChildren<Renderer>(true);
+            foreach (var renderer in new[] { worldBat, mobileBat })
+            {
+                Assert.IsNotNull(renderer);
+                var map = renderer.sharedMaterial.GetTexture("_BaseMap");
+                Assert.IsNotNull(map, renderer.name);
+                Assert.AreEqual(KeepsakeArt.KeepsakesAtlas + "_BaseColor", map.name, renderer.name + " atlas");
+            }
             Vector3 at = mobile.Model.position;
             Assert.AreEqual(KeepsakePorch.MobileY, at.y, 0.01f, "hangs from its pole on the porch");
             var bounds = ModelKit.RendererBounds(mobile.Model.gameObject);

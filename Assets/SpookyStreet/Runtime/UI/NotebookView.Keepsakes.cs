@@ -145,9 +145,11 @@ namespace SpookyStreet.UI
                 int column = row ? i : i % 3;
                 int line = row ? 0 : i / 3;
                 float x = row ? (column - (count - 1) * 0.5f) * cell.x : (column - 1) * cell.x;
-                float y = row ? 0f : (1 - line) * cell.y;
+                // Rows fill from the label up, so the pile always sits on its number (run 183: a gap under three bats).
+                int rows = (count + 2) / 3;
+                float y = row ? 0f : -size.y * 0.5f + 56f + cell.y * 0.5f + (rows - 1 - line) * cell.y;
                 var bat = UiFactory.Sprite(_batStack, "FoldedBat" + i, sprite, Color.white, new Vector2(0.5f, 0.5f),
-                    new Vector2(x, y), new Vector2(72f, 48f) * scale);
+                    new Vector2(x, y), new Vector2(row ? 60f : 84f, 56f) * scale);
                 bat.preserveAspect = true;
                 bat.rectTransform.localRotation = Quaternion.Euler(0f, 0f, ((i * 53) % 25) - 12f);
             }
