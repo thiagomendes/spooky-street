@@ -72,6 +72,20 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `ui.parent_gate.hint` | Grown-ups: hold both spots for 3 seconds | Adulto: segure os dois pontos por 3 segundos | 44/56 | Singular "Adulto:" plus the você imperative, as Brazilian parental gates read. |
 | `ui.parent_gate.hint_gamepad` | Grown-ups: hold both shoulder buttons for 3 seconds | Adulto: segure os dois botões de ombro por 3 segundos | 53/71 | "Botões de ombro" is the platform-neutral term in Brazilian game manuals (L/R, LB/RB). |
 | `ui.parent_gate.hint_keyboard` | Grown-ups: hold Q and P together for 3 seconds | Adulto: segure Q e P juntos por 3 segundos | 42/65 |  |
+| `ui.settings.heading` | Settings | Configurações | 13/13 |  |
+| `ui.settings.col_sound` | Sound and help | Som e ajuda | 11/21 |  |
+| `ui.settings.col_camera` | Camera and touch | Câmera e toque | 14/24 |  |
+| `ui.settings.col_reading` | Reading and motion | Leitura e movimento | 19/27 |  |
+| `ui.settings.camera_speed` | Camera speed | Giro da câmera | 14/19 | "Giro" (turning) fits the 19-letter budget; "Velocidade da câmera" was one letter over. |
+| `ui.settings.invert_y` | Invert up and down | Inverter cima e baixo | 21/27 |  |
+| `ui.settings.left_handed` | Left-handed controls | Controles canhotos | 18/29 | UNSURE. "Controles canhotos" is how Brazilian games usually say it; "Modo canhoto" is shorter. |
+| `ui.settings.haptics` | Vibration | Vibração | 8/15 |  |
+| `ui.settings.reduced_motion` | Reduce motion | Reduzir movimento | 17/20 |  |
+| `ui.settings.large_captions` | Large text | Texto grande | 12/16 |  |
+| `ui.settings.opaque_captions` | Solid text boxes | Caixas de texto sólidas | 23/24 | "Sólidas" = not see-through. |
+| `ui.settings.language` | Language | Idioma | 6/13 |  |
+| `ui.settings.grown_ups` | For grown-ups | Para adultos | 12/20 |  |
+| `ui.settings.credits` | Credits | Créditos | 8/12 |  |
 
 ## Captions (sound off)
 
@@ -339,3 +353,53 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `keepsake.page.lanterns` | An old drawing: lanterns all along Lantern Lane. | Um desenho antigo: lanternas por toda a Rua das Lanternas. | 58/67 | "Lanternas por toda a Rua das Lanternas" keeps the English echo of the street's name. |
 | `keepsake.page.friends` | An old drawing: five friends painting lanterns. | Um desenho antigo: cinco amigos pintando lanternas. | 51/66 | "Amigos" (masculine plural) is the neutral form for a mixed group. It does not say who they are. |
 | `keepsake.page.moon` | An old drawing: tall houses, and a moon on a chimney. | Um desenho antigo: casas altas e uma lua numa chaminé. | 54/74 |  |
+
+## For grown-ups and credits (behind the parent gate)
+
+| Key | English | Português | Len | Note |
+|---|---|---|---|---|
+| `ui.parent.heading` | For grown-ups | Para adultos | 12/20 |  |
+| `ui.parent.intro` | Worked out on this device from the saved game. Nothing is sent anywhere. | Calculado neste aparelho a partir do jogo salvo. Nada é enviado. | 64/100 |  |
+| `ui.parent.cases` | Cases | Casos | 5/9 |  |
+| `ui.parent.case_solved` | Solved | Resolvido | 9/11 |  |
+| `ui.parent.case_in_progress` | In progress | Em andamento | 12/17 |  |
+| `ui.parent.case_not_started` | Not started yet | Ainda não começou | 17/23 |  |
+| `ui.parent.answers` | The child's own answers | As respostas da criança | 23/34 | "A criança" keeps the page neutral for any child; the page never names or genders the child. |
+| `ui.parent.answers_none` | They appear here once a question is solved in the notebook. | Elas aparecem aqui quando uma pergunta é resolvida no caderno. | 62/82 |  |
+| `ui.parent.places` | Places explored | Lugares explorados | 18/23 |  |
+| `ui.parent.place_lane` | Lantern Lane | Rua das Lanternas | 17/19 |  |
+| `ui.parent.place_house` | Inside the owl house | Dentro da casa da coruja | 24/29 |  |
+| `ui.parent.place_treehouse` | June's treehouse | Casa na árvore da June | 22/24 |  |
+| `ui.parent.friends` | Friends met | Amizades feitas | 15/17 | "Amizades feitas" fits the budget; "Amigos encontrados" was one letter over. |
+| `ui.parent.none_yet` | None yet. | Nenhum ainda. | 13/15 |  |
+| `ui.parent.keepsakes` | Keepsakes | Lembranças | 10/15 |  |
+| `ui.parent.bats` | {0} of {1} paper bats | {0} de {1} morcegos de papel | 28/29 |  |
+| `ui.parent.pages` | {0} of {1} sketch pages | {0} de {1} páginas de esboço | 28/31 |  |
+| `ui.parent.pieces` | {0} of {1} costume pieces | {0} de {1} peças de fantasia | 28/34 |  |
+| `ui.parent.time` | Time played this week | Tempo de jogo nesta semana | 26/31 |  |
+| `ui.parent.time_note` | Counted on this device, only while the game is not paused. The child never sees it. | Contado neste aparelho, só com o jogo fora da pausa. A criança nunca vê isso. | 77/115 |  |
+| `ui.parent.time_none` | No play yet this week. | Nenhum jogo nesta semana ainda. | 31/32 |  |
+| `ui.parent.time_under_minute` | Less than a minute | Menos de um minuto | 18/27 |  |
+| `ui.parent.time_minutes` | About {0} min | Cerca de {0} min | 16/19 |  |
+| `ui.parent.time_hours` | About {0} h | Cerca de {0} h | 14/16 |  |
+| `ui.parent.time_hours_minutes` | About {0} h {1} min | Cerca de {0} h {1} min | 22/26 |  |
+| `ui.parent.day_mon` | Mon | seg | 3/7 | Brazilian calendars write weekdays in lower case. |
+| `ui.parent.day_tue` | Tue | ter | 3/7 |  |
+| `ui.parent.day_wed` | Wed | qua | 3/7 |  |
+| `ui.parent.day_thu` | Thu | qui | 3/7 |  |
+| `ui.parent.day_fri` | Fri | sex | 3/7 |  |
+| `ui.parent.day_sat` | Sat | sáb | 3/7 |  |
+| `ui.parent.day_sun` | Sun | dom | 3/7 |  |
+| `ui.parent.practises` | What the game practises | O que o jogo exercita | 21/34 |  |
+| `ui.parent.practise_noticing` | Noticing small details in the world. | Reparar em pequenos detalhes do mundo. | 38/51 |  |
+| `ui.parent.practise_comparing` | Comparing what two people say they saw. | Comparar o que duas pessoas dizem que viram. | 44/55 |  |
+| `ui.parent.practise_explaining` | Explaining an answer with the clues found. | Explicar uma resposta com as pistas achadas. | 44/59 |  |
+| `ui.parent.privacy` | Privacy | Privacidade | 11/12 |  |
+| `ui.parent.privacy_no_ads` | No ads, no purchases and no accounts. | Sem anúncios, sem compras e sem contas. | 39/52 |  |
+| `ui.parent.privacy_on_device` | Saves stay on this device. Nothing about the child is sent anywhere. | Os jogos salvos ficam neste aparelho. Nada sobre a criança é enviado. | 69/94 |  |
+| `ui.parent.privacy_languages` | Downloading a language fetches only that language's file. | Baixar um idioma busca só o arquivo desse idioma. | 49/79 |  |
+| `ui.credits.heading` | Credits | Créditos | 8/12 |  |
+| `ui.credits.art` | Every picture, model, animation and sound effect was made for this game from scratch, with scripts in Blender and Python. No art or sound was bought or borrowed. | Cada imagem, modelo, animação e efeito sonoro foi feito do zero para este jogo, com scripts no Blender e em Python. Nenhuma arte ou som foi comprado ou emprestado. | 163/220 |  |
+| `ui.credits.voices` | The voices are wordless babble, cut and pitched from syllables made with Google Gemini speech. The music was made with Google's Lyria music model. Both were checked by ear first. | As vozes são balbucios sem palavras, cortados e afinados a partir de sílabas feitas com a fala do Google Gemini. A música foi feita com o modelo Lyria, do Google. Tudo foi ouvido antes. | 185/243 |  |
+| `ui.credits.fonts` | Fonts: Andika by SIL International and Sniglet by Haley Fiege, Brenda Gallo and Pablo Impallari, under the SIL Open Font License 1.1. The licences follow, in English as published. | Fontes: Andika, da SIL International, e Sniglet, de Haley Fiege, Brenda Gallo e Pablo Impallari, sob a SIL Open Font License 1.1. As licenças seguem, em inglês, como publicadas. | 177/244 | The licence texts themselves stay in English, as published (OFL). |
+| `ui.credits.tools` | Made with Unity and Blender. | Feito com Unity e Blender. | 26/40 |  |

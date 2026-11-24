@@ -30,6 +30,13 @@ NOTES = {
     "tip.move.wall_jump": "\"Quicar\" is the word for a ball bouncing. Children know it.",
     "ui.pause.back_to_title": "\"Início\" = the title screen. It is shorter than \"tela inicial\".",
     "ui.settings.helper": "A noun for the helping hand.",
+    "ui.settings.camera_speed": "\"Giro\" (turning) fits the 19-letter budget; \"Velocidade da câmera\" was one letter over.",
+    "ui.settings.left_handed": "UNSURE. \"Controles canhotos\" is how Brazilian games usually say it; \"Modo canhoto\" is shorter.",
+    "ui.settings.opaque_captions": "\"Sólidas\" = not see-through.",
+    "ui.parent.answers": "\"A criança\" keeps the page neutral for any child; the page never names or genders the child.",
+    "ui.parent.friends": "\"Amizades feitas\" fits the budget; \"Amigos encontrados\" was one letter over.",
+    "ui.parent.day_mon": "Brazilian calendars write weekdays in lower case.",
+    "ui.credits.fonts": "The licence texts themselves stay in English, as published (OFL).",
     "ui.memory.skip": "UNSURE: skip and jump are both \"pular\" in Portuguese. The skip button is at the top right with its own icon, and \"Pular\" is the standard word for skip (\"Pular anúncio\"). The alternative is \"Passar\".",
     "ui.dialogue.skip": "See ui.memory.skip.",
     "ui.cutscene.skip": "See ui.memory.skip.",
@@ -103,6 +110,7 @@ GROUPS = [
     ("Saves", ["ui.save."]),
     ("Language screen", ["ui.language."]),
     ("Keepsake pages (old drawings)", ["keepsake."]),
+    ("For grown-ups and credits (behind the parent gate)", ["ui.parent.", "ui.credits."]),
 ]
 
 
