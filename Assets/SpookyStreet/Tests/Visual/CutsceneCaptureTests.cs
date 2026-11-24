@@ -204,10 +204,37 @@ namespace SpookyStreet.Tests.Visual
                 }
             }
 
+            // S004: the seed follows the reveal (71 the moon glinting in the troupe photo).
+            float seedBy = Time.time + 10f;
+            while (Player.LastId != C01Cutscenes.SeedId && Time.time < seedBy)
+            {
+                yield return null;
+            }
+
+            Assert.AreEqual(C01Cutscenes.SeedId, Player.LastId, "the seed follows the reveal");
+            foreach (var beat in C01Cutscenes.Seed.Beats)
+            {
+                if (beat.Id == "moon")
+                {
+                    yield return At("moon", 2.4f, "71_seed_moon_glint");
+                }
+                else if (beat.Id == "owl")
+                {
+                    yield return At("owl", 1.6f, "r_seed_owl_glint", review: true);
+                }
+                else
+                {
+                    yield return At(beat.Id, beat.Duration * 0.6f, "r_seed_" + beat.Id, review: true);
+                }
+            }
+
             while (Player.Active)
             {
                 yield return null;
             }
+
+            yield return Wait(0.5f);
+            yield return Shot("r_seed_control", ReviewWidth, ReviewHeight);
 
             // The other stickers' shots, through a reveal built from a different (equally right) set.
             var alternative = CaseAnswers.Empty
@@ -225,6 +252,34 @@ namespace SpookyStreet.Tests.Visual
             Player.SkipNow();
             yield return Wait(0.6f);
             Assert.IsFalse(Player.Active);
+
+            // S004: the next load plays "the street remembers" (72 Mr. Vale checking his watch as the owl bows).
+            yield return SceneManager.LoadSceneAsync("LanternLane", LoadSceneMode.Single);
+            yield return null;
+            GameBootstrap.Instance.Ui.ContinueButton.onClick.Invoke();
+            yield return null;
+            yield return null;
+            Assert.IsTrue(Director.Cutscenes.Playing, "the street remembers plays on the first load after the stamp");
+            Assert.AreEqual(C01Cutscenes.StreetRemembersId, Player.LastId);
+            foreach (var beat in C01Cutscenes.StreetRemembers.Beats)
+            {
+                if (beat.Id == "hour")
+                {
+                    yield return At("hour", 1.5f, "72_street_vale_owl_bows");
+                }
+                else
+                {
+                    yield return At(beat.Id, beat.Duration * 0.6f, "r_street_" + beat.Id, review: true);
+                }
+            }
+
+            while (Player.Active)
+            {
+                yield return null;
+            }
+
+            yield return Wait(0.5f);
+            yield return Shot("r_street_control", ReviewWidth, ReviewHeight);
         }
     }
 }

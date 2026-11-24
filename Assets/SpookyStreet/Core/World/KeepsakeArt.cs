@@ -53,6 +53,30 @@ namespace SpookyStreet.Core.World
         /// <summary>The Players' crest on the photo's mount, lower right corner (a child; pivot at its centre).</summary>
         public const string PhotoCrest = "PhotoCrest";
 
+        /// <summary>
+        /// Where a puppet (or the mount crest) sits on the photo's face, from the frame centre (interior.py PUPPETS and
+        /// PHOTO_CREST): <paramref name="across"/> left to right as a viewer in the hall sees it, <paramref name="up"/> up.
+        /// The cutscenes use it when the model is not loaded; with the model they read the parts' pivots.
+        /// </summary>
+        public static bool TryGetPhotoPart(string part, out float across, out float up)
+        {
+            switch (part)
+            {
+                case PuppetOwl: across = -0.257f; up = 0.074f; return true;
+                case PuppetFox: across = -0.092f; up = 0.092f; return true;
+                case PuppetMoth: across = 0.057f; up = 0.066f; return true;
+                case PuppetMoon: across = 0.176f; up = 0.104f; return true;
+                case PuppetBell: across = 0.243f; up = 0.05f; return true;
+                case PhotoCrest: across = 0.268f; up = -0.143f; return true;
+                default: across = 0f; up = 0f; return false;
+            }
+        }
+
+        /// <summary>The booth crest's board centre in the world (the house stands at its layout origin with no yaw).</summary>
+        public const float CrestWorldX = EnvironmentLayout.HouseX + CrestLocalX;
+        public const float CrestWorldY = CrestLocalY;
+        public const float CrestWorldZ = EnvironmentLayout.HouseZ + CrestLocalZ;
+
         // ---- the owl crest over the booth (its own model, so the Players' other machines can carry it later) ----
         public const string OwlCrest = "OwlCrest";
 

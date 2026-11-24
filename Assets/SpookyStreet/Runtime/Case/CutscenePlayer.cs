@@ -129,6 +129,12 @@ namespace SpookyStreet.Case
         /// <summary>A babble or music cue (placeholders until S003 audio).</summary>
         public event Action<SignalCue> CueFired;
 
+        /// <summary>
+        /// True when another cutscene follows this one at once (S004: the seed after the reveal). It then ends without
+        /// the blend back to play, and its <see cref="Ended"/> handler starts the next one with <c>chained</c>.
+        /// </summary>
+        public Func<Cutscene, bool, bool> ChainsAfter { get; set; }
+
         public static CutscenePlayer Create(Transform parent, Camera output, RectTransform canvasRoot)
         {
             var go = new GameObject("CutscenePlayer");
@@ -197,7 +203,7 @@ namespace SpookyStreet.Case
         /// Starts <paramref name="cutscene"/>. <paramref name="cutIn"/> cuts straight in (the opening, from the title);
         /// otherwise the camera blends in from play (a cut under reduced motion).
         /// </summary>
-        public void Play(Cutscene cutscene, bool reducedMotion, bool rewatch, bool cutIn)
+        public void Play(Cutscene cutscene, bool reducedMotion, bool rewatch, bool cutIn, bool chained = false)
         {
             if (cutscene == null)
             {
@@ -205,7 +211,7 @@ namespace SpookyStreet.Case
             }
 
             End(false);
-            Playback = new CutscenePlayback(cutscene, reducedMotion, id => Stage?.Anchor(id));
+            Playback = new CutscenePlayback(cutscene, reducedMotion, id => Stage?.Anchor(id)) { StartLetterboxed = chained };
             Rewatching = rewatch;
             PlayCount++;
             LastId = cutscene.Id;
@@ -371,6 +377,15 @@ namespace SpookyStreet.Case
 
                         break;
                     case CutsceneEventKind.OutroStarted:
+                        if (ChainsAfter != null && ChainsAfter(Playback.Cutscene, Rewatching))
+                        {
+                            // Another cutscene follows at once (the seed after the reveal): no blend back to play and
+                            // the bars stay down; the next one starts from the Ended handler.
+                            Stage?.Settle(Playback.Cutscene, Rewatching);
+                            End();
+                            return;
+                        }
+
                         OnOutro();
                         break;
                     case CutsceneEventKind.Ended:

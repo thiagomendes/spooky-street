@@ -22,13 +22,26 @@ namespace SpookyStreet.Core.Localization
             public const string RevealSource = "c01.cutscene.reveal.source";
             public const string RevealMoved = "c01.cutscene.reveal.moved";
             public const string RevealReopen = "c01.cutscene.reveal.reopen";
+            /// <summary>The old photo: the seed cutscene's first line (it moved there from the reveal, S004).</summary>
             public const string RevealPhoto = "c01.cutscene.reveal.photo";
+
+            // S004 stream C: the seed and "the street remembers" (perception only; never a later case's answer).
+            public const string WatchSeed = "ui.cutscene.watch_seed";
+            public const string WatchStreet = "ui.cutscene.watch_street";
+            public const string SeedOwl = "c01.cutscene.seed.owl";
+            public const string SeedMoon = "c01.cutscene.seed.moon";
+            public const string SeedCrest = "c01.cutscene.seed.crest";
+            public const string StreetLane = "c01.cutscene.street.lane";
+            public const string StreetHour = "c01.cutscene.street.hour";
+            public const string StreetShow = "c01.cutscene.street.show";
+            public const string StreetBea = "c01.cutscene.street.bea";
 
             public static readonly string[] All =
             {
                 Skip, SkipAgain, WatchOpening, WatchReveal,
                 OpeningTown, OpeningBoxes, OpeningWindow, OpeningWave,
                 RevealEntry, RevealSource, RevealMoved, RevealReopen, RevealPhoto,
+                WatchSeed, WatchStreet, SeedOwl, SeedMoon, SeedCrest, StreetLane, StreetHour, StreetShow, StreetBea,
             };
         }
     }

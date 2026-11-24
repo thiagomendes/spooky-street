@@ -30,6 +30,44 @@ namespace SpookyStreet.Core.Cutscenes
 
         /// <summary>The signal Pip's opening walk sends when Pip reaches the porch (the walk's wait point).</summary>
         public const string PipArrived = "walk.pip";
+
+        /// <summary>The booth's little bell dings "on the hour" (S004 show clock).</summary>
+        public const string BoothBell = "world.booth_bell";
+
+        /// <summary>
+        /// The owl's show: the wind wheel whirrs and the rooftop owl bows on three knocks (the street's wind cycle, so
+        /// only once the arm is linked; after case 01 it always is).
+        /// </summary>
+        public const string OwlShow = "world.owl_show";
+
+        private const string GlintPrefix = "world.glint.";
+
+        /// <summary>
+        /// The hall lamp's light runs along a gilt puppet in the troupe photo (<see cref="KeepsakeArt.Puppets"/>). Light on
+        /// foil, not magic (world-and-cases §5). <paramref name="soft"/> is the smaller, dimmer second glint.
+        /// </summary>
+        public static string Glint(string puppet, bool soft = false) => GlintPrefix + (soft ? "soft." : "") + puppet;
+
+        /// <summary>The puppet a glint cue names (and whether it is the soft one), or false.</summary>
+        public static bool TryParseGlint(string id, out string puppet, out bool soft)
+        {
+            puppet = null;
+            soft = false;
+            if (id == null || !id.StartsWith(GlintPrefix, System.StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            string rest = id.Substring(GlintPrefix.Length);
+            if (rest.StartsWith("soft.", System.StringComparison.Ordinal))
+            {
+                soft = true;
+                rest = rest.Substring(5);
+            }
+
+            puppet = rest;
+            return System.Array.IndexOf(KeepsakeArt.Puppets, rest) >= 0;
+        }
     }
 
     /// <summary>
@@ -47,9 +85,22 @@ namespace SpookyStreet.Core.Cutscenes
         public const string OpeningId = "cs.c01.opening";
         public const string RevealId = "cs.c01.reveal";
 
-        public static readonly IReadOnlyList<string> Ids = new[] { OpeningId, RevealId };
+        /// <summary>The season seed (S004, bible §5 slot 4): straight after the reveal, once.</summary>
+        public const string SeedId = "cs.c01.seed";
 
-        public static bool IsKnown(string id) => id == OpeningId || id == RevealId;
+        /// <summary>"The street remembers" (S004, bible §5 slot 5): the first load after the stamp, once.</summary>
+        public const string StreetRemembersId = "cs.c01.street_remembers";
+
+        /// <summary>Every case 01 cutscene, in story order (the case page offers them in this order).</summary>
+        public static readonly IReadOnlyList<string> Ids = new[] { OpeningId, RevealId, SeedId, StreetRemembersId };
+
+        public static bool IsKnown(string id) => id == OpeningId || id == RevealId || id == SeedId || id == StreetRemembersId;
+
+        /// <summary>
+        /// The puppet whose glint seeds the next case (world-and-cases §4: case 02 is the moon's). Data, so a re-ordered
+        /// season changes this one ID.
+        /// </summary>
+        public const string SeedPuppet = KeepsakeArt.PuppetMoon;
 
         /// <summary>Where Pip stands when play starts: the arrival porch, facing the owl house (spec §4).</summary>
         public static readonly StagePoint PorchSpawn = new StagePoint(0f, 0.62f, -13.4f);
@@ -127,8 +178,8 @@ namespace SpookyStreet.Core.Cutscenes
         /// <summary>
         /// The reveal payoff (D26, D28), built from the child's own solved stickers: for each question, one shot per
         /// sticker the child placed (in the comic's order), then the story beat that stages it; then Aunt Kit reopening
-        /// her booth and the season seed (Kit's old photo, unexplained). Null unless the case is stamped (the three
-        /// deductions and the reopening): it never runs ahead of the child.
+        /// her booth, where it ends (the old photo is the <see cref="Seed"/> that follows it, S004). Null unless the case
+        /// is stamped (the three deductions and the reopening): it never runs ahead of the child.
         /// </summary>
         public static Cutscene Reveal(CaseState state, CaseAnswers answers)
         {
@@ -178,8 +229,8 @@ namespace SpookyStreet.Core.Cutscenes
                 reopenAt += beat.Duration;
             }
 
+            // S004: the reveal ends on the reopening; the photo moved into the seed cutscene that follows it.
             beats.Add(ReopenBeat(beats));
-            beats.Add(SeedBeat(beats));
             MusicAt(beats, RevealMusicAt(reopenAt), CutsceneAudio.MusicReveal);
             return new Cutscene(RevealId, beats, 0.8f, null, hidePip: true);
         }
@@ -352,14 +403,141 @@ namespace SpookyStreet.Core.Cutscenes
                 .Babble(1.1f, CutsceneAudio.BabbleAsIn(CastActor.June, Lines.JuneGoOutside));
         }
 
-        private static CutsceneBeat SeedBeat(List<CutsceneBeat> before)
+        // ---------------------------------------------------------------------------------------------- seed
+
+        /// <summary>
+        /// The season seed (S004 plan §2.3, bible §5 slot 4), about 13 s, straight after the reveal: the troupe photo in
+        /// the hall, the lamp's light running along young Kit's gilt owl, then, softer, along the moon (the next case's
+        /// puppet, <see cref="SeedPuppet"/>); the crest on the photo's mount matched to the crest over Kit's booth; Pip on
+        /// the arrival porch, and back to play behind her. Nothing is explained: it only makes the child curious.
+        /// Played through or skipped, play starts on the arrival porch.
+        /// </summary>
+        public static readonly Cutscene Seed = BuildSeed();
+
+        private static Cutscene BuildSeed()
         {
-            // The season seed, unexplained: a slow push in on Kit's old photo in the hall, and one soft glint.
-            var shot = Story(P(0.2f, 0.4f, 1.6f), P(0f, 0.02f, 0f), 30f, P(0.1f, 0.3f, 1.2f), P(0f, 0.02f, 0f), 26f, before,
-                CutsceneAnchors.KitPhoto);
-            return new CutsceneBeat("seed", 3.4f, shot)
-                .Caption(Keys.RevealPhoto)
-                .World(1.4f, CutsceneWorld.PhotoGlint);
+            var beats = new List<CutsceneBeat>();
+            string owl = CutsceneAnchors.PhotoPart(KeepsakeArt.PuppetOwl);
+            string mount = CutsceneAnchors.PhotoPart(KeepsakeArt.PhotoCrest);
+
+            // 1. The old photo, wide: five young Players in costume before the booth, each with a gilt puppet.
+            beats.Add(new CutsceneBeat("photo", 3f,
+                    Story(P(0.12f, 0.12f, 1.55f), P(0f, 0f, 0f), 30f, P(0.06f, 0.08f, 1.25f), P(0f, 0f, 0f), 28f, beats,
+                        CutsceneAnchors.KitPhoto))
+                .Caption(Keys.RevealPhoto));
+
+            // 2. The owl wakes in the photo: a push to the owl in young Kit's hands; the lamp's light runs along its edge.
+            beats.Add(new CutsceneBeat("owl", 3f,
+                    Story(P(0.03f, 0.03f, 0.5f), P(0f, 0f, 0f), 30f, P(0.015f, 0.02f, 0.36f), P(0f, 0f, 0f), 28f, beats, owl))
+                .Caption(Keys.SeedOwl)
+                .World(0.9f, CutsceneWorld.Glint(KeepsakeArt.PuppetOwl)));
+
+            // 3. The next one: a slow pan along the five puppets, and the moon glints, softer.
+            beats.Add(new CutsceneBeat("moon", 3f,
+                    Story(P(0.1f, 0.09f, 0.62f), P(0.1f, 0.08f, 0f), 30f, P(-0.16f, 0.07f, 0.6f), P(-0.17f, 0.06f, 0f), 29f, beats,
+                        CutsceneAnchors.KitPhoto))
+                .Caption(Keys.SeedMoon)
+                .World(1.7f, CutsceneWorld.Glint(SeedPuppet, soft: true)));
+
+            // 4. The same crest: on the photo's mount, then (under the turning page) over Kit's open booth, the same
+            // size in the frame; and Pip on the arrival porch, looking up the lane at it.
+            beats.Add(new CutsceneBeat("mount", 1f,
+                    Story(P(0.02f, 0.02f, 0.4f), P(0f, 0f, 0f), 26f, P(0.01f, 0.01f, 0.34f), P(0f, 0f, 0f), 25f, beats, mount))
+                .Caption(Keys.SeedCrest));
+            beats.Add(new CutsceneBeat("booth", 1f,
+                    Story(P(0.05f, -0.1f, 2.3f), P(0f, 0f, 0f), 26f, P(0.03f, -0.08f, 2f), P(0f, 0f, 0f), 25f, beats,
+                        CutsceneAnchors.BoothCrest))
+                .Caption(Keys.SeedCrest)
+                .Cue(CastCue.Place(0f, CastActor.Pip, PorchSpawn, 0f)));
+            beats.Add(new CutsceneBeat("pip", 1f,
+                    Shot(ShotTransition.Cut, P(1.9f, 1.4f, -11.2f), P(0f, 1.38f, -13.4f), 38f, P(1.85f, 1.42f, -11.3f),
+                        P(0f, 1.42f, -13.4f), 37f))
+                .Caption(Keys.SeedCrest)
+                .Babble(0.2f, CutsceneAudio.Babble(CastActor.Pip, BabbleEmotion.Thinking)));
+
+            // 5. Back: the drift into the play camera behind Pip, where she stands.
+            beats.Add(new CutsceneBeat("back", 1f,
+                new CameraShot(P(0.6f, 2.5f, -17.8f), P(0.1f, 1.55f, -7.2f), 48f)
+                    .DriftTo(PorchPlayView.Eye, PorchPlayView.Aim, PorchPlayView.Fov)));
+
+            return new Cutscene(SeedId, beats, 0.8f, new[] { CastCue.Place(0f, CastActor.Pip, PorchSpawn, 0f) });
+        }
+
+        // ---------------------------------------------------------------------------------- street remembers
+
+        /// <summary>
+        /// "The street remembers" (S004 plan §2.3, bible §5 slot 5, D29), about 18 s, on the first load after the stamp:
+        /// a crane down over Lantern Lane (rhyming with the opening's first shot); "on the hour" the booth's bell dings,
+        /// Mr. Vale checks his watch and the rooftop owl bows; the owl's show close; Bea waves at the owl by her
+        /// stickered bike; June waves from the foot of her treehouse way; Kit waves from her open booth; and play starts
+        /// behind Pip on the arrival porch. Existing clips only (CheckWatch, Wave, the open booth).
+        /// </summary>
+        public static readonly Cutscene StreetRemembers = BuildStreetRemembers();
+
+        /// <summary>The rooftop owl, where Bea and Mr. Vale look up to.</summary>
+        private static StagePoint RoofOwl => new StagePoint(0f, 8.7f, CaseRouteLayout.FrontZ + 0.2f);
+
+        private static Cutscene BuildStreetRemembers()
+        {
+            var beats = new List<CutsceneBeat>
+            {
+                // 1. Back on the lane: the opening's crane down over Lantern Lane, the booth lit.
+                new CutsceneBeat("lane", 3f,
+                        new CameraShot(P(1.2f, 7.4f, -21.5f), P(0f, 3.6f, 6f), 42f)
+                            .DriftTo(P(0.6f, 5.6f, -18.8f), P(0f, 3.8f, 8f), 40f))
+                    .Caption(Keys.StreetLane)
+                    .Music(0f, CutsceneAudio.MusicStreetTheme)
+                    .Cue(CastCue.Place(0f, CastActor.Pip, PorchSpawn, 0f)),
+
+                // 2. On the hour: the booth's bell dings; Mr. Vale checks his watch and looks up as the owl bows.
+                new CutsceneBeat("hour", 3f,
+                        Shot(ShotTransition.Cut, P(10.6f, 1.5f, -2.4f), P(2.46f, 3.14f, 6.42f), 48f, P(10.5f, 1.52f, -2.25f),
+                            P(2.46f, 3.14f, 6.42f), 46f))
+                    .Caption(Keys.StreetHour)
+                    .World(0.1f, CutsceneWorld.BoothBell)
+                    .Cue(CastCue.Gesture(0.25f, CastActor.Vale, CharacterClips.CheckWatch, P(0f, 1.4f, 10.9f)))
+                    .Babble(0.4f, CutsceneAudio.BabbleAsIn(CastActor.Vale, Lines.ValeRemembers))
+                    .World(0.9f, CutsceneWorld.OwlShow)
+                    .Cue(CastCue.LookAt(1.9f, CastActor.Vale, RoofOwl, 1.1f)),
+
+                // 3. The show: the wind wheel whirrs and the rooftop owl bows three times on three knocks.
+                new CutsceneBeat("show", 3.5f,
+                        new CameraShot(P(1.6f, -1.4f, 6f), P(0f, -0.4f, 0f), 26f)
+                            .DriftTo(P(1.3f, -1.3f, 5.2f), P(0f, -0.4f, 0f), 24f)
+                            .From(CutsceneAnchors.Owl))
+                    .Caption(Keys.StreetShow)
+                    .World(0.5f, CutsceneWorld.OwlShow),
+
+                // 4. Bea by her bike, the owl sticker on the basket: she waves at the owl.
+                new CutsceneBeat("bea", 2.5f,
+                        new CameraShot(P(-4.4f, 1.2f, -4f), P(-7f, 1.05f, -1.35f), 34f)
+                            .DriftTo(P(-4.5f, 1.2f, -3.8f), P(-7f, 1.05f, -1.35f), 32f))
+                    .Caption(Keys.StreetBea)
+                    .Cue(CastCue.Gesture(0.3f, CastActor.Bea, CharacterClips.Wave, RoofOwl))
+                    .Babble(0.4f, CutsceneAudio.BabbleAsIn(CastActor.Bea, Lines.BeaRemembers)),
+
+                // 5. June at the foot of her treehouse way waves toward the porch.
+                new CutsceneBeat("june", 2.5f,
+                        new CameraShot(P(-8.05f, 1.25f, 4.2f), P(-10.45f, 0.95f, 5.6f), 34f)
+                            .DriftTo(P(-8.15f, 1.25f, 4.3f), P(-10.45f, 0.95f, 5.6f), 32f))
+                    .Cue(CastCue.OneShot(0.3f, CastActor.June, CharacterClips.Wave))
+                    .Babble(0.4f, CutsceneAudio.BabbleAsIn(CastActor.June, Lines.JuneRemembers)),
+
+                // 6. Kit at her open booth waves toward the porch (the reveal's reopening framing) ...
+                new CutsceneBeat("kit", 2.3f,
+                        new CameraShot(P(0.35f, 1.45f, 6.3f), P(0f, 1.35f, 10.2f), 40f)
+                            .DriftTo(P(0.3f, 1.42f, 6.7f), P(0f, 1.35f, 10.2f), 38f))
+                    .Cue(CastCue.OneShot(0.2f, CastActor.Kit, CharacterClips.Wave))
+                    .Babble(0.3f, CutsceneAudio.BabbleAsIn(CastActor.Kit, Lines.KitThanks)),
+
+                // ... and the drift into the play camera behind Pip on the arrival porch: play starts here.
+                new CutsceneBeat("porch", 1.2f,
+                        new CameraShot(P(0.9f, 3.1f, -18.8f), P(0f, 1.7f, -6f), 46f)
+                            .DriftTo(PorchPlayView.Eye, PorchPlayView.Aim, PorchPlayView.Fov))
+                    .Cue(CastCue.Place(0f, CastActor.Pip, PorchSpawn, 0f)),
+            };
+
+            return new Cutscene(StreetRemembersId, beats, 0.8f, new[] { CastCue.Place(0f, CastActor.Pip, PorchSpawn, 0f) });
         }
 
         private static CameraShot Story(StagePoint eye, StagePoint aim, float fov, StagePoint endEye, StagePoint endAim, float endFov,
