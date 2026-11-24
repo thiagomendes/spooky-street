@@ -142,7 +142,7 @@ string and no string that counts bats states a total ("x / 30", "x of 30").
 - `KeepsakePlayTests`: walking into bat 04 (stick input) takes it, it fluttered open on the way, it leaves the world,
   `keepsakes.json` has it at once and a scene reload keeps it taken; a confirmed New game clears keepsakes (and New
   game asks first when only keepsakes exist); a confirmed Replay keeps them, on disk and after a reload; every perched
-  bat rests on a real collider (downward raycast within 0.12 m of its `SitY`).
+  bat rests on a real collider in play (a column raycast finds its surface within 0.12 m of `SitY` and nothing inside the bat; every failure is listed at once).
 - `KeepsakeCaptureTests` (stream A's reserved number 65; 66–68 stay for A2's keepsakes page, trunk and title):
   `65d_bat_porch_start`, `65_bat_treehouse_deck`, `65b_bat_lamp_head`, `65c_bat_side_yard_ramp`.
 
@@ -166,16 +166,21 @@ uses stable IDs only.
     bat 02 again; the new column raycast showed no porch or box collider under it (only `Ground`, `GroundRing_*`).
     The box stack is cutscene dressing, so bat 02 moved to the west rail's back post (the same surface as bat 01,
     which passes).
-  - **Final run:** RUN_PLACEHOLDER
+  - **Run 164** (cbea076): bat 02 passed; bat 03 over the party table's free corner had no table collider (only
+    the explicit `TableThings` part is certain). Bat 03 moved onto it.
+  - **Run 168** (3c0e49b): the surface test, still run at the title, failed for bat 07 (ramp) and others; NUnit cut
+    the list. The test now starts a game first, syncs transforms and names every failing bat at once.
+  - **Run 170** (b5bc021): **green.** EditMode 715/715, PlayMode 142/142 (`KeepsakePlayTests` 4/4), Visual 18/18
+    (`KeepsakeCaptureTests` 1/1), static checks green. The frames below are from this run.
 
 ### Frames (looked at)
 
 | Frame | What it shows | Verdict |
 |---|---|---|
-| ![](evidence/s004/keepsakes/65_bat_treehouse_deck_run160.jpg) 65 | Inside the treehouse cabin: Pip by the door, the bat open on the wall beside the door, its yellow paper edge toward her | Reads as a bat that turned to Pip. Greybox: it looks like the decorative bats; the cream fold is too small to see at this size |
-| ![](evidence/s004/keepsakes/65b_bat_lamp_head_run155.jpg) 65b | The street lamp from the path: the folded bat on the head among the decorative bats circling the lantern | The collectible cannot be told from the decoration here. Needs B2's distinct bat (black with a cream fold) |
-| ![](evidence/s004/keepsakes/65c_bat_side_yard_ramp_run160.jpg) 65c | The side-yard ramp from its east side: Pip on the ramp, the bat open on the deck boards by the west rail | Reads; seen edge-on, small |
-| ![](evidence/s004/keepsakes/65d_bat_porch_start_run155.jpg) 65d | The play camera at the start: the arrival porch and the lane; a bat by the moving boxes (bat 02's old spot) | Fine composition; bat 02 has since moved to the west rail post |
+| ![](evidence/s004/keepsakes/65_bat_treehouse_deck_run170.jpg) 65 | Inside the treehouse cabin: Pip by the door, the bat open on the wall beside the door, its yellow paper edge toward her | Reads as a bat that turned to Pip. Greybox: it looks like the decorative bats; the cream fold is too small to see at this size |
+| ![](evidence/s004/keepsakes/65b_bat_lamp_head_run170.jpg) 65b | The street lamp from the path: the folded bat on the head among the decorative bats circling the lantern | The collectible cannot be told from the decoration here. Needs B2's distinct bat (black with a cream fold) |
+| ![](evidence/s004/keepsakes/65c_bat_side_yard_ramp_run170.jpg) 65c | The side-yard ramp from its east side: Pip on the ramp, the bat open on the deck boards by the west rail | Reads; seen edge-on, small |
+| ![](evidence/s004/keepsakes/65d_bat_porch_start_run170.jpg) 65d | The play camera at the start: the arrival porch and the lane; bat 02 open on the west rail's back post at the left edge (bat 01 on the east rail is behind the Roll disc) | Both porch bats open as Pip arrives. Bat 02 sits half under the touch stick; A2 may nudge it inward |
 
 Frame numbers: S003a pass (merged to main before this branch) also used 65–68 (`65_bea_shade_eyes` … `68_street_greeting_bea`).
 The file names differ, so nothing is overwritten, but the numbers overlap; A2 should pick 66–68 names that do not clash,
@@ -190,8 +195,11 @@ or the orchestrator can renumber.
 - Greybox readability (frames 65b, 65d): a collectible looks like the decorative glowing bats. B2's model must make
   keepsakes clearly different (black with the cream pencilled fold), or the decorative bats near the lamp should
   move.
-- The moving boxes on the arrival porch have no collider in the raycast column (run 160), although they are built
-  solid in `CaseCutscenes`. A2's trunk (a Use target on one box) should check this.
+- Runs 155–168 checked the surfaces at the title, before a game started. There the moving boxes, the party table
+  and the ramp had no collider under the bats. Since run 170 the check runs in play, where every perched bat passes.
+  A2's trunk (a Use target on one moving box) should still confirm the box collider in play.
+- The column raycast reads ground hits at 0.25 m (Ground and GroundRing, run 160), so lawn bats (04, 05) only check
+  that nothing solid stands under them.
 - Plan acceptance items left to A2: the 10th bat's disc wobble and page assembly, dress-up, a remark playing once,
   and the scripted-route PlayMode pickups on each challenge tier (A1 proves reachability in Core and the surfaces by
   raycast).
