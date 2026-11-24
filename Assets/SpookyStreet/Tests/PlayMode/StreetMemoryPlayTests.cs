@@ -155,7 +155,9 @@ namespace SpookyStreet.Tests.PlayMode
 
             if (director.Workshop != null)
             {
-                Assert.IsTrue(director.Workshop.OwlBowing && director.Workshop.WindEnabled, where + ": the owl bows with the wind");
+                // S004: in play the show clock drives the owl ("on the hour") instead of the 9 s wind.
+                Assert.IsTrue(director.Workshop.OwlBowing && (director.Workshop.WindEnabled || director.Street.ShowClock.Running),
+                    where + ": the owl bows with the wind or on the hour");
             }
 
             Assert.IsTrue(CaseStage.IsOffered(CaseStage.Find(CaseStage.PointJuneTreehouse), director.View, false, false));
@@ -256,6 +258,80 @@ namespace SpookyStreet.Tests.PlayMode
             yield return AssertGreets(Speaker.Kit, Lines.KitRemembers, "Aunt Kit at her open booth");
             yield return AssertGreets(Speaker.Kit, Lines.KitRemembers, "and again: the greeting is how she talks now");
         }
+
+        /// <summary>
+        /// S004: after case 01 the owl's wind cycle becomes a show "on the hour" (the bell, three bows, Mr. Vale's
+        /// watch) counted only in street play, and three knocks on the booth make the owl bow; inert during a replay.
+        /// </summary>
+        [UnityTest]
+        [Timeout(120000)]
+        public IEnumerator TheOwlBowsOnTheHourAndOnThreeKnocksOnlyAfterTheCase()
+        {
+            WriteCaseSave(StampedState(), CaseAnchors.ArrivalPorch);
+            yield return Load();
+            yield return Continue();
+            var street = Director.Street;
+            var clock = street.ShowClock;
+            var workshop = Director.Workshop;
+            if (workshop == null)
+            {
+                Assert.Ignore("Greybox build: no workshop to bow.");
+            }
+
+            Assert.IsTrue(clock.Running, "the street remembers: the show clock runs");
+            Assert.IsFalse(workshop.WindEnabled, "the 9 s wind gives way to the hour");
+            float before = clock.Clock;
+            yield return Wait(1f);
+            Assert.Greater(clock.Clock, before + 0.5f, "it counts play on the street");
+
+            // Anything holding the screen stops it.
+            Director.OpenNotebook();
+            yield return Frames(3);
+            float held = clock.Clock;
+            yield return Wait(0.6f);
+            Assert.AreEqual(held, clock.Clock, 1e-4f, "the notebook stops the clock");
+            Director.Notebook.Close();
+            yield return Frames(3);
+
+            // On the hour: the bell, the owl's three bows with the wind wheel, Vale's watch when he is in view.
+            int bells = street.BellDings;
+            int shows = clock.Shows;
+            clock.Advance(BoothShowClock.IntervalSeconds - clock.Clock - 0.3f, true);
+            yield return Wait(0.6f);
+            Assert.AreEqual(shows + 1, clock.Shows, "one show on the hour");
+            Assert.AreEqual(bells + 1, street.BellDings, "the booth's bell dings");
+            Assert.IsTrue(workshop.Playing && workshop.WindCycle, "the wheel whirrs and the owl bows");
+            yield return Wait(MechanismMotion.CycleSeconds);
+            Assert.AreEqual(3, workshop.BowsThisCycle, "three bows");
+
+            // Three knocks on the booth's shutter (Use) make the owl bow.
+            var point = CaseStage.Find(CaseStage.PointOwlBooth);
+            Game.Pip.Teleport(new Vector3(point.Position.X + 0.3f, point.Position.Y, point.Position.Z - 0.8f));
+            yield return Frames(3);
+            Assert.IsTrue(Director.Targets.Filter(point), "the booth's shutter is offered after the case");
+            Assert.AreEqual(SpookyStreet.Core.Localization.LocalizationKeys.Verbs.Knock, Director.Targets.VerbFor(point));
+            var stateBefore = Director.State;
+            shows = clock.Shows;
+            for (int i = 0; i < BoothShowClock.KnocksForBow; i++)
+            {
+                Assert.AreEqual(shows, clock.Shows, "no bow before the third knock");
+                Director.Use(point);
+                yield return Wait(0.3f);
+            }
+
+            Assert.AreEqual(shows + 1, clock.Shows, "the third knock: the owl bows");
+            Assert.IsTrue(workshop.Playing);
+            Assert.AreSame(stateBefore, Director.State, "a knock changes no case fact");
+
+            // A replay rests the memories: the clock stops and the booth is the clue again.
+            Director.Replay();
+            yield return Frames(3);
+            Assert.IsFalse(clock.Running, "inert while case 01 is replayed");
+            Assert.AreEqual(BoothShow.None, clock.Knock());
+            Assert.IsNull(Director.Targets.VerbFor(point));
+        }
+
+        private static GameBootstrap Game => GameBootstrap.Instance;
 
         [UnityTest]
         [Timeout(120000)]

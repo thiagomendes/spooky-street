@@ -174,7 +174,7 @@ namespace SpookyStreet.Tests.Core
         public void EveryCueFiresOnceInOrderAt30And60Fps()
         {
             var (state, answers) = Canonical();
-            foreach (var cutscene in new[] { Sample(), C01Cutscenes.Opening, C01Cutscenes.Reveal(state, answers) })
+            foreach (var cutscene in new[] { Sample(), C01Cutscenes.Opening, C01Cutscenes.Reveal(state, answers), C01Cutscenes.Seed, C01Cutscenes.StreetRemembers })
             {
                 var at30 = Run(cutscene, 30f);
                 var at60 = Run(cutscene, 60f);
@@ -211,7 +211,7 @@ namespace SpookyStreet.Tests.Core
         public void TheCameraIsTheSameAt30And60Fps()
         {
             var (state, answers) = Canonical();
-            foreach (var cutscene in new[] { Sample(), C01Cutscenes.Opening, C01Cutscenes.Reveal(state, answers) })
+            foreach (var cutscene in new[] { Sample(), C01Cutscenes.Opening, C01Cutscenes.Reveal(state, answers), C01Cutscenes.Seed, C01Cutscenes.StreetRemembers })
             {
                 var a = new CutscenePlayback(cutscene, false);
                 var b = new CutscenePlayback(cutscene, false);
@@ -335,7 +335,7 @@ namespace SpookyStreet.Tests.Core
         public void ReducedMotionCutsEveryBlendHoldsEveryFrameAndSkipsAtOnce()
         {
             var (state, answers) = Canonical();
-            foreach (var cutscene in new[] { Sample(), C01Cutscenes.Opening, C01Cutscenes.Reveal(state, answers) })
+            foreach (var cutscene in new[] { Sample(), C01Cutscenes.Opening, C01Cutscenes.Reveal(state, answers), C01Cutscenes.Seed, C01Cutscenes.StreetRemembers })
             {
                 var playback = new CutscenePlayback(cutscene, true);
                 for (int i = 0; i < cutscene.Beats.Count; i++)
@@ -476,7 +476,7 @@ namespace SpookyStreet.Tests.Core
         public void AudioCuesUseTheAudioBranchVocabulary()
         {
             var (state, answers) = Canonical();
-            foreach (var cutscene in new[] { C01Cutscenes.Opening, C01Cutscenes.Reveal(state, answers) })
+            foreach (var cutscene in new[] { C01Cutscenes.Opening, C01Cutscenes.Reveal(state, answers), C01Cutscenes.Seed, C01Cutscenes.StreetRemembers })
             {
                 foreach (var cue in cutscene.Beats.SelectMany(b => b.Signals))
                 {
@@ -592,7 +592,7 @@ namespace SpookyStreet.Tests.Core
             var later = CaseState.FromFacts(new[] { CaseFact.HeardKnocks, CaseFact.BeaSpoke });
             var relaunched = new CutsceneProgressStore(fs, "saves");
             CollectionAssert.AreEquivalent(new[] { C01Cutscenes.OpeningId }, relaunched.Load(later));
-            Assert.IsNull(CutscenePolicy.OnContinue());
+            Assert.IsNull(CutscenePolicy.OnContinue(relaunched.Seen, later, false, false));
             Assert.IsNull(CutscenePolicy.OnNewGame(relaunched.Seen));
 
             // The reveal: marked before it plays; a reload of the stamped save never starts it again.
@@ -695,7 +695,7 @@ namespace SpookyStreet.Tests.Core
                     Assert.AreEqual(entry.Length, entryStory);
                     Assert.AreEqual(entryStory + 1 + sourceSets[0].Length, sourceStory);
                     Assert.AreEqual(sourceStory + 1 + moved.Length, movedStory);
-                    CollectionAssert.AreEqual(new[] { "reopen", "seed" }, ids.Skip(movedStory + 1));
+                    CollectionAssert.AreEqual(new[] { "reopen" }, ids.Skip(movedStory + 1), "S004: it ends on the reopening");
                     foreach (var beat in reveal.Beats.Where(b => b.StickerId != null))
                     {
                         Assert.AreEqual(N.Sticker(beat.StickerId).NoteKey, beat.CaptionKey);
@@ -810,7 +810,7 @@ namespace SpookyStreet.Tests.Core
                 CharacterClips.ShadeEyes, CharacterClips.CheckWatch, CharacterClips.Listen, CharacterClips.Ponder,
             };
             var (state, answers) = Canonical();
-            foreach (var cutscene in new[] { C01Cutscenes.Opening, C01Cutscenes.Reveal(state, answers) })
+            foreach (var cutscene in new[] { C01Cutscenes.Opening, C01Cutscenes.Reveal(state, answers), C01Cutscenes.Seed, C01Cutscenes.StreetRemembers })
             {
                 Assert.GreaterOrEqual(cutscene.Duration, Cutscene.MinSeconds);
                 Assert.LessOrEqual(cutscene.Duration + cutscene.Beats.Sum(b => b.MaxWait) + cutscene.ExitBlend, Cutscene.MaxSeconds);
@@ -862,7 +862,7 @@ namespace SpookyStreet.Tests.Core
             CollectionAssert.IsSubsetOf(Keys.All, LocalizationKeys.All);
             var (state, answers) = Canonical();
             var forbidden = new[] { "because", "so june", "that's why", "that is why", "the answer", "solved", "got in by", "it was" };
-            foreach (var cutscene in new[] { C01Cutscenes.Opening, C01Cutscenes.Reveal(state, answers) })
+            foreach (var cutscene in new[] { C01Cutscenes.Opening, C01Cutscenes.Reveal(state, answers), C01Cutscenes.Seed, C01Cutscenes.StreetRemembers })
             {
                 foreach (string key in cutscene.CaptionKeys)
                 {
@@ -882,6 +882,218 @@ namespace SpookyStreet.Tests.Core
                     StringAssert.DoesNotContain(clue, text.ToLowerInvariant(), key + ": the opening shows nothing the child could find");
                 }
             }
+
+            // S004: the seed only makes the child curious: no puppet's story, no later case's place or answer.
+            foreach (string key in C01Cutscenes.Seed.CaptionKeys.Concat(C01Cutscenes.StreetRemembers.CaptionKeys))
+            {
+                table.TryGet(key, out string text);
+                foreach (string ahead in new[] { "roof light", "rooftop light", "who ", "why", "missing", "stole", "lost", "player" })
+                {
+                    StringAssert.DoesNotContain(ahead, text.ToLowerInvariant(), key + ": never ahead of a later case");
+                }
+            }
+        }
+
+        // ------------------------------------------------------------------------------------- S004 stream C
+
+        private static IEnumerable<CastCue> CastOf(Cutscene cutscene, string beat) =>
+            cutscene.Beats.Single(b => b.Id == beat).Cast;
+
+        private static IEnumerable<SignalCue> SignalsOf(Cutscene cutscene, string beat) =>
+            cutscene.Beats.Single(b => b.Id == beat).Signals;
+
+        private static bool Inside(StagePoint p) => CaseRouteLayout.Inside(p.X, p.Z);
+
+        [Test]
+        public void TheRevealEndsOnTheReopeningAndThePhotoMovedIntoTheSeed()
+        {
+            var (state, answers) = Canonical();
+            var reveal = C01Cutscenes.Reveal(state, answers);
+            Assert.AreEqual("reopen", reveal.Beats.Last().Id);
+            CollectionAssert.DoesNotContain(reveal.CaptionKeys, Keys.RevealPhoto);
+            Assert.IsFalse(reveal.Beats.SelectMany(b => b.Signals).Any(s => s.Id == CutsceneWorld.PhotoGlint));
+            Assert.IsFalse(reveal.Beats.Any(b => b.Shot.Anchor == CutsceneAnchors.KitPhoto), "no photo push left in the reveal");
+            Assert.That(reveal.Duration, Is.InRange(24f, 26f), "about 25 s");
+            Assert.AreEqual(Keys.RevealPhoto, C01Cutscenes.Seed.Beats[0].CaptionKey, "the photo beat opens the seed");
+        }
+
+        [Test]
+        public void TheSeedFollowsThePlanBeatForBeat()
+        {
+            var seed = C01Cutscenes.Seed;
+            CollectionAssert.AreEqual(new[] { "photo", "owl", "moon", "mount", "booth", "pip", "back" }, seed.Beats.Select(b => b.Id));
+            Assert.AreEqual(13f, seed.Duration, 1e-3f, "about 13 s");
+            Assert.IsFalse(seed.HidePip, "Pip is in its last shots");
+            CollectionAssert.AreEqual(new[] { Keys.RevealPhoto, Keys.SeedOwl, Keys.SeedMoon, Keys.SeedCrest }, seed.CaptionKeys.Distinct());
+
+            // The lamp's light runs along the owl, then, softer, along the next case's puppet (data: one ID).
+            Assert.AreEqual(KeepsakeArt.PuppetMoon, C01Cutscenes.SeedPuppet, "world-and-cases §4: case 02 is the moon's");
+            Assert.AreEqual(CutsceneWorld.Glint(KeepsakeArt.PuppetOwl), SignalsOf(seed, "owl").Single().Id);
+            Assert.AreEqual(CutsceneWorld.Glint(C01Cutscenes.SeedPuppet, soft: true), SignalsOf(seed, "moon").Single().Id);
+            Assert.IsTrue(CutsceneWorld.TryParseGlint(SignalsOf(seed, "moon").Single().Id, out string puppet, out bool soft));
+            Assert.AreEqual(KeepsakeArt.PuppetMoon, puppet);
+            Assert.IsTrue(soft);
+            Assert.IsFalse(CutsceneWorld.TryParseGlint("world.glint.puppet_ghost", out _, out _));
+            var world = seed.Beats.SelectMany(b => b.Signals).Where(s => s.Channel == CueChannel.World).Select(s => s.Id).ToList();
+            Assert.AreEqual(2, world.Count, "two glints and nothing else: no rooftop light, nothing of case 02's question");
+            Assert.IsFalse(seed.Beats.SelectMany(b => b.Signals).Any(s => s.Channel == CueChannel.Music), "the street theme returns after the reveal");
+
+            // The hall, then the crest matched under the turning page to the booth's, then the porch.
+            foreach (string id in new[] { "photo", "owl", "moon", "mount" })
+            {
+                var shot = seed.Beats.Single(b => b.Id == id).Shot;
+                Assert.IsTrue(Inside(CutsceneAnchors.Default(shot.Anchor).Apply(shot.Start.Eye)), id + " is in the hall");
+            }
+
+            Assert.AreEqual(CutsceneAnchors.PhotoPart(KeepsakeArt.PuppetOwl), seed.Beats[1].Shot.Anchor);
+            Assert.AreEqual(CutsceneAnchors.PhotoPart(KeepsakeArt.PhotoCrest), seed.Beats[3].Shot.Anchor);
+            Assert.AreEqual(CutsceneAnchors.BoothCrest, seed.Beats[4].Shot.Anchor);
+            Assert.AreEqual(ShotTransition.PageTurn, seed.Beats[4].Shot.Transition, "the match from the photo's crest to the booth's");
+            Assert.AreEqual(seed.Beats[3].Shot.End.Fov, seed.Beats[4].Shot.End.Fov, 1e-4f, "the same lens on both crests");
+            Assert.IsFalse(Inside(seed.Beats[5].Shot.Start.Eye), "Pip on the arrival porch");
+            AssertClose(C01Cutscenes.PorchPlayView, seed.Beats.Last().Shot.End, 1e-4f, "back into the play camera behind Pip");
+            var settle = seed.Settle.Single();
+            Assert.AreEqual(CastActor.Pip, settle.Actor);
+            Assert.AreEqual(C01Cutscenes.PorchSpawn.Z, settle.Point.Z, 1e-4f);
+            Assert.AreEqual(0f, settle.Yaw);
+            Assert.AreEqual("pip.thinking", SignalsOf(seed, "pip").Single(s => s.Channel == CueChannel.Babble).Id);
+
+            // The photo's parts: on its face (a hair into the hall), the owl on the viewer's left of the moon.
+            var owl = CutsceneAnchors.Default(CutsceneAnchors.PhotoPart(KeepsakeArt.PuppetOwl));
+            var moon = CutsceneAnchors.Default(CutsceneAnchors.PhotoPart(KeepsakeArt.PuppetMoon));
+            Assert.Less(owl.Position.X, KeepsakeArt.PhotoWorldX, "in front of the glass");
+            Assert.Greater(owl.Position.Z, moon.Position.Z, "facing the photo from the hall (east), the owl is on the left (north)");
+            Assert.AreEqual(KeepsakeArt.PhotoWorldZ + 0.257f, owl.Position.Z, 1e-3f);
+            Assert.AreEqual(KeepsakeArt.PhotoFacingYaw, owl.FacingYaw);
+            Assert.IsNull(CutsceneAnchors.PhotoPartOf(CutsceneAnchors.Owl));
+            var crest = CutsceneAnchors.Default(CutsceneAnchors.BoothCrest);
+            Assert.AreEqual(KeepsakeArt.CrestWorldZ, crest.Position.Z, 1e-4f);
+            Assert.AreEqual(180f, crest.FacingYaw, "it faces the street");
+            Assert.Less(crest.Apply(seed.Beats[4].Shot.Start.Eye).Z, crest.Position.Z, "seen from the street side");
+        }
+
+        [Test]
+        public void TheStreetRemembersFollowsThePlanBeatForBeat()
+        {
+            var street = C01Cutscenes.StreetRemembers;
+            CollectionAssert.AreEqual(new[] { "lane", "hour", "show", "bea", "june", "kit", "porch" }, street.Beats.Select(b => b.Id));
+            Assert.AreEqual(18f, street.Duration, 1e-3f, "about 18 s");
+            AssertClose(C01Cutscenes.Opening.Beats[0].Shot.Start, street.Beats[0].Shot.Start, 1e-4f, "it rhymes with the opening's first shot");
+            Assert.AreEqual(CutsceneAudio.MusicStreetTheme, SignalsOf(street, "lane").Single(s => s.Channel == CueChannel.Music).Id);
+            CollectionAssert.AreEqual(new[] { Keys.StreetLane, Keys.StreetHour, Keys.StreetShow, Keys.StreetBea }, street.CaptionKeys);
+
+            // On the hour: the bell first, Vale's watch, then the owl's show; and the show again, close.
+            var hour = SignalsOf(street, "hour").Where(s => s.Channel == CueChannel.World).ToList();
+            CollectionAssert.AreEqual(new[] { CutsceneWorld.BoothBell, CutsceneWorld.OwlShow }, hour.Select(s => s.Id));
+            var watch = CastOf(street, "hour").Single(c => c.Clip == CharacterClips.CheckWatch);
+            Assert.AreEqual(CastActor.Vale, watch.Actor);
+            Assert.Less(hour[0].At, watch.At, "the ding, then the watch");
+            Assert.Less(watch.At, hour[1].At, "the watch, then the bows");
+            Assert.IsTrue(CastOf(street, "hour").Any(c => c.Actor == CastActor.Vale && c.Kind == CastCueKind.LookAt), "he looks up");
+            Assert.AreEqual(CutsceneWorld.OwlShow, SignalsOf(street, "show").Single().Id);
+            Assert.AreEqual(CutsceneAnchors.Owl, street.Beats[2].Shot.Anchor);
+            // The two shows never overlap: the first is over before the second starts.
+            float first = street.BeatStart(1) + hour[1].At;
+            float second = street.BeatStart(2) + SignalsOf(street, "show").Single().At;
+            Assert.GreaterOrEqual(second - first, MechanismMotion.CycleSeconds - 1e-3f);
+
+            // The friends wave, each sounding as in their remembered greeting.
+            Assert.AreEqual(CharacterClips.Wave, CastOf(street, "bea").Single(c => c.Actor == CastActor.Bea).Clip);
+            Assert.AreEqual(CharacterClips.Wave, CastOf(street, "june").Single(c => c.Actor == CastActor.June).Clip);
+            Assert.AreEqual(CharacterClips.Wave, CastOf(street, "kit").Single(c => c.Actor == CastActor.Kit).Clip);
+            CollectionAssert.AreEqual(new[] { "vale.happy", "bea.happy", "june.happy", "kit.happy" },
+                street.Beats.SelectMany(b => b.Signals).Where(s => s.Channel == CueChannel.Babble).Select(s => s.Id));
+
+            AssertClose(C01Cutscenes.PorchPlayView, street.Beats.Last().Shot.End, 1e-4f, "play starts behind Pip on the porch");
+            Assert.AreEqual(C01Cutscenes.PorchSpawn.Z, street.Settle.Single().Point.Z, 1e-4f);
+            Assert.IsFalse(street.Beats.Any(b => Inside(b.Shot.Start.Eye)), "all on the street");
+        }
+
+        [Test]
+        public void TheNewCutscenesExistOnlyOnceStampedAndPlayOnlyByTheirRules()
+        {
+            var answers = CaseAnswers.Empty;
+            var none = Array.Empty<string>();
+            int stamped = 0;
+            foreach (var state in CaseReducerTests.ReachableStates())
+            {
+                bool done = state.Has(CaseFact.CaseStamped);
+                stamped += done ? 1 : 0;
+                foreach (string id in new[] { C01Cutscenes.SeedId, C01Cutscenes.StreetRemembersId })
+                {
+                    Assert.AreEqual(done, CutscenePolicy.Build(id, state, answers) != null, id + " " + state);
+                    Assert.AreEqual(done, CutscenePolicy.CanRewatch(id, state), id + ": the case page offers it only when stamped");
+                }
+
+                // The seed: after the reveal's first play only.
+                Assert.AreEqual(done ? C01Cutscenes.SeedId : null, CutscenePolicy.AfterCutscene(C01Cutscenes.RevealId, false, none, state));
+                Assert.IsNull(CutscenePolicy.AfterCutscene(C01Cutscenes.RevealId, true, none, state), "a rewatch never chains");
+                Assert.IsNull(CutscenePolicy.AfterCutscene(C01Cutscenes.RevealId, false, new[] { C01Cutscenes.SeedId }, state), "once");
+                Assert.IsNull(CutscenePolicy.AfterCutscene(C01Cutscenes.OpeningId, false, none, state));
+                Assert.IsNull(CutscenePolicy.AfterCutscene(C01Cutscenes.SeedId, false, none, state));
+
+                // The street remembers: the first load after the stamp, with the memories laid over the world.
+                Assert.AreEqual(done ? C01Cutscenes.StreetRemembersId : null, CutscenePolicy.OnContinue(none, state, true, false));
+                Assert.IsNull(CutscenePolicy.OnContinue(none, state, false, false), "never while a replay rests the memories");
+                Assert.IsNull(CutscenePolicy.OnContinue(none, state, true, true), "not in the session where the stamp happened");
+                Assert.IsNull(CutscenePolicy.OnContinue(new[] { C01Cutscenes.StreetRemembersId }, state, true, false), "once");
+                Assert.IsNull(CutscenePolicy.OnNewGame(new[] { C01Cutscenes.OpeningId }));
+            }
+
+            Assert.Greater(stamped, 0);
+            var (canonical, _) = Canonical();
+            CollectionAssert.AreEqual(C01Cutscenes.Ids, CutscenePolicy.Rewatchable(canonical), "the case page offers all four in story order");
+            CollectionAssert.AreEqual(new[] { C01Cutscenes.OpeningId }, CutscenePolicy.Rewatchable(CaseState.Empty));
+        }
+
+        [Test]
+        public void TheStreetRemembersPlaysAgainAfterAReplayIsStampedAgain()
+        {
+            var fs = new MemorySaveFileSystem();
+            var store = new CutsceneProgressStore(fs, "saves");
+            var (stamped, _) = Canonical();
+            store.Load(stamped);
+            foreach (string id in new[] { C01Cutscenes.RevealId, C01Cutscenes.SeedId, C01Cutscenes.StreetRemembersId })
+            {
+                Assert.IsTrue(C01Cutscenes.IsKnown(id));
+                store.MarkSeen(id, stamped);
+            }
+
+            // Relaunch: the new IDs survive the file's round trip.
+            var relaunched = new CutsceneProgressStore(fs, "saves");
+            CollectionAssert.AreEquivalent(new[] { C01Cutscenes.RevealId, C01Cutscenes.SeedId, C01Cutscenes.StreetRemembersId },
+                relaunched.Load(stamped));
+            Assert.IsNull(CutscenePolicy.OnContinue(relaunched.Seen, stamped, true, false));
+
+            // A confirmed replay: the case starts over (the memories rest) and the seen set clears with it ...
+            relaunched.Observe(CaseState.Empty);
+            CollectionAssert.IsEmpty(relaunched.Seen);
+            Assert.IsNull(CutscenePolicy.OnContinue(relaunched.Seen, CaseState.Empty, false, false), "nothing while it rests");
+
+            // ... so stamping the replay and reloading plays the street remembers (and the seed after the reveal) again.
+            var again = new CutsceneProgressStore(fs, "saves");
+            again.Load(stamped);
+            Assert.AreEqual(C01Cutscenes.SeedId, CutscenePolicy.AfterCutscene(C01Cutscenes.RevealId, false, again.Seen, stamped));
+            Assert.AreEqual(C01Cutscenes.StreetRemembersId, CutscenePolicy.OnContinue(again.Seen, stamped, true, false));
+
+            // A new game (explicit reset) forgets them too.
+            again.MarkSeen(C01Cutscenes.StreetRemembersId, stamped);
+            again.Reset();
+            CollectionAssert.IsEmpty(new CutsceneProgressStore(fs, "saves").Load(CaseState.Empty));
+        }
+
+        [Test]
+        public void AChainedCutsceneStartsWithTheBarsDown()
+        {
+            var playback = new CutscenePlayback(C01Cutscenes.Seed, false) { StartLetterboxed = true };
+            playback.Advance(0f);
+            Assert.AreEqual(1f, playback.Letterbox, "no slide in after the reveal");
+            playback.Advance(0.1f);
+            Assert.AreEqual(1f, playback.Letterbox);
+            var fresh = new CutscenePlayback(C01Cutscenes.Seed, false);
+            fresh.Advance(0f);
+            fresh.Advance(0.1f);
+            Assert.Less(fresh.Letterbox, 1f, "a rewatch slides them in");
         }
     }
 }

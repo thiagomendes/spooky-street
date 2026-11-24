@@ -122,6 +122,8 @@ namespace SpookyStreet.Case
             Player.Stage = this;
             Player.Ended += OnEnded;
             Player.CueFired += OnAudioCue;
+            Player.ChainsAfter = (cutscene, rewatch) =>
+                CutscenePolicy.AfterCutscene(cutscene.Id, rewatch, _store.Seen, _director.State) != null;
 
             Rewatch = NotebookRewatch.Attach(director.Notebook);
             Rewatch.Rewatchable = () => CutscenePolicy.Rewatchable(_director.State);
@@ -190,8 +192,38 @@ namespace SpookyStreet.Case
             Try(() => _store.Reset());
         }
 
+        /// <summary>
+        /// Continue (the save's first load in this run): "the street remembers" plays before control when the street
+        /// lays case 01's memories over the world for the first time (S004, D29).
+        /// </summary>
+        public void OnContinue()
+        {
+            if (!AutoPlayOpening)
+            {
+                return;
+            }
+
+            var street = _director.Street;
+            string id = CutscenePolicy.OnContinue(_store.Seen, _director.State, street != null && street.WorldView.Any,
+                _stampedThisSession);
+            if (id != null)
+            {
+                Play(id, false, cutIn: true);
+            }
+        }
+
+        /// <summary>True once a case step stamped the case in this run of the game (tests).</summary>
+        public bool StampedThisSession => _stampedThisSession;
+
+        private bool _stampedThisSession;
+
         private void OnStepped(CaseStep step)
         {
+            if (step.StampedCase)
+            {
+                _stampedThisSession = true;
+            }
+
             Try(() => _store.Observe(step.State));
             if (CutscenePolicy.AfterStep(step, _store.Seen) != null)
             {
@@ -233,7 +265,7 @@ namespace SpookyStreet.Case
         /// Plays <paramref name="id"/> now when the policy allows it (the reveal only once the case is stamped). A first
         /// play is marked seen before it starts, so a skip, crash or quit never plays it again by itself.
         /// </summary>
-        public bool Play(string id, bool rewatch, bool cutIn = false)
+        public bool Play(string id, bool rewatch, bool cutIn = false, bool chained = false)
         {
             var cutscene = CutscenePolicy.Build(id, _director.State, _director.Answers);
             if (cutscene == null)
@@ -247,7 +279,7 @@ namespace SpookyStreet.Case
                 Try(() => _store.MarkSeen(id, _director.State));
             }
 
-            Player.Play(cutscene, AmbientMotion.ReducedMotion, rewatch, cutIn);
+            Player.Play(cutscene, AmbientMotion.ReducedMotion, rewatch, cutIn, chained);
             return true;
         }
 
@@ -272,6 +304,13 @@ namespace SpookyStreet.Case
 
         private void OnEnded(Cutscene cutscene, bool skipped)
         {
+            // The seed follows the reveal's first play at once (the player kept the bars down for it).
+            string next = !_reopenNotebook ? CutscenePolicy.AfterCutscene(cutscene.Id, false, _store.Seen, _director.State) : null;
+            if (next != null && Play(next, false, cutIn: true, chained: true))
+            {
+                return;
+            }
+
             if (_reopenNotebook)
             {
                 _reopenNotebook = false;
@@ -448,9 +487,35 @@ namespace SpookyStreet.Case
                     _director.Workshop?.PlayCycle();
                     break;
                 case CutsceneWorld.PhotoGlint:
-                    _glintTime = 0f;
+                    StartGlint(null, false);
+                    break;
+                case CutsceneWorld.BoothBell:
+                    _director.Street?.RingBell();
+                    break;
+                case CutsceneWorld.OwlShow:
+                    _director.Workshop?.PlayShow();
+                    break;
+                default:
+                    if (CutsceneWorld.TryParseGlint(id, out string puppet, out bool soft))
+                    {
+                        StartGlint(puppet, soft);
+                    }
+
                     break;
             }
+        }
+
+        private string _glintPart;
+        private bool _glintSoft;
+
+        /// <summary>The puppet the current glint runs along (null: a face in the photo), for tests.</summary>
+        public string GlintPart => _glintTime >= 0f ? _glintPart : null;
+
+        private void StartGlint(string puppet, bool soft)
+        {
+            _glintTime = 0f;
+            _glintPart = puppet;
+            _glintSoft = soft;
         }
 
         public void Tick(float dt, CamPose camera, CutscenePlayer player)
@@ -591,17 +656,33 @@ namespace SpookyStreet.Case
                 return;
             }
 
-            var frame = Anchor(CutsceneAnchors.KitPhoto) ?? CutsceneAnchors.Default(CutsceneAnchors.KitPhoto);
-            // On one face in the photo, a hand's width in front of the glass.
-            Vector3 at = V(frame.Apply(new StagePoint(0.09f, 0.07f, 0.04f)));
+            Vector3 at;
+            float peak;
+            if (_glintPart != null)
+            {
+                // The lamp's light runs along the gilt puppet's edge: from its left to its right, just off the glass.
+                string id = CutsceneAnchors.PhotoPart(_glintPart);
+                var part = Anchor(id) ?? CutsceneAnchors.Default(id);
+                float run = Mathf.Lerp(0.025f, -0.025f, Mathf.Clamp01(_glintTime / seconds));
+                at = V(part.Apply(new StagePoint(run, 0.012f, 0.02f)));
+                peak = _glintSoft ? 0.045f : 0.07f;
+            }
+            else
+            {
+                var frame = Anchor(CutsceneAnchors.KitPhoto) ?? CutsceneAnchors.Default(CutsceneAnchors.KitPhoto);
+                // On one face in the photo, a hand's width in front of the glass.
+                at = V(frame.Apply(new StagePoint(0.09f, 0.07f, 0.04f)));
+                peak = 0.16f;
+            }
+
             var cam = _game.CameraRig.OutputCamera.transform;
             float u = _glintTime / seconds;
-            float size = 0.16f * Mathf.Sin(u * Mathf.PI) * (1f + 0.15f * Mathf.Sin(_glintTime * 18f));
+            float size = peak * Mathf.Sin(u * Mathf.PI) * (1f + 0.15f * Mathf.Sin(_glintTime * 18f));
             _glint.gameObject.SetActive(true);
             _glint.transform.SetPositionAndRotation(at, cam.rotation * Quaternion.Euler(0f, 0f, _glintTime * 60f));
             float native = _glint.sprite != null ? _glint.sprite.bounds.size.y : 1f;
             _glint.transform.localScale = Vector3.one * (Mathf.Max(0.001f, size) / Mathf.Max(0.01f, native));
-            _glint.color = new Color(1f, 0.95f, 0.75f, Mathf.Sin(u * Mathf.PI));
+            _glint.color = new Color(1f, 0.95f, 0.75f, Mathf.Sin(u * Mathf.PI) * (_glintSoft ? 0.75f : 1f));
         }
 
         public Vector3 Settle(Cutscene cutscene, bool rewatch)
@@ -706,9 +787,45 @@ namespace SpookyStreet.Case
                     return bounds.size.sqrMagnitude > 1e-6f ? new AnchorFrame(S(bounds.center), 180f) : (AnchorFrame?)null;
                 case CutsceneAnchors.KitPhoto:
                     return _photo ?? (_photo = FindPhoto());
+                case CutsceneAnchors.BoothCrest:
+                    var crest = _game.Environment != null ? _game.Environment.Crest : null;
+                    if (crest == null)
+                    {
+                        return null;
+                    }
+
+                    var crestBounds = ModelKit.RendererBounds(crest.gameObject);
+                    return crestBounds.size.sqrMagnitude > 1e-6f ? new AnchorFrame(S(crestBounds.center), 180f) : (AnchorFrame?)null;
                 default:
-                    return null;
+                    string part = CutsceneAnchors.PhotoPartOf(id);
+                    return part != null ? PhotoPart(part) : null;
             }
+        }
+
+        /// <summary>
+        /// A puppet (or the mount crest) of the troupe photo: its pivot in the model, facing like the photo. Without the
+        /// model, the part's place on the photo found by <see cref="FindPhoto"/>.
+        /// </summary>
+        private AnchorFrame? PhotoPart(string part)
+        {
+            var photo = Anchor(CutsceneAnchors.KitPhoto);
+            if (photo == null)
+            {
+                return null;
+            }
+
+            var model = _director.House != null ? _director.House.TroupePhoto : null;
+            var child = model != null ? ModelKit.FindDeep(model, part) : null;
+            if (child == null)
+            {
+                return CutsceneAnchors.OnPhoto(photo.Value, part);
+            }
+
+            // Just off the picture's face, where the glint and the lens look at it.
+            var face = photo.Value.Apply(new StagePoint(0f, 0f, 0.01f));
+            var centre = photo.Value.Position;
+            var normal = new Vector3(face.X - centre.X, face.Y - centre.Y, face.Z - centre.Z);
+            return new AnchorFrame(S(child.position + normal), photo.Value.FacingYaw);
         }
 
         /// <summary>

@@ -41,7 +41,10 @@ namespace SpookyStreet.Case
 
         public bool HasTarget => !Suspended && Current != null;
 
-        public string VerbKey => HasTarget ? Current.VerbKey : null;
+        public string VerbKey => HasTarget ? VerbFor?.Invoke(Current) ?? Current.VerbKey : null;
+
+        /// <summary>A verb the world's state gives a point instead of its own (null: the point's; S004 the booth's knock).</summary>
+        public Func<InteractionPoint, string> VerbFor { get; set; }
 
         public string IconName => HasTarget ? IconFor(Current) : null;
 

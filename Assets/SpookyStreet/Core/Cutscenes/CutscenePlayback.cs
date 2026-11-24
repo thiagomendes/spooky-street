@@ -17,10 +17,41 @@ namespace SpookyStreet.Core.Cutscenes
         /// <summary>Aunt Kit's framed troupe photo in the hall, facing into the hall.</summary>
         public const string KitPhoto = "anchor.kit_photo";
 
+        /// <summary>The owl crest sign over Kit's booth, facing the street (S004).</summary>
+        public const string BoothCrest = "anchor.booth_crest";
+
+        private const string PhotoPartPrefix = "anchor.photo.";
+
+        /// <summary>
+        /// A part of the troupe photo (a puppet, <see cref="KeepsakeArt.Puppets"/>, or the mount's crest
+        /// <see cref="KeepsakeArt.PhotoCrest"/>): its pivot, facing into the hall like the photo.
+        /// </summary>
+        public static string PhotoPart(string part) => PhotoPartPrefix + part;
+
+        /// <summary>The photo part an anchor names, or null.</summary>
+        public static string PhotoPartOf(string id) =>
+            id != null && id.StartsWith(PhotoPartPrefix, StringComparison.Ordinal) ? id.Substring(PhotoPartPrefix.Length) : null;
+
+        /// <summary>Where a part of the photo sits, from the photo's frame (the runtime passes the real photo's).</summary>
+        public static AnchorFrame OnPhoto(AnchorFrame photo, string part)
+        {
+            KeepsakeArt.TryGetPhotoPart(part, out float across, out float up);
+            // The anchor's +x is its right seen from behind it: a viewer facing the photo sees +x on their left.
+            return new AnchorFrame(photo.Apply(new StagePoint(-across, up, 0.01f)), photo.FacingYaw);
+        }
+
         public static AnchorFrame Default(string id)
         {
+            string part = PhotoPartOf(id);
+            if (part != null)
+            {
+                return OnPhoto(Default(KitPhoto), part);
+            }
+
             switch (id)
             {
+                case BoothCrest:
+                    return new AnchorFrame(new StagePoint(KeepsakeArt.CrestWorldX, KeepsakeArt.CrestWorldY, KeepsakeArt.CrestWorldZ), 180f);
                 case Owl:
                     return new AnchorFrame(new StagePoint(0f, 8.7f, CaseRouteLayout.FrontZ + 0.2f), 180f);
                 case KitPhoto:
@@ -163,6 +194,12 @@ namespace SpookyStreet.Core.Cutscenes
         /// <summary>The caption key of the current beat (none in the outro).</summary>
         public string CaptionKey => Beat?.CaptionKey;
 
+        /// <summary>
+        /// True when this cutscene follows another without a break (the seed straight after the reveal): the bars are
+        /// already down, so they do not slide in again.
+        /// </summary>
+        public bool StartLetterboxed { get; set; }
+
         /// <summary>0..1: the letterbox bars and the cinematic overlay.</summary>
         public float Letterbox
         {
@@ -171,7 +208,7 @@ namespace SpookyStreet.Core.Cutscenes
                 switch (Phase)
                 {
                     case CutscenePhase.Playing:
-                        return _reduced ? 1f : Ease(Elapsed / LetterboxIn);
+                        return _reduced || StartLetterboxed ? 1f : Ease(Elapsed / LetterboxIn);
                     case CutscenePhase.Outro:
                         return _outroLength <= 0f ? 0f : _outroFrom * (1f - Ease(_outroTime / _outroLength));
                     default:

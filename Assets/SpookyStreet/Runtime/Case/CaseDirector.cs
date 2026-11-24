@@ -199,8 +199,11 @@ namespace SpookyStreet.Case
             BuildUi();
             int sightMask = Physics.DefaultRaycastLayers & ~(1 << _pip.gameObject.layer);
             bool models = game.Environment != null && game.Environment.UsesModels;
-            Targets = new CaseUseTargets(models ? CaseStage.AllPoints : CaseStage.ExteriorPoints, point => Perform(point.Action),
-                sightMask) { Filter = IsOffered };
+            Targets = new CaseUseTargets(models ? CaseStage.AllPoints : CaseStage.ExteriorPoints, Interact, sightMask)
+            {
+                Filter = IsOffered,
+                VerbFor = point => IsBoothKnock(point) ? SpookyStreet.Core.Localization.LocalizationKeys.Verbs.Knock : null,
+            };
             _pip.UseTargets = Targets;
             Bench = BenchView.Create(transform, _pip, game.Controls, _camera);
             var anchors = game.Environment != null ? game.Environment.Anchors : default;
@@ -430,7 +433,35 @@ namespace SpookyStreet.Case
         private bool IsOffered(InteractionPoint point)
         {
             Vector3 pip = _pip.transform.position;
-            return CaseStage.IsOffered(point, _view, CaseRouteLayout.Inside(pip.x, pip.z), Cast != null && Cast.JuneWalking);
+            bool inside = CaseRouteLayout.Inside(pip.x, pip.z);
+            if (IsBoothKnock(point))
+            {
+                // After case 01 the owl-booth spot is the booth's shutter to knock on (the clue's Use is done).
+                return !inside;
+            }
+
+            return CaseStage.IsOffered(point, _view, inside, Cast != null && Cast.JuneWalking);
+        }
+
+        /// <summary>
+        /// The owl-booth spot once the street remembers case 01 (the show clock runs): Use knocks on the shutter (three
+        /// knocks, the owl bows, S004). Before the stamp and while a replay rests the memories it stays the clue.
+        /// </summary>
+        private bool IsBoothKnock(InteractionPoint point) =>
+            point != null && point.Id == CaseStage.PointOwlBooth && Street != null && Street.ShowClock.Running;
+
+        /// <summary>Use on <paramref name="point"/>, as the Use button does on the selected target (tests).</summary>
+        public void Use(InteractionPoint point) => Interact(point);
+
+        private void Interact(InteractionPoint point)
+        {
+            if (IsBoothKnock(point))
+            {
+                Street.KnockShutter(Workshop);
+                return;
+            }
+
+            Perform(point.Action);
         }
 
         private void ResetCase()
@@ -474,6 +505,8 @@ namespace SpookyStreet.Case
         {
             _continuing = true;
             _flow.StartNewGame();
+            // S004: the first load after the stamp plays "the street remembers" before control (once per save).
+            Cutscenes?.OnContinue();
         }
 
         private void OnNewGame()
@@ -1349,6 +1382,13 @@ namespace SpookyStreet.Case
 
             bool crossing = Travel != null && Travel.Active;
             TickStage(pip, dt);
+            if (Street != null)
+            {
+                // The show clock counts play on the street only: not indoors, in a cutscene, a conversation or a crossing.
+                bool onStreet = !_modal && !crossing && !FinalePlaying && (Cutaway == null || !Cutaway.Active) &&
+                                !CaseRouteLayout.Inside(pip.x, pip.z) && (Cutscenes == null || !Cutscenes.Playing);
+                Street.Tick(dt, onStreet, Workshop, _game.Witnesses != null ? _game.Witnesses.Vale : null, _camera);
+            }
             if (TickRescue(pip, dt, crossing))
             {
                 pip = _pip.transform.position;
