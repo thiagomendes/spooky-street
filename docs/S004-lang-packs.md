@@ -88,19 +88,22 @@ and never half-loaded. Any IO error leaves the old index and files in place, and
 - **`LanguageScreen`.** Its own canvas at sorting order 14, under the parent gate's 16.
   - **Opened from:** the title's globe pill, which replaces the dev pseudo toggle and is shown in every build, and a
     new globe disc on the pause card (top-left; the settings gear is top-right).
-  - **Rows:** at most 4. Each shows the native name and a note: "In the game", "Downloaded · 58 KB", "58 KB",
+  - **Rows:** at most 3, each 124 units tall, with a two-line note band. Each shows the native name and a note: "In the game", "Downloaded · 58 KB", "58 KB",
     "Downloading 40%" with a bar, or "That did not work. Nothing changed.".
   - **Actions:** Use (no gate), or an "In use" tag. Download or Update and Remove appear only after the gate. Every
     Remove asks for the gate again. "More languages" opens the gate, then fetches the catalog. The status line shows
     checking, none or offline.
-  - **F1 hook:** `FocusOrder`, `DefaultFocus`, `Back()` and `Opened`/`Closed`. Buttons already have explicit
-    wrap-around up/down navigation, so a gamepad works today, and focus survives the rebuilds that download progress
-    causes. F1 (`UiFocusGraph`, `UiFocusScreen`) merged to `main` (b097e6b) while this branch was in CI. The branch
-    merges with it cleanly but is not wired to it yet. The follow-up is to build a `UiFocusGraph("languages")` with
-    one row per language row (Use/Download, Remove), then "more" and "close" (`Exit = "close"`), and attach it with
-    `UiFocusScreen.Attach(Canvas.transform, graph, overlay)`. Bind the buttons by id, set `BackOverride` to null so
-    Back runs Close, re-bind after each `Rebuild`, and validate every state (English only, unlocked with a download
-    in progress, installed) in a Core test.
+  - **Gamepad and keyboard (F1).** This branch merged `main` b097e6b (the S004 F1 navigation base).
+    `Core/Flow/LanguageScreenFocus` is a fixed `UiFocusGraph`:
+    - three row slots, each with a side button (Remove or Update) left of a main button (Use or Download);
+    - then "more", then "close", which is the exit.
+
+    `UiFocusScreen` is attached to the screen's canvas. Each rebuild re-binds the slots to the new buttons. A slot
+    with no button, such as the language in use, is bound to a hidden placeholder, so it is skipped. Focus stays on
+    the same slot id across the rebuilds that download progress causes. Submit presses a button exactly as a tap
+    does, and Back (Escape, East) runs Close. Navigation pauses while the parent gate is up (`Blocked`), so keys
+    meant for the gate never reach the rows. The screen is built hidden, so attaching does not clear the title's
+    uGUI selection. Its own uGUI navigation was removed.
 - **Strings.** 15 `ui.language.*` keys with translator context in one block of `en.json`, through
   `LocalizationKeys.Languages`. The pill's context no longer says "development only". Language names come from each
   table's `nativeName` and are never translated.
@@ -145,14 +148,17 @@ and never half-loaded. Any IO error leaves the old index and files in place, and
     - 10 launch-language cases;
     - the shipped config;
     - `LocaleChosen` round trip.
-  - **Local run:** `./tools/check-local.sh` passes, with 692 Core tests (was 621 + S003a pass; new: 54 plural and
-    pack tests).
+  - **`LanguageScreenFocusTests`:** the graph is sound in eight screen states, including English only with no
+    host, after the gate, downloading, installed, in use, an update offered and every slot. Focus starts on a
+    language, else More languages, else Close, and Back is Close.
+  - **Local run:** `./tools/check-local.sh` passes after the merge with main (675 Core tests).
 - **PlayMode** (`LanguagePackPlayTests`):
   - `SwitchingToThePseudoPackChangesOnScreenStringsAndBack`: globe → screen (English only) → More languages → no
     request until the gate passes → the catalog lists the pseudo pack → Download (no switch) → Use. The title's case
     name, the New game label, the screen and the pill all turn pseudo, and preferences record the choice. English
     Use brings back "Three Knocks on Lantern Lane" and "New game". Use pseudo again, then Remove behind the gate
-    returns to English.
+    returns to English. Focus starts on More languages, the pseudo Use is pressed with `Navigation.Submit()` and the
+    screen closes with `Navigation.Back()`.
   - `AChosenPackIsUsedAgainAfterARelaunchOffline`.
   - `TheDeviceLanguagePicksAnInstalledPackOnlyBeforeAChoice`.
   - `TheRealDownloaderFetchesFromALocalHttpHost`: real UnityWebRequest against `HttpListener` on 127.0.0.1. It
@@ -166,7 +172,39 @@ and never half-loaded. Any IO error leaves the old index and files in place, and
 
 ## 3. CI evidence
 
-(filled in below after the run)
+All runs are `ci.yml` on `feature/s004-lang-packs`. Frames were decoded from the base64 lines of the Unity job's log,
+because the artifact host is blocked from the cloud container, and reviewed by eye.
+
+| Run | Head | Result | EditMode | PlayMode | Visual | Frame review |
+|---|---|---|---|---|---|---|
+| **151** (`45162234557`) | 7de271c | green, first try | 732/732 | 137/137 | 17/17 | Row notes were empty: best fit at 26 in a 34-unit box draws nothing. The pseudo Remove label and the title pill were truncated. |
+| **157** (`45170245627`) | 0698241 | green | 732/732 | 137/137 | 17/17 | The notes show ("In the game", "Downloading 40%") and the pill fits "[Łáñgüágé: [Þšéüðö]~·~·]". The +35 % pseudo note "Downloaded · 70 KB" wrapped over its row. |
+| **158** (`45356276859`) | 5ac5865 (with main b097e6b, F1) | green | 749/749 | 142/142 | 18/18 | The F1 focus outline rings More languages and the rows are taller with no overlap, but the pseudo note lost its second line to best fit (fixed in the next commit). |
+| **RUN159** | HEAD159 | RESULT159 | E159 | P159 | V159 | REVIEW159 |
+
+What the runs show:
+
+- **`LanguagePackTests`** 32/32 and **`PluralRulesTests`** pass in Unity's EditMode as well as `tools/core-tests`.
+  **`LanguageScreenFocusTests`** passes 2/2 (from run 158).
+- **`LanguagePackPlayTests`** passes 4/4 in every run. `TheRealDownloaderFetchesFromALocalHttpHost` was **not
+  ignored**, so the real UnityWebRequest downloader fetched the catalog and the pack from the loopback
+  `HttpListener`. The log line `[Languages] download qps-ploc: Interrupted (36246 of 72493 bytes arrived)` is the
+  cut file being refused while the old pack stays on.
+- **`LanguageCaptureTests`** passes 1/1. Every frame has 0.00 % magenta. Mean luminance: 73 0.46, 73b 0.46, 74 0.37,
+  74b 0.23.
+- **Existing suites that touch the changed code** stay green: `StreetMemoryPlayTests` 6/6 (plural recap),
+  `UiLanguageTests` 5/5 (title and pause controls, with the pill and pause globe), `WalkingSkeletonTests` 7/7 (pseudo
+  toggle) and `UiNavigationTests` 5/5 (F1).
+- **Frames** (final run):
+  - **73:** "Languages", English "In the game" with "In use", the pseudo row "Downloading 40%" with a 40 % bar,
+    and More languages.
+  - **73b:** the same screen in the pseudo-language: a Use button on English, Remove and "In use" on the pseudo row,
+    and the status "[Ñö möré łáñgüágéš ýét.]".
+  - **74:** the notebook's Q-entry page titled "[Höw ðíð Jüñé gét íñ?]" with the sticker tray.
+  - **74b:** the title in the pseudo-language: case-name strip, New game and the language pill.
+
+  All pseudo glyphs are drawn by Andika and Sniglet, with no fallback font.
+
 
 ## 4. How D2 adds pt-BR
 
@@ -195,7 +233,8 @@ and never half-loaded. Any IO error leaves the old index and files in place, and
 - **Device language.** Unity's `Application.systemLanguage` gives one language with no region or preference list.
   "Portuguese" maps to pt-BR and "Spanish" to es-419. Reading the full iOS preferred-languages list needs a native
   plugin (later, behind an interface).
-- **Rows.** At most 4 rows are shown (English, pt-BR, pseudo plus one). More languages will need a scrolling list.
+- **Rows.** At most 3 rows are shown (English, pt-BR and the pseudo pack). A fourth language needs a scrolling list
+  and more slots in `LanguageScreenFocus`.
 - **Orphaned files.** A crash between switching the index and deleting the old file can leave one orphaned old pack
   file. It is harmless: the index no longer lists it.
 - **No glyphs on the Remove/Download icons.** They reuse `icon_close`, `icon_arrow` and `icon_check`. No new art.

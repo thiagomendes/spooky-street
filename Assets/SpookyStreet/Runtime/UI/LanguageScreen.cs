@@ -362,6 +362,7 @@ namespace SpookyStreet.UI
                 UiFactory.WithAlpha(UiFactory.Ink, 0.75f), UiFactory.BoldFont);
             UiFactory.Place(row.Note.rectTransform, left, new Vector2(12f, -48f), new Vector2(290f, 62f), left);
             row.Note.alignment = TextAnchor.UpperLeft; // up to two caption lines (+35 % languages wrap)
+            row.Note.verticalOverflow = VerticalWrapMode.Overflow; // best fit never drops the second line
             var note = row.Note.gameObject.AddComponent<LocalizedText>();
             long kb = Math.Max(1, (option.Size + 1023) / 1024);
             if (option.Downloading)
