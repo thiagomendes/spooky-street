@@ -1,6 +1,6 @@
 name: Repo hygiene
 
-# After each push to main, delete feature/* and fix/* branches whose tip is already contained in
+# After each push to main, delete feature/*, fix/*, docs/* and design/* branches whose tip is already contained in
 # main, so merged work branches never pile up (cloud sessions cannot delete remote refs themselves).
 on:
   push:
@@ -40,5 +40,6 @@ jobs:
             else
               echo "Kept ${branch} (has commits not in main)"
             fi
-          done < <(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/feature/' 'refs/remotes/origin/fix/')
+          done < <(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/feature/' 'refs/remotes/origin/fix/' \
+            'refs/remotes/origin/docs/' 'refs/remotes/origin/design/')
           echo "Deleted ${deleted} merged branch(es)."

@@ -36,7 +36,7 @@ agent links here.
   Blender scene) and LOOK at every one before the asset enters the game.
 - Each sheet shows: the gameplay camera distance, a close view, a side or back view, and for animation 8+ frames
   across the clip plus the last frame beside rest frame 0.
-- Iterate 2–4 passes per asset. Write down what you changed after each look.
+- Iterate until the asset meets the art bible's bar at phone size; write down what you changed after each look.
 - Re-render the existing clips or assets you touched (regression sheet) and compare.
 - After CI, extract the capture frames from the job log (`tools/ci/extract_frames.py`; decode base64 lines via
   `mcp__github__get_job_logs` or `gh api .../jobs/<id>/logs`) and look at them in the real game lighting. Fix
@@ -59,3 +59,14 @@ agent links here.
 - One Blender process per agent at a time, `-t 2` render threads (`-t 1` when another graphics agent runs).
 - Render small first and full resolution only for the final sheets.
 - Use `[skip ci]` while iterating and push for CI only when the asset is final.
+
+## 6. What to avoid (seen in this project; extend the list when a review finds a new one)
+
+- Signs, posters and painted faces that go dark at night: use lit paint (section 2).
+- Hands or props passing through the body, face or costume, in any frame of a clip.
+- A new collectible that looks like the decorative glowing bats: keepsakes must read as different at a glance.
+- Detail that only reads close up: judge from the gameplay camera first.
+- Characters framed from behind or cut by a post or the letterbox in cutscene shots.
+- Generic "default" looks: no flat grey placeholders left in the game, no off-palette colours, no stock-looking
+  gradients; stay in the felt-and-paper style of the art bible.
+
