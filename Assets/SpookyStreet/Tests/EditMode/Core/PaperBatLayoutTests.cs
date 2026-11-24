@@ -217,13 +217,15 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void TheDecorativeBatsStayDecoration()
         {
-            // The six ink-black decorative bats are not keepsakes and never share a collectible's spot.
+            // The six ink-black decorative bats are not keepsakes and never sit beside a collectible (A1 issue 2, frame
+            // 65b: at the lamp head the two could not be told apart), so they keep the bats' own spacing.
             foreach (var decor in EnvironmentLayout.PaperBats)
             {
                 foreach (var bat in Bats)
                 {
                     float dx = decor.X - bat.X, dy = decor.Y - bat.Y, dz = decor.Z - bat.Z;
-                    Assert.Greater((float)Math.Sqrt(dx * dx + dy * dy + dz * dz), 0.5f, bat + " sits on a decorative bat");
+                    Assert.GreaterOrEqual((float)Math.Sqrt(dx * dx + dy * dy + dz * dz), PaperBatLayout.MinSpacing,
+                        bat + " sits beside a decorative bat at " + decor.X + ", " + decor.Y + ", " + decor.Z);
                 }
             }
         }

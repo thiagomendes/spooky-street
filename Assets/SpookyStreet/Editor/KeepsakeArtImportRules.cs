@@ -8,7 +8,8 @@ namespace SpookyStreet.EditorTools
     /// Import settings for the S004 sketch pages in <c>Content/Resources/UI/SketchPages</c> (written by
     /// <c>tools/blender/pages/sketch_pages.py</c>). Kept in code because tools/unity_meta.py writes bare importer metas:
     /// a single 2D sprite at its full 1024 × 768, sRGB with alpha (the page has a ragged, transparent edge), no mipmaps,
-    /// clamp, ASTC 4×4 on iOS. The models and textures of the other keepsakes follow <see cref="ModelImportRules"/>.
+    /// clamp, ASTC 4×4 on iOS. The dress-up trunk's card pictures in <c>UI/CostumeIcons</c> (256², transparent, from
+    /// <c>tools/blender/chars/costume_pieces.py icons</c>) get the same settings. The models and textures of the other keepsakes follow <see cref="ModelImportRules"/>.
     /// </summary>
     public sealed class KeepsakeArtImportRules : AssetPostprocessor
     {
@@ -16,11 +17,11 @@ namespace SpookyStreet.EditorTools
         public const int MaxTextureSize = 1024;
         public const int PixelsPerUnit = 100;
 
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
 
         private void OnPreprocessTexture()
         {
-            if (!KeepsakeArt.IsSketchPageAssetPath(assetPath))
+            if (!KeepsakeArt.IsSketchPageAssetPath(assetPath) && !KeepsakeArt.IsCostumeIconAssetPath(assetPath))
             {
                 return;
             }

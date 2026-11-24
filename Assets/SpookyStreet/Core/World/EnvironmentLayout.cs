@@ -292,15 +292,15 @@ namespace SpookyStreet.Core.World
         }
 
         /// <summary>
-        /// Folded paper bats as decoration (not yet collectibles): circling the street lamp, under the owl house
-        /// porch eave and in the plaza maple. Y is the bat's centre.
+        /// Folded paper bats as decoration (the 30 collectibles are <c>PaperBatLayout</c>): circling the street lamp, under
+        /// the owl house porch eave and in the plaza maple, each at least 1.5 m from every collectible. Y is the bat's centre.
         /// </summary>
         public static readonly Placement[] PaperBats =
         {
-            new Placement(PaperBat, 3.35f, 3.1f, -9.3f, -20f, detail: false),
-            new Placement(PaperBat, 2.45f, 3.35f, -9.95f, 25f, detail: false),
-            new Placement(PaperBat, -2.1f, 2.45f, 8.6f, 15f, detail: false),
-            new Placement(PaperBat, 2.35f, 2.3f, 8.7f, -25f, detail: false),
+            new Placement(PaperBat, 4.2f, 3.0f, -9.0f, -20f, detail: false), // S004: 1.5 m clear of keepsake bat 21 (lamp head)
+            new Placement(PaperBat, 1.3f, 3.5f, -10.6f, 25f, detail: false),
+            new Placement(PaperBat, -1.6f, 2.4f, 8.4f, 15f, detail: false), // clear of keepsake bat 15
+            new Placement(PaperBat, 1.6f, 2.3f, 8.7f, -25f, detail: false), // clear of keepsake bat 25
             new Placement(PaperBat, -2.6f, 3.0f, -1.6f, 30f, detail: false), // clear of the maple crown
             new Placement(PaperBat, -0.9f, 2.0f, 4.7f, -10f, detail: false),
         };

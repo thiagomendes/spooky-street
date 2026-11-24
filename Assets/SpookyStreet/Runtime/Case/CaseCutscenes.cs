@@ -916,7 +916,7 @@ namespace SpookyStreet.Case
             var corner = V(C01Cutscenes.BoxesCorner);
             Box(root, materials, "BigBox", corner + new Vector3(0.15f, 0.2f, 0f), new Vector3(0.52f, 0.4f, 0.42f), 8f, Kraft, true);
             Box(root, materials, "TopBox", corner + new Vector3(0.13f, 0.54f, 0.02f), new Vector3(0.38f, 0.28f, 0.32f), -12f, KraftDark, false);
-            Box(root, materials, "SmallBox", corner + new Vector3(-0.45f, 0.15f, -0.12f), new Vector3(0.34f, 0.3f, 0.32f), 22f, Kraft, true);
+            // S004: the small box beside them is now Pip's dress-up trunk (CostumeTrunk, KeepsakePorch.TrunkX).
             return root;
         }
 

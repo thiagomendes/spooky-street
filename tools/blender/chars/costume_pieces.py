@@ -2,6 +2,7 @@
 
     blender -b -t 2 --python tools/blender/chars/costume_pieces.py -- export [out_dir] [samples=4]
     blender -b -t 2 --python tools/blender/chars/costume_pieces.py -- review out.png [draft|final] [dir=out_dir]
+    blender -b -t 2 --python tools/blender/chars/costume_pieces.py -- icons [out_dir] [size=256]   (trunk cards)
 
 Star-lined cape   A material variant only: `PipStarCape_BaseColor.png` is Pip's own atlas (`Pip_BaseColor.png`)
                   with the cape's berry lining repainted night violet with candy-corn paper stars; everything else
@@ -233,8 +234,8 @@ def export(out_dir, samples):
 
 # --- review (from the exported files, on the re-imported Pip) ----------------------------------------------------
 
-def review(out, quality, folder):
-    import costume as co
+def dress(folder):
+    """Pip re-imported in her rest pose with the exported pieces riding their bones, as the game attaches them."""
     import env_game_review as gr
     import pip_review as pr
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -276,6 +277,12 @@ def review(out, quality, folder):
         root.parent, root.parent_type, root.parent_bone = rig, "BONE", bone
         bpy.context.view_layer.update()
         root.matrix_world = world
+    return rig, actions, star, plain, pail, pieces
+
+
+def review(out, quality, folder):
+    import costume as co
+    rig, actions, star, plain, pail, pieces = dress(folder)
     cam = co.stage()
     scene = bpy.context.scene
     final = quality == "final"
@@ -326,11 +333,80 @@ def review(out, quality, folder):
     log("sheet ->", out)
 
 
+# --- the trunk's picture cards (S004 A2): one icon per piece, from the exported files ----------------------------
+
+ICON_DIR = os.path.join(REPO, "Assets", "SpookyStreet", "Content", "Resources", "UI", "CostumeIcons")
+ICONS = ("star_cape", "lantern_pail", "showman_hat")  # file costume_icon_<name>.png, the piece ID's last part
+
+
+def icons(out_dir, size, folder, cape=(10, -60, 1.7, 50)):
+    """Transparent square pictures for the dress-up trunk's cards: the cape's star lining, the lantern, the hat."""
+    import costume as co
+    rig, actions, star, plain, pail, pieces = dress(folder)
+    cam = co.stage()
+    scene = bpy.context.scene
+    scene.render.film_transparent = True
+    scene.eevee.taa_render_samples = 48
+    for o in bpy.data.objects:
+        if o.name.startswith("Ground"):
+            o.hide_render = True
+    body = [o for o in bpy.data.objects if o.type == "MESH" and not o.name.startswith("Ground")
+            and not any(o in objs for _r, objs in pieces.values())]
+    os.makedirs(out_dir, exist_ok=True)
+
+    def show(pip, lantern, hat, cape):
+        for o in body:
+            o.hide_render = not pip
+        pail.hide_render = True if not pip else lantern
+        for name, on in (("PipLanternPail", lantern), ("PipShowmanHat", hat)):
+            for o in pieces[name][1]:
+                o.hide_render = not on
+        for node, img in plain.items():
+            node.image = star if cape else img
+
+    def centre(objs):
+        pts = [o.matrix_world @ Vector(c) for o in objs if o.type == "MESH" for c in o.bound_box]
+        lo = Vector((min(p.x for p in pts), min(p.y for p in pts), min(p.z for p in pts)))
+        hi = Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts)))
+        return (lo + hi) / 2, (hi - lo).length
+
+    def shot(name, target, dist, yaw, pitch, lens):
+        a, e = math.radians(yaw), math.radians(pitch)
+        loc = target + dist * Vector((-math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
+        px = co.render_view(cam, loc, target, lens, size, size, os.path.join(out_dir, "_tmp_" + name + ".png"))
+        co.save_sheet(px, os.path.join(out_dir, "costume_icon_" + name + ".png"))
+        log("icon ->", name)
+
+    rig.animation_data_create()
+    rig.animation_data.action = None
+    for pb in rig.pose.bones:
+        pb.matrix_basis.identity()
+    scene.frame_set(0)
+    bpy.context.view_layer.update()
+    show(False, False, True, False)
+    at, span = centre(pieces["PipShowmanHat"][1])
+    shot("showman_hat", at, span * 3.2, 20, 18, 85)
+    show(False, True, False, False)
+    at, span = centre(pieces["PipLanternPail"][1])
+    shot("lantern_pail", at, span * 2.5, 20, 10, 85)
+    # The cape: Pip gliding, seen from in front and below, so the star lining under her arms fills the card.
+    show(True, False, False, True)
+    pail.hide_render = True  # the card is about the cape
+    rig.animation_data.action = actions["Glide"]
+    scene.frame_set(int(actions["Glide"].frame_range[0]) + 8)
+    bpy.context.view_layer.update()
+    yaw, pitch, dist, lens = cape
+    shot("star_cape", Vector((0, 0, 0.8)), dist, yaw, pitch, lens)
+
+
 def main():
     rest = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     opts = dict(a.split("=", 1) for a in rest if "=" in a)
     flags = [a for a in rest if "=" not in a]
-    if flags and flags[0] == "review":
+    if flags and flags[0] == "icons":
+        cape = tuple(float(v) for v in opts["cape"].split(",")) if "cape" in opts else (10, -60, 1.7, 50)
+        icons(flags[1] if len(flags) > 1 else ICON_DIR, int(opts.get("size", 256)), opts.get("dir", OUT_DIR), cape)
+    elif flags and flags[0] == "review":
         review(flags[1], flags[2] if len(flags) > 2 else "draft", opts.get("dir", OUT_DIR))
     else:
         export(flags[1] if len(flags) > 1 else OUT_DIR, int(opts.get("samples", 4)))

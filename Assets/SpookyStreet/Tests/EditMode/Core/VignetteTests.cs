@@ -212,7 +212,7 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void EveryCaseVignetteIsValid()
         {
-            Assert.AreEqual(40, C01Vignettes.All.Count, "5 key lines and 35 for the other lines (the notebook comic is drawn from stickers; S002.5b adds the wooden owl, S003a the four street greetings)");
+            Assert.AreEqual(43, C01Vignettes.All.Count, "5 key lines and 38 for the other lines (the notebook comic is drawn from stickers; S002.5b adds the wooden owl, S003a the four street greetings, S004 the three costume remarks)");
             foreach (var v in C01Vignettes.All)
             {
                 var errors = VignetteValidator.Validate(v);
@@ -268,7 +268,7 @@ namespace SpookyStreet.Tests.Core
         public void EveryScriptLineHasAVignetteAndNoneKeepsTheV1Card()
         {
             var scriptKeys = new List<string>(CaseScript.AllLineKeys);
-            Assert.AreEqual(42, scriptKeys.Count, "case 01 has 42 lines (captions, examines, dialogue; S002.5a adds the owl panel and Kit's question, S002.5b the wooden owl, S003a the four street greetings)");
+            Assert.AreEqual(45, scriptKeys.Count, "case 01 has 45 lines (captions, examines, dialogue; S002.5a adds the owl panel and Kit's question, S002.5b the wooden owl, S003a the four street greetings, S004 the three costume remarks)");
             Assert.AreEqual(scriptKeys.Count, C01Vignettes.LineTable.Count, "one table row per CaseScript line");
             CollectionAssert.AreEquivalent(scriptKeys, C01Vignettes.ScopedLineKeys, "every line is in scope");
             foreach (string key in scriptKeys)

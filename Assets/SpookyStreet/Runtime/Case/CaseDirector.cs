@@ -30,7 +30,7 @@ namespace SpookyStreet.Case
     /// enabled (spec §7); Continue places Pip at the saved safe anchor. Pause freezes captions, the knock beat, the
     /// bench view and dialogue input; opening the notebook or a conversation suspends gameplay input and hides the HUD.
     /// </summary>
-    public sealed class CaseDirector : MonoBehaviour
+    public sealed partial class CaseDirector : MonoBehaviour
     {
         /// <summary>Interaction is blocked this long after a modal closes, so its last press cannot re-trigger it.</summary>
         public const float InteractCooldown = 0.3f;
@@ -239,6 +239,7 @@ namespace SpookyStreet.Case
             Street = StreetMemoryStage.Create(transform, game);
             Keepsakes = PaperBatCollectibles.Create(transform, game);
             Keepsakes.CanCollect = () => _flow.State == GameState.Playing && !_modal && !(Cutscenes != null && Cutscenes.Playing);
+            BuildKeepsakePlay(game);
             Recap = ContinueRecapView.Create(_ui);
             LoadSave();
             Nonverbal = NonverbalLayer.Create(this, game);
@@ -263,6 +264,8 @@ namespace SpookyStreet.Case
             Notebook.RequestHint = RequestHint;
             Notebook.ReplayRequested = ConfirmReplay;
             Notebook.Closed += () => SetModal(false);
+            Notebook.Keepsakes = () => Keepsakes != null ? Keepsakes.State : null;
+            Notebook.KeepsakePages = _keepsakePages;
             var safe = UiFactory.Stretch(UiFactory.Rect(root, "CaptionSafeArea"));
             safe.gameObject.AddComponent<SafeAreaFitter>();
             Captions = CaptionStrip.Create(safe);
@@ -324,6 +327,7 @@ namespace SpookyStreet.Case
             // The street beside the case save (D29); a stamped save without a street file teaches it now.
             Street.Load(SaveDirectory, State);
             Keepsakes.Load(SaveDirectory);
+            RefreshKeepsakes();
             // Spec §7: restore props from facts before enabling controls (the title is up; play has not started).
             ApplyWorld();
             RefreshTitle();
@@ -358,6 +362,7 @@ namespace SpookyStreet.Case
         {
             bool canContinue = HasSave && State.Count > 0;
             _ui.SetHasSave(canContinue);
+            RefreshContinueDetail(canContinue);
             Recap?.Show(canContinue ? ContinueRecap.Build(State, AnchorId) : null);
         }
 
@@ -532,6 +537,8 @@ namespace SpookyStreet.Case
         {
             Street?.OnNewGame(CaseState.Empty);
             Keepsakes?.OnNewGame();
+            _keepsakePages.Reset();
+            RefreshKeepsakes();
             StartNewCase();
         }
 
@@ -602,7 +609,7 @@ namespace SpookyStreet.Case
         private Vector3? FocusPoint()
         {
             var witness = _talking;
-            if (witness == null && Targets.HasTarget && Targets.Current.Action.Kind == CaseActionKind.Talk)
+            if (witness == null && Targets.HasTarget && Targets.Current != null && Targets.Current.Action.Kind == CaseActionKind.Talk)
             {
                 witness = WitnessFor(Targets.Current.Action.Speaker);
             }
@@ -747,6 +754,12 @@ namespace SpookyStreet.Case
                 var lines = action.Kind == CaseActionKind.Talk && Street != null
                     ? Street.Retell(action.Speaker, step.Lines)
                     : step.Lines;
+                if (action.Kind == CaseActionKind.Talk)
+                {
+                    // A friend notices a keepsake piece Pip wears, once ever (S004 A2).
+                    lines = WithCostumeRemark(action.Speaker, lines);
+                }
+
                 PlayLines(action, lines);
             }
             Stepped?.Invoke(step);
@@ -1188,6 +1201,7 @@ namespace SpookyStreet.Case
         {
             TryStore(() => _store.Replay());
             Keepsakes?.OnReplay();
+            RefreshKeepsakes();
             HasSave = true;
             ResetCase();
             CaseStage.TryGetAnchor(CaseAnchors.ArrivalPorch, out var porch);
@@ -1258,6 +1272,8 @@ namespace SpookyStreet.Case
             Dialogue.Cancel();
             Captions.Raised = false;
             Notebook.Cancel();
+            DressUp?.Cancel();
+            Trunk?.Snap();
             Notice.Hide();
             Cutaway.End(false);
             SetPipHidden(false);
@@ -1438,9 +1454,7 @@ namespace SpookyStreet.Case
 
             Targets.Suspended = _modal || _cooldown > 0f || crossing;
             Targets.Tick(pip, _camera.transform.forward);
-            var target = Targets.HasTarget ? Targets.Current : null;
-            Prompt.Track(_camera, target != null ? CaseUseTargets.MarkerOf(target) : (Vector3?)null,
-                CaseUseTargets.IconFor(target));
+            Prompt.Track(_camera, Targets.CurrentMarker, Targets.CurrentIcon);
         }
     }
 }

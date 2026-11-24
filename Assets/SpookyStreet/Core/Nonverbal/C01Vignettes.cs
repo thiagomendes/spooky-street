@@ -88,6 +88,7 @@ namespace SpookyStreet.Core.Nonverbal
             };
             all.AddRange(BuildLineVignettes());
             all.AddRange(BuildStreetVignettes());
+            all.AddRange(BuildRemarkVignettes());
             return all.ToArray();
         }
 

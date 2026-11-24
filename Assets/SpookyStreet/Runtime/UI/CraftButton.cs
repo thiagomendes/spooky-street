@@ -50,10 +50,12 @@ namespace SpookyStreet.UI
         }
 
         /// <summary>
-        /// Shows a small second line under the label (null key hides it). Hook for Continue's save summary
-        /// (<c>ui.title.continue_detail</c>); nothing calls it until saves exist.
+        /// Shows a small second line under the label (null key hides it), e.g. Continue's save summary
+        /// (<c>ui.title.continue_detail</c>). With <paramref name="count"/> the key's plural form follows it.
         /// </summary>
-        public void SetDetail(string key, Func<object[]> arguments = null)
+        public void SetDetail(string key, Func<object[]> arguments = null) => SetDetail(key, null, arguments);
+
+        public void SetDetail(string key, Func<long> count, Func<object[]> arguments)
         {
             if (Detail == null)
             {
@@ -70,7 +72,14 @@ namespace SpookyStreet.UI
                     localized = Detail.gameObject.AddComponent<LocalizedText>();
                 }
 
-                localized.SetKey(key, arguments);
+                if (count != null)
+                {
+                    localized.SetPlural(key, count, arguments);
+                }
+                else
+                {
+                    localized.SetKey(key, arguments);
+                }
             }
 
             var label = Label.rectTransform;

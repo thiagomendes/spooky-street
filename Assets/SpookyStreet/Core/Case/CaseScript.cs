@@ -107,6 +107,12 @@ namespace SpookyStreet.Core.Case
             { Keys.ValeRemembers, When(F(CaseFact.CaseStamped), None) },
             { Keys.JuneRemembers, When(F(CaseFact.CaseStamped), None) },
             { Keys.KitRemembers, When(F(CaseFact.CaseStamped), None) },
+
+            // Costume remarks (S004 §2.1): greetings, never testimony. Conversation never picks them; the director adds
+            // one after a talk when CostumeRemarks.Due says so (a worn piece, once ever; Kit only after the stamp).
+            { Keys.JuneStarCape, When(None, None) },
+            { Keys.ValeLanternPail, When(None, None) },
+            { Keys.KitShowmanHat, When(F(CaseFact.CaseStamped), None) },
         };
 
         /// <summary>Every line key the case can play.</summary>

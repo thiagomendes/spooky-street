@@ -110,6 +110,9 @@ namespace SpookyStreet.Core.Nonverbal
             (Lines.ValeRemembers, ValeRemembers),
             (Lines.JuneRemembers, JuneRemembers),
             (Lines.KitRemembers, KitRemembers),
+            (Lines.JuneStarCape, JuneStarCape),
+            (Lines.ValeLanternPail, ValeLanternPail),
+            (Lines.KitShowmanHat, KitShowmanHat),
         };
 
         // ------------------------------------------------------------------------------------------- captions
