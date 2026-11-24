@@ -95,8 +95,12 @@ and never half-loaded. Any IO error leaves the old index and files in place, and
     checking, none or offline.
   - **F1 hook:** `FocusOrder`, `DefaultFocus`, `Back()` and `Opened`/`Closed`. Buttons already have explicit
     wrap-around up/down navigation, so a gamepad works today, and focus survives the rebuilds that download progress
-    causes. When `feature/s004-ui-nav` lands, register `FocusOrder` with `UiFocusGraph` and route its back action to
-    `Back()`.
+    causes. F1 (`UiFocusGraph`, `UiFocusScreen`) merged to `main` (b097e6b) while this branch was in CI. The branch
+    merges with it cleanly but is not wired to it yet. The follow-up is to build a `UiFocusGraph("languages")` with
+    one row per language row (Use/Download, Remove), then "more" and "close" (`Exit = "close"`), and attach it with
+    `UiFocusScreen.Attach(Canvas.transform, graph, overlay)`. Bind the buttons by id, set `BackOverride` to null so
+    Back runs Close, re-bind after each `Rebuild`, and validate every state (English only, unlocked with a download
+    in progress, installed) in a Core test.
 - **Strings.** 15 `ui.language.*` keys with translator context in one block of `en.json`, through
   `LocalizationKeys.Languages`. The pill's context no longer says "development only". Language names come from each
   table's `nativeName` and are never translated.
