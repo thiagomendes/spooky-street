@@ -55,7 +55,7 @@ side-yard hedges' south face, z 6.52), where no bat may be visible from the plaz
 |---|---|---|---|---|---|---|
 | 01 | loop | arrival porch | on the east rail's north post, the first thing in reach (opens as Pip arrives) | walk | 1.95, 1.72, −13.05 | arrival porch |
 | 02 | loop | arrival porch | on the west rail's back post, behind the candy-bowl crate (1.65 m from the bowl) | walk | −1.95, 1.72, −14.95 | arrival porch |
-| 03 | loop | plaza | on the party table's free corner | tap | 5.16, 0.84, −1.98 | plaza |
+| 03 | loop | plaza | among the party things on the table (the table's 1.0 m `TableThings` collider) | tap | 5.00, 1.12, −2.55 | plaza |
 | 04 | loop | arrival path | at the street lamp's foot, plaza side | walk | 2.20, 0.12, −9.25 | arrival porch |
 | 05 | loop | plaza south-west | in the fallen leaves between the path and Bea's corner | walk | −2.60, 0.12, −3.20 | bicycle corner |
 | 06 | loop | bench corner | on the picket fence's east end post | tap | 9.00, 1.40, 5.00 | bench |
@@ -102,7 +102,7 @@ the nearest real surface with the same kind of move:
 - **Hidden-region bats sit on inner faces:** 12 moved behind the awning wall (the awning's slope is in plain view of
   the plaza), 22 to the north end of the yard pocket behind the shed's west rail, 24 behind the cabin, 08 beside the
   cabin door (the door faces the plaza and the bench), 20 on the roof's north slope.
-- **03** (maple low branch: the plaza maple has no collider below its 4.2 m fork) became the party table, **04** sits
+- **03** (maple low branch: the plaza maple has no collider below its 4.2 m fork) became the party things on the table, **04** sits
   at the lamp's foot on the path, **05** (west hedge end post: Bea's bicycle and the streamer are within 1.5 m)
   became the leaves by the path, **09** and **10** keep the plan's rooms.
 
@@ -155,9 +155,31 @@ uses stable IDs only.
 
 ## Evidence
 
-- Local (`./tools/check-local.sh`): validate_project, meta check, actionlint, shellcheck, yamllint, Fastfile, core
-  tests 692/692 passed (the 28 new keepsake tests included), audio tests.
-- CI: see below.
+- Local (`./tools/check-local.sh`, after merging `origin/main` b097e6b): validate_project, meta check, actionlint,
+  shellcheck, yamllint, Fastfile, core tests 675/675 (the 28 keepsake tests included), audio and l10n checks.
+- CI history on this branch:
+  - **Run 152** (382a238): Runtime compile error (`MoveFeedback` needed `using SpookyStreet.Player`). Fixed.
+  - **Run 155** (9d95cef): EditMode all green, Visual 1/1 (keepsake frames), PlayMode 3/4 keepsake tests:
+    `EveryPerchedBatRestsOnARealCollider` failed for bat 02 over the moving boxes. Frame 65 was blocked by the
+    maple trunk (it stands inside the cabin) and 65c had Pip hiding the bat. All reframed.
+  - **Run 160** (9a95dd0, with main merged): EditMode 715/715, Visual 18/18, PlayMode 141/142. The only failure was
+    bat 02 again; the new column raycast showed no porch or box collider under it (only `Ground`, `GroundRing_*`).
+    The box stack is cutscene dressing, so bat 02 moved to the west rail's back post (the same surface as bat 01,
+    which passes).
+  - **Final run:** RUN_PLACEHOLDER
+
+### Frames (looked at)
+
+| Frame | What it shows | Verdict |
+|---|---|---|
+| ![](evidence/s004/keepsakes/65_bat_treehouse_deck_run160.jpg) 65 | Inside the treehouse cabin: Pip by the door, the bat open on the wall beside the door, its yellow paper edge toward her | Reads as a bat that turned to Pip. Greybox: it looks like the decorative bats; the cream fold is too small to see at this size |
+| ![](evidence/s004/keepsakes/65b_bat_lamp_head_run155.jpg) 65b | The street lamp from the path: the folded bat on the head among the decorative bats circling the lantern | The collectible cannot be told from the decoration here. Needs B2's distinct bat (black with a cream fold) |
+| ![](evidence/s004/keepsakes/65c_bat_side_yard_ramp_run160.jpg) 65c | The side-yard ramp from its east side: Pip on the ramp, the bat open on the deck boards by the west rail | Reads; seen edge-on, small |
+| ![](evidence/s004/keepsakes/65d_bat_porch_start_run155.jpg) 65d | The play camera at the start: the arrival porch and the lane; a bat by the moving boxes (bat 02's old spot) | Fine composition; bat 02 has since moved to the west rail post |
+
+Frame numbers: S003a pass (merged to main before this branch) also used 65–68 (`65_bea_shade_eyes` … `68_street_greeting_bea`).
+The file names differ, so nothing is overwritten, but the numbers overlap; A2 should pick 66–68 names that do not clash,
+or the orchestrator can renumber.
 
 ## Open issues
 
@@ -165,6 +187,11 @@ uses stable IDs only.
 - B2 art: `KeepsakeBat.fbx` replaces the greybox at the swap point above; its flutter-open shape key should drive
   `PaperBatCollectibles` opening (today the greybox tips up and spreads a cream card).
 - A real roll or dive challenge, a flagpole ledge or a gate arch needs level changes (owner's call).
+- Greybox readability (frames 65b, 65d): a collectible looks like the decorative glowing bats. B2's model must make
+  keepsakes clearly different (black with the cream pencilled fold), or the decorative bats near the lamp should
+  move.
+- The moving boxes on the arrival porch have no collider in the raycast column (run 160), although they are built
+  solid in `CaseCutscenes`. A2's trunk (a Use target on one box) should check this.
 - Plan acceptance items left to A2: the 10th bat's disc wobble and page assembly, dress-up, a remark playing once,
   and the scripted-route PlayMode pickups on each challenge tier (A1 proves reachability in Core and the surfaces by
   raycast).
