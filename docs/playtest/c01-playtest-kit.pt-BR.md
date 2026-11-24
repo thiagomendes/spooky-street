@@ -377,6 +377,11 @@ Meta do grupo (todas as crianças juntas):
 
 ## Apêndice A. Leituras literais das falas (só se a criança pedir)
 
+Desde o S004 D2 o jogo já vem em português: num aparelho em português ele abre em pt-BR, e o globo do título
+troca o idioma (Idioma: Português (Brasil)). Assim a criança lê as falas na tela e este apêndice só serve para um
+build em inglês. As leituras abaixo são **as mesmas frases do jogo em pt-BR** (`pt-BR.json`); a revisão completa está
+em `docs/S004-ptBR-review.md`.
+
 Leia **exatamente** isto, uma vez, com voz neutra. Não explique, não repita com outra entonação, não acrescente
 nada. As legendas entre colchetes descrevem um som ou o que se vê. As respostas do caderno (última parte) só
 aparecem depois que a criança acerta.
@@ -387,14 +392,14 @@ aparecem depois que a criança acerta.
 | Something silver flashed up high, by the side of the house! | Uma coisa prateada brilhou lá no alto, do lado da casa! |
 | Up high, over the hedge. Then it was gone! | Lá no alto, por cima da cerca viva. Depois sumiu! |
 | The door's open now? That silver flash was long before. | A porta está aberta agora? Aquele brilho prateado foi muito antes. |
-| That front door? I could see it from my bench. It stayed shut. | Aquela porta da frente? Eu via ela do meu banco. Ficou fechada. |
-| Sit down and see for yourself. | Senta aqui e vê você mesma. |
+| That front door? I could see it from my bench. It stayed shut. | Aquela porta da frente? Eu a via do meu banco. Ficou fechada. |
+| Sit down and see for yourself. | Sente-se aqui e veja você mesma. |
 | Not one creak from that door all evening. | Nem um rangido daquela porta a noite toda. |
 | It was shut when I looked. | Estava fechada quando eu olhei. |
 | It's open now, though. Well, well. | Mas agora está aberta. Ora, ora. |
-| Crinkly, shiny foil. | Papel-alumínio amassadinho e brilhante. |
+| Crinkly, shiny foil. | Alumínio brilhante, faz crec. |
 | Soft silver cloth, caught on a splinter. | Pano prateado macio, preso numa farpa. |
-| A silver thread on the sill. | Um fio prateado no peitoril. |
+| A silver thread on the sill. | Um fio prateado na beirada da janela. |
 | It won't budge. | Não se mexe. |
 | Pip! You found my secret way in! Did you hear the knocks too? | Pip! Você achou meu caminho secreto! Você também ouviu as batidas? |
 | Pip! You found my secret way in, and nobody showed you! Did you hear the knocks too? | Pip! Você achou meu caminho secreto, e ninguém te mostrou! Você também ouviu as batidas? |
@@ -406,7 +411,7 @@ aparecem depois que a criança acerta.
 | [The floor shakes: knock, knock… knock] | [O chão treme: toc, toc… toc] |
 | [A wooden piece lifts three times behind the owl panel.] | [Uma peça de madeira sobe três vezes atrás do painel da coruja.] |
 | A painted owl, wings folded. | Uma coruja pintada, de asas fechadas. |
-| A wooden owl, high above the door. Very still. | Uma coruja de madeira, bem acima da porta. Bem paradinha. |
+| A wooden owl, high above the door. Very still. | Uma coruja de madeira, lá em cima da porta. Bem paradinha. |
 | [Tap. The striped arm swings in the air.] | [Tec. O braço listrado balança no ar.] |
 | [Click!] | [Clique!] |
 | [Three knocks. Outside, the owl bows three times.] | [Três batidas. Lá fora, a coruja se curva três vezes.] |
@@ -418,15 +423,15 @@ aparecem depois que a criança acerta.
 | What should the knocks move? | O que as batidas deveriam mover? |
 | Bea: a silver flash, up high. | Bea: um brilho prateado, lá no alto. |
 | Mr. Vale: the front door stayed shut. | Sr. Vale: a porta da frente ficou fechada. |
-| From the bench: the door, and the hedge. | Do banco: a porta, e a cerca viva. |
-| The foil streamer on Bea's bike. | A fita de papel-alumínio na bicicleta da Bea. |
+| From the bench: the door, and the hedge. | Do banco: a porta e a cerca viva. |
+| The foil streamer on Bea's bike. | A fita de alumínio na bicicleta da Bea. |
 | Soft silver cloth on a splinter. | Pano prateado macio numa farpa. |
-| A silver thread on the attic sill. | Um fio prateado no peitoril do sótão. |
+| A silver thread on the attic sill. | Um fio prateado na beirada da janela do sótão. |
 | The front door won't budge. | A porta da frente não se mexe. |
 | The floorboards tremble with the knocks. | As tábuas do chão tremem com as batidas. |
 | Behind the grille, a wooden piece lifts three times. | Atrás da grade, uma peça de madeira sobe três vezes. |
 | A painted owl on the workshop panel. | Uma coruja pintada no painel da oficina. |
-| Kit's wooden owl, outside the house. | A coruja de madeira da Kit, do lado de fora da casa. |
+| Kit's wooden owl, outside the house. | A coruja de madeira da Tia Kit, lá fora. |
 | A striped arm, hanging loose. | Um braço listrado, pendurado solto. |
 | Found it! | Achei! |
 | Last time / {N} stickers (título) | Da última vez / {N} figurinhas |
@@ -436,8 +441,8 @@ aparecem depois que a criança acerta.
 | *Only after solving:* An owl! The loose striped arm should make it bow. | Uma coruja! O braço listrado solto deveria fazer ela se curvar. |
 
 Dicas do rádio: se a criança pedir para ler uma dica, leia também literalmente (exemplos: "A breeze keeps tugging
-toward the side yard." = "Uma brisa fica puxando para o quintal lateral."; "Listen low down in the hall." = "Escuta
+toward the side yard." = "Uma brisa fica puxando para o quintal lateral."; "Listen low down in the hall." = "Escute
 lá embaixo, no corredor."; "Follow the bats up to the attic." = "Siga os morcegos até o sótão."). As frases do nível 3
-são sobre movimentos: "Tap Jump to hop up!" = "Toque em Jump para subir!"; "Hold Jump to jump higher!" = "Segure Jump
-para pular mais alto!"; "Hold Jump while falling to glide!" = "Segure Jump enquanto cai para planar!". A dica já foi
+são sobre movimentos: "Tap Jump to hop up!" = "Toque em Pular para subir!"; "Hold Jump to jump higher!" = "Segure Pular
+para ir mais alto!"; "Hold Jump while falling to glide!" = "Segure Pular ao cair para planar!". A dica já foi
 pedida pela criança: anote o nível e leia sem acrescentar nada.
