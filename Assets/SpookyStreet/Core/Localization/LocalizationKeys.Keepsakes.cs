@@ -1,0 +1,19 @@
+namespace SpookyStreet.Core.Localization
+{
+    public static partial class LocalizationKeys
+    {
+        /// <summary>
+        /// Keepsakes (S004 §2.1): the captions of the three old sketch pages the paper bats piece together. Each caption
+        /// describes what the drawing shows, never what it means (narrative bible §5), and no child-facing keepsake
+        /// string ever states a total ("x of 30" belongs to the parent page alone, engagement §2.3).
+        /// </summary>
+        public static class Keepsakes
+        {
+            public const string PageLanterns = "keepsake.page.lanterns";
+            public const string PageFriends = "keepsake.page.friends";
+            public const string PageMoon = "keepsake.page.moon";
+
+            public static readonly string[] All = { PageLanterns, PageFriends, PageMoon };
+        }
+    }
+}

@@ -138,6 +138,9 @@ namespace SpookyStreet.Case
         /// <summary>What the street remembers across cases (S002.5b, D29): its file and the changes it shows.</summary>
         public StreetMemoryStage Street { get; private set; }
 
+        /// <summary>The 30 collectible paper bats and the keepsakes file (S004 A1).</summary>
+        public PaperBatCollectibles Keepsakes { get; private set; }
+
         /// <summary>The picture recap beside Continue on the title (S002.5b).</summary>
         public ContinueRecapView Recap { get; private set; }
 
@@ -231,6 +234,8 @@ namespace SpookyStreet.Case
             _ui.NewGameButton.onClick.AddListener(OnNewGame);
 
             Street = StreetMemoryStage.Create(transform, game);
+            Keepsakes = PaperBatCollectibles.Create(transform, game);
+            Keepsakes.CanCollect = () => _flow.State == GameState.Playing && !_modal && !(Cutscenes != null && Cutscenes.Playing);
             Recap = ContinueRecapView.Create(_ui);
             LoadSave();
             Nonverbal = NonverbalLayer.Create(this, game);
@@ -315,6 +320,7 @@ namespace SpookyStreet.Case
             AnchorId = HasSave ? Resume.AnchorId : CaseAnchors.Start;
             // The street beside the case save (D29); a stamped save without a street file teaches it now.
             Street.Load(SaveDirectory, State);
+            Keepsakes.Load(SaveDirectory);
             // Spec §7: restore props from facts before enabling controls (the title is up; play has not started).
             ApplyWorld();
             RefreshTitle();
@@ -478,7 +484,7 @@ namespace SpookyStreet.Case
 
         private void OnNewGame()
         {
-            if (State.Count > 0)
+            if (State.Count > 0 || !Keepsakes.State.IsEmpty)
             {
                 Notice.Show(null, UiKeys.NewGameConfirm, UiKeys.NewGameConfirmYes, StartNewGameConfirmed,
                     UiKeys.NewGameConfirmNo, null);
@@ -488,10 +494,11 @@ namespace SpookyStreet.Case
             StartNewCase();
         }
 
-        /// <summary>A confirmed New game starts Pip over as the new kid: the street forgets too (D29).</summary>
+        /// <summary>A confirmed New game starts Pip over as the new kid: the street forgets (D29), keepsakes go (decision 4).</summary>
         private void StartNewGameConfirmed()
         {
             Street?.OnNewGame(CaseState.Empty);
+            Keepsakes?.OnNewGame();
             StartNewCase();
         }
 
@@ -1147,6 +1154,7 @@ namespace SpookyStreet.Case
         public void Replay()
         {
             TryStore(() => _store.Replay());
+            Keepsakes?.OnReplay();
             HasSave = true;
             ResetCase();
             CaseStage.TryGetAnchor(CaseAnchors.ArrivalPorch, out var porch);
