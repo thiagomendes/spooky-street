@@ -167,3 +167,8 @@ Committed under `docs/evidence/s003a/` from the run in §7.
   watch on the first talk too, it is one row.
 - The glance under reduced motion (§2).
 - Not checked by ear: the babble added to the reveal stickers and the opening, and the retimed score.
+
+## Owner test (2026-11-24)
+
+The owner played TestFlight build 38 on device: gestures, hint glance, street greetings, cutscene babble and the
+retimed reveal music were all fine ("foi tudo legal"). No changes requested.
