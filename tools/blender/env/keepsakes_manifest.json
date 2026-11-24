@@ -1,0 +1,429 @@
+{
+ "TroupePhoto": {
+  "triangles": 6591,
+  "children": {
+   "PhotoCrest": {
+    "triangles": 1612,
+    "pivot": [
+     0.268,
+     -0.0329,
+     -0.143
+    ]
+   },
+   "Puppet_Bell": {
+    "triangles": 312,
+    "pivot": [
+     0.243,
+     -0.0285,
+     0.05
+    ]
+   },
+   "Puppet_Fox": {
+    "triangles": 180,
+    "pivot": [
+     -0.092,
+     -0.0285,
+     0.092
+    ]
+   },
+   "Puppet_Moon": {
+    "triangles": 264,
+    "pivot": [
+     0.176,
+     -0.0285,
+     0.104
+    ]
+   },
+   "Puppet_Moth": {
+    "triangles": 296,
+    "pivot": [
+     0.057,
+     -0.0285,
+     0.066
+    ]
+   },
+   "Puppet_Owl": {
+    "triangles": 284,
+    "pivot": [
+     -0.257,
+     -0.0285,
+     0.074
+    ]
+   }
+  },
+  "atlas": "TroupePhoto",
+  "px_per_m": 791
+ },
+ "OwlCrest": {
+  "triangles": 2040,
+  "children": {
+   "CrestSign_Glow": {
+    "triangles": 1612,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "OwlCrest",
+  "px_per_m": 466
+ },
+ "PaperBatKeepsake": {
+  "triangles": 474,
+  "children": {
+   "Wing_L": {
+    "triangles": 232,
+    "pivot": [
+     -0.0356,
+     0.0,
+     0.0439
+    ]
+   },
+   "Wing_R": {
+    "triangles": 156,
+    "pivot": [
+     0.0356,
+     0.0,
+     0.0439
+    ]
+   }
+  },
+  "atlas": "Keepsakes",
+  "px_per_m": 795
+ },
+ "BatMobile": {
+  "triangles": 2866,
+  "children": {
+   "Hook_01": {
+    "triangles": 16,
+    "pivot": [
+     0.0,
+     0.15,
+     -0.37
+    ]
+   },
+   "Hook_02": {
+    "triangles": 16,
+    "pivot": [
+     -0.0882,
+     0.1214,
+     -0.415
+    ]
+   },
+   "Hook_03": {
+    "triangles": 16,
+    "pivot": [
+     -0.1427,
+     0.0464,
+     -0.37
+    ]
+   },
+   "Hook_04": {
+    "triangles": 16,
+    "pivot": [
+     -0.1427,
+     -0.0464,
+     -0.415
+    ]
+   },
+   "Hook_05": {
+    "triangles": 16,
+    "pivot": [
+     -0.0882,
+     -0.1214,
+     -0.37
+    ]
+   },
+   "Hook_06": {
+    "triangles": 16,
+    "pivot": [
+     -0.0,
+     -0.15,
+     -0.415
+    ]
+   },
+   "Hook_07": {
+    "triangles": 16,
+    "pivot": [
+     0.0882,
+     -0.1214,
+     -0.37
+    ]
+   },
+   "Hook_08": {
+    "triangles": 16,
+    "pivot": [
+     0.1427,
+     -0.0464,
+     -0.415
+    ]
+   },
+   "Hook_09": {
+    "triangles": 16,
+    "pivot": [
+     0.1427,
+     0.0464,
+     -0.37
+    ]
+   },
+   "Hook_10": {
+    "triangles": 16,
+    "pivot": [
+     0.0882,
+     0.1214,
+     -0.415
+    ]
+   },
+   "Hook_11": {
+    "triangles": 16,
+    "pivot": [
+     -0.0711,
+     0.2187,
+     -0.62
+    ]
+   },
+   "Hook_12": {
+    "triangles": 16,
+    "pivot": [
+     -0.1861,
+     0.1352,
+     -0.665
+    ]
+   },
+   "Hook_13": {
+    "triangles": 16,
+    "pivot": [
+     -0.23,
+     0.0,
+     -0.62
+    ]
+   },
+   "Hook_14": {
+    "triangles": 16,
+    "pivot": [
+     -0.1861,
+     -0.1352,
+     -0.665
+    ]
+   },
+   "Hook_15": {
+    "triangles": 16,
+    "pivot": [
+     -0.0711,
+     -0.2187,
+     -0.62
+    ]
+   },
+   "Hook_16": {
+    "triangles": 16,
+    "pivot": [
+     0.0711,
+     -0.2187,
+     -0.665
+    ]
+   },
+   "Hook_17": {
+    "triangles": 16,
+    "pivot": [
+     0.1861,
+     -0.1352,
+     -0.62
+    ]
+   },
+   "Hook_18": {
+    "triangles": 16,
+    "pivot": [
+     0.23,
+     -0.0,
+     -0.665
+    ]
+   },
+   "Hook_19": {
+    "triangles": 16,
+    "pivot": [
+     0.1861,
+     0.1352,
+     -0.62
+    ]
+   },
+   "Hook_20": {
+    "triangles": 16,
+    "pivot": [
+     0.0711,
+     0.2187,
+     -0.665
+    ]
+   },
+   "Hook_21": {
+    "triangles": 16,
+    "pivot": [
+     -0.1822,
+     0.2508,
+     -0.87
+    ]
+   },
+   "Hook_22": {
+    "triangles": 16,
+    "pivot": [
+     -0.2948,
+     0.0958,
+     -0.915
+    ]
+   },
+   "Hook_23": {
+    "triangles": 16,
+    "pivot": [
+     -0.2948,
+     -0.0958,
+     -0.87
+    ]
+   },
+   "Hook_24": {
+    "triangles": 16,
+    "pivot": [
+     -0.1822,
+     -0.2508,
+     -0.915
+    ]
+   },
+   "Hook_25": {
+    "triangles": 16,
+    "pivot": [
+     -0.0,
+     -0.31,
+     -0.87
+    ]
+   },
+   "Hook_26": {
+    "triangles": 16,
+    "pivot": [
+     0.1822,
+     -0.2508,
+     -0.915
+    ]
+   },
+   "Hook_27": {
+    "triangles": 16,
+    "pivot": [
+     0.2948,
+     -0.0958,
+     -0.87
+    ]
+   },
+   "Hook_28": {
+    "triangles": 16,
+    "pivot": [
+     0.2948,
+     0.0958,
+     -0.915
+    ]
+   },
+   "Hook_29": {
+    "triangles": 16,
+    "pivot": [
+     0.1822,
+     0.2508,
+     -0.87
+    ]
+   },
+   "Hook_30": {
+    "triangles": 16,
+    "pivot": [
+     0.0,
+     0.31,
+     -0.915
+    ]
+   },
+   "KeepsakeLantern1_Glow": {
+    "triangles": 160,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "KeepsakeLantern2_Glow": {
+    "triangles": 160,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "KeepsakeLantern3_Glow": {
+    "triangles": 160,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "Ring1": {
+    "triangles": 212,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "Ring1_Close": {
+    "triangles": 44,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "Ring2": {
+    "triangles": 212,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "Ring2_Close": {
+    "triangles": 44,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "Ring3": {
+    "triangles": 212,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "Ring3_Close": {
+    "triangles": 44,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Keepsakes",
+  "px_per_m": 373
+ },
+ "DressUpTrunk": {
+  "triangles": 2429,
+  "children": {
+   "TrunkLid": {
+    "triangles": 442,
+    "pivot": [
+     0.0,
+     0.3,
+     0.6
+    ]
+   }
+  },
+  "atlas": "Keepsakes",
+  "px_per_m": 249
+ }
+}

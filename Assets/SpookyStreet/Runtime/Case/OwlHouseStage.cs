@@ -47,6 +47,9 @@ namespace SpookyStreet.Case
 
         public Transform Interior { get; private set; }
         public Transform Mechanism { get; private set; }
+
+        /// <summary>Aunt Kit's troupe photo on the partition (S004), a child of <see cref="Mechanism"/>.</summary>
+        public Transform TroupePhoto { get; private set; }
         public Transform ClothSnag { get; private set; }
         public Transform SillSnag { get; private set; }
 
@@ -152,6 +155,26 @@ namespace SpookyStreet.Case
                     case CaseRouteLayout.ClothSnag:
                         ClothSnag = instance.transform;
                         break;
+                }
+            }
+
+            // S004: Aunt Kit's troupe photo is its own model (its own texels for the seed's close-ups). It hangs in
+            // the mechanism's frame, so it is shown and hidden with it, under the name the cutscenes look for.
+            if (Mechanism != null)
+            {
+                var photo = kit.Spawn(KeepsakeArt.TroupePhoto, transform,
+                    new Vector3(KeepsakeArt.PhotoOriginX, KeepsakeArt.PhotoWorldY, KeepsakeArt.PhotoWorldZ),
+                    CaseRouteLayout.MechanismYaw + yaw);
+                if (photo != null)
+                {
+                    photo.name = KeepsakeArt.KitPhoto;
+                    TroupePhoto = photo.transform;
+                    TroupePhoto.SetParent(Mechanism, true);
+                    ModelCount++;
+                }
+                else
+                {
+                    Debug.LogWarning("[OwlHouseStage] Missing model " + KeepsakeArt.TroupePhoto);
                 }
             }
 

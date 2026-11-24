@@ -41,7 +41,7 @@ ATLASES = (("OwlHouseInterior", "size"), ("WorkshopMechanism", "mech"), ("Routes
 def interior_models(craft):
     return [
         Model(SHELL, SHELL, it.build_interior, 1.0, origin=ex.HOUSE_ORIGIN, pivots=it.interior_pivots(), ground=False),
-        Model("WorkshopMechanism", "WorkshopMechanism", it.build_mechanism, 1.0, pivots=it.mechanism_pivots()),
+        Model("WorkshopMechanism", "WorkshopMechanism", lambda c: it.build_mechanism(c, photo=False), 1.0, pivots=it.mechanism_pivots()),
         Model("ShedRamp", "Routes", rt.build_shed_ramp, 1.0),
         Model("SillBridge", "Routes", rt.build_sill_bridge, 1.5, ground=False),
         Model("TreehouseCabin", "Routes", rt.build_cabin, 1.3, ground=False, eyes={None: rt.CABIN_EYES}),

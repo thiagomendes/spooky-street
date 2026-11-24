@@ -24,7 +24,9 @@ namespace SpookyStreet.Core.Cutscenes
                 case Owl:
                     return new AnchorFrame(new StagePoint(0f, 8.7f, CaseRouteLayout.FrontZ + 0.2f), 180f);
                 case KitPhoto:
-                    return new AnchorFrame(new StagePoint(2.15f, 1.66f, CaseRouteLayout.InteriorFrontZ + 5.22f), 270f);
+                    return new AnchorFrame(
+                        new StagePoint(KeepsakeArt.PhotoWorldX, KeepsakeArt.PhotoWorldY, KeepsakeArt.PhotoWorldZ),
+                        KeepsakeArt.PhotoFacingYaw);
                 default:
                     return new AnchorFrame(new StagePoint(0f, 0f, 0f), 0f);
             }

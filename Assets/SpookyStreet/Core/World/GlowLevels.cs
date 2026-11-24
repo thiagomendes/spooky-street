@@ -56,6 +56,20 @@ namespace SpookyStreet.Core.World
         /// </summary>
         public const float NookLamp = 1.2f;
 
+        /// <summary>
+        /// The S004 keepsake lanterns (the bat mobile's three little lanterns and Pip's lantern pail, parts named
+        /// <c>Keepsake*_Glow</c>): a warm inner glow kept under the bloom threshold, so a keepsake never reads as a clue
+        /// or outshines a practical.
+        /// </summary>
+        public const float KeepsakeLantern = 0.9f;
+
+        /// <summary>
+        /// The painted face of the booth's owl crest sign (<c>CrestSign_Glow</c>, S004): it hangs under the eave with
+        /// the lit porch behind it, so its paint carries a little of its own colour, as if the porch lamp caught it.
+        /// Far under the bloom threshold: a sign, never a lamp, and never a "this matters" mark.
+        /// </summary>
+        public const float CrestSign = 0.6f;
+
         /// <summary>Unlit moon disc colour scale: under the bloom threshold so it never competes with the attic.</summary>
         public const float Moon = 0.92f;
 
@@ -103,6 +117,16 @@ namespace SpookyStreet.Core.World
             if (objectName.StartsWith("Face", StringComparison.Ordinal))
             {
                 return JackFace;
+            }
+
+            if (objectName.StartsWith("CrestSign", StringComparison.Ordinal))
+            {
+                return CrestSign;
+            }
+
+            if (objectName.StartsWith("Keepsake", StringComparison.Ordinal))
+            {
+                return KeepsakeLantern;
             }
 
             if (objectName.StartsWith("PaperBat", StringComparison.Ordinal))

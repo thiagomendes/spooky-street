@@ -13,7 +13,8 @@ floor at z = 0.6; exported with the origin at (0, 2, 0) like the exterior)
   onto closed view boxes with a painted night street (`StreetView_Glow`), never onto the void.
 
 WorkshopMechanism (own frame: front toward -Y, floor of the nook at z = 0, hall floor at z = 0.5)
-  Cam + shaft, Follower, LinkArm_Slipped / LinkArm_Seated, ServicePanel, Crank, KitPhoto.
+  Cam + shaft, Follower, LinkArm_Slipped / LinkArm_Seated, ServicePanel, Crank. The troupe photo (`TroupePhoto`, its own
+  game model) hangs on the foyer side of the partition at `PHOTO`.
 
 Game meshes only (exported by `env_export_interior.py`, reviewed from the FBX by `env_house_v3_review.py`)."""
 import math
@@ -23,6 +24,7 @@ import bmesh
 from mathutils import Matrix, Vector
 
 import env_lib as el
+import pip_model as pm
 import porch_kit as pk
 import props as pr
 from env_lib import E, R, S, T, Builder, H, arc, blend, catenary, lc, shade
@@ -376,33 +378,267 @@ def cloth_snag(b, craft, M, s=1.0):
             b.rod(silver, (-0.02 + 0.03 * k, -0.075, -0.19 - 0.02 * (k % 2)), (-0.03 + 0.035 * k, -0.08 - 0.01 * k, -0.27 - 0.015 * k), 0.003, 3, 1.0)
 
 
-def photo_motif(P, craft):
-    """Aunt Kit at her booth as layered paper cut-outs (frame-centred, 0.36 x 0.46)."""
-    def draw(b):
-        paper, y = P["paper"], [-0.014]
+# --- the troupe photo (S004 plan section 2.2) -------------------------------------------------------------------
 
-        def cut(outline, rgb, at=(0, 0), k=1.0):
-            y[0] -= 0.0035
-            b.prism(paper, [(x * k + at[0], z * k + at[1]) for x, z in outline], 0.003, T(0, y[0], 0), tint=lc(rgb))
-        circ = lambda r, n=14: [(r * math.cos(2 * math.pi * i / n), r * math.sin(2 * math.pi * i / n)) for i in range(n)]  # noqa: E731
-        cut(circ(0.07), E["moon"], (0.1, 0.15))  # moon
-        cut([(-0.18, -0.23), (0.18, -0.23), (0.18, -0.06), (-0.18, -0.06)], E["purple"])  # booth front
-        for i in range(4):  # booth stripes
-            cut([(-0.16 + 0.09 * i, -0.22), (-0.115 + 0.09 * i, -0.22), (-0.115 + 0.09 * i, -0.08), (-0.16 + 0.09 * i, -0.08)], E["orange"])
-        cut([(-0.03, -0.04), (0.03, -0.04), (0.11, -0.2), (0.0, -0.17), (-0.11, -0.2)], E["plum"], (-0.04, 0.02))  # shawl
-        for i in range(5):  # shawl fringe
-            cut([(-0.012, 0.0), (0.012, 0.0), (0.0, -0.035)], E["candy"], (-0.13 + 0.045 * i, -0.165 + (0.012 if i in (1, 3) else 0.0)))
-        cut(circ(0.05), H(0xE9B98A), (-0.04, 0.045))  # face
-        cut([(-0.058, 0.0), (0.058, 0.0), (0.05, 0.04), (0.0, 0.065), (-0.05, 0.04)], E["orange"], (-0.04, 0.055))  # headscarf
-        cut([(0.04, 0.0), (0.1, -0.05), (0.07, 0.02)], E["orange"], (-0.04, 0.06))  # scarf tail
-        cut(circ(0.016, 8), E["candy"], (-0.04, -0.04))  # owl pin
-        cut([(-0.2, -0.085), (0.2, -0.085), (0.2, -0.055), (-0.2, -0.055)], E["bone"])  # counter
-        cut(circ(0.036), E["glow"], (0.1, -0.02))  # crystal-ball lantern
-        cut([(-0.03, -0.035), (0.03, -0.035), (0.02, 0.0), (-0.02, 0.0)], E["ink"], (0.1, -0.02 - 0.02))
-        cut(el.scallop_strip(0.4, 0.04, 5, 0.03, 3), E["orange"], (-0.2, 0.25))  # scalloped pelmet
-        cut(el.co.star_outline(0.02), E["candy"], (-0.14, 0.14))
-        cut(el.co.star_outline(0.013), E["candy"], (-0.02, 0.16))
+PHOTO_W, PHOTO_H = 0.7, 0.45  # the frame, outside
+PHOTO_MOULD, PHOTO_MOUNT = 0.035, 0.028
+PHOTO_WIN = (PHOTO_W / 2 - PHOTO_MOULD - PHOTO_MOUNT, PHOTO_H / 2 - PHOTO_MOULD - PHOTO_MOUNT)  # half size of the picture
+PHOTO_STEP = 0.0011  # one paper layer
+PHOTO_GROUND = -0.118
+SEPIA = {  # warm paper and bone with a faded orange cast: it reads as old
+    "sky": H(0xEAD7AE), "far": H(0xDCC597), "cream": H(0xF4E6C8), "mount": H(0xEFE0BF), "tan": H(0xCDA873), "ground": H(0xB8935F),
+    "sienna": H(0xB07443), "umber": H(0x7A5134), "dark": H(0x4A3222), "orange": H(0xD98C4A), "rose": H(0xB5705C), "olive": H(0x9C8B56),
+    "skin": H(0xE8C79C), "gilt": H(0xE0AC2E), "gilt_hi": H(0xF8E08C), "moon": H(0xF7EBCB),
+}
+# The five puppets, left to right (the Players' order in the picture): name of the exported child -> its centre in
+# the frame (x, z). The seed cutscene's glints land on these.
+PUPPETS = {"Puppet_Owl": (-0.257, 0.074), "Puppet_Fox": (-0.092, 0.092), "Puppet_Moth": (0.057, 0.066), "Puppet_Moon": (0.176, 0.104),
+           "Puppet_Bell": (0.243, 0.05)}
+PHOTO_CREST = (PHOTO_W / 2 - PHOTO_MOULD - 0.047, -PHOTO_H / 2 + PHOTO_MOULD + 0.047)  # on the mount, lower corner
+PHOTO_CREST_D = 0.074
+
+
+def _circ(r, n=14, rz=1.0):
+    return [(r * math.cos(2 * math.pi * i / n), rz * r * math.sin(2 * math.pi * i / n)) for i in range(n)]
+
+
+def _rect(x0, x1, z0, z1):
+    return [(x0, z0), (x1, z0), (x1, z1), (x0, z1)]
+
+
+def _ribbon(pts, w):
+    """A strip of width `w` along a polyline of (x, z) points."""
+    left, right = [], []
+    for i, p in enumerate(pts):
+        a, c = pts[max(i - 1, 0)], pts[min(i + 1, len(pts) - 1)]
+        dx, dz = c[0] - a[0], c[1] - a[1]
+        n = math.hypot(dx, dz) or 1.0
+        left.append((p[0] - dz / n * w / 2, p[1] + dx / n * w / 2))
+        right.append((p[0] + dz / n * w / 2, p[1] - dx / n * w / 2))
+    return left + right[::-1]
+
+
+def photo_motif(P, craft):
+    """The Lantern Lane Players, young, in front of the freshly painted owl booth, as layered sepia paper
+    cut-outs (frame-centred; the picture is 2 x PHOTO_WIN). Kit (headscarf, crystal-ball lantern) holds the owl;
+    then the fox, the moth, the moon and the bell, whose Player stands half out of the frame. Faces are plain
+    paper discs; only Kit is recognisable. The puppets are gilt paper, each its own part (`PUPPETS`)."""
+    C, G, step = SEPIA, PHOTO_GROUND, PHOTO_STEP
+    wx, wz = PHOTO_WIN
+
+    def draw(b):
+        paper = P["paper"]
+
+        def cut(outline, rgb, layer, at=(0.0, 0.0), k=1.0, mat=None):
+            pts = [(x * k + at[0], z * k + at[1]) for x, z in outline]
+            b.prism(mat or paper, pts, step * 0.9, T(0, -0.012 - step * (layer + 1), 0), tint=lc(rgb))
+
+        # ----- the evening: paper sky, moon, the far roofs, the ground -----
+        cut(_circ(0.04, 20), C["moon"], 0, (-0.2, 0.105))
+        roofs = [(-wx, G), (-wx, 0.0), (-0.27, 0.03), (-0.245, 0.0), (-0.245, -0.03), (-0.21, -0.03), (-0.21, 0.01), (-0.185, 0.04), (-0.16, 0.01),
+                 (-0.16, G)]
+        cut(roofs, C["far"], 0)
+        cut([(-x, z) for x, z in roofs][::-1], C["far"], 0)
+        cut(_rect(-wx - 0.01, wx + 0.01, -wz - 0.01, G + 0.004), C["ground"], 1)
+        for x, z, r in ((-0.23, -0.14, 0.02), (-0.06, -0.15, 0.025), (0.1, -0.138, 0.018), (0.21, -0.152, 0.022), (-0.15, -0.128, 0.012)):
+            cut(_circ(r, 10, 0.3), blend(C["ground"], C["tan"], 0.6), 2, (x, z))
+        # festival lanterns on two strings from the booth's roof
+        for sx in (-1, 1):
+            line = [(sx * p.x, p.z) for p in catenary((0.16, 0, 0.118), (wx + 0.01, 0, 0.158), 0.018, 10)]
+            cut(_ribbon(line, 0.0022), C["umber"], 1)
+            for i in (2, 5, 8):
+                x, z = line[i]
+                cut(_circ(0.0085, 10, 1.25), C["orange"] if i != 5 else C["cream"], 2, (x, z - 0.012))
+                cut(_rect(-0.004, 0.004, -0.002, 0.002), C["umber"], 3, (x, z - 0.0015))
+        # ----- the owl booth, freshly painted -----
+        bw, top = 0.15, 0.1
+        cut(_rect(-bw, bw, G, top), C["tan"], 3)
+        n = 10
+        for i in range(n):  # striped skirt under the counter
+            x0 = -bw + 2 * bw * i / n
+            if i % 2 == 0:
+                cut(_rect(x0, x0 + 2 * bw / n, G, -0.032), C["orange"], 4)
+        cut(_rect(-0.088, 0.088, -0.02, 0.062), C["dark"], 4)  # the ticket window, shutter up
+        for i in range(3):
+            cut(_rect(-0.088, 0.088, 0.036 + 0.009 * i, 0.042 + 0.009 * i), C["umber"], 5)
+        for sx in (-1, 1):
+            cut(_rect(sx * bw - 0.008, sx * bw + 0.008, G, top), C["umber"], 5)
+            cut(_rect(sx * 0.094 - 0.006, sx * 0.094 + 0.006, -0.02, 0.068), C["cream"], 5)
+        cut(_rect(-0.1, 0.1, 0.062, 0.071), C["cream"], 5)
+        cut(_rect(-bw - 0.012, bw + 0.012, -0.034, -0.02), C["cream"], 6)  # counter
+        cut(el.scallop_strip(2 * bw + 0.03, 0.012, 9, 0.012, 4), C["orange"], 6, (-bw - 0.015, 0.1))
+        arch = [(0.2 * math.sin(math.radians(a)), top - 0.004 + 0.062 * math.cos(math.radians(a)) ** 0.8) for a in range(-60, 61, 12)]
+        board = [(bw + 0.02, top - 0.004)] + arch[::-1] + [(-bw - 0.02, top - 0.004)]
+        cut(board, C["sienna"], 6)
+        cut([(x * 0.9, top + (z - top) * 0.84) for x, z in board], C["tan"], 7)
+        el.crest(b, craft, 0.05, T(0.0, -0.012 - step * 8, top + 0.028), step=step * 0.5)  # the crest over its shutter
+
+        # ----- the five Players -----
+        def player(x, body, trim, hand=1, reach=(0.036, 0.1), low=None, head=True):
+            """Feet at (x, G). `hand`: the side of the arm that holds the puppet's rod, `reach` where that hand is."""
+            for sx in (-1, 1):
+                cut(_rect(sx * 0.011 - 0.0055, sx * 0.011 + 0.0055, 0.004, 0.044), C["umber"], 9, (x, G))
+                cut(_circ(0.0085, 8, 0.6), C["dark"], 10, (x + sx * 0.012, G + 0.005))
+            cut([(-0.03, 0.034), (0.03, 0.034), (0.027, 0.06), (0.019, 0.099), (-0.019, 0.099), (-0.027, 0.06)], body, 10, (x, G))
+            cut(_rect(-0.027, 0.027, 0.034, 0.041), trim, 11, (x, G))
+            hx, hz = x + hand * reach[0], G + reach[1]
+            sh = (x + hand * 0.017, G + 0.093)
+            cut(_ribbon([sh, (hx, hz)], 0.011), body, 11)
+            lx, lz = low if low else (x - hand * 0.034, G + 0.056)
+            cut(_ribbon([(x - hand * 0.017, G + 0.093), (lx, lz)], 0.011), body, 9)
+            for px, pz in ((hx, hz), (lx, lz)):
+                cut(_circ(0.0068, 8), C["skin"], 12, (px, pz))
+            cut(_rect(-0.008, 0.008, 0.096, 0.104), trim, 11, (x, G))
+            if head:
+                cut(_circ(0.0205, 16), C["skin"], 11, (x, G + 0.119))
+                for sx in (-1, 1):
+                    cut(_circ(0.0026, 6), C["dark"], 12, (x + sx * 0.0075, G + 0.12))
+                cut(_ribbon([(x - 0.006, G + 0.1105), (x, G + 0.1085), (x + 0.006, G + 0.1105)], 0.0018), C["umber"], 12)
+            return (hx, hz), (x, G + 0.119)
+
+        def rod(hand, tip, part):
+            b.part = part
+            cut(_ribbon([(hand[0], hand[1] - 0.012), tip], 0.0042), C["umber"], 12)
+
+        def gilt(outline, at, hi=None, k=1.0):
+            """A gilt puppet shape with its dark paper backing (so it reads on sky and booth alike)."""
+            cx = sum(q[0] for q in outline) / len(outline)
+            cz = sum(q[1] for q in outline) / len(outline)
+            cut([(cx + (px - cx) * 1.16, cz + (pz - cz) * 1.16) for px, pz in outline], C["dark"], 13, at, k)
+            cut(outline, C["gilt"], 14, at, k)
+            for shape in hi or ():
+                cut(shape, C["gilt_hi"], 15, at, k)
+
+        def dots(points, at, rgb=None, r=0.003):
+            for px, pz in points:
+                cut(_circ(r, 8), rgb or C["dark"], 16, (at[0] + px, at[1] + pz))
+
+        # Kit: the orange headscarf with its tail, the fringed shawl, the crystal-ball lantern; she holds the owl
+        hand, head = player(-0.215, C["rose"], C["orange"], hand=-1, reach=(0.04, 0.094), low=(-0.178, G + 0.062))
+        cut([(-0.028, 0.0), (0.028, 0.0), (0.04, -0.03), (0.0, -0.022), (-0.04, -0.03)], C["umber"], 11, (-0.215, G + 0.098))  # shawl
+        for i in range(5):
+            cut([(-0.004, 0.0), (0.004, 0.0), (0.0, -0.011)], C["orange"], 12, (-0.247 + 0.016 * i, G + 0.07 + (0.004 if i in (1, 3) else 0.0)))
+        cut([(-0.0235, -0.002), (0.0235, -0.002), (0.021, 0.014), (0.0, 0.027), (-0.021, 0.014)], C["orange"], 12, (head[0], head[1] + 0.003))
+        cut([(0.016, 0.004), (0.043, -0.02), (0.03, 0.01)], C["orange"], 12, head)
+        cut(_circ(0.0055, 8), C["gilt"], 13, (-0.215, G + 0.088))  # the owl brooch
+        cut(_circ(0.015, 14), C["cream"], 13, (-0.176, G + 0.047))  # crystal-ball lantern
+        cut(_circ(0.008, 10), C["moon"], 14, (-0.179, G + 0.05))
+        cut([(-0.011, -0.012), (0.011, -0.012), (0.008, 0.0), (-0.008, 0.0)], C["dark"], 14, (-0.176, G + 0.047 - 0.011))
+        at = PUPPETS["Puppet_Owl"]
+        rod(hand, (at[0], at[1] - 0.02), "Puppet_Owl")
+        owl = [(x, z - 0.028) for x, z in el.owl_outline(0.056)]
+        u = 0.056 / 81.0
+        gilt(owl, at, hi=[[(-9 * u, -11 * u), (9 * u, -11 * u), (12 * u, -23 * u), (0, -32 * u), (-12 * u, -23 * u)]])
+        for sx in (-1, 1):
+            cut(_circ(10 * u, 12), C["gilt_hi"], 15, (at[0] + sx * 11 * u, at[1] + 10 * u))
+        dots([(-11 * u, 10 * u), (11 * u, 10 * u)], at, r=5.6 * u)
+        cut([(-4 * u, 3 * u), (4 * u, 3 * u), (0, -8 * u)], C["umber"], 16, at)
+        # the fox: a hood with pointed ears, a brush of a tail
+        b.part = None
+        hand, head = player(-0.105, C["sienna"], C["cream"], hand=1, reach=(0.03, 0.098))
+        for sx in (-1, 1):
+            cut([(sx * 0.006, 0.014), (sx * 0.023, 0.006), (sx * 0.021, 0.036)], C["sienna"], 12, head)
+            cut([(sx * 0.011, 0.016), (sx * 0.02, 0.012), (sx * 0.019, 0.028)], C["cream"], 13, head)
+        cut(_ribbon([(-0.02, 0.013), (0.0, 0.021), (0.02, 0.013)], 0.008), C["sienna"], 12, head)
+        cut(pm.smooth_outline([(-0.022, 0.05), (-0.044, 0.046), (-0.056, 0.07), (-0.046, 0.092), (-0.034, 0.07)], 4), C["sienna"], 9, (-0.105, G))
+        cut(_circ(0.008, 8), C["cream"], 10, (-0.105 - 0.047, G + 0.086))
+        at = PUPPETS["Puppet_Fox"]
+        rod(hand, (at[0], at[1] - 0.02), "Puppet_Fox")
+        fox = [(0.0, -0.03), (0.021, -0.008), (0.033, 0.031), (0.013, 0.016), (0.0, 0.02), (-0.013, 0.016), (-0.033, 0.031), (-0.021, -0.008)]
+        gilt(fox, at, hi=[[(0.016, 0.012), (0.027, 0.023), (0.022, 0.004)], [(-0.016, 0.012), (-0.022, 0.004), (-0.027, 0.023)],
+                          [(0.0, -0.027), (0.012, -0.012), (0.0, -0.008), (-0.012, -0.012)]])
+        dots([(-0.0095, 0.004), (0.0095, 0.004)], at)
+        dots([(0.0, -0.026)], at, r=0.0036)
+        # the moth: feathery antennae on a headband, a little cape
+        b.part = None
+        hand, head = player(0.012, C["olive"], C["cream"], hand=1, reach=(0.032, 0.082))
+        cut(_ribbon([(-0.02, 0.011), (0.0, 0.02), (0.02, 0.011)], 0.006), C["cream"], 12, head)
+        for sx in (-1, 1):
+            cut(_ribbon([(sx * 0.008, 0.02), (sx * 0.013, 0.034), (sx * 0.022, 0.04)], 0.0035), C["umber"], 12, head)
+            cut(_circ(0.0045, 8), C["cream"], 13, (head[0] + sx * 0.023, head[1] + 0.04))
+            cut([(sx * 0.018, 0.096), (sx * 0.043, 0.06), (sx * 0.026, 0.05)], C["cream"], 9, (0.012, G))
+        at = PUPPETS["Puppet_Moth"]
+        rod(hand, (at[0], at[1] - 0.026), "Puppet_Moth")
+        for sx in (-1, 1):  # kite wings
+            upper = [(sx * 0.003, 0.008), (sx * 0.03, 0.036), (sx * 0.042, 0.012), (sx * 0.022, -0.004)]
+            lower = [(sx * 0.003, -0.002), (sx * 0.024, -0.008), (sx * 0.028, -0.026), (sx * 0.01, -0.03)]
+            for wing, spot in ((upper, (sx * 0.026, 0.015)), (lower, (sx * 0.018, -0.016))):
+                gilt(wing, at)
+                cut(_circ(0.0058, 8), C["gilt_hi"], 15, (at[0] + spot[0], at[1] + spot[1]))
+        cut(_circ(0.0052, 10, 3.6), C["dark"], 16, at)
+        for sx in (-1, 1):
+            cut(_ribbon([(0.0, 0.016), (sx * 0.006, 0.027), (sx * 0.012, 0.03)], 0.002), C["dark"], 16, at)
+        # the moon: a tall nightcap with a bobble; the crescent rides a long pole
+        b.part = None
+        hand, head = player(0.128, C["umber"], C["cream"], hand=1, reach=(0.034, 0.09))
+        cap = pm.smooth_outline([(-0.021, 0.008), (0.0, 0.013), (0.021, 0.008), (0.019, 0.03), (0.03, 0.05), (0.01, 0.04), (-0.014, 0.026)], 3)
+        cut(cap, C["cream"], 12, head)
+        cut(_circ(0.006, 8), C["orange"], 13, (head[0] + 0.031, head[1] + 0.05))
+        for i in range(3):
+            cut(el.co.star_outline(0.0048), C["cream"], 11, (0.128 - 0.012 + 0.012 * i, G + 0.074 - 0.012 * (i % 2)))
+        at = PUPPETS["Puppet_Moon"]
+        rod(hand, (at[0] - 0.004, at[1] - 0.024), "Puppet_Moon")
+        moon = [(0.03 * math.cos(math.radians(a)), 0.03 * math.sin(math.radians(a))) for a in range(50, 311, 20)] + \
+               [(0.014 + 0.0225 * math.cos(math.radians(a)), 0.0225 * math.sin(math.radians(a))) for a in range(270, 89, -20)]
+        gilt(moon, at, hi=[[(-0.02 + 0.006 * math.cos(math.radians(a)), 0.002 + 0.015 * math.sin(math.radians(a))) for a in range(0, 360, 40)]])
+        cut(el.co.star_outline(0.008), C["gilt_hi"], 15, (at[0] + 0.017, at[1] + 0.004))
+        # the bell: its Player stands half out of the frame (the one face Pip never met)
+        b.part = None
+        hand, _head = player(wx + 0.006, C["sienna"], C["orange"], hand=-1, reach=(0.036, 0.074), low=(wx + 0.04, G + 0.06))
+        cut([(-0.03, 0.012), (0.024, 0.012), (0.02, 0.018), (0.016, 0.034), (-0.018, 0.034), (-0.02, 0.018)], C["dark"], 12, (wx + 0.006, G + 0.119))
+        cut(_rect(-0.02, 0.02, 0.018, 0.023), C["orange"], 13, (wx + 0.006, G + 0.119))
+        at = PUPPETS["Puppet_Bell"]
+        rod(hand, (at[0], at[1] + 0.03), "Puppet_Bell")
+        bell = pm.smooth_outline([(0.0, 0.028), (0.011, 0.021), (0.015, -0.004), (0.027, -0.019), (-0.027, -0.019), (-0.015, -0.004), (-0.011, 0.021)], 3)
+        gilt(bell, at, hi=[_rect(-0.02, 0.02, -0.014, -0.009), _circ(0.004, 8)])
+        cut(_circ(0.0062, 10), C["dark"], 13, (at[0], at[1] - 0.024))
+        cut(_circ(0.0046, 10), C["gilt"], 14, (at[0], at[1] - 0.024))
+        cut(_circ(0.0055, 8), C["gilt"], 14, (at[0], at[1] + 0.031))
+        b.part = None
+        # ----- the mount, with the Players' crest in its lower corner -----
+        ox, oz = PHOTO_W / 2 - PHOTO_MOULD, PHOTO_H / 2 - PHOTO_MOULD
+        for strip in (_rect(-ox, ox, wz, oz), _rect(-ox, ox, -oz, -wz), _rect(-ox, -wx, -wz, wz), _rect(wx, ox, -wz, wz)):
+            cut(strip, C["mount"], 18)
+        for strip in (_rect(-wx, wx, wz - 0.0025, wz), _rect(-wx, wx, -wz, -wz + 0.0025), _rect(-wx, -wx + 0.0025, -wz, wz), _rect(wx - 0.0025, wx, -wz, wz)):
+            cut(strip, blend(C["tan"], C["umber"], 0.4), 17)
+        b.part = "PhotoCrest"
+        el.crest(b, craft, PHOTO_CREST_D, T(PHOTO_CREST[0], -0.012 - step * 19, PHOTO_CREST[1]), step=step * 0.7, fine=True)
+        b.part = None
     return draw
+
+
+def troupe_photo(b, P, craft, M):
+    """The framed troupe photo: wall plane y = 0, room toward -Y, origin at the frame centre. A dark timber
+    moulding with a gilt fillet, the cream mount, the hanging cord and its brass nail."""
+    w, h, m = PHOTO_W, PHOTO_H, PHOTO_MOULD
+    part = getattr(b, "part", None)
+    with b.at(M):
+        b.box(P["paint"], (w - m, 0.012, h - m), (0, -0.006, 0), bevel=0, tint=lc(SEPIA["sky"]), drop=("+y",))
+        for sx in (-1, 1):
+            b.box(P["post"], (m, 0.05, h), (sx * (w - m) / 2, -0.025, 0), bevel=0.007, tint=1.0)
+            b.box(P["rafter"], (w - 2 * m, 0.046, m), (0, -0.023, sx * (h - m) / 2), bevel=0.007, tint=1.05)
+            b.box(P["brass"], (0.006, 0.006, h - 2 * m), (sx * (w / 2 - m - 0.003), -0.043, 0), bevel=0, tint=1.0)
+            b.box(P["brass"], (w - 2 * m, 0.006, 0.006), (0, -0.043, sx * (h / 2 - m - 0.003)), bevel=0, tint=1.0)
+        photo_motif(P, craft)(b)
+        b.part = part
+        for sx in (-1, 1):
+            b.rod(P["paint"], (sx * 0.2, -0.02, h / 2 - 0.005), (0, -0.012, h / 2 + 0.09), 0.004, 4, lc(E["bone_dim"]))
+        b.disc(P["brass"], 0.013, 0.012, T(0, -0.014, h / 2 + 0.09), segs=8, tint=1.0)
+
+
+def build_troupe_photo(craft):
+    """The troupe photo as its own model (`TroupePhoto`): the game hangs it at `PHOTO` in the mechanism's frame."""
+    b = Builder(213)
+    b.part = None
+    troupe_photo(b, paints(craft), craft, T())
+    return b.finish("TroupePhoto")
+
+
+def photo_pivots():
+    y = -0.012 - PHOTO_STEP * 15
+    piv = {name: T(x, y, z) for name, (x, z) in PUPPETS.items()}
+    piv["PhotoCrest"] = T(PHOTO_CREST[0], -0.012 - PHOTO_STEP * 19, PHOTO_CREST[1])
+    return piv
 
 
 # --- the interior shell ------------------------------------------------------------------------------------
@@ -997,7 +1233,7 @@ CRANK = Vector((0.0, 0.2, 1.38))
 PANEL_HINGE = Vector((PANEL[1], 0.02, PANEL[2]))
 LOBES = (90.0, 210.0, 330.0)
 SLIP_DEG = 11.0
-PHOTO = Vector((-0.62, 0.0, 1.52))
+PHOTO = Vector((-0.8, 0.0, 2.26))  # frame centre: between the dado rail (1.5) and the frieze rail (3.0), clear of the panel
 
 
 def cam_radius(deg):
@@ -1009,7 +1245,8 @@ def cam_radius(deg):
     return r
 
 
-def build_mechanism(craft):
+def build_mechanism(craft, photo=True):
+    """`photo=False`: the game model. The troupe photo is its own model there (`build_troupe_photo`), at `PHOTO`."""
     P = paints(craft)
     paint = P["paint"]
     b = Builder(211)
@@ -1126,12 +1363,10 @@ def build_mechanism(craft):
         b.lathe(P["orange"], [(0.0, 0.0), (0.02, 0.0), (0.032, 0.03), (0.02, 0.05), (0.0, 0.055)], 8, T(-w / 2 + 0.035, -0.015, h * 0.5) @ R("X", 90), tint=1.0)
         for z in (0.12, h - 0.12):
             b.box(P["ink"], (0.03, 0.03, 0.1), (w / 2 + 0.004, -0.012, z), bevel=0.005, tint=1.0)
-    # ----- KitPhoto: Aunt Kit at her booth, framed on the foyer side of the partition -----
-    b.part = "KitPhoto"
-    frame_art(b, P, 0.4, 0.5, photo_motif(P, craft), T(*PHOTO), back=E["night"])
-    b.rod(paint, (PHOTO.x - 0.1, -0.02, PHOTO.z + 0.27), (PHOTO.x, -0.012, PHOTO.z + 0.36), 0.004, 3, lc(E["bone_dim"]))
-    b.rod(paint, (PHOTO.x + 0.1, -0.02, PHOTO.z + 0.27), (PHOTO.x, -0.012, PHOTO.z + 0.36), 0.004, 3, lc(E["bone_dim"]))
-    b.disc(P["brass"], 0.012, 0.01, T(PHOTO.x, -0.012, PHOTO.z + 0.36), segs=6, tint=1.0)
+    # ----- the troupe photo, framed on the foyer side of the partition, above the dado rail -----
+    if photo:
+        b.part = "KitPhoto"
+        troupe_photo(b, P, craft, T(*PHOTO))
     b.part = None
     b.finish("Mechanism")
 
@@ -1144,7 +1379,6 @@ def mechanism_pivots():
         "LinkArm_Slipped": T(TIP_X, ARM_Y, GUIDE_Z + 0.03),
         "Crank": T(*CRANK),
         "ServicePanel": T(*PANEL_HINGE),
-        "KitPhoto": T(*PHOTO),
     }
 
 

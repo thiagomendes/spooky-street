@@ -465,6 +465,86 @@ def lc(rgb):
     return lin(rgb)[:3]
 
 
+# --- the owl crest of the Lantern Lane Players ----------------------------------------------------------------
+
+CREST_STARS = 5  # one per Player
+CREST_STAR_AT, CREST_STAR_R = 0.68, 0.13  # ring radius and star size, in crest radii
+
+
+def crest_star_centres(d):
+    """Centres (x, z) of the five stars for a crest of diameter `d` (the lowest sits under the lantern)."""
+    r = d / 2
+    return [(CREST_STAR_AT * r * math.cos(math.radians(54 + 72 * k)), CREST_STAR_AT * r * math.sin(math.radians(54 + 72 * k)))
+            for k in range(CREST_STARS)]
+
+
+def crest(b, craft, d, M, step=None, board=None, rim=True, fine=None, lit=0.0):
+    """The Players' owl crest (S004 plan section 2.2): a round, wordless emblem. A paper-lantern outline whose flame
+    is a round owl's eye, ringed by five small stars; jack-o'-lantern orange and bone on night violet.
+
+    Layered cut-outs like every painted motif: wall plane y = 0, viewer toward -Y, origin at the centre. `d` is the
+    diameter. `step` is the thickness of one layer (default d / 45: carved relief on the 0.35 m booth sign; pass a
+    paper thickness for the small ones). `board`: material of the disc (default: white paint, tinted night violet).
+    `fine`: round the curves for a close look (default: only from 0.2 m up). `lit`: the paint also carries its
+    own colour as light at this strength (the booth's sign: under the eave it would otherwise be a dark disc
+    against the lit porch; the game exports it as a `*_Glow` part and sets the level, well under the bloom
+    threshold)."""
+    fine = d >= 0.2 if fine is None else fine
+    q = 1.0 if fine else 0.5
+    r = d / 2
+    step = d / 45 if step is None else step
+    paint = craft.tinted((1.0, 1.0, 1.0), 0.35, 0.06, 9.0, emission=lit) if lit else craft.paint()
+    y = [0.0]
+
+    def cut(outline, rgb, at=(0.0, 0.0), up=1.0, mat=None, bevel=0.0):
+        y[0] -= step * up
+        b.prism(mat or paint, [(x + at[0], z + at[1]) for x, z in outline], step * up, T(0, y[0], 0), tint=lc(rgb) if mat is None else 1.0,
+                bevel=bevel)
+
+    def same(outline, rgb, at=(0.0, 0.0)):  # another piece on the current layer
+        b.prism(paint, [(x + at[0], z + at[1]) for x, z in outline], step, T(0, y[0], 0), tint=lc(rgb))
+
+    def circ(rad, n=28, rz=1.0):
+        n = max(6, int(n * q))
+        return [(rad * math.cos(2 * math.pi * i / n), rz * rad * math.sin(2 * math.pi * i / n)) for i in range(n)]
+
+    def barrel(hw, hh, n=10, p=2.6):  # superellipse: a paper lantern's rounded body
+        n = max(4, int(n * q))
+        pts = []
+        for i in range(4 * n):
+            a = 2 * math.pi * i / (4 * n)
+            c, s = math.cos(a), math.sin(a)
+            pts.append((hw * math.copysign(abs(c) ** (2 / p), c), hh * math.copysign(abs(s) ** (2 / p), s)))
+        return pts
+
+    with b.at(M):
+        cut(circ(r, 40), E["night"], up=2.0, mat=board, bevel=step * 0.6)
+        if rim:
+            b.ring(paint, 0.86 * r, r, step, T(0, y[0] - step, 0), segs=int(40 * q), tint=lc(E["bone"]), chamfer=step * 0.3)
+        y[0] -= step * 0.2
+        # the lantern: bone outline, orange paper, bone ribs, caps and a carrying loop
+        hw, hh, cz = 0.37 * r, 0.42 * r, -0.04 * r
+        b.ring(paint, 0.07 * r, 0.11 * r, step, T(0, y[0] - step, cz + hh + 0.14 * r), segs=int(14 * q), tint=lc(E["bone"]), chamfer=0.0)
+        cut(barrel(hw + 0.045 * r, hh + 0.045 * r), E["bone"], (0, cz))
+        cut(barrel(hw, hh), E["orange"], (0, cz))
+        y[0] -= step
+        for sz in (-1, 1):  # ribs, bowed like hoops under paper
+            rib = [(-hw * 0.93, sz * hh * 0.56), (0.0, sz * hh * 0.63), (hw * 0.93, sz * hh * 0.56), (hw * 0.9, sz * hh * 0.68), (0.0, sz * hh * 0.75),
+                   (-hw * 0.9, sz * hh * 0.68)]
+            same(rib, blend(E["orange"], E["bone"], 0.55))
+            cap = [(-0.2 * r, sz * hh), (0.2 * r, sz * hh), (0.17 * r, sz * (hh + 0.085 * r)), (-0.17 * r, sz * (hh + 0.085 * r))]
+            same(cap, E["bone"], (0, cz))
+        # the flame is a round owl's eye
+        cut(circ(0.265 * r), E["bone"], (0, cz))
+        cut(circ(0.19 * r, 22), E["ink"], (0, cz))
+        cut(circ(0.1 * r, 16), E["candy"], (0, cz))
+        cut(circ(0.036 * r, 8), E["bone"], (0.085 * r, cz + 0.085 * r))
+        y[0] += step * 3  # the stars sit on the board, level with the lantern paper
+        star = co.star_outline(CREST_STAR_R * r)
+        for at in crest_star_centres(d):
+            same(star, E["candy"], at)
+
+
 def catenary(p0, p1, sag, n):
     p0, p1 = Vector(p0), Vector(p1)
     return [p0.lerp(p1, i / n) - Vector((0, 0, sag * 4 * (i / n) * (1 - i / n))) for i in range(n + 1)]

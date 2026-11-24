@@ -72,6 +72,9 @@ namespace SpookyStreet.World
         public Transform AtticWindow { get; private set; }
         public Transform WindWheel { get; private set; }
         public Transform OwlPuppet { get; private set; }
+
+        /// <summary>The Players' owl crest over the booth (S004); null when its model is missing.</summary>
+        public Transform Crest { get; private set; }
         public Transform CandyBowl { get; private set; }
         public AmbientMotion Motion { get; private set; }
 
@@ -121,7 +124,23 @@ namespace SpookyStreet.World
             }
 
             AtticWindow = ModelKit.FindDeep(House, EnvironmentLayout.AtticWindowGlow);
+            // S004: the Players' owl crest hangs from the porch beam over the booth. Placed like the house (same
+            // origin and yaw), then made its child so it shares any facing correction below.
+            if (House != null)
+            {
+                var at = new Vector3(EnvironmentLayout.HouseX + KeepsakeArt.CrestLocalX, KeepsakeArt.CrestLocalY,
+                    EnvironmentLayout.HouseZ + KeepsakeArt.CrestLocalZ);
+                var crest = _kit.Spawn(KeepsakeArt.OwlCrest, Root, at, EnvironmentLayout.HouseYaw + ModelYawCorrection);
+                if (crest != null)
+                {
+                    Crest = crest.transform;
+                    Crest.SetParent(House, true);
+                    SpawnedCount++;
+                }
+            }
+
             CheckFacing(houseDressing);
+
             BuildHouseColliders();
             WindWheel = ModelKit.FindDeep(House, EnvironmentLayout.WindWheel);
             OwlPuppet = ModelKit.FindDeep(House, EnvironmentLayout.OwlPuppet);
