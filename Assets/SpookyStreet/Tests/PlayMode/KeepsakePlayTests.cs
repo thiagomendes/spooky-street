@@ -205,10 +205,20 @@ namespace SpookyStreet.Tests.PlayMode
                     continue;
                 }
 
-                var origin = new Vector3(spot.X, spot.Y, spot.Z);
-                Assert.IsTrue(Physics.Raycast(origin, Vector3.down, out var hit, 1f, mask, QueryTriggerInteraction.Ignore),
-                    spot + ": nothing under it");
-                Assert.AreEqual(spot.SitY, hit.point.y, 0.12f, spot + " rests on " + hit.collider.name);
+                // Every collider in the column under the bat: one must carry it at SitY, and none may sit inside it.
+                var origin = new Vector3(spot.X, spot.Y + 0.5f, spot.Z);
+                var hits = Physics.RaycastAll(origin, Vector3.down, 1.5f, mask, QueryTriggerInteraction.Ignore);
+                var seen = new System.Text.StringBuilder();
+                bool rests = false;
+                foreach (var hit in hits)
+                {
+                    seen.Append($" {hit.collider.name}@{hit.point.y:F2}");
+                    rests |= Mathf.Abs(hit.point.y - spot.SitY) <= 0.12f;
+                    Assert.IsFalse(hit.point.y > spot.SitY + 0.12f && hit.point.y < spot.Y + 0.05f,
+                        spot + " sits inside " + hit.collider.name + " (hits:" + seen + ")");
+                }
+
+                Assert.IsTrue(rests, spot + $" rests on nothing at {spot.SitY:F2} (hits:{seen})");
                 checkedBats++;
             }
 

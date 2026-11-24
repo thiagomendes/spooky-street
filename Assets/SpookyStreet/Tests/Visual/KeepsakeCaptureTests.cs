@@ -146,11 +146,13 @@ namespace SpookyStreet.Tests.Visual
 
             // 65: inside the treehouse cabin, the bat under the roof beam beside the door flutters open by Pip.
             Vector3 bat8 = At(8);
-            yield return Place(Cabin(0.1f, 0.2f, CaseRouteLayout.TreehouseY + 0.05f), bat8 - Cabin(0.1f, 0.2f, 0f));
+            // The maple's trunk stands in the cabin's middle: Pip by the door, the lens in the far corner of the bat's
+            // wall, so the trunk stays out of the line.
+            yield return Place(Cabin(-0.55f, -0.25f, CaseRouteLayout.TreehouseY + 0.05f), bat8 - Cabin(-0.55f, -0.25f, 0f));
             Assert.Greater(Bats.OpenAmount(PaperBatLayout.IdFor(8)), 0.9f, "65: the cabin bat should be open");
             Vector3 pip = GameBootstrap.Instance.Pip.transform.position;
-            yield return Capture("65_bat_treehouse_deck", Cabin(0.85f, -0.75f, CaseRouteLayout.TreehouseY + 1.45f),
-                Vector3.Lerp(pip + Vector3.up * 0.7f, bat8, 0.5f));
+            yield return Capture("65_bat_treehouse_deck", Cabin(0.8f, 0.9f, CaseRouteLayout.TreehouseY + 1.5f),
+                Vector3.Lerp(pip + Vector3.up * 0.7f, bat8, 0.6f));
 
             // 65b: the bat on the street lamp's head, folded, seen from the path below.
             Vector3 bat21 = At(21);
@@ -162,7 +164,8 @@ namespace SpookyStreet.Tests.Visual
             Vector3 bat7 = At(7);
             yield return Place(new Vector3(-12.45f, 0.4f, 8.7f), bat7 - new Vector3(-12.45f, 0f, 8.7f));
             Assert.Greater(Bats.OpenAmount(PaperBatLayout.IdFor(7)), 0.9f, "65c: the ramp bat should be open");
-            yield return Capture("65c_bat_side_yard_ramp", new Vector3(-10.9f, 1.7f, 6.9f), bat7 + new Vector3(0.4f, -0.1f, -0.2f));
+            // From the ramp's east side, so Pip (facing the bat) does not hide it.
+            yield return Capture("65c_bat_side_yard_ramp", new Vector3(-11.0f, 2.1f, 10.0f), bat7 + new Vector3(0.3f, 0f, -0.3f));
             Assert.AreEqual(KeepsakeRules.TotalBats, Bats.Remaining, "captures take nothing");
         }
     }
