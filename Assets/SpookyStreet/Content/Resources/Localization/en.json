@@ -132,7 +132,7 @@
     { "key": "ui.dialogue.continue", "value": "Tap to continue", "context": "Small hint at the bottom-right of a speech card, next to a round orange arrow button, telling the player to tap to show the next line. Short." },
     { "key": "ui.dialogue.continue_button", "value": "Press to continue", "context": "Gamepad and keyboard version of 'Tap to continue': small hint at the bottom-right of a speech card, next to a round orange disc that shows the button or key to press (a picture, not a word). Telling the player to press that button to show the next line. Short." },
     { "key": "ui.dialogue.skip", "value": "Skip", "context": "Button at the top-right during a conversation that skips the rest of it. One short word." },
-    { "key": "ui.speaker.pip", "value": "Pip", "context": "Name tab on the speech card when Pip, the player (a child in a bat costume), describes what they see. Character name." },
+    { "key": "ui.speaker.pip", "value": "Pip", "context": "Name tab on the speech card when Pip, the player (a child in a bat costume), describes what they see. Character name. Pip is a girl (she/her): in languages that mark gender, address and describe her in the feminine." },
     { "key": "ui.speaker.bea", "value": "Bea", "context": "Name tab on the speech card when Bea, a girl dressed as a pumpkin, is speaking. Character name." },
     { "key": "ui.speaker.vale", "value": "Mr. Vale", "context": "Name tab on the speech card when Mr. Vale, an older neighbour dressed as a mummy, is speaking. Character name with a polite title." },
     { "key": "ui.speaker.june", "value": "June", "context": "Name tab on the speech card when June, Bea's older sister dressed as a star witch, is speaking. Character name." },

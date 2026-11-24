@@ -212,5 +212,32 @@ namespace SpookyStreet.Tests.Core
                 StringAssert.Contains(jump, tip, key);
             }
         }
+
+        /// <summary>
+        /// D30 (owner, 2026-11-24): Pip is a girl. Portuguese marks gender, so no line may address or describe Pip in
+        /// the masculine. Words that are only masculine when they agree with the listener are banned outright; the
+        /// lines that greet or thank Pip must use the feminine forms.
+        /// </summary>
+        [Test]
+        public void PipIsAddressedAsAGirl()
+        {
+            var table = Portuguese;
+            var masculine = new Regex(
+                @"\b(bem-vindo|você mesmo|vocês dois|o menino|um menino|o novo vizinho|novo vizinho|o garoto|sozinho|" +
+                @"o pequeno detetive|ele mesmo|dele|o novato|seu amiguinho)\b",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            foreach (var entry in table.Entries)
+            {
+                string text = entry.Value ?? string.Empty;
+                Assert.IsFalse(masculine.IsMatch(text), $"{entry.Key}: masculine form for Pip in \"{text}\"");
+            }
+
+            table.TryGet("c01.line.kit.remembers", out string kitBack);
+            StringAssert.Contains("Bem-vinda", kitBack, "Kit welcomes Pip back in the feminine");
+            table.TryGet("c01.line.kit.thanks", out string kitThanks);
+            StringAssert.Contains("vocês duas", kitThanks, "Kit thanks Pip and June in the feminine");
+            table.TryGet("c01.line.vale.invite_sit", out string vale);
+            StringAssert.Contains("você mesma", vale, "Vale invites Pip in the feminine");
+        }
     }
 }

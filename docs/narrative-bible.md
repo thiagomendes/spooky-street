@@ -58,7 +58,7 @@ One hybrid mode of pictures and words (D23.1) serves pre-readers and readers ali
 
 | Character | Case 01 (spec) | Wants / worries | Grows across cases |
 |---|---|---|---|
-| Pip | the curious new kid | wants friends; worries she does not belong | from observer to the street's trusted detective |
+| Pip | the curious new kid, a girl (D30: she/her; feminine forms in Portuguese) | wants friends; worries she does not belong | from observer to the street's trusted detective |
 | Bea | fast, sure, half right | wants to be taken seriously as the younger sister | learns to say "I saw… but I'm not sure"; becomes Pip's lookout on her bike |
 | June | slipped in by the treehouse | wants adventure; keeps secrets | from rule-bender to partner; brings Pip into the Players' story |
 | Mr. Vale | correct but limited view from his bench | worries he is only a watcher now | leaves his bench; his patient observation solves a later testimony |
