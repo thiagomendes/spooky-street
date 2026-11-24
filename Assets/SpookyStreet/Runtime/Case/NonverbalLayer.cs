@@ -178,6 +178,7 @@ namespace SpookyStreet.Case
             SettingsButton.targetGraphic = gear;
             SettingsButton.transition = Selectable.Transition.None;
             SettingsButton.onClick.AddListener(OpenSettings);
+            _game.Ui.BindPauseSettings(SettingsButton);
         }
 
         /// <summary>The gear: a fresh parent gate, then the settings card with the two toggles.</summary>

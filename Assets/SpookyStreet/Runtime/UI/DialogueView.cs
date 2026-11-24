@@ -48,6 +48,7 @@ namespace SpookyStreet.UI
         private float _flutter;
         private bool _largeText;
         private RectTransform _content;
+        private RectTransform _stage;
         private Image _face;
         private Image _badge;
         private string _badgeId;
@@ -88,7 +89,20 @@ namespace SpookyStreet.UI
         public Camera ViewCamera { get; set; }
 
         /// <summary>Top of the speech bubble in the dialogue content (canvas units from the bottom).</summary>
-        public float BubbleTop => BubbleBottom + (_bubble != null ? _bubble.sizeDelta.y : BubbleSize.y);
+        public float BubbleTop => (BubbleBottom + (_bubble != null ? _bubble.sizeDelta.y : BubbleSize.y)) * StageScale;
+
+        /// <summary>
+        /// Width the bubble, the v1 card and the face disc need (S004 F2, D25 any aspect ratio): the bubble's 1060 plus
+        /// the face disc over its left edge and a margin. Narrower content (iPad 4:3 is 1000 wide) scales the whole
+        /// stage down from its bottom centre, never up, so the disc and the next disc stay on screen.
+        /// </summary>
+        public const float StageDesignWidth = 1270f;
+
+        /// <summary>The scale the speech stage is drawn at (1 on phones; below 1 on narrow screens).</summary>
+        public float StageScale => _stage != null ? _stage.localScale.x : 1f;
+
+        /// <summary>The scaled stage holding the bubble, the card and the face disc (tests: it fits the content).</summary>
+        public RectTransform Stage => _stage;
 
         /// <summary>The puppet stage of the bubble.</summary>
         public VignettePlayer Vignette { get; private set; }
@@ -185,9 +199,12 @@ namespace SpookyStreet.UI
             var content = UiFactory.Stretch(UiFactory.Rect(root, "Content"));
             content.gameObject.AddComponent<SafeAreaFitter>();
             _content = content;
-            BuildBubble(content);
+            _stage = UiFactory.Stretch(UiFactory.Rect(content, "Stage"));
+            _stage.pivot = new Vector2(0.5f, 0f);
+            var stage = _stage;
+            BuildBubble(stage);
 
-            var card = UiFactory.PaperCard(content, "SpeechCard", new Vector2(0.5f, 0f), new Vector2(70f, 150f),
+            var card = UiFactory.PaperCard(stage, "SpeechCard", new Vector2(0.5f, 0f), new Vector2(70f, 150f),
                 new Vector2(1000f, 236f), -0.6f);
             card.raycastTarget = true;
             var cardButton = card.gameObject.AddComponent<Button>();
@@ -196,7 +213,7 @@ namespace SpookyStreet.UI
             _card = card.rectTransform;
 
             // Portrait: a felt disc frame with the speaker's initial (portrait art is a later pass).
-            _portrait = UiFactory.Sprite(content, "Portrait", null, Color.white, new Vector2(0.5f, 0f),
+            _portrait = UiFactory.Sprite(stage, "Portrait", null, Color.white, new Vector2(0.5f, 0f),
                 new Vector2(70f - 500f - 6f, 182f), new Vector2(188f, 188f));
             _portrait.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -3f);
             UiFactory.InkShadow(_portrait, new Vector2(4f, -6f), 0.55f);
@@ -338,6 +355,7 @@ namespace SpookyStreet.UI
             gameObject.SetActive(true);
             _map.Enable();
             BuildPips();
+            FitStage();
             Show(0);
             if (EventSystem.current != null)
             {
@@ -488,11 +506,11 @@ namespace SpookyStreet.UI
                 Vector3 screen = ViewCamera.WorldToScreenPoint(anchor.Value);
                 var canvas = GetComponentInParent<Canvas>();
                 Camera uiCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-                if (screen.z > 0f && RectTransformUtility.ScreenPointToLocalPointInRectangle(_content, screen, uiCamera,
+                if (screen.z > 0f && RectTransformUtility.ScreenPointToLocalPointInRectangle(_stage, screen, uiCamera,
                         out var local))
                 {
                     // The content rect is stretched: measure from its bottom centre, like the bubble.
-                    var rect = _content.rect;
+                    var rect = _stage.rect;
                     float lx = local.x - rect.center.x;
                     float ly = local.y - rect.yMin;
                     x = Mathf.Clamp(lx, -half, half);
@@ -598,12 +616,30 @@ namespace SpookyStreet.UI
             return string.IsNullOrEmpty(word) ? name.Substring(0, 1) : word.Substring(0, 1).ToUpperInvariant();
         }
 
+        /// <summary>Scales the speech stage to the content's width (down only), e.g. after a rotation or resize.</summary>
+        public void FitStage()
+        {
+            if (_stage == null || _content == null)
+            {
+                return;
+            }
+
+            float width = _content.rect.width;
+            float scale = width > 0f ? Mathf.Clamp(width / StageDesignWidth, 0.5f, 1f) : 1f;
+            if (Mathf.Abs(_stage.localScale.x - scale) > 1e-4f)
+            {
+                _stage.localScale = new Vector3(scale, scale, 1f);
+            }
+        }
+
         private void Update()
         {
             if (!IsOpen || _lines.Count == 0)
             {
                 return;
             }
+
+            FitStage();
 
             bool canRead = CanAdvance == null || CanAdvance();
             float dt = canRead ? Time.unscaledDeltaTime : 0f;

@@ -9,6 +9,8 @@ namespace SpookyStreet.UI
     /// stitch is the one sign of UI focus on every screen. It is a shape, not only a colour, so it reads without
     /// colour vision. It never catches touches. Put it on an overlay above the elements it rings; it follows its target
     /// every frame (a sliding page, a sticker gliding home) and hides when the target goes away.
+    /// S004 F2 (frame 81: the yellow stitch alone was faint on the notebook's cream paper): the stitch now runs on a
+    /// solid ink band (<see cref="Edge"/>), so the ring has a dark edge on paper and a candy one on felt.
     /// </summary>
     public sealed class UiFocus : MonoBehaviour
     {
@@ -26,6 +28,12 @@ namespace SpookyStreet.UI
         /// <summary>The candy-corn running stitch (null when the stitch sprite is missing).</summary>
         public Image Thread { get; private set; }
 
+        /// <summary>The solid ink band under the stitch (always there, so focus never depends on the stitch art).</summary>
+        public Image Edge { get; private set; }
+
+        /// <summary>The band's ink: dark against the cream paper, with the light stitch drawn on top of it.</summary>
+        public static readonly Color EdgeColor = new Color(0.118f, 0.102f, 0.149f, 0.92f);
+
         public bool Showing => gameObject.activeSelf && Target != null;
 
         public static UiFocus Create(Transform overlay, string name = "Focus")
@@ -35,6 +43,14 @@ namespace SpookyStreet.UI
             ring.raycastTarget = false;
             var focus = ring.gameObject.AddComponent<UiFocus>();
             focus._rect = ring.rectTransform;
+            var edge = UiFactory.Sprite(ring.transform, "InkEdge", IconFactory.RoundedFrame, EdgeColor,
+                new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            edge.type = Image.Type.Sliced;
+            edge.raycastTarget = false;
+            UiFactory.Stretch(edge.rectTransform);
+            edge.rectTransform.offsetMin = new Vector2(-StitchReach - 2f, -StitchReach - 2f);
+            edge.rectTransform.offsetMax = new Vector2(StitchReach + 2f, StitchReach + 2f);
+            focus.Edge = edge;
             focus.Thread = UiFactory.StitchLayer(ring.transform, Palette.CandyCornYellow);
             if (focus.Thread != null)
             {

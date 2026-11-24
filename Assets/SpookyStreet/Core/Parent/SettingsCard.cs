@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using SpookyStreet.Core.Flow;
+using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.Core.Save;
 using Keys = SpookyStreet.Core.Localization.LocalizationKeys.Parent;
 using NvKeys = SpookyStreet.Core.Localization.LocalizationKeys.NonverbalUi;
@@ -106,11 +107,11 @@ namespace SpookyStreet.Core.Parent
             new SettingRow(Music, NvKeys.SettingsMusic, "pg.emo_tune", 0, 2, p => p.MusicVolume, (p, v) => p.MusicVolume = Clamp01(v)),
             new SettingRow(Sounds, NvKeys.SettingsSounds, "pg.knock_ring", 0, 3, p => p.EffectsVolume, (p, v) => p.EffectsVolume = Clamp01(v)),
             new SettingRow(Voices, NvKeys.SettingsVoices, "pg.emo_wow", 0, 4, p => p.DialogueVolume, (p, v) => p.DialogueVolume = Clamp01(v)),
-            new SettingRow(CameraSpeed, Keys.SettingCameraSpeed, "pg.eye", 1, 1,
+            new SettingRow(CameraSpeed, Keys.SettingCameraSpeed, PuppetParts.CameraTurn, 1, 1,
                 p => SliderFromSensitivity(p.CameraSensitivity), (p, v) => p.CameraSensitivity = SensitivityFromSlider(v)),
             new SettingRow(InvertY, Keys.SettingInvertY, "pg.pointer", 1, 2, p => p.InvertY, (p, b) => p.InvertY = b),
             new SettingRow(LeftHanded, Keys.SettingLeftHanded, "pg.wave_hand", 1, 3, p => p.LeftHanded, (p, b) => p.LeftHanded = b),
-            new SettingRow(Haptics, Keys.SettingHaptics, "pg.knock_ring", 1, 4, p => p.Haptics, (p, b) => p.Haptics = b),
+            new SettingRow(Haptics, Keys.SettingHaptics, PuppetParts.PhoneBuzz, 1, 4, p => p.Haptics, (p, b) => p.Haptics = b),
             new SettingRow(ReducedMotion, Keys.SettingReducedMotion, "pg.quiet", 2, 1, p => p.ReducedMotion, (p, b) => p.ReducedMotion = b),
             new SettingRow(LargeCaptions, Keys.SettingLargeCaptions, "pg.eye", 2, 2, p => p.LargeCaptions, (p, b) => p.LargeCaptions = b),
             new SettingRow(OpaqueCaptions, Keys.SettingOpaqueCaptions, "pg.lamp", 2, 3, p => p.OpaqueCaptions, (p, b) => p.OpaqueCaptions = b),

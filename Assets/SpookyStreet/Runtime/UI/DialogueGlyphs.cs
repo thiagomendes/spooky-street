@@ -46,7 +46,8 @@ namespace SpookyStreet.UI
         {
             _view = view;
             var content = view.transform.Find("Content");
-            var discs = new[] { content.Find("SpeechCard/NextDisc"), content.Find("SpeechBubble/NextDisc") };
+            // The bubble and the card sit on the fitted speech stage (S004 F2: any aspect ratio).
+            var discs = new[] { content.Find("Stage/SpeechCard/NextDisc"), content.Find("Stage/SpeechBubble/NextDisc") };
             _nextIcons = new Image[discs.Length];
             _nextGlyphs = new ControlGlyphView[discs.Length];
             for (int i = 0; i < discs.Length; i++)
@@ -62,7 +63,7 @@ namespace SpookyStreet.UI
             var skip = view.SkipButton != null ? view.SkipButton.transform : null;
             _skipGlyph = ControlGlyphView.Create(skip != null ? skip : content, "SkipGlyph", new Vector2(0f, 0.5f),
                 new Vector2(-40f, 0f), 58f);
-            var line = content.Find("SpeechCard/TapToContinue");
+            var line = content.Find("Stage/SpeechCard/TapToContinue");
             _continue = line != null ? line.GetComponent<LocalizedText>() : null;
 
             _map = new InputActionMap("DialogueSkip");
