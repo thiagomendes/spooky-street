@@ -636,7 +636,7 @@ namespace SpookyStreet.Tests.Core
         {
             var fs = new MemorySaveFileSystem();
             var host = new FakePackHost();
-            Assert.IsNull(Packs(fs, host).Option("pt-BR"), "no pt-BR table in the build yet (D2 adds it)");
+            Assert.IsNull(Packs(fs, host).Option("pt-BR"), "a slot with no table is not offered");
 
             var portuguese = Edited(English, "pt-BR", e => e, "Português (Brasil)");
             var packs = Packs(fs, host, builtInPt: () => portuguese.ToJson());

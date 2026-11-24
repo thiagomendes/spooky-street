@@ -108,6 +108,42 @@ namespace SpookyStreet.Tests.PlayMode
             }),
         };
 
+        /// <summary>
+        /// S004 D2: every case line is drawn to its last word under the vignette, in English and in the built-in
+        /// pt-BR (the strip holds two lines; a cut line would hide part of what the witness said).
+        /// </summary>
+        [UnityTest]
+        public IEnumerator EveryCaseLineIsDrawnToItsEndInEnglishAndPortuguese()
+        {
+            yield return StartGame();
+            var dialogue = Director.Dialogue;
+            foreach (string locale in new[] { "en", "pt-BR" })
+            {
+                Assert.IsTrue(GameBootstrap.Instance.Languages.Use(locale), locale);
+                yield return null;
+                foreach (var (speaker, keys) in LinesBySpeaker)
+                {
+                    var lines = keys.Select(k => new ScriptLine(speaker, k)).ToArray();
+                    dialogue.Play(lines);
+                    for (int i = 0; i < lines.Length; i++)
+                    {
+                        yield return Wait(0.25f);
+                        var text = dialogue.BubbleLine;
+                        Assert.AreEqual(Localizer.Get(lines[i].Key), text.text, locale + " " + lines[i].Key);
+                        int visible = text.cachedTextGenerator.characterCountVisible;
+                        Assert.GreaterOrEqual(visible, text.text.Length - 1,
+                            $"{locale} {lines[i].Key}: only {visible} of {text.text.Length} characters drawn: {text.text}");
+                        dialogue.Advance();
+                        yield return null;
+                    }
+
+                    Director.Nonverbal.MemoryReplay.End(false);
+                }
+            }
+
+            GameBootstrap.Instance.Languages.Use("en");
+        }
+
         [UnityTest]
         public IEnumerator EveryCaseLineShowsItsVignetteAndItsTextLine()
         {
