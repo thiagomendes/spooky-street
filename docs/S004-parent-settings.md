@@ -1,6 +1,6 @@
 # S004 stream E: the grown-ups' corner (settings card, "For grown-ups" page, credits)
 
-Branch `feature/s004-parent-settings` (from `main` e98715c, then merged `main` 345b268 for D30). Not merged.
+Branch `feature/s004-parent-settings` (from `main` e98715c, then merged `main` up to ddc0279: D30 and the translator contexts). Not merged.
 Contract: `docs/S004-plan.md` §2.5 and §3 "Stream E"; engagement §2.6, §2.8 and §2.9; D25 portability; F1
 navigation (`docs/S004-ui-nav.md`); the parent gate and language screen (`docs/S004-lang-packs.md`).
 
@@ -147,4 +147,58 @@ navigation (`docs/S004-ui-nav.md`); the parent gate and language screen (`docs/S
 
 ## CI evidence
 
-(filled in after the run)
+Run **#188** (`45419804580`) on `1475d1d`: **success**.
+
+- Static checks passed.
+- Unity: EditMode 863/863, PlayMode 155/155 and Visual 22/22. Of these:
+  - `ParentProgressTests` 8/8, `PlaytimeLedgerTests` 14/14 and `SettingsCardTests` 5/5;
+  - `ParentSettingsTests` 4/4;
+  - `ParentSettingsCaptureTests` 1/1.
+- Locally: `./tools/check-local.sh` passed, with 799 Core tests before the merge from `main`.
+
+Run #185 (`c346c99`) failed on one test. In `TheCardAndThePageWorkByKeyboardAndGamepad`, Q and P were pressed
+on the same frame and released before the assert. The test now holds them like the gate's own test does, Q first
+and then P, and asserts while they are still held. Run #185's frames also showed two problems:
+- the weekday labels under the dots were clipped to nothing, because Andika's line is taller than the 36-unit box
+  (now 48 units);
+- the "Solid text boxes" picture was a blank paper part (now the lantern).
+
+Both are fixed in #188.
+
+Frames (stream E's reserved numbers 75–76, extracted from the job log with `tools/ci/extract_frames.py`; all
+1278 × 590 with 0.00 % magenta). I looked at each one:
+
+- `docs/evidence/s004/parent_settings/75_parent_page_run188.jpg`: the page mid-case.
+  - The heading "For grown-ups", the device-only line, and "Three Knocks on Lantern Lane" with an "In progress"
+    tag.
+  - The ear-and-eye chip with a green check for the solved question.
+  - The start of "The child's own answers".
+- `75d_parent_page_answers_run188.jpg`: the end of the knocks comic, then its answer words.
+  - Places explored: the lantern, June's treehouse and inside the owl house.
+  - The portraits of Bea and Mr. Vale under "Friends met".
+- `75b_parent_page_lower_run188.jpg`:
+  - "12 of 30 paper bats", "1 of 3 sketch pages" and "1 of 3 costume pieces".
+  - "About 1 h 20 min".
+  - Seven dots from Wed to today, Tue, in bold. Dot size shows the time played that day.
+- `75c_parent_page_ptbr_run188.jpg`: the same page in pt-BR. "Para adultos", "Em andamento" and "As respostas da
+  criança" all fit.
+- `76_settings_card_run188.jpg`: the card in three columns.
+  - The sound column: Helper, then Music, Sounds and Voices sliders.
+  - The camera column: Camera speed at 1×, mid-slider, then Invert up and down, Left-handed controls, and
+    Vibration (on).
+  - The reading column: Reduce motion (on, with the keyboard focus stitch), Large text, Solid text boxes.
+  - Language, For grown-ups and Credits along the bottom.
+  - Nothing is clipped.
+- `76b_settings_card_ptbr_run188.jpg`: pt-BR. The longest labels ("Inverter cima e baixo", "Caixas de texto
+  sólidas") wrap to two lines inside their rows. "Controles canhotos" fits on one.
+- `76c_credits_run188.jpg`: the original-art note, the voices and music, the tools, and the font credits, then the
+  start of the Andika licence.
+- `76d_credits_ptbr_run188.jpg`: the same in pt-BR. The licence stays in English, as published.
+
+Notes for later (not blocking):
+
+- The page's dashed focus stitch rings the whole sheet on keyboard and gamepad. It reads as "this scrolls".
+- Stream F2 may want a scroll hint, such as a fade at the sheet's bottom edge.
+- Camera speed and Large text share the eye picture.
+- The optional iOS system Reduce Motion plugin (plan §3 E) is not built. A plugin can never be tested in CI here
+  without Xcode. The in-game switch covers the need, and the plugin can go behind an interface later.
