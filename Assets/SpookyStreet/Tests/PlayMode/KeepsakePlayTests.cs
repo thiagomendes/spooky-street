@@ -195,6 +195,17 @@ namespace SpookyStreet.Tests.PlayMode
                 Assert.Ignore("Environment models are not committed.");
             }
 
+            // In play, as a child meets them (the stage is fully built and settled).
+            GameBootstrap.Instance.Ui.NewGameButton.onClick.Invoke();
+            yield return Frames(10);
+            if (Director.Cutscenes.Playing)
+            {
+                Director.Cutscenes.Player.SkipNow();
+                yield return Frames(3);
+            }
+
+            Physics.SyncTransforms();
+
             // Pip's own capsule must not answer the probe.
             int mask = Physics.DefaultRaycastLayers & ~(1 << GameBootstrap.Instance.Pip.gameObject.layer);
             int checkedBats = 0;
@@ -238,7 +249,10 @@ namespace SpookyStreet.Tests.PlayMode
                 checkedBats++;
             }
 
-            Assert.AreEqual(string.Empty, failures.ToString(), "perched bats without their surface");
+            if (failures.Length > 0)
+            {
+                Assert.Fail("perched bats without their surface:" + failures);
+            }
             Assert.GreaterOrEqual(checkedBats, 20);
         }
     }
