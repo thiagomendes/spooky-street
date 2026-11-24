@@ -144,7 +144,16 @@ Known limits, left as they are:
 
 ## Checks
 
-CHECKS
+- `./tools/check-local.sh`: all local checks passed (629 core tests, among them the 5 `PortraitAtlasLayoutTests`;
+  43 audio tool tests; project structure, metas, linters).
+- **CI run 154** on commit `f89523c` (the art, table, import rules and tests):
+  `https://github.com/thiagomendes/spooky-street/actions/runs/45165596819`, conclusion **success**. Static checks
+  passed; the Unity job (compile, EditMode, PlayMode and the visual captures) passed, and its summary lists
+  `SpookyStreet.Tests.Project.PortraitAtlasImportTests` 3/3 passed and `UiSpriteImportTests` 3/3 passed, so the
+  atlas imported in Unity 6000.3.28f1 with the settings above.
+- The commit that adds this section changes only this document and is marked `[skip ci]`.
+- Not checked here: no device, Xcode or TestFlight run (none is due for this half; the plan puts portraits in TF2
+  after the wiring), and no in-game capture, because nothing draws the atlas yet.
 
 ## Left for the wiring stream (wave 2)
 
