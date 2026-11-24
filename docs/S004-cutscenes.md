@@ -112,11 +112,26 @@ Saved progress keys stay stable IDs only (`cs.c01.seed`, `cs.c01.street_remember
 
 ## 3. CI evidence
 
-(filled in below)
+| Run | Commit | Result |
+|---|---|---|
+| 169 | 826d96a | green: EditMode 797/797, PlayMode 144/144, Visual 19/19 (all new Stream C fixtures pass) |
+| 173 | 4f226d3 | green: all jobs (four camera framings reframed after run 169's frame review) |
+
+Checked by the orchestrator from the run 173 job log (job 138418624973).
 
 ## 4. Frames
 
-(filled in below)
+Run 173 frames, looked at, in `docs/evidence/s004/cutscenes/`:
+
+- `71_seed_moon_glint_run173.jpg`: the moon puppet's glint in the troupe photo reads clearly. Good.
+- `r_seed_mount_run173.jpg` and `r_seed_booth_run173.jpg`: the crest on the photo mount and the booth crest match. Good.
+- `r_seed_pip_run173.jpg`: Pip on the arrival porch, back in control. Good.
+- `72_street_vale_owl_bows_run173.jpg`: the owl house and the bowing roof owl read, but Mr. Vale is small and seen from
+  behind at the bottom of the frame. The caption carries the beat. **Polish later**: a three-quarter front shot of
+  Vale with the roof owl behind him.
+- `r_street_kit_run173.jpg`: Kit waves, but a porch post hides part of her. **Polish later**: move the eye east of the
+  post.
+- `55_reveal_sticker_vale_run173.jpg`: the reveal still reads as in S002.5b.
 
 ## 5. Narrative bible checklist (§6)
 
