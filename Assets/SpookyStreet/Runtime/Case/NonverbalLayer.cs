@@ -142,6 +142,9 @@ namespace SpookyStreet.Case
 
         // ------------------------------------------------------------------------------------- settings
 
+        /// <summary>The reduced-motion setting changed (settings card, S004 stream E): the case's views follow it now.</summary>
+        public void ApplyMotion() => ApplySettings();
+
         private void ApplySettings()
         {
             _director.Dialogue.ReducedMotion = ReducedMotion;

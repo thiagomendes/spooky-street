@@ -1,12 +1,16 @@
 using System;
 using SpookyStreet.Controls;
 using SpookyStreet.Core.Art;
+using SpookyStreet.Core.Flow;
 using SpookyStreet.Core.Nonverbal;
+using SpookyStreet.Core.Parent;
 using SpookyStreet.Core.Save;
+using SpookyStreet.Localization;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using NvKeys = SpookyStreet.Core.Localization.LocalizationKeys.NonverbalUi;
+using ParentKeys = SpookyStreet.Core.Localization.LocalizationKeys.Parent;
 
 namespace SpookyStreet.UI.Nonverbal
 {
@@ -14,8 +18,10 @@ namespace SpookyStreet.UI.Nonverbal
     /// The non-verbal UX menus (docs/nonverbal-ux.md §2.6, §8; D23.4, D23.5), on their own canvas above the title,
     /// pause and notices: the parent gate (two marked felt spots held together for 3 s, a candy ring fills; a fresh
     /// <see cref="ParentGate"/> per guarded action) and the settings card with the <c>Helper</c> toggle and the music,
-    /// sounds and voices volume sliders (S003), which sits behind the gate. One hybrid reading mode (D23.1): no first-launch choice and no words toggle. Everything runs
-    /// on unscaled time, so it works on the pause screen.
+    /// sounds and voices volume sliders (S003), which sits behind the gate. S004 stream E: the card also holds every
+    /// stored accessibility and control setting (<see cref="SettingsCard"/>) in three columns, and the Language, For
+    /// grown-ups and Credits entries. One hybrid reading mode (D23.1): no first-launch choice and no words toggle.
+    /// Everything runs on unscaled time, so it works on the pause screen.
     /// </summary>
     public sealed class NonverbalMenus : MonoBehaviour
     {
@@ -331,114 +337,307 @@ namespace SpookyStreet.UI.Nonverbal
 
         // ------------------------------------------------------------------------------------- settings
 
+        /// <summary>The card's size before it is fitted to the safe area (any aspect ratio, D25).</summary>
+        public static readonly Vector2 CardSize = new Vector2(1420f, 650f);
+
+        private const float ColumnWidth = 440f;
+        private const float RowHeight = 100f;
+        private const float RowsTop = -150f;
+
+        private readonly System.Collections.Generic.Dictionary<string, Image> _ticks =
+            new System.Collections.Generic.Dictionary<string, Image>();
+
+        private readonly System.Collections.Generic.Dictionary<string, Slider> _sliders =
+            new System.Collections.Generic.Dictionary<string, Slider>();
+
+        private readonly System.Collections.Generic.Dictionary<string, Button> _switches =
+            new System.Collections.Generic.Dictionary<string, Button>();
+
+        private RectTransform _card;
+
+        /// <summary>Gamepad and keyboard on the settings card (F1).</summary>
+        public UiFocusScreen SettingsNavigation { get; private set; }
+
+        /// <summary>The settings card (tests, captures).</summary>
+        public RectTransform SettingsCardRect => _card;
+
+        /// <summary>Opens the language screen (set by the game; the card hides while it is up).</summary>
+        public Action OpenLanguage { get; set; }
+
+        /// <summary>Opens the "For grown-ups" page (set by the game).</summary>
+        public Action OpenGrownUps { get; set; }
+
+        /// <summary>Opens the credits (set by the game).</summary>
+        public Action OpenCredits { get; set; }
+
+        public Button LanguageEntry { get; private set; }
+
+        public Button GrownUpsEntry { get; private set; }
+
+        public Button CreditsEntry { get; private set; }
+
+        /// <summary>A preference switch by its <see cref="SettingsCard"/> id (tests).</summary>
+        public Button Switch(string id) => _switches.TryGetValue(id, out var b) ? b : null;
+
+        /// <summary>A switch shows its check (tests).</summary>
+        public bool SwitchShowsOn(string id) => _ticks.TryGetValue(id, out var t) && t.enabled;
+
+        /// <summary>A slider by its <see cref="SettingsCard"/> id (tests).</summary>
+        public Slider SliderFor(string id) => _sliders.TryGetValue(id, out var s) ? s : null;
+
         private void BuildSettings()
         {
-            var scrim = UiFactory.Panel(_root, "NonverbalSettings", UiFactory.WithAlpha(Palette.NightViolet, 0.8f));
+            var scrim = UiFactory.Panel(_root, "NonverbalSettings", UiFactory.WithAlpha(Palette.NightViolet, 0.86f));
             _settings = scrim.gameObject;
             var content = UiFactory.Stretch(UiFactory.Rect(scrim.transform, "Content"));
             content.gameObject.AddComponent<SafeAreaFitter>();
-            var card = UiFactory.PaperCard(content, "SettingsCard", new Vector2(0.5f, 0.5f), Vector2.zero,
-                new Vector2(720f, 610f), -0.8f);
+            var card = UiFactory.PaperCard(content, "SettingsCard", new Vector2(0.5f, 0.5f), Vector2.zero, CardSize, -0.4f);
+            _card = card.rectTransform;
+            UiFitInside.Attach(_card, CardSize, 16f);
+
             var gear = UiFactory.Sprite(card.transform, "Gear", UiFactory.Baked(UiSpriteCatalog.IconGear), UiFactory.Ink,
-                new Vector2(0.5f, 1f), new Vector2(0f, -66f), new Vector2(72f, 72f));
+                new Vector2(0f, 1f), new Vector2(70f, -56f), new Vector2(56f, 56f));
             gear.preserveAspect = true;
-            HelperToggle = Row(card.transform, "HelperRow", "pg.hands", NonverbalSettings.HelperLabelKey, -180f,
+            var heading = UiFactory.Label(card.transform, "Heading", ParentKeys.SettingsHeading, 44, TextAnchor.MiddleLeft,
+                UiFactory.Ink, UiFactory.DisplayFont);
+            UiFactory.Place(heading.rectTransform, new Vector2(0f, 1f), new Vector2(112f, -56f), new Vector2(700f, 64f),
+                new Vector2(0f, 0.5f));
+
+            for (int c = 0; c < SettingsCard.Columns; c++)
+            {
+                var title = UiFactory.Label(card.transform, "Column" + c, SettingsCard.ColumnHeadingKeys[c], 28,
+                    TextAnchor.MiddleLeft, Graphite, UiFactory.BoldFont);
+                UiFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(ColumnX(c), -110f),
+                    new Vector2(ColumnWidth - 20f, 40f));
+            }
+
+            var helper = SettingsCard.HelperRow;
+            HelperToggle = SwitchRow(card.transform, "HelperRow", helper.Picture, helper.LabelKey, helper.Column, helper.Row,
                 ToggleHelper, out _helperTick);
-            MusicSlider = VolumeRow(card.transform, "MusicRow", "pg.emo_tune", NvKeys.SettingsMusic, -296f,
-                v => SetVolume(p => p.MusicVolume = v));
-            SoundsSlider = VolumeRow(card.transform, "SoundsRow", "pg.knock_ring", NvKeys.SettingsSounds, -400f,
-                v => SetVolume(p => p.EffectsVolume = v));
-            VoicesSlider = VolumeRow(card.transform, "VoicesRow", "pg.emo_wow", NvKeys.SettingsVoices, -504f,
-                v => SetVolume(p => p.DialogueVolume = v));
+            foreach (var row in SettingsCard.All)
+            {
+                if (row.IsSlider)
+                {
+                    var r = row;
+                    _sliders[row.Id] = SliderRow(card.transform, RowName(row.Id), row.Picture, row.LabelKey, row.Column,
+                        row.Row, v => SetSlider(r, v));
+                }
+                else
+                {
+                    string id = row.Id;
+                    _switches[id] = SwitchRow(card.transform, RowName(id), row.Picture, row.LabelKey, row.Column, row.Row,
+                        () => ToggleSetting(id), out var tick);
+                    _ticks[id] = tick;
+                }
+            }
+
+            MusicSlider = _sliders[SettingsCard.Music];
+            SoundsSlider = _sliders[SettingsCard.Sounds];
+            VoicesSlider = _sliders[SettingsCard.Voices];
+
+            var entries = new Button[SettingsCard.Entries.Count];
+            for (int i = 0; i < entries.Length; i++)
+            {
+                var entry = SettingsCard.Entries[i];
+                UnityEngine.Events.UnityAction open;
+                switch (entry.Id)
+                {
+                    case SettingsCard.Language:
+                        open = () => OpenSubpage(OpenLanguage);
+                        break;
+                    case SettingsCard.GrownUps:
+                        open = () => OpenSubpage(OpenGrownUps);
+                        break;
+                    default:
+                        open = () => OpenSubpage(OpenCredits);
+                        break;
+                }
+
+                entries[i] = UiFactory.SecondaryButton(card.transform, "Entry_" + entry.Id, entry.LabelKey,
+                    new Vector2(0.5f, 0f), new Vector2(ColumnX(i), 70f), new Vector2(ColumnWidth - 40f, 96f), open);
+            }
+
+            LanguageEntry = entries[0];
+            GrownUpsEntry = entries[1];
+            CreditsEntry = entries[2];
+
             var close = UiFactory.FeltDisc(card.transform, "CloseSettings", UiSpriteCatalog.FeltDiscNight, Palette.WarmPaper,
                 UiSpriteCatalog.IconClose, Palette.WarmPaper, null, UiFactory.SystemDiscDiameter, Vector2.one,
-                new Vector2(-20f, -20f), 1f);
+                new Vector2(-62f, -56f), 1f);
             SettingsCloseButton = close.gameObject.AddComponent<Button>();
             SettingsCloseButton.transition = Selectable.Transition.None;
             SettingsCloseButton.onClick.AddListener(() => _settings.SetActive(false));
             _settings.SetActive(false);
+
+            // Gamepad and keyboard (F1): the rows on a grid, Back closes; left and right move a focused slider.
+            var nav = UiFocusScreen.Attach(_settings, SettingsCard.BuildFocus(), card.transform);
+            nav.Bind(SettingsCard.Close, SettingsCloseButton);
+            nav.Bind(SettingsCard.Helper, HelperToggle);
+            foreach (var pair in _switches)
+            {
+                nav.Bind(pair.Key, pair.Value);
+            }
+
+            foreach (var pair in _sliders)
+            {
+                nav.Bind(pair.Key, (RectTransform)pair.Value.transform.parent, null);
+            }
+
+            nav.Bind(SettingsCard.Language, LanguageEntry);
+            nav.Bind(SettingsCard.GrownUps, GrownUpsEntry);
+            nav.Bind(SettingsCard.Credits, CreditsEntry);
+            nav.DirectionOverride = StepFocusedSlider;
+            SettingsNavigation = nav;
         }
 
-        private static Button Row(Transform card, string name, string art, string key, float y,
+        private static string RowName(string id) => "Row_" + id;
+
+        private static float ColumnX(int column) => (column - (SettingsCard.Columns - 1) * 0.5f) * (ColumnWidth + 20f);
+
+        private static float RowY(int row) => RowsTop - (row - 1) * RowHeight;
+
+        /// <summary>Left and right on a focused slider move it one step; anything else moves focus.</summary>
+        private bool StepFocusedSlider(UiDirection direction)
+        {
+            if (direction != UiDirection.Left && direction != UiDirection.Right)
+            {
+                return false;
+            }
+
+            var focus = SettingsNavigation != null ? SettingsNavigation.Focus : null;
+            if (focus == null || !_sliders.TryGetValue(focus, out var slider) || Preferences == null)
+            {
+                return false;
+            }
+
+            float value = SettingsCard.Step(Preferences, focus, direction == UiDirection.Right ? 1 : -1);
+            _refreshing = true;
+            slider.SetValueWithoutNotify(value);
+            _refreshing = false;
+            PreferencesChanged?.Invoke(Preferences);
+            return true;
+        }
+
+        /// <summary>Hides the card while a page it opened is up; <see cref="ReturnToSettings"/> brings it back.</summary>
+        private void OpenSubpage(Action open)
+        {
+            if (open == null)
+            {
+                return;
+            }
+
+            _settings.SetActive(false);
+            open();
+        }
+
+        /// <summary>A page opened from the card closed: the card comes back as it was (no new gate needed).</summary>
+        public void ReturnToSettings()
+        {
+            _settings.SetActive(true);
+            RefreshSettings();
+        }
+
+        private Button SwitchRow(Transform card, string name, string art, string key, int column, int rowIndex,
             UnityEngine.Events.UnityAction onClick, out Image tick)
         {
             var row = UiFactory.Rect(card, name);
-            UiFactory.Place(row, new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(620f, 104f));
+            UiFactory.Place(row, new Vector2(0.5f, 1f), new Vector2(ColumnX(column), RowY(rowIndex)),
+                new Vector2(ColumnWidth, RowHeight - 4f));
+            var hit = row.gameObject.AddComponent<Image>();
+            hit.color = new Color(1f, 1f, 1f, 0f); // the whole row is the switch, not only the disc
             var icon = UiFactory.Sprite(row, "Picture", PuppetAtlas.Get(art), Color.white, new Vector2(0f, 0.5f),
-                new Vector2(52f, 0f), new Vector2(96f, 96f));
+                new Vector2(34f, 0f), new Vector2(64f, 64f));
             icon.preserveAspect = true;
-            var label = UiFactory.Label(row, "Label", key, 34, TextAnchor.MiddleLeft, UiFactory.Ink, UiFactory.BoldFont);
-            UiFactory.Place(label.rectTransform, new Vector2(0f, 0.5f), new Vector2(120f, 0f), new Vector2(360f, 70f),
-                new Vector2(0f, 0.5f));
+            var label = UiFactory.Label(row, "Label", key, 30, TextAnchor.MiddleLeft, UiFactory.Ink, UiFactory.BoldFont);
+            UiFactory.Place(label.rectTransform, new Vector2(0f, 0.5f), new Vector2(76f, 0f),
+                new Vector2(ColumnWidth - 76f - 108f, RowHeight - 12f), new Vector2(0f, 0.5f));
             // The switch: a felt disc that shows a green check when on, an empty bone disc when off (shape, not colour).
             var disc = UiFactory.FeltDisc(row, "Switch", UiSpriteCatalog.FeltDiscBone, Palette.HauntedPurple,
-                UiSpriteCatalog.IconCheck, new Color32(0x8D, 0xBF, 0x3F, 0xFF), null, 100f, new Vector2(1f, 0.5f),
-                new Vector2(-56f, 0f), 1f);
+                UiSpriteCatalog.IconCheck, new Color32(0x8D, 0xBF, 0x3F, 0xFF), null, 96f, new Vector2(1f, 0.5f),
+                new Vector2(-52f, 0f), 1f);
+            disc.raycastTarget = false;
             tick = disc.transform.Find("Icon").GetComponent<Image>();
-            var button = disc.gameObject.AddComponent<Button>();
-            button.targetGraphic = disc;
+            var button = row.gameObject.AddComponent<Button>();
+            button.targetGraphic = hit;
             button.transition = Selectable.Transition.None;
             button.onClick.AddListener(onClick);
+            AccessibleName.Set(row.gameObject, key);
             return button;
         }
 
-        /// <summary>A volume row: picture, label and a wide felt slider (a 64 pt thumb for small fingers).</summary>
-        private static Slider VolumeRow(Transform card, string name, string art, string key, float y,
+        /// <summary>A slider row: picture, label and a wide felt slider (a 64 pt thumb for small fingers).</summary>
+        private Slider SliderRow(Transform card, string name, string art, string key, int column, int rowIndex,
             UnityEngine.Events.UnityAction<float> onChange)
         {
             var row = UiFactory.Rect(card, name);
-            UiFactory.Place(row, new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(620f, 96f));
+            UiFactory.Place(row, new Vector2(0.5f, 1f), new Vector2(ColumnX(column), RowY(rowIndex)),
+                new Vector2(ColumnWidth, RowHeight - 4f));
             var icon = UiFactory.Sprite(row, "Picture", PuppetAtlas.Get(art), Color.white, new Vector2(0f, 0.5f),
-                new Vector2(44f, 0f), new Vector2(80f, 80f));
+                new Vector2(34f, 0f), new Vector2(64f, 64f));
             icon.preserveAspect = true;
-            var label = UiFactory.Label(row, "Label", key, 30, TextAnchor.MiddleLeft, UiFactory.Ink, UiFactory.BoldFont);
-            UiFactory.Place(label.rectTransform, new Vector2(0f, 0.5f), new Vector2(100f, 0f), new Vector2(170f, 64f),
+            var label = UiFactory.Label(row, "Label", key, 28, TextAnchor.MiddleLeft, UiFactory.Ink, UiFactory.BoldFont);
+            UiFactory.Place(label.rectTransform, new Vector2(0f, 0.5f), new Vector2(76f, 0f), new Vector2(150f, RowHeight - 12f),
                 new Vector2(0f, 0.5f));
 
+            const float width = 196f;
             var area = UiFactory.Rect(row, "Slider");
-            UiFactory.Place(area, new Vector2(1f, 0.5f), new Vector2(-170f, 0f), new Vector2(300f, 80f));
+            UiFactory.Place(area, new Vector2(1f, 0.5f), new Vector2(-width * 0.5f - 8f, 0f), new Vector2(width, 88f));
             var hit = area.gameObject.AddComponent<Image>();
             hit.color = new Color(1f, 1f, 1f, 0f); // the whole row height is grabbable
             var track = UiFactory.Sprite(area, "Track", UiFactory.Circle, UiFactory.WithAlpha(UiFactory.Ink, 0.22f),
-                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(300f, 16f));
+                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(width, 16f));
             track.type = Image.Type.Simple;
             var fillArea = UiFactory.Rect(area, "FillArea");
-            UiFactory.Place(fillArea, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(268f, 16f));
+            UiFactory.Place(fillArea, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(width - 32f, 16f));
             var fill = UiFactory.Panel(fillArea, "Fill", Palette.CandyCornYellow, false);
             var handleArea = UiFactory.Rect(area, "HandleArea");
-            UiFactory.Place(handleArea, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(268f, 80f));
+            UiFactory.Place(handleArea, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(width - 32f, 88f));
             var handle = UiFactory.Sprite(handleArea, "Handle", UiFactory.Circle, Palette.HauntedPurple,
                 new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(64f, 64f));
             handle.rectTransform.anchorMin = new Vector2(0f, 0f);
             handle.rectTransform.anchorMax = new Vector2(0f, 1f);
-            handle.rectTransform.sizeDelta = new Vector2(64f, -16f);
+            handle.rectTransform.sizeDelta = new Vector2(60f, -24f);
             var slider = area.gameObject.AddComponent<Slider>();
             slider.fillRect = fill.rectTransform;
             slider.handleRect = handle.rectTransform;
             slider.targetGraphic = handle;
             slider.transition = Selectable.Transition.None;
+            slider.navigation = new Navigation { mode = Navigation.Mode.None };
             slider.direction = Slider.Direction.LeftToRight;
             slider.minValue = 0f;
             slider.maxValue = 1f;
             slider.value = 1f;
             slider.onValueChanged.AddListener(onChange);
+            AccessibleName.Set(area.gameObject, key);
             return slider;
         }
 
-        private void SetVolume(Action<PreferencesData> change)
+        private void SetSlider(SettingRow row, float value)
         {
             if (Preferences == null || _refreshing)
             {
                 return;
             }
 
-            change(Preferences);
+            row.SetValue(Preferences, value);
+            PreferencesChanged?.Invoke(Preferences);
+        }
+
+        private void ToggleSetting(string id)
+        {
+            if (Preferences == null)
+            {
+                return;
+            }
+
+            SettingsCard.Toggle(Preferences, id);
+            RefreshSettings();
             PreferencesChanged?.Invoke(Preferences);
         }
 
         private bool _refreshing;
 
-        /// <summary>The settings card with the Helper toggle (call from behind <see cref="RequireParent"/>).</summary>
+        /// <summary>The settings card (call from behind <see cref="RequireParent"/>).</summary>
         public void OpenSettings()
         {
             _settings.SetActive(true);
@@ -468,9 +667,18 @@ namespace SpookyStreet.UI.Nonverbal
             }
 
             _refreshing = true;
-            MusicSlider.SetValueWithoutNotify(Preferences.MusicVolume);
-            SoundsSlider.SetValueWithoutNotify(Preferences.EffectsVolume);
-            VoicesSlider.SetValueWithoutNotify(Preferences.DialogueVolume);
+            foreach (var row in SettingsCard.All)
+            {
+                if (row.IsSlider)
+                {
+                    _sliders[row.Id].SetValueWithoutNotify(row.GetValue(Preferences));
+                }
+                else
+                {
+                    _ticks[row.Id].enabled = row.Get(Preferences);
+                }
+            }
+
             _refreshing = false;
         }
 

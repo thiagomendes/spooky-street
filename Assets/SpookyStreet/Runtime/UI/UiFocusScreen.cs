@@ -53,6 +53,12 @@ namespace SpookyStreet.UI
         /// <summary>Runs before Back exits; return true to keep the screen open (it handled Back itself).</summary>
         public Func<bool> BackOverride { get; set; }
 
+        /// <summary>
+        /// Runs before a d-pad step moves focus; return true when the screen used the step itself (a slider moved, a
+        /// sheet scrolled), so focus stays where it is.
+        /// </summary>
+        public Func<UiDirection, bool> DirectionOverride { get; set; }
+
         /// <summary>Page left and right (null: the bumpers do nothing on this screen).</summary>
         public Action PageLeft { get; set; }
 
@@ -132,6 +138,11 @@ namespace SpookyStreet.UI
         public void Navigate(UiDirection direction)
         {
             SyncEnabled();
+            if (DirectionOverride != null && DirectionOverride(direction))
+            {
+                return;
+            }
+
             SetFocus(Graph.Move(Focus, direction));
         }
 

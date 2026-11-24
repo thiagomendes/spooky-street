@@ -191,6 +191,15 @@ namespace SpookyStreet.CameraSystem
             return rig;
         }
 
+        /// <summary>The player's "invert up and down" setting (on top of the tuning asset's default).</summary>
+        public bool InvertY { get; set; }
+
+        /// <summary>The player's camera speed setting (0.25–3×), applied to touch, mouse and stick orbit alike.</summary>
+        public float Sensitivity { get; set; } = 1f;
+
+        /// <summary>How a drag or stick up turns the pitch: -1 by default, +1 inverted.</summary>
+        public float PitchSign => _tuning != null && _tuning.invertY != InvertY ? 1f : _tuning == null && InvertY ? 1f : -1f;
+
         private void LateUpdate()
         {
             if (_pip == null)
@@ -209,7 +218,8 @@ namespace SpookyStreet.CameraSystem
 
                 orbit += _input.ReadMouseOrbitPixels() * _tuning.mouseDegreesPerPixel;
                 orbit += _input.ReadStickOrbit() * (_tuning.stickDegreesPerSecond * dt);
-                float pitchSign = _tuning.invertY ? 1f : -1f;
+                orbit *= Mathf.Clamp(Sensitivity, 0.25f, 3f);
+                float pitchSign = PitchSign;
                 _orbit.ApplyManual(orbit.x, orbit.y * pitchSign);
 
                 if (_input.ConsumeRecenterPressed())

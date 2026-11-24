@@ -138,6 +138,28 @@ namespace SpookyStreet.UI
 
         public bool Showing => _current != null;
 
+        /// <summary>Opaque captions (settings, S004 stream E): the night backing is fully solid instead of 94 %.</summary>
+        public bool Opaque
+        {
+            get => _opaque;
+            set
+            {
+                _opaque = value;
+                var backing = _root != null ? _root.GetComponent<Image>() : null;
+                if (backing != null)
+                {
+                    var c = backing.color;
+                    c.a = value ? 1f : NightTint.a;
+                    backing.color = c;
+                }
+            }
+        }
+
+        private bool _opaque;
+
+        /// <summary>The backing's alpha now (tests).</summary>
+        public float BackingAlpha => _root != null && _root.GetComponent<Image>() != null ? _root.GetComponent<Image>().color.a : 0f;
+
         /// <summary>Lifts the strip above the speech card while a conversation is open, so both stay readable.</summary>
         public bool Raised
         {
