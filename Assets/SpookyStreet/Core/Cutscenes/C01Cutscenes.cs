@@ -434,7 +434,7 @@ namespace SpookyStreet.Core.Cutscenes
 
             // 3. The next one: a slow pan along the five puppets, and the moon glints, softer.
             beats.Add(new CutsceneBeat("moon", 3f,
-                    Story(P(0.1f, 0.09f, 0.62f), P(0.1f, 0.08f, 0f), 30f, P(-0.17f, 0.1f, 0.5f), P(-0.176f, 0.1f, 0f), 28f, beats,
+                    Story(P(0.1f, 0.09f, 0.62f), P(0.1f, 0.08f, 0f), 30f, P(-0.16f, 0.07f, 0.6f), P(-0.17f, 0.06f, 0f), 29f, beats,
                         CutsceneAnchors.KitPhoto))
                 .Caption(Keys.SeedMoon)
                 .World(1.7f, CutsceneWorld.Glint(SeedPuppet, soft: true)));
@@ -450,8 +450,8 @@ namespace SpookyStreet.Core.Cutscenes
                 .Caption(Keys.SeedCrest)
                 .Cue(CastCue.Place(0f, CastActor.Pip, PorchSpawn, 0f)));
             beats.Add(new CutsceneBeat("pip", 1f,
-                    Shot(ShotTransition.Cut, P(1.5f, 1.2f, -11.7f), P(0f, 1.2f, -13.4f), 36f, P(1.45f, 1.22f, -11.8f),
-                        P(0f, 1.25f, -13.4f), 35f))
+                    Shot(ShotTransition.Cut, P(1.9f, 1.4f, -11.2f), P(0f, 1.38f, -13.4f), 38f, P(1.85f, 1.42f, -11.3f),
+                        P(0f, 1.42f, -13.4f), 37f))
                 .Caption(Keys.SeedCrest)
                 .Babble(0.2f, CutsceneAudio.Babble(CastActor.Pip, BabbleEmotion.Thinking)));
 
@@ -491,8 +491,8 @@ namespace SpookyStreet.Core.Cutscenes
 
                 // 2. On the hour: the booth's bell dings; Mr. Vale checks his watch and looks up as the owl bows.
                 new CutsceneBeat("hour", 3f,
-                        Shot(ShotTransition.Cut, P(10.2f, 1.45f, -1.9f), P(3f, 4.2f, 9f), 40f, P(10f, 1.5f, -1.6f),
-                            P(3f, 4.2f, 9f), 38f))
+                        Shot(ShotTransition.Cut, P(10.6f, 1.5f, -2.4f), P(2.46f, 3.14f, 6.42f), 48f, P(10.5f, 1.52f, -2.25f),
+                            P(2.46f, 3.14f, 6.42f), 46f))
                     .Caption(Keys.StreetHour)
                     .World(0.1f, CutsceneWorld.BoothBell)
                     .Cue(CastCue.Gesture(0.25f, CastActor.Vale, CharacterClips.CheckWatch, P(0f, 1.4f, 10.9f)))
@@ -523,10 +523,10 @@ namespace SpookyStreet.Core.Cutscenes
                     .Cue(CastCue.OneShot(0.3f, CastActor.June, CharacterClips.Wave))
                     .Babble(0.4f, CutsceneAudio.BabbleAsIn(CastActor.June, Lines.JuneRemembers)),
 
-                // 6. Kit at her open booth waves toward the porch ...
+                // 6. Kit at her open booth waves toward the porch (the reveal's reopening framing) ...
                 new CutsceneBeat("kit", 2.3f,
-                        new CameraShot(P(0.92f, 1.55f, 7.66f), P(1.15f, 1.45f, 10.25f), 36f)
-                            .DriftTo(P(0.95f, 1.52f, 7.9f), P(1.15f, 1.45f, 10.25f), 34f))
+                        new CameraShot(P(0.35f, 1.45f, 6.3f), P(0f, 1.35f, 10.2f), 40f)
+                            .DriftTo(P(0.3f, 1.42f, 6.7f), P(0f, 1.35f, 10.2f), 38f))
                     .Cue(CastCue.OneShot(0.2f, CastActor.Kit, CharacterClips.Wave))
                     .Babble(0.3f, CutsceneAudio.BabbleAsIn(CastActor.Kit, Lines.KitThanks)),
 
