@@ -5,7 +5,6 @@ using SpookyStreet.Core.Cutscenes;
 using SpookyStreet.Localization;
 using SpookyStreet.UI.Nonverbal;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using Keys = SpookyStreet.Core.Localization.LocalizationKeys.Cutscenes;
 
@@ -15,15 +14,13 @@ namespace SpookyStreet.UI
     /// Rewatching cutscenes from the notebook (D28, narrative bible §5): a felt "watch" disc with Pip's picture in the
     /// notebook's free top-left corner plays the opening again from any page, and once the case is stamped the case
     /// page (the final card) gets a second disc with the owl's picture that plays the reveal. Keyboard V and gamepad
-    /// North watch too (the reveal on the case page, the opening elsewhere), so every control scheme can rewatch (D25).
+    /// North (the notebook's UiNavigate Rewatch action, S004 F1) watch too (the reveal on the case page, the opening elsewhere), so every control scheme can rewatch (D25).
     /// A companion of <see cref="NotebookView"/>: it reads the view and adds its controls without changing the pages.
     /// </summary>
     public sealed class NotebookRewatch : MonoBehaviour
     {
         private NotebookView _view;
         private GameObject _finalCard;
-        private InputActionMap _input;
-        private InputAction _watch;
 
         /// <summary>The cutscenes the case page offers now (<see cref="CutscenePolicy.Rewatchable"/>).</summary>
         public Func<IReadOnlyList<string>> Rewatchable { get; set; }
@@ -43,9 +40,6 @@ namespace SpookyStreet.UI
             var content = view.transform.Find("Content");
             rewatch.OpeningButton = Disc(content != null ? content : view.transform, "WatchOpening", "pg.pip",
                 new Vector2(0f, 1f), new Vector2(62f, -58f), Keys.WatchOpening, () => rewatch.Play(C01Cutscenes.OpeningId));
-            rewatch._input = new InputActionMap("NotebookRewatch");
-            rewatch._watch = rewatch._input.AddAction("Watch", InputActionType.Button, "<Keyboard>/v");
-            rewatch._watch.AddBinding("<Gamepad>/buttonNorth");
             return rewatch;
         }
 
@@ -105,18 +99,6 @@ namespace SpookyStreet.UI
         private void Update()
         {
             bool open = _view != null && _view.IsOpen;
-            if (open != _input.enabled)
-            {
-                if (open)
-                {
-                    _input.Enable();
-                }
-                else
-                {
-                    _input.Disable();
-                }
-            }
-
             if (!open)
             {
                 return;
@@ -140,16 +122,12 @@ namespace SpookyStreet.UI
                 }
             }
 
-            if (_watch.WasPressedThisFrame())
+            var actions = _view.UiActions;
+            if (actions != null && actions.Pressed(actions.Rewatch))
             {
                 bool onCasePage = _view.FinalCard != null && _view.CurrentQuestion == null && _view.CurrentPage == _view.PageCount - 1;
                 Play(onCasePage ? C01Cutscenes.RevealId : C01Cutscenes.OpeningId);
             }
-        }
-
-        private void OnDestroy()
-        {
-            _input?.Dispose();
         }
     }
 }
