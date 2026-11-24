@@ -19,6 +19,7 @@
 - New files under `Assets/` need `.meta` files: run `python3 tools/unity_meta.py`; never rewrite existing metas.
 - `Assets/SpookyStreet/Core` must stay engine-free (`noEngineReferences`, C# 9); put testable logic there and
   test it in `Assets/SpookyStreet/Tests/EditMode/Core` (compiled by both Unity and `tools/core-tests`).
+- Pip is a girl (D30): she/her in every text and brief; feminine forms in Portuguese and other gendered languages.
 - Every user-facing string is a key in `Assets/SpookyStreet/Content/Resources/Localization/en.json` with
   translator context, referenced through `LocalizationKeys`. Never key saved progress off display text.
 - Changing the Unity patch: update `ProjectVersion.txt` and both workflow image tags + digests together.
