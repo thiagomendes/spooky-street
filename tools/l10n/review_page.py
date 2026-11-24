@@ -73,6 +73,8 @@ NOTES = {
     "c01.cutscene.opening.window": "\"Acesa\" (lit) instead of \"brilha\", so the opening has no \"brilho\" (Bea's clue word), as English avoids \"flash\".",
     "c01.cutscene.reveal.reopen": "\"Teatrinho\" = little puppet theatre, a warmer picture than \"barraca\" (stall). The kit still says \"barraca\" in its own prose.",
     "ui.language.in_game": "\"Já vem no jogo\" = comes with the game.",
+    "keepsake.page.lanterns": "\"Lanternas por toda a Rua das Lanternas\" keeps the English echo of the street's name.",
+    "keepsake.page.friends": "\"Amigos\" (masculine plural) is the neutral form for a mixed group. It does not say who they are.",
     "ui.save.newer_heading": "\"Progresso\" for a save. A child understands it better than \"jogo salvo\".",
 }
 
@@ -95,6 +97,7 @@ GROUPS = [
     ("Story scenes", ["ui.cutscene.", "c01.cutscene."]),
     ("Saves", ["ui.save."]),
     ("Language screen", ["ui.language."]),
+    ("Keepsake pages (old drawings)", ["keepsake."]),
 ]
 
 
@@ -158,8 +161,20 @@ for title, prefixes in GROUPS:
             ln, bd = len(p['value']), budget(e['value'])
         out.append(f"| `{e['key']}` | {cell(en_t)} | {cell(pt_t)} | {ln}/{bd} | {cell(NOTES.get(e['key'], ''))} |")
     out.append("")
-left = [e['key'] for e in en if e['key'] not in seen]
-assert not left, left
+left = [e for e in en if e['key'] not in seen]
+if left:
+    # Keys of a group not listed above still get a row, so the page always covers every key.
+    out.append("## Other")
+    out.append("")
+    out.append("| Key | English | Português | Len | Note |")
+    out.append("|---|---|---|---|---|")
+    for e in left:
+        p = pt[e['key']]
+        ln = max(len(v) for v in p['plural'].values()) if 'plural' in p else len(p['value'])
+        bd = budget(e['plural']['other'] if 'plural' in e else e['value'])
+        out.append(f"| `{e['key']}` | {cell(text(e))} | {cell(text(p))} | {ln}/{bd} | {cell(NOTES.get(e['key'], ''))} |")
+        seen.add(e['key'])
+    out.append("")
 assert all(k in pt for k in NOTES), [k for k in NOTES if k not in pt]
 open(os.path.join(root, 'docs/S004-ptBR-review.md'), 'w', encoding='utf-8', newline='\n').write('\n'.join(out))
 print(len(seen))

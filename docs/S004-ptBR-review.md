@@ -321,3 +321,11 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `ui.language.none` | No more languages yet. | Ainda não há mais idiomas. | 26/32 |  |
 | `ui.language.offline` | No connection. Your languages still work. | Sem conexão. Seus idiomas continuam funcionando. | 48/58 |  |
 | `ui.language.failed` | That did not work. Nothing changed. | Não deu certo. Nada mudou. | 26/50 |  |
+
+## Keepsake pages (old drawings)
+
+| Key | English | Português | Len | Note |
+|---|---|---|---|---|
+| `keepsake.page.lanterns` | An old drawing: lanterns all along Lantern Lane. | Um desenho antigo: lanternas por toda a Rua das Lanternas. | 58/67 | "Lanternas por toda a Rua das Lanternas" keeps the English echo of the street's name. |
+| `keepsake.page.friends` | An old drawing: five friends painting lanterns. | Um desenho antigo: cinco amigos pintando lanternas. | 51/66 | "Amigos" (masculine plural) is the neutral form for a mixed group. It does not say who they are. |
+| `keepsake.page.moon` | An old drawing: tall houses, and a moon on a chimney. | Um desenho antigo: casas altas e uma lua numa chaminé. | 54/74 |  |
