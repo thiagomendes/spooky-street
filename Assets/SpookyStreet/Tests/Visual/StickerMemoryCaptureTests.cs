@@ -17,9 +17,9 @@ using N = SpookyStreet.Core.Case.CaseNotebook;
 namespace SpookyStreet.Tests.Visual
 {
     /// <summary>
-    /// D32 sticker memory frames (docs/S004-sticker-memory.md): 82 the silver cloth's memory opened by a tap (English,
-    /// mid-drift on the treehouse ramp), 83 the loose arm's memory in Brazilian Portuguese (an interior memory drawn
-    /// while Pip stands outside), 84 the decoy streamer's memory opened by Inspect on a gamepad, its glyph by the outline.
+    /// D32 sticker memory frames (docs/S004-sticker-memory.md): 90 the silver cloth's memory opened by a tap (English,
+    /// mid-drift on the treehouse ramp), 91 the loose arm's memory in Brazilian Portuguese (an interior memory drawn
+    /// while Pip stands outside), 92 the decoy streamer's memory opened by Inspect on a gamepad, its glyph by the outline.
     /// </summary>
     [Category("Visual")]
     public class StickerMemoryCaptureTests : InputTestFixture
@@ -96,12 +96,24 @@ namespace SpookyStreet.Tests.Visual
             Director.Captions.Clear();
         }
 
-        /// <summary>Lets the memory run <paramref name="seconds"/>, then holds the notebook's clock for the capture.</summary>
+        /// <summary>
+        /// Holds the notebook's clock, then sets the open memory to <paramref name="seconds"/> into its card. The card
+        /// runs on real time, and a software-rendered CI frame can take longer than the whole card (run 45467853469
+        /// lost frame 90 that way), so the capture steps the card's own clock instead of waiting; the picture keeps
+        /// being drawn each frame from the pose at that time.
+        /// </summary>
         private static IEnumerator RunThenHold(float seconds)
         {
             var notebook = Director.Notebook;
-            yield return Wait(seconds);
             notebook.CanAnimate = () => false;
+            Assert.IsTrue(notebook.MemoryOpen, "a memory is open before the capture");
+            var playback = notebook.MemoryCard.Playback;
+            playback.Advance(seconds - playback.Elapsed);
+            for (int i = 0; i < 6; i++)
+            {
+                yield return null; // the picture is drawn from the held pose
+            }
+
             Director.Captions.Clear();
         }
 
@@ -124,19 +136,19 @@ namespace SpookyStreet.Tests.Visual
             var notebook = Director.Notebook;
             var animate = notebook.CanAnimate;
 
-            // 82: a tap on the silver cloth lifts it and opens its memory: the ramp, drifting in, the caption below.
+            // 90: a tap on the silver cloth lifts it and opens its memory: the ramp, drifting in, the caption below.
             yield return Do(A(CaseActionKind.HearKnocks), CaseAction.Talk(Speaker.Bea), CaseAction.Talk(Speaker.Vale),
                 A(CaseActionKind.SitOnBench), A(CaseActionKind.ExamineStreamer), A(CaseActionKind.ExamineCloth));
             yield return OpenOn(N.QuestionEntry);
             notebook.TapSticker(N.Cloth);
             yield return RunThenHold(1.5f);
-            AssertPicture("82", N.Cloth);
-            Assert.AreEqual(N.Cloth, notebook.HeldSticker, "82: the tap also picked the sticker up");
-            yield return Shot("82_sticker_memory_cloth");
+            AssertPicture("90", N.Cloth);
+            Assert.AreEqual(N.Cloth, notebook.HeldSticker, "90: the tap also picked the sticker up");
+            yield return Shot("90_sticker_memory_cloth");
             notebook.CanAnimate = animate;
             notebook.CloseMemory();
 
-            // 84: the gamepad: the outline on the decoy streamer, its Inspect glyph (West), its memory.
+            // 92: the gamepad: the outline on the decoy streamer, its Inspect glyph (West), its memory.
             ControlSchemeTracker.Override = ControlScheme.Gamepad;
             notebook.TapSticker(N.Cloth); // let go of the cloth
             notebook.CloseMemory();
@@ -151,7 +163,7 @@ namespace SpookyStreet.Tests.Visual
                 }
             }
 
-            Assert.GreaterOrEqual(index, 0, "84: the streamer is in the tray");
+            Assert.GreaterOrEqual(index, 0, "92: the streamer is in the tray");
             notebook.Navigate(-9, 0);
             for (int i = 0; i < index; i++)
             {
@@ -161,16 +173,16 @@ namespace SpookyStreet.Tests.Visual
             yield return null;
             notebook.InspectAtCursor();
             yield return RunThenHold(2.7f);
-            AssertPicture("84", N.Streamer);
-            Assert.IsNull(notebook.HeldSticker, "84: Inspect never picks up");
-            Assert.IsTrue(notebook.InspectPrompt != null && notebook.InspectPrompt.HasGlyph, "84: the Inspect glyph shows");
+            AssertPicture("92", N.Streamer);
+            Assert.IsNull(notebook.HeldSticker, "92: Inspect never picks up");
+            Assert.IsTrue(notebook.InspectPrompt != null && notebook.InspectPrompt.HasGlyph, "92: the Inspect glyph shows");
             Assert.AreEqual(PadButton.West, notebook.InspectPrompt.LitButton);
-            yield return Shot("84_sticker_memory_streamer_pad");
+            yield return Shot("92_sticker_memory_streamer_pad");
             notebook.CanAnimate = animate;
             notebook.Close();
             ControlSchemeTracker.Override = ControlScheme.Touch;
 
-            // 83: Brazilian Portuguese: the loose arm's memory in the workshop, drawn while Pip is out on the street.
+            // 91: Brazilian Portuguese: the loose arm's memory in the workshop, drawn while Pip is out on the street.
             yield return Do(A(CaseActionKind.ExamineGrille), A(CaseActionKind.LinkArm), A(CaseActionKind.TurnCrank));
             var pt = Resources.Load<TextAsset>("Localization/pt-BR");
             Assert.IsNotNull(pt, "pt-BR ships in the app");
@@ -178,10 +190,10 @@ namespace SpookyStreet.Tests.Visual
             yield return OpenOn(N.QuestionMoved);
             Assert.IsTrue(notebook.InspectSticker(N.LooseArm));
             yield return RunThenHold(2.0f);
-            AssertPicture("83", N.LooseArm);
+            AssertPicture("91", N.LooseArm);
             Localizer.Catalog.Active.TryGet(StickerMemories.For(N.LooseArm).CaptionKey, out string caption);
-            Assert.AreEqual(caption, notebook.MemoryCard.Caption.text, "83: the caption is the Portuguese line");
-            yield return Shot("83_sticker_memory_arm_ptbr");
+            Assert.AreEqual(caption, notebook.MemoryCard.Caption.text, "91: the caption is the Portuguese line");
+            yield return Shot("91_sticker_memory_arm_ptbr");
             notebook.CanAnimate = animate;
             notebook.Close();
             Localizer.Catalog.ResetToFallback();

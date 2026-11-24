@@ -146,7 +146,7 @@ strip; the card's caption now takes its place (the notes still play in the revea
   - `CaseWiringTests` now checks that the tap on the bench sticker opens its memory (it used to check the note in the
     caption strip);
   - `UiNavigationTests.TheNavigationMapBindsWhatItsGlyphsShow` also covers Inspect.
-- **Visual** (`Tests/Visual/StickerMemoryCaptureTests.cs`): frames 82–84 (§6).
+- **Visual** (`Tests/Visual/StickerMemoryCaptureTests.cs`): frames 90–92 (§6).
 
 ## 5. CI evidence
 
