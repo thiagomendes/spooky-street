@@ -118,7 +118,7 @@ jobs:
     needs: [static, plan, unity-licence]
     if: needs.plan.outputs.unity == 'true' && needs.unity-licence.outputs.available == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -141,6 +141,8 @@ jobs:
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          # Per-step limit inside the container: the visual capture step grew past 20 min (run 166).
+          UNITY_STEP_TIMEOUT: "2400"
         run: >-
           ci/unity/run-unity.sh "$UNITY_IMAGE"
           "editmode::-runTests -testPlatform EditMode -assemblyNames SpookyStreet.Tests.EditMode
