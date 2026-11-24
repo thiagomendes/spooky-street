@@ -158,11 +158,34 @@ All names and numbers are in `Assets/SpookyStreet/Core/World/KeepsakeArt.cs` (en
 | Costume pieces | 4 | 4 | 4 | 4 (hat and pail); 3 (star lining: it shows from the front and below, little from the play camera behind her) | 5 | 4 |
 | Sketch pages | 4 | 4 | 4 | 4 | 4 | 4 |
 
-These are the agent's scores from Blender renders. The in-game scores need the CI frames (§8) and the phone.
+These are the agent's scores from Blender renders. In the CI frames (§8) the photo holds its scores; the crest is
+4 for the rim, stars and eye and 3 for the lantern's colour at the gate distance. Nothing here was seen on a phone.
 
 ## 8. CI evidence
 
-CIEVIDENCE
+Three validation runs on `feature/s004-art` (workflow `CI`, Unity 6000.3.28f1):
+
+| Run | Commit | Result | What it showed |
+|---|---|---|---|
+| 153 | `b5db14a` | failed | Compile, PlayMode and Visual passed. 6 of 19 `KeepsakeArtImportTests` failed: they read children's local positions as Y-up. Frames `70*` showed the crest as a dark disc against the lit porch. |
+| 161 | `4ebd89a` | failed | 3 of 21 `KeepsakeArtImportTests` failed: the wing and lid turns had the opposite sense, and Pip's prefab holds an exported pose (right hand raised), not her bind pose. The crest now reads (lit paint). |
+| **163** | `777066c` | **passed** | EditMode 693/693, PlayMode 131/131, Visual 15/15. `KeepsakeArtTests` 8/8, `KeepsakeArtImportTests` 21/21, `KeepsakeArtCaptureTests` 1/1. Static checks passed (632 Core tests). |
+
+Frames from run 163, in `docs/evidence/s004/art/ci/`:
+
+| Frame | What it shows |
+|---|---|
+| `69_troupe_photo.jpg` | the hall at the gameplay camera: the photo hangs on the partition, left of the service panel, above the dado rail; it reads as a framed group photo |
+| `69r_troupe_photo_close.jpg` | the photo square on, about 1 m away: five Players, the gilt puppets, the crest on the mount; the right way round (Kit and the owl on the left) |
+| `70_booth_crest.jpg` | the plaza at the gameplay camera: the crest is a small lit roundel under the porch eave, right over the door's owl shutter |
+| `70r_booth_crest_gate.jpg` | from the gate: the bone rim, the stars and the eye read; the lantern's orange is paler in game than in the Blender sheets |
+
+From run 163's log: Pip's `Pail` bone is at (-0.188, 0.434, -0.014) in the bind pose and at (-0.514, 0.874, -0.119)
+in the prefab's stored pose; the lantern pail's handle top is at y 0.447 over the bind place. This is why the
+costume pieces attach from the bind pose (§4).
+
+Not covered by any run: the keepsakes, costume pieces and sketch pages drawn in the game (stream A spawns them),
+TestFlight and the phone.
 
 ## 9. What is left
 
