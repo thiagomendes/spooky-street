@@ -76,6 +76,12 @@ namespace SpookyStreet.UI
         /// <summary>Opens the language screen (set by the language controller at boot).</summary>
         public System.Action OpenLanguages { get; set; }
 
+        /// <summary>The title's gear (S004 stream E): opens the parent gate, then the settings card.</summary>
+        public Button TitleSettingsButton { get; private set; }
+
+        /// <summary>What the title's gear does (set by the game: the parent gate, then settings).</summary>
+        public System.Action OpenSettings { get; set; }
+
         /// <summary>
         /// Contextual Use disc, shown in play: the interaction's verb when one is in range, otherwise "Roll" with the
         /// roll glyph on the ground and "Dive" in the air while a dive is available (spec §5 v1.2).
@@ -228,6 +234,70 @@ namespace SpookyStreet.UI
             _prompt.GetComponentInChildren<LocalizedText>(true).SetKey(key);
             _promptStartDistance = _pip.DistanceWalked;
             _prompt.SetActive(true);
+        }
+
+        /// <summary>True while the stick is on the right and the action discs on the left.</summary>
+        public bool LeftHanded => _leftHanded;
+
+        /// <summary>
+        /// Left-handed controls (settings, S004 stream E), live: every HUD element (built by this class or added to
+        /// the HUD by the case, the radio and the hint demo) is mirrored across the screen's centre line, and the
+        /// floating stick's ghost and the move tips' slots follow. Calling it again with the same value does nothing.
+        /// </summary>
+        public void SetLeftHanded(bool leftHanded)
+        {
+            if (leftHanded == _leftHanded || _hud == null)
+            {
+                return;
+            }
+
+            _leftHanded = leftHanded;
+            foreach (Transform child in _hud.transform)
+            {
+                if (child is RectTransform rect)
+                {
+                    MirrorRect(rect);
+                }
+            }
+
+            var stick = _hud.GetComponentInChildren<FloatingStick>(true);
+            if (stick != null)
+            {
+                if (stick.BaseVisual != null)
+                {
+                    MirrorAnchors(stick.BaseVisual);
+                }
+
+                if (stick.KnobVisual != null)
+                {
+                    MirrorAnchors(stick.KnobVisual);
+                }
+
+                stick.RestPosition = new Vector2(-stick.RestPosition.x, stick.RestPosition.y);
+                stick.ResetStick();
+            }
+
+            if (_tips != null)
+            {
+                _tips.MirrorSlots();
+            }
+        }
+
+        private static void MirrorRect(RectTransform rect)
+        {
+            MirrorAnchors(rect);
+            rect.anchoredPosition = new Vector2(-rect.anchoredPosition.x, rect.anchoredPosition.y);
+            var euler = rect.localEulerAngles;
+            rect.localRotation = Quaternion.Euler(euler.x, euler.y, -euler.z);
+        }
+
+        private static void MirrorAnchors(RectTransform rect)
+        {
+            var min = rect.anchorMin;
+            var max = rect.anchorMax;
+            rect.anchorMin = new Vector2(1f - max.x, min.y);
+            rect.anchorMax = new Vector2(1f - min.x, max.y);
+            rect.pivot = new Vector2(1f - rect.pivot.x, rect.pivot.y);
         }
 
         private float MirrorX(float anchorX) => _leftHanded ? 1f - anchorX : anchorX;
@@ -439,6 +509,16 @@ namespace SpookyStreet.UI
             // The globe pill opens the language screen (S004 D1), in every build: English, the built-in languages
             // and, behind the parent gate, downloads.
             LanguageButton = BuildLanguagePill(content, () => OpenLanguages?.Invoke());
+
+            // The grown-ups' gear (S004 stream E), top-right: the parent gate, then settings, the progress page and
+            // credits. Its own small disc, away from the child's buttons on the left.
+            var gear = UiFactory.FeltDisc(content, "SettingsButton", UiSpriteCatalog.FeltDiscNight, Palette.WarmPaper,
+                UiSpriteCatalog.IconGear, Palette.WarmPaper, null, UiFactory.SystemDiscDiameter, Vector2.one,
+                new Vector2(-70f, -66f), 1f);
+            TitleSettingsButton = gear.gameObject.AddComponent<Button>();
+            TitleSettingsButton.targetGraphic = gear;
+            TitleSettingsButton.transition = Selectable.Transition.None;
+            TitleSettingsButton.onClick.AddListener(() => OpenSettings?.Invoke());
         }
 
         /// <summary>

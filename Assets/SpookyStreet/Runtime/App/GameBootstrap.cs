@@ -74,6 +74,11 @@ namespace SpookyStreet.App
         /// <summary>The language screen (title globe, pause globe).</summary>
         public LanguageScreen LanguageScreen { get; private set; }
 
+        /// <summary>The grown-ups' corner (S004 stream E): settings applied live, the progress page, credits, playtime.</summary>
+        public GrownUpCorner GrownUps { get; private set; }
+
+        private bool _overlayWasOpen;
+
         private void Awake()
         {
             // Last loaded scene wins; a reload (tests, "back to title" later) replaces the previous instance.
@@ -137,6 +142,7 @@ namespace SpookyStreet.App
             Audio = GameAudio.Create(this);
             Adopt(Audio.gameObject);
             CreateLanguages();
+            GrownUps = GrownUpCorner.Create(this);
             ApplySuspension(Flow.State);
         }
 
@@ -196,10 +202,18 @@ namespace SpookyStreet.App
 
         private void Update()
         {
-            if (_input.PausePressedThisFrame())
+            // Escape and Start belong to a grown-up screen while one is up (its Back closes it), also on the frame it
+            // closed, so one press never closes the screen and resumes the game too.
+            bool overlay = _overlayWasOpen || (GrownUps != null && GrownUps.AnyOpen);
+            if (_input.PausePressedThisFrame() && !overlay)
             {
                 Flow.TogglePause();
             }
+        }
+
+        private void LateUpdate()
+        {
+            _overlayWasOpen = GrownUps != null && GrownUps.AnyOpen;
         }
 
         private void OnStateChanged(GameState previous, GameState current)

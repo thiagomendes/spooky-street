@@ -43,6 +43,18 @@ namespace SpookyStreet.UI
 
         public MoveTipCoach Coach { get; private set; }
 
+        /// <summary>
+        /// The HUD swapped sides (left-handed setting): the tag's slots and tilt follow. The tag itself is mirrored
+        /// with the rest of the HUD by <see cref="GameUi.SetLeftHanded"/>.
+        /// </summary>
+        public void MirrorSlots()
+        {
+            _jumpSlot.x = -_jumpSlot.x;
+            _useSlot.x = -_useSlot.x;
+            _slot.x = -_slot.x;
+            _restAngle = -_restAngle;
+        }
+
         public TipScheduler Scheduler => Coach.Scheduler;
 
         /// <summary>The paper tag (inactive while no tip is visible).</summary>
