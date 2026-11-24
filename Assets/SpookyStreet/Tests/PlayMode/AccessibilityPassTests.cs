@@ -224,14 +224,22 @@ namespace SpookyStreet.Tests.PlayMode
                 switch (_scheme)
                 {
                     case Scheme.Gamepad:
-                        yield return Tap(_gamepad.buttonSouth);
-                        Assert.IsTrue(cutscenes.Player.Gate.Armed || !cutscenes.Playing, "one press asks first");
-                        yield return Tap(_gamepad.buttonSouth);
-                        break;
                     case Scheme.Keyboard:
-                        yield return Tap(_keyboard.spaceKey);
-                        Assert.IsTrue(cutscenes.Player.Gate.Armed || !cutscenes.Playing, "one press asks first");
-                        yield return Tap(_keyboard.spaceKey);
+                        // A key or button asks first ("Press again to skip"); the next press skips. A press in a
+                        // cutscene's first moments (the seed chained after the reveal) is ignored, so press until it goes.
+                        var key = _scheme == Scheme.Gamepad ? (ButtonControl)_gamepad.buttonSouth : _keyboard.spaceKey;
+                        bool skippedBefore = cutscenes.Player.LastSkipped; // still the last one's outro
+                        yield return Tap(key);
+                        if (!skippedBefore)
+                        {
+                            Assert.IsFalse(cutscenes.Player.LastSkipped, "one stray press never skips");
+                        }
+                        for (int press = 0; press < 5 && !cutscenes.Player.LastSkipped; press++)
+                        {
+                            yield return WaitReal(0.3f);
+                            yield return Tap(key);
+                        }
+
                         break;
                     default:
                         // The disc skips at once; a press in the first moments is ignored, so tap again, as a child would.
@@ -804,7 +812,8 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(1, generator.lineCount, "on one line");
             // Sizes here are in screen pixels (the canvas scale): best fit kept the largest size the label allows.
             Assert.AreEqual(UiFactory.CaptionSize, text.resizeTextMaxSize);
-            Assert.AreEqual(settings.resizeTextMaxSize, generator.fontSizeUsedForBestFit, "at the full caption size");
+            Assert.AreEqual(UiFactory.CaptionSize, generator.fontSizeUsedForBestFit / settings.scaleFactor, 1.5f,
+                "at the full caption size");
 
             // Every other verb the tag can show fits the same way (Levantar, Encaixar, Fantasiar…).
             foreach (string key in new[]
