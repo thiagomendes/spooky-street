@@ -196,6 +196,15 @@ namespace SpookyStreet.Case
             Begin(MechanismMotion.KnockTimes, MechanismMotion.CycleSeconds, ArmLinked, false);
         }
 
+        /// <summary>
+        /// The booth's show after case 01 (S004): a wind cycle on demand, so the rooftop wheel whirrs and the owl bows on
+        /// its three knocks (when it is bowing for good).
+        /// </summary>
+        public void PlayShow()
+        {
+            Begin(MechanismMotion.KnockTimes, MechanismMotion.CycleSeconds, OwlBowing || ArmLinked, true);
+        }
+
         /// <summary>The crank turned before the arm: a single tap, the cam a third of a turn, no bow (spec §3).</summary>
         public void PlayGap()
         {

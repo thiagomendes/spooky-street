@@ -14,7 +14,9 @@ namespace SpookyStreet.UI
     /// Rewatching cutscenes from the notebook (D28, narrative bible §5): a felt "watch" disc with Pip's picture in the
     /// notebook's free top-left corner plays the opening again from any page, and once the case is stamped the case
     /// page (the final card) gets a second disc with the owl's picture that plays the reveal. Keyboard V and gamepad
-    /// North (the notebook's UiNavigate Rewatch action, S004 F1) watch too (the reveal on the case page, the opening elsewhere), so every control scheme can rewatch (D25).
+    /// North (the notebook's UiNavigate Rewatch action, S004 F1) watch too (on the case page they step through its
+    /// discs, the opening elsewhere), so every control scheme can rewatch (D25). S004 stream C adds the seed's disc
+    /// (the old photo) and "the street remembers" disc beside the reveal's.
     /// A companion of <see cref="NotebookView"/>: it reads the view and adds its controls without changing the pages.
     /// </summary>
     public sealed class NotebookRewatch : MonoBehaviour
@@ -32,6 +34,17 @@ namespace SpookyStreet.UI
 
         /// <summary>The reveal's disc on the case page (null until the final card is built).</summary>
         public Button RevealButton { get; private set; }
+
+        /// <summary>The seed's disc (the old photo) on the case page, beside the reveal's (S004).</summary>
+        public Button SeedButton { get; private set; }
+
+        /// <summary>"The street remembers" disc on the case page (S004).</summary>
+        public Button StreetButton { get; private set; }
+
+        /// <summary>The case page's cutscenes in disc order (right to left): what the Rewatch action steps through.</summary>
+        public static readonly string[] CasePageIds = { C01Cutscenes.RevealId, C01Cutscenes.SeedId, C01Cutscenes.StreetRemembersId };
+
+        private int _nextOnCasePage;
 
         public static NotebookRewatch Attach(NotebookView view)
         {
@@ -115,10 +128,25 @@ namespace SpookyStreet.UI
                 // The notebook rebuilt its pages: the new case page gets its own reveal disc.
                 _finalCard = _view.FinalCard;
                 RevealButton = null;
+                SeedButton = null;
+                StreetButton = null;
                 if (_finalCard != null && Offers(C01Cutscenes.RevealId))
                 {
                     RevealButton = Disc(_finalCard.transform, "WatchReveal", "pg.owl", new Vector2(1f, 0f), new Vector2(-74f, 70f),
                         Keys.WatchReveal, () => Play(C01Cutscenes.RevealId));
+                }
+
+                // S004: the old photo (young Kit's picture) and the street the next day (the house with its booth open).
+                if (_finalCard != null && Offers(C01Cutscenes.SeedId))
+                {
+                    SeedButton = Disc(_finalCard.transform, "WatchSeed", "pg.kit", new Vector2(1f, 0f), new Vector2(-190f, 70f),
+                        Keys.WatchSeed, () => Play(C01Cutscenes.SeedId));
+                }
+
+                if (_finalCard != null && Offers(C01Cutscenes.StreetRemembersId))
+                {
+                    StreetButton = Disc(_finalCard.transform, "WatchStreet", "pg.house_open", new Vector2(1f, 0f),
+                        new Vector2(-306f, 70f), Keys.WatchStreet, () => Play(C01Cutscenes.StreetRemembersId));
                 }
             }
 
@@ -126,7 +154,24 @@ namespace SpookyStreet.UI
             if (actions != null && actions.Pressed(actions.Rewatch))
             {
                 bool onCasePage = _view.FinalCard != null && _view.CurrentQuestion == null && _view.CurrentPage == _view.PageCount - 1;
-                Play(onCasePage ? C01Cutscenes.RevealId : C01Cutscenes.OpeningId);
+                if (!onCasePage)
+                {
+                    Play(C01Cutscenes.OpeningId);
+                    return;
+                }
+
+                // Keyboard V or gamepad North on the case page steps through its discs: the reveal, the old photo, then
+                // the street (the notebook reopens here after each, so the next press plays the next one).
+                for (int i = 0; i < CasePageIds.Length; i++)
+                {
+                    string id = CasePageIds[(_nextOnCasePage + i) % CasePageIds.Length];
+                    if (Offers(id))
+                    {
+                        _nextOnCasePage = (System.Array.IndexOf(CasePageIds, id) + 1) % CasePageIds.Length;
+                        Play(id);
+                        return;
+                    }
+                }
             }
         }
     }

@@ -332,7 +332,7 @@ namespace SpookyStreet.Tests.PlayMode
             var stickers = new HashSet<string>();
             bool turned = false;
             bool pipHidden = false;
-            while (Player.Active)
+            while (Player.Active && Player.LastId == C01Cutscenes.RevealId)
             {
                 if (Player.Sticker != null && Player.Playback?.Beat?.StickerId != null)
                 {
@@ -370,11 +370,35 @@ namespace SpookyStreet.Tests.PlayMode
             calls.Add("duck:False");
             CollectionAssert.IsSubsetOf(new[] { "play:" + CutsceneAudio.MusicReveal, "babble:Vale.Neutral", "babble:Bea.Surprised",
                 "babble:Kit.Happy", "babble:June.Happy" }, calls);
-            CollectionAssert.AreEqual(calls, audio.Calls, "the audio hook hears the reveal's cues");
+            CollectionAssert.AreEqual(calls, audio.Calls.Take(calls.Count), "the audio hook hears the reveal's cues");
             Assert.IsTrue(turned, "the page turns into the house");
             Assert.IsTrue(pipHidden, "Pip stays out of the reveal's frames");
+
+            // S004: the seed follows at once (the bars stay down), marked seen, the photo's puppets glinting.
+            Assert.IsTrue(Player.Active, "the seed follows the reveal");
+            Assert.AreEqual(C01Cutscenes.SeedId, Player.LastId);
+            Assert.IsFalse(Player.Rewatching);
+            Assert.AreEqual(1f, Player.Playback.Letterbox, "no slide out and in between the two");
+            CollectionAssert.Contains(Cutscenes.Progress.Seen, C01Cutscenes.SeedId);
+            Assert.IsFalse(Game.Controls.GameplayEnabled);
+            var glints = new HashSet<string>();
+            bool crestPage = false;
+            while (Player.Active)
+            {
+                if (Cutscenes.GlintPart != null)
+                {
+                    glints.Add(Cutscenes.GlintPart);
+                }
+
+                crestPage |= Player.PageTurning && Player.Playback?.Beat?.Id == "mount";
+                yield return null;
+            }
+
+            CollectionAssert.AreEquivalent(new[] { SpookyStreet.Core.World.KeepsakeArt.PuppetOwl, C01Cutscenes.SeedPuppet }, glints, "the owl, then the moon");
+            Assert.IsTrue(crestPage, "the page turns from the photo's crest to the booth's");
+            Assert.IsFalse(Player.LastSkipped);
             yield return Frames(3);
-            Assert.IsTrue(Game.Controls.GameplayEnabled, "control comes back cleanly");
+            AssertOnThePorchInControl();
             Assert.AreEqual(1f, HudAlpha);
             Assert.IsTrue(Game.Pip.GetComponentsInChildren<Renderer>().Any(r => r.enabled), "Pip is back");
             if (director.Cast != null && director.Cast.Kit != null)
@@ -389,23 +413,116 @@ namespace SpookyStreet.Tests.PlayMode
                 Assert.IsFalse(director.House.ForceInteriorVisible);
             }
 
-            // Once: nothing plays it again by itself.
+            // Once: nothing plays them again by itself, not even "the street remembers" in the run of the stamp.
             yield return Wait(2f);
-            Assert.AreEqual(1, Player.PlayCount);
+            Assert.AreEqual(2, Player.PlayCount);
             CollectionAssert.Contains(Cutscenes.Progress.Seen, C01Cutscenes.RevealId);
+            Assert.IsTrue(Cutscenes.StampedThisSession);
+            CaseCutscenes.AutoPlayOpening = true;
+            Cutscenes.OnContinue();
+            Assert.IsFalse(Cutscenes.Playing, "not in the session where the stamp happened");
+            CaseCutscenes.AutoPlayOpening = false;
 
-            // Reload and Continue: no cutscene plays by itself, the stamp and the answers are kept.
+            // Reload and Continue: the first load after the stamp plays "the street remembers" once, before control.
             CaseCutscenes.AutoPlayOpening = true;
             yield return LoadGame();
             Assert.IsTrue(Director.State.Has(CaseFact.CaseStamped));
+            Assert.IsTrue(Director.Street.WorldView.Any, "the street lays its memories over the world");
+            Game.Ui.ContinueButton.onClick.Invoke();
+            yield return Frames(3);
+            Assert.AreEqual(GameState.Playing, Game.Flow.State);
+            Assert.IsTrue(Cutscenes.Playing, "the street remembers");
+            Assert.AreEqual(C01Cutscenes.StreetRemembersId, Player.LastId);
+            Assert.IsFalse(Game.Controls.GameplayEnabled, "before control");
+            CollectionAssert.Contains(Cutscenes.Progress.Seen, C01Cutscenes.StreetRemembersId, "marked before it plays");
+            int bells = Director.Street.BellDings;
+            var lines = new HashSet<string>();
+            while (Player.Active)
+            {
+                if (Player.Line.gameObject.activeInHierarchy)
+                {
+                    lines.Add(Player.Line.text);
+                }
+
+                yield return null;
+            }
+
+            Assert.GreaterOrEqual(lines.Count, 4, "its captions play");
+            Assert.AreEqual(bells + 1, Director.Street.BellDings, "the booth's bell dings on the hour");
+            yield return Frames(3);
+            AssertOnThePorchInControl();
+            Assert.IsFalse(Cutscenes.RevealPending);
+            Assert.AreEqual(1, Player.PlayCount);
+
+            // The next load: nothing plays by itself; the seen set and the stamp are kept.
+            yield return LoadGame();
             Game.Ui.ContinueButton.onClick.Invoke();
             yield return Frames(10);
-            Assert.AreEqual(GameState.Playing, Game.Flow.State);
             Assert.IsFalse(Cutscenes.Playing, "Continue never replays a seen cutscene");
-            Assert.IsFalse(Cutscenes.RevealPending);
             Assert.AreEqual(0, Player.PlayCount);
-            CollectionAssert.Contains(Cutscenes.Progress.Seen, C01Cutscenes.RevealId, "still seen after the reload");
+            CollectionAssert.IsSupersetOf(Cutscenes.Progress.Seen,
+                new[] { C01Cutscenes.RevealId, C01Cutscenes.SeedId, C01Cutscenes.StreetRemembersId }, "still seen after the reload");
             Assert.IsTrue(Game.Controls.GameplayEnabled);
+        }
+
+        [UnityTest]
+        [Timeout(240000)]
+        public IEnumerator TheNewCutscenesSkipOnEveryScheme()
+        {
+            CaseCutscenes.AutoPlayOpening = false;
+            yield return NewGame();
+            yield return PlayToTheReopening();
+            var director = Director;
+            director.Notebook.Close();
+            yield return Frames(2);
+            director.SolveQuestion(N.QuestionSource, new[] { N.FloorHum, N.WoodenPiece });
+            director.SolveQuestion(N.QuestionEntry, new[] { N.ValeDoor, N.Cloth, N.SillSnag });
+            director.SolveQuestion(N.QuestionMoved, new[] { N.OwlBooth, N.LooseArm });
+            yield return Frames(3);
+            Assert.AreEqual(C01Cutscenes.RevealId, Player.LastId);
+
+            // Skipping the reveal (the disc) still ends the night on the seed; two taps skip the seed.
+            yield return Wait(1f);
+            Player.Frame.SkipButton.onClick.Invoke();
+            yield return Wait(CutscenePlayback.SkipExitBlend + 0.2f);
+            Assert.IsTrue(Player.Active);
+            Assert.AreEqual(C01Cutscenes.SeedId, Player.LastId, "the seed follows a skipped reveal too");
+            yield return Wait(1f);
+            Player.Frame.TapCatcher.onClick.Invoke();
+            Assert.IsTrue(Player.Active && Player.Gate.Armed, "one stray tap never skips");
+            Player.Frame.TapCatcher.onClick.Invoke();
+            Assert.IsTrue(Player.LastSkipped);
+            yield return Wait(CutscenePlayback.SkipExitBlend + 0.2f);
+            Assert.IsFalse(Player.Active);
+            AssertOnThePorchInControl();
+
+            // "The street remembers" on the next load: keyboard Space twice skips it.
+            CaseCutscenes.AutoPlayOpening = true;
+            yield return LoadGame();
+            Game.Ui.ContinueButton.onClick.Invoke();
+            yield return Frames(3);
+            Assert.AreEqual(C01Cutscenes.StreetRemembersId, Player.LastId);
+            yield return Wait(1f);
+            yield return Tap(_keyboard.spaceKey);
+            yield return Tap(_keyboard.spaceKey);
+            Assert.IsTrue(Player.LastSkipped, "keyboard skips");
+            yield return Wait(CutscenePlayback.SkipExitBlend + 0.2f);
+            AssertOnThePorchInControl();
+
+            // Gamepad South twice under reduced motion, through a rewatch of the seed (a cut straight back).
+            AmbientMotion.ReducedMotion = true;
+            Director.OpenNotebook();
+            yield return Frames(3);
+            Assert.IsTrue(Cutscenes.WatchAgain(C01Cutscenes.SeedId));
+            yield return Frames(2);
+            Assert.IsTrue(Player.ReducedMotion);
+            yield return Wait(1f);
+            yield return Tap(_gamepad.buttonSouth);
+            yield return Tap(_gamepad.buttonSouth);
+            Assert.IsTrue(Player.LastSkipped, "gamepad skips");
+            Assert.IsFalse(Player.Active, "reduced motion cuts straight back");
+            yield return Frames(3);
+            Assert.IsTrue(Director.Notebook.IsOpen, "back to the notebook");
         }
 
         [UnityTest]
@@ -445,14 +562,20 @@ namespace SpookyStreet.Tests.PlayMode
             director.SolveQuestion(N.QuestionMoved, new[] { N.OwlBooth, N.LooseArm });
             yield return Frames(3);
             Assert.IsTrue(Cutscenes.Playing);
-            int plays = Player.PlayCount;
             yield return Wait(1f);
             Player.SkipNow();
             yield return Wait(CutscenePlayback.SkipExitBlend + 0.3f);
+            Assert.AreEqual(C01Cutscenes.SeedId, Player.LastId, "the seed follows");
+            Player.SkipNow();
+            yield return Wait(CutscenePlayback.SkipExitBlend + 0.3f);
+            Assert.IsFalse(Cutscenes.Playing);
+            int plays = Player.PlayCount;
             director.OpenNotebook();
             yield return Frames(3);
             Assert.IsNotNull(notebook.FinalCard, "the case page");
             Assert.IsNotNull(rewatch.RevealButton, "the case page offers the reveal");
+            Assert.IsNotNull(rewatch.SeedButton, "and the old photo");
+            Assert.IsNotNull(rewatch.StreetButton, "and the street the next day");
             rewatch.RevealButton.onClick.Invoke();
             yield return Frames(2);
             Assert.IsTrue(Cutscenes.Playing && Player.Rewatching);
@@ -460,23 +583,46 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(plays + 1, Player.PlayCount);
             yield return UntilEnded(45f);
             yield return Frames(3);
-            Assert.IsTrue(notebook.IsOpen, "back to the case page after watching it through");
+            Assert.IsTrue(notebook.IsOpen, "back to the case page after watching it through (a rewatch never chains)");
+            Assert.AreEqual(plays + 1, Player.PlayCount);
 
-            // Keyboard and gamepad rewatch too: V on the case page plays the reveal.
-            notebook.ShowPage(notebook.PageCount - 1);
-            yield return Frames(2);
-            yield return Tap(_keyboard.vKey);
-            yield return Frames(2);
-            Assert.IsTrue(Cutscenes.Playing, "V rewatches");
-            Assert.AreEqual(C01Cutscenes.RevealId, Player.LastId);
-            Player.SkipNow();
-            yield return Wait(CutscenePlayback.SkipExitBlend + 0.3f);
-            Assert.IsTrue(notebook.IsOpen);
-            yield return Tap(_gamepad.buttonNorth);
-            yield return Frames(2);
-            Assert.IsTrue(Cutscenes.Playing, "gamepad North rewatches");
-            Player.SkipNow();
-            yield return Wait(CutscenePlayback.SkipExitBlend + 0.3f);
+            // Touch: the two new discs.
+            pipBefore = Game.Pip.transform.position;
+            foreach (string id in new[] { C01Cutscenes.SeedId, C01Cutscenes.StreetRemembersId })
+            {
+                notebook.ShowPage(notebook.PageCount - 1);
+                yield return Frames(2);
+                var button = id == C01Cutscenes.SeedId ? rewatch.SeedButton : rewatch.StreetButton;
+                Assert.IsNotNull(button, id);
+                button.onClick.Invoke();
+                yield return Frames(2);
+                Assert.IsTrue(Cutscenes.Playing && Player.Rewatching, id);
+                Assert.AreEqual(id, Player.LastId);
+                yield return Wait(1.5f);
+                Player.SkipNow();
+                yield return Wait(CutscenePlayback.SkipExitBlend + 0.3f);
+                Assert.IsTrue(notebook.IsOpen, id + ": back to the notebook");
+                Assert.Less(Vector3.Distance(pipBefore, Game.Pip.transform.position), 0.05f, id + ": a rewatch never moves Pip");
+            }
+
+            // Keyboard and gamepad rewatch too: on the case page V and North step through the reveal, the photo and
+            // the street.
+            var order = new List<string>();
+            for (int i = 0; i < 4; i++)
+            {
+                notebook.ShowPage(notebook.PageCount - 1);
+                yield return Frames(2);
+                yield return Tap(i % 2 == 0 ? _keyboard.vKey : _gamepad.buttonNorth);
+                yield return Frames(2);
+                Assert.IsTrue(Cutscenes.Playing, i % 2 == 0 ? "V rewatches" : "gamepad North rewatches");
+                order.Add(Player.LastId);
+                Player.SkipNow();
+                yield return Wait(CutscenePlayback.SkipExitBlend + 0.3f);
+                Assert.IsTrue(notebook.IsOpen);
+            }
+
+            CollectionAssert.AreEqual(new[] { C01Cutscenes.RevealId, C01Cutscenes.SeedId, C01Cutscenes.StreetRemembersId,
+                C01Cutscenes.RevealId }, order);
             notebook.Close();
             yield return Frames(3);
             Assert.IsTrue(Game.Controls.GameplayEnabled);
