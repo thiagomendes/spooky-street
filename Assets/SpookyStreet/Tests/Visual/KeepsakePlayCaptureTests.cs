@@ -161,6 +161,23 @@ namespace SpookyStreet.Tests.Visual
             Director.Notebook.Close();
             yield return Wait(0.4f);
 
+            // 85: a keepsake bat fluttering open by Pip, close (bat 18 on the south hedge behind the porch, not found).
+            var bat = PaperBatLayout.All[17];
+            Vector3 at = new Vector3(bat.X, bat.Y, bat.Z);
+            var pip = GameBootstrap.Instance.Pip;
+            pip.Teleport(new Vector3(bat.X, 0.05f, bat.Z + 1.05f));
+            pip.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+            yield return Wait(1.0f);
+            Assert.Greater(Director.Keepsakes.OpenAmount(bat.Id), 0.9f, "85: open by Pip");
+            yield return CaptureFrom("85_bat_keepsake_close", at + new Vector3(0.8f, 0.35f, 1.1f), at);
+
+            // 85b: the lamp head from the path: the keepsake bat folded, the decorative bats moved clear of it.
+            var lamp = PaperBatLayout.All[20];
+            pip.Teleport(new Vector3(1.4f, 0.05f, -7.6f));
+            yield return Wait(0.6f);
+            yield return CaptureFrom("85b_bat_lamp_head", new Vector3(0.2f, 1.9f, -5.6f),
+                new Vector3(lamp.X, lamp.Y - 0.6f, lamp.Z));
+
             // A fresh file one bat short of page 1: the 10th find, then the assembly mid-flight.
             WriteKeepsakesFresh(9);
             yield return Load();
@@ -172,7 +189,11 @@ namespace SpookyStreet.Tests.Visual
             Director.OpenNotebook();
             yield return Wait(0.55f);
             Assert.IsTrue(Director.Notebook.Assembling, "82b: page 1 assembles");
+            // Hold the pieces mid-flight while the frame renders (run 180 caught them already landed).
+            var animate = Director.Notebook.CanAnimate;
+            Director.Notebook.CanAnimate = () => false;
             yield return Capture("82b_keepsakes_assembling", Director.UiCanvas);
+            Director.Notebook.CanAnimate = animate;
             yield return Wait(NotebookView.AssemblySeconds);
             Director.Notebook.Close();
             yield return Wait(0.4f);
@@ -202,21 +223,6 @@ namespace SpookyStreet.Tests.Visual
             yield return Capture("83_trunk_dress_up", Director.UiCanvas);
             Director.DressUp.Close();
             yield return Wait(0.8f);
-
-            // 85: a keepsake bat fluttering open by Pip on the porch (bat 01 on the east rail post), close.
-            var bat = PaperBatLayout.All[0];
-            Vector3 at = new Vector3(bat.X, bat.Y, bat.Z);
-            GameBootstrap.Instance.Pip.Teleport(new Vector3(1.2f, 0.62f, -13.4f));
-            yield return Wait(0.8f);
-            Assert.Greater(Director.Keepsakes.OpenAmount(bat.Id), 0.9f, "85: open by Pip");
-            yield return CaptureFrom("85_bat_keepsake_close", at + new Vector3(-0.9f, 0.35f, 0.9f), at);
-
-            // 85b: the lamp head from the path: the keepsake bat folded, the decorative bats moved clear of it.
-            var lamp = PaperBatLayout.All[20];
-            GameBootstrap.Instance.Pip.Teleport(new Vector3(1.4f, 0.05f, -7.6f));
-            yield return Wait(0.6f);
-            yield return CaptureFrom("85b_bat_lamp_head", new Vector3(0.2f, 1.9f, -5.6f),
-                new Vector3(lamp.X, lamp.Y - 0.6f, lamp.Z));
         }
 
         private void WriteKeepsakesFresh(int count, params CostumePiece[] worn)

@@ -77,9 +77,9 @@ namespace SpookyStreet.Core.Keepsakes
 
         /// <summary>The dressing camera: in front of Pip and a little up, the open trunk behind her, Pip left of centre
         /// so the pieces' cards fit on the right.</summary>
-        public static readonly StagePoint DressingCamera = new StagePoint(0.05f, 1.72f, -11.55f);
+        public static readonly StagePoint DressingCamera = new StagePoint(0.0f, 1.95f, -11.15f);
 
-        public static readonly StagePoint DressingLook = new StagePoint(0.3f, 1.0f, -14.05f);
+        public static readonly StagePoint DressingLook = new StagePoint(0.3f, 1.22f, -14.05f);
 
         public const float DressingFieldOfView = 40f;
 

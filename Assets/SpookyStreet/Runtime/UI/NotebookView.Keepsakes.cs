@@ -94,7 +94,7 @@ namespace SpookyStreet.UI
             var pages = state.Pages;
             bool stack = KeepsakeNotebook.ShowsStack(state);
             // Up to three drawings side by side over the page's width (the stack takes the lower right when present).
-            float width = pages.Count switch { 1 => 470f, 2 => 380f, _ => 268f };
+            float width = pages.Count switch { 1 => 470f, 2 => stack ? 320f : 380f, _ => 268f };
             float height = width * KeepsakeArt.SketchPageHeight / KeepsakeArt.SketchPageWidth;
             float span = PageSize.x - 80f - (stack && pages.Count < 3 ? 180f : 0f);
             float step = pages.Count > 0 ? span / pages.Count : 0f;
@@ -118,30 +118,44 @@ namespace SpookyStreet.UI
 
             if (stack)
             {
-                BuildBatStack(page, state.LooseBats, pages.Count == 0);
+                BuildBatStack(page, state.LooseBats, pages.Count);
             }
         }
 
-        /// <summary>The folded bats not yet in a page: a little pile with its own number.</summary>
-        private void BuildBatStack(RectTransform page, int count, bool alone)
+        /// <summary>
+        /// The folded bats not yet in a page, each one drawn, with their number under them: a 3-wide pile in the free
+        /// column beside one or two drawings (or the page's middle with none), a single row under three drawings. CI run
+        /// 180: an ink-tinted pile merged into one blot and its number fell off the page's edge.
+        /// </summary>
+        private void BuildBatStack(RectTransform page, int count, int drawings)
         {
             _batStack = UiFactory.Rect(page, "BatStack");
-            var at = alone ? new Vector2(0f, 20f) : new Vector2(PageSize.x * 0.5f - 130f, -PageSize.y * 0.5f + 120f);
-            UiFactory.Place(_batStack, new Vector2(0.5f, 0.5f), at, new Vector2(200f, 200f));
+            bool row = drawings >= 3;
+            float scale = drawings == 0 ? 1.4f : 1f;
+            Vector2 cell = new Vector2(row ? 46f : 58f, 46f) * scale;
+            Vector2 size = row ? new Vector2(cell.x * 8f + 80f, 60f) : new Vector2(cell.x * 2f + 80f, cell.y * 3f + 70f);
+            var at = drawings == 0 ? new Vector2(0f, 30f)
+                : row ? new Vector2(0f, -PageSize.y * 0.5f + 66f)
+                : new Vector2(PageSize.x * 0.5f - (drawings == 1 ? 175f : 110f), 50f);
+            UiFactory.Place(_batStack, new Vector2(0.5f, 0.5f), at, size);
             var sprite = PuppetAtlas.Get("pg.bat");
-            float scale = alone ? 1.4f : 1f;
             for (int i = 0; i < count; i++)
             {
-                // A loose pile: each bat a little higher and turned, like folded paper dropped on the page.
-                var bat = UiFactory.Sprite(_batStack, "FoldedBat" + i, sprite, Palette.InkBlack, new Vector2(0.5f, 0.5f),
-                    new Vector2(((i * 37) % 23 - 11) * scale, (i * 9f - 20f) * scale), new Vector2(96f, 60f) * scale);
+                // Folded paper dropped on the page: each a little turned.
+                int column = row ? i : i % 3;
+                int line = row ? 0 : i / 3;
+                float x = row ? (column - (count - 1) * 0.5f) * cell.x : (column - 1) * cell.x;
+                float y = row ? 0f : (1 - line) * cell.y;
+                var bat = UiFactory.Sprite(_batStack, "FoldedBat" + i, sprite, Color.white, new Vector2(0.5f, 0.5f),
+                    new Vector2(x, y), new Vector2(72f, 48f) * scale);
                 bat.preserveAspect = true;
-                bat.rectTransform.localRotation = Quaternion.Euler(0f, 0f, ((i * 53) % 31) - 15f);
+                bat.rectTransform.localRotation = Quaternion.Euler(0f, 0f, ((i * 53) % 25) - 12f);
             }
 
             BatStackCount = count;
             var label = UiFactory.Label(_batStack, "Count", null, 28, TextAnchor.MiddleCenter, UiFactory.Ink, UiFactory.BoldFont);
-            UiFactory.Place(label.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, -10f * scale), new Vector2(240f, 44f));
+            UiFactory.Place(label.rectTransform, row ? new Vector2(1f, 0.5f) : new Vector2(0.5f, 0f),
+                row ? new Vector2(110f, 0f) : new Vector2(0f, 8f), new Vector2(220f, 44f));
             label.gameObject.AddComponent<LocalizedText>().SetPlural(Keys.NotebookBatStack, () => count,
                 () => new object[] { count });
             BatStackLabel = label;

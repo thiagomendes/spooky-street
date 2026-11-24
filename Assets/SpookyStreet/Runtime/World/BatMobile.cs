@@ -13,7 +13,7 @@ namespace SpookyStreet.World
     /// their first bat, and at 10, 20 and 30 a ring closes round its little lantern, which lights
     /// (<see cref="BatMobileRules"/>). The model is <c>BatMobile.fbx</c> (atlas <c>Keepsakes</c>); each hanging bat is a
     /// <c>PaperBatKeepsake</c> at <see cref="KeepsakeArt.MobileBatScale"/>, wings nearly open, turned outward, turning
-    /// slowly with the mobile (still with reduced motion). The pole is plain timber made in code, like the moving boxes.
+    /// slowly with the mobile (still with reduced motion). The pole is a painted porch post made in code, like the moving boxes.
     /// </summary>
     public sealed class BatMobile : MonoBehaviour
     {
@@ -140,30 +140,40 @@ namespace SpookyStreet.World
             return holder.gameObject;
         }
 
-        /// <summary>A timber lantern pole on the rail and a short arm out to the hook.</summary>
+        /// <summary>
+        /// A painted porch post on the rail (cream, like the porch's trim) with a round orange finial, a short bracket
+        /// arm with a brace and an orange knob, and a paper cord down to the mobile: a plant-hanger bracket. CI run 180:
+        /// a dark pole with a bare arm and a black cord read as a gibbet from the title camera.
+        /// </summary>
         private void BuildPole(MaterialLibrary materials)
         {
             float bottom = KeepsakePorch.DeckY;
             float height = KeepsakePorch.PoleTop - bottom;
             Bar("MobilePole", new Vector3(KeepsakePorch.PoleX, bottom + height * 0.5f, KeepsakePorch.PoleZ),
-                new Vector3(0.07f, height, 0.07f), Quaternion.identity, materials);
-            float armLength = Mathf.Abs(KeepsakePorch.PoleX - KeepsakePorch.MobileX) + 0.06f;
+                new Vector3(0.08f, height, 0.08f), Quaternion.identity, materials, Palette.WarmPaper);
+            Part(PrimitiveType.Sphere, "MobileFinial", new Vector3(KeepsakePorch.PoleX, KeepsakePorch.PoleTop + 0.05f,
+                KeepsakePorch.PoleZ), Vector3.one * 0.13f, Quaternion.identity, materials, Palette.JackOrange);
+            float armLength = Mathf.Abs(KeepsakePorch.PoleX - KeepsakePorch.MobileX) + 0.08f;
             float armX = (KeepsakePorch.PoleX + KeepsakePorch.MobileX) * 0.5f;
-            Bar("MobileArm", new Vector3(armX, KeepsakePorch.PoleTop - 0.06f, KeepsakePorch.PoleZ),
-                new Vector3(armLength, 0.05f, 0.05f), Quaternion.identity, materials);
-            // A diagonal brace under the arm.
-            Bar("MobileBrace", new Vector3(KeepsakePorch.PoleX - 0.1f, KeepsakePorch.PoleTop - 0.2f, KeepsakePorch.PoleZ),
-                new Vector3(0.03f, 0.3f, 0.03f), Quaternion.Euler(0f, 0f, -45f), materials);
-            // The cord from the arm down to the mobile's own hook.
-            Bar("MobileCord", new Vector3(KeepsakePorch.MobileX, (KeepsakePorch.PoleTop - 0.06f + KeepsakePorch.MobileY) * 0.5f,
-                    KeepsakePorch.MobileZ), new Vector3(0.012f, KeepsakePorch.PoleTop - 0.06f - KeepsakePorch.MobileY, 0.012f),
-                Quaternion.identity, materials, Palette.InkBlack);
+            Bar("MobileArm", new Vector3(armX, KeepsakePorch.PoleTop - 0.08f, KeepsakePorch.PoleZ),
+                new Vector3(armLength, 0.05f, 0.05f), Quaternion.identity, materials, Palette.WarmPaper);
+            Bar("MobileBrace", new Vector3(KeepsakePorch.PoleX - 0.11f, KeepsakePorch.PoleTop - 0.2f, KeepsakePorch.PoleZ),
+                new Vector3(0.035f, 0.3f, 0.035f), Quaternion.Euler(0f, 0f, -45f), materials, Palette.WarmPaper);
+            Part(PrimitiveType.Sphere, "MobileArmKnob", new Vector3(KeepsakePorch.MobileX - 0.05f,
+                KeepsakePorch.PoleTop - 0.08f, KeepsakePorch.PoleZ), Vector3.one * 0.07f, Quaternion.identity, materials,
+                Palette.JackOrange);
+            float cordTop = KeepsakePorch.PoleTop - 0.1f;
+            Bar("MobileCord", new Vector3(KeepsakePorch.MobileX, (cordTop + KeepsakePorch.MobileY) * 0.5f, KeepsakePorch.MobileZ),
+                new Vector3(0.012f, cordTop - KeepsakePorch.MobileY, 0.012f), Quaternion.identity, materials, Palette.WarmPaper);
         }
 
         private void Bar(string name, Vector3 centre, Vector3 size, Quaternion rotation, MaterialLibrary materials,
-            Color? color = null)
+            Color color) => Part(PrimitiveType.Cube, name, centre, size, rotation, materials, color);
+
+        private void Part(PrimitiveType shape, string name, Vector3 centre, Vector3 size, Quaternion rotation,
+            MaterialLibrary materials, Color color)
         {
-            var bar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var bar = GameObject.CreatePrimitive(shape);
             bar.name = name;
             Destroy(bar.GetComponent<Collider>());
             bar.transform.SetParent(transform, false);
@@ -171,7 +181,7 @@ namespace SpookyStreet.World
             bar.transform.localScale = size;
             if (materials != null)
             {
-                materials.Apply(bar.GetComponent<Renderer>(), color ?? Palette.Timber);
+                materials.Apply(bar.GetComponent<Renderer>(), color);
             }
         }
 

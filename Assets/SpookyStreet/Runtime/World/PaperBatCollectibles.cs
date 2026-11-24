@@ -28,8 +28,9 @@ namespace SpookyStreet.World
         /// <summary>The B2 collectible bat model (Resources/Models/Environment/PaperBatKeepsake.fbx).</summary>
         public const string KeepsakeModel = KeepsakeArt.PaperBat;
 
-        /// <summary>The collectible's size in the world (its 0.34 m span reads at the play camera's distance).</summary>
-        public const float ModelScale = 1.2f;
+        /// <summary>The collectible's size in the world: 0.54 m open, so it reads at the play camera's distance (CI run 180
+        /// showed the 0.41 m bat as a speck from the path).</summary>
+        public const float ModelScale = 1.6f;
 
         /// <summary>Half the shut bat's height (unscaled): a bat in the air or on a hook is centred on its spot.</summary>
         public const float ModelHalfHeight = 0.06f;
@@ -57,6 +58,7 @@ namespace SpookyStreet.World
         private readonly Dictionary<string, BatView> _views = new Dictionary<string, BatView>(StringComparer.Ordinal);
         private KeepsakeStore _store;
         private Transform _pip;
+        private Transform _eye;
         private MoveFeedback _feedback;
 
         private sealed class BatView
@@ -123,6 +125,9 @@ namespace SpookyStreet.World
         private void Build(GameBootstrap game)
         {
             _pip = game != null && game.Pip != null ? game.Pip.transform : null;
+            _eye = game != null && game.CameraRig != null && game.CameraRig.OutputCamera != null
+                ? game.CameraRig.OutputCamera.transform
+                : null;
             _feedback = game != null ? game.Feedback : null;
             MaterialLibrary materials = game != null ? game.Materials : null;
             var kit = materials != null ? new ModelKit(materials, EnvironmentDressing.ModelFolder) : null;
@@ -134,8 +139,13 @@ namespace SpookyStreet.World
                 var root = new GameObject(spot.Id).transform;
                 root.SetParent(transform, false);
                 root.position = new Vector3(spot.X, spot.Y, spot.Z);
-                // Each bat turns a little differently, so the street's bats never read as a pattern.
-                root.rotation = Quaternion.Euler(0f, (index * 47f) % 360f, 0f);
+                // Folded, each bat shows its face to where its move starts (the way a child comes to it), turned a
+                // little differently each, so the street's bats never read as a pattern.
+                var from = new Vector3(spot.FromX - spot.X, 0f, spot.FromZ - spot.Z);
+                float jitter = (index * 47f) % 50f - 25f;
+                root.rotation = from.sqrMagnitude > 0.04f && !float.IsNaN(from.x)
+                    ? Quaternion.LookRotation(-from.normalized, Vector3.up) * Quaternion.Euler(0f, jitter, 0f)
+                    : Quaternion.Euler(0f, (index * 47f) % 360f, 0f);
                 var view = new BatView { Spot = spot, Root = root, Phase = index * 0.61f };
                 var wings = new GameObject("Wings").transform;
                 wings.SetParent(root, false);
@@ -318,7 +328,9 @@ namespace SpookyStreet.World
                 if (view.Open > 0f)
                 {
                     // Opening, it turns its face (its -Z side) to Pip.
-                    Vector3 away = view.Root.position - _pip.position;
+                    // It shows its face to the child: toward the camera that follows Pip (edge-on to the lens it
+                    // vanished in run 180's frames), else toward Pip.
+                    Vector3 away = view.Root.position - (_eye != null ? _eye.position : _pip.position);
                     away.y = 0f;
                     if (away.sqrMagnitude > 1e-4f)
                     {
