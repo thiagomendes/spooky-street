@@ -184,6 +184,7 @@ namespace SpookyStreet.UI
             }
 
             _input.Enable();
+            OpenKeepsakeAssembly();
         }
 
         /// <summary>Opens on the first open question (Kit's "So, detective?").</summary>
@@ -299,11 +300,16 @@ namespace SpookyStreet.UI
                 BuildEmptyPage();
             }
 
+            int finalIndex = 0;
             if (page.FinalCard != null)
             {
+                finalIndex = _pages.Count;
                 var finalPage = NewPage("FinalPage");
                 BuildFinalCard(finalPage, page.FinalCard);
             }
+
+            // S004: the keepsakes page after the case pages (earned sketch pages and the bat stack).
+            BuildKeepsakePage();
 
             for (int i = 0; i < _pages.Count; i++)
             {
@@ -311,7 +317,7 @@ namespace SpookyStreet.UI
                     new Vector2((i - (_pages.Count - 1) * 0.5f) * 30f, 0f), new Vector2(16f, 16f)));
             }
 
-            int show = page.FinalCard != null ? _pages.Count - 1 : 0;
+            int show = finalIndex;
             if (keepQuestion != null)
             {
                 for (int i = 0; i < PageQuestions.Count; i++)
@@ -504,6 +510,7 @@ namespace SpookyStreet.UI
             TickTweens(dt);
             TickWiggles(dt);
             TickComic(dt);
+            TickKeepsakeAssembly(dt);
             TickSelection();
         }
 

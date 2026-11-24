@@ -39,14 +39,31 @@ namespace SpookyStreet.Case
         /// <summary>Which points exist right now (the world's state: June's mark, the panel, the latch). Null: all.</summary>
         public Func<InteractionPoint, bool> Filter { get; set; }
 
-        public bool HasTarget => !Suspended && Current != null;
+        public bool HasTarget => !Suspended && (Current != null || ExtraActive);
 
-        public string VerbKey => HasTarget ? VerbFor?.Invoke(Current) ?? Current.VerbKey : null;
+        public string VerbKey => !HasTarget ? null
+            : Current != null ? VerbFor?.Invoke(Current) ?? Current.VerbKey
+            : Extra.VerbKey;
+
+        /// <summary>
+        /// One Use target that is not a case point (S004: the dress-up trunk on Pip's porch). Offered only when no case
+        /// point is, so it never takes a clue's Use; null for none.
+        /// </summary>
+        public ExtraUseTarget Extra { get; set; }
+
+        /// <summary>True while <see cref="Extra"/> is the selected target.</summary>
+        public bool ExtraActive { get; private set; }
+
+        /// <summary>Where the selected target's floating marker goes (null when none).</summary>
+        public Vector3? CurrentMarker => !HasTarget ? (Vector3?)null : Current != null ? MarkerOf(Current) : Extra.Marker;
+
+        /// <summary>The selected target's icon (null when none).</summary>
+        public string CurrentIcon => !HasTarget ? null : Current != null ? IconFor(Current) : Extra.IconName;
 
         /// <summary>A verb the world's state gives a point instead of its own (null: the point's; S004 the booth's knock).</summary>
         public Func<InteractionPoint, string> VerbFor { get; set; }
 
-        public string IconName => HasTarget ? IconFor(Current) : null;
+        public string IconName => CurrentIcon;
 
         public static string IconFor(InteractionPoint point) =>
             point != null && point.Action.Kind == CaseActionKind.Talk ? UiSpriteCatalog.IconTalk : UiSpriteCatalog.IconExamine;
@@ -57,9 +74,18 @@ namespace SpookyStreet.Case
 
         public void Interact()
         {
-            if (HasTarget)
+            if (!HasTarget)
+            {
+                return;
+            }
+
+            if (Current != null)
             {
                 _interact?.Invoke(Current);
+            }
+            else
+            {
+                Extra.Interact?.Invoke();
             }
         }
 
@@ -82,6 +108,7 @@ namespace SpookyStreet.Case
             }
 
             Current = picked;
+            ExtraActive = picked == null && Extra != null && Extra.Offered != null && Extra.Offered(pip);
         }
 
         /// <summary>Nothing solid between Pip's chest and the target's marker (ignores triggers and Pip).</summary>
@@ -100,5 +127,20 @@ namespace SpookyStreet.Case
             return !Physics.Raycast(from, delta / distance, Mathf.Max(0f, distance - 0.9f), _sightMask,
                 QueryTriggerInteraction.Ignore);
         }
+    }
+
+    /// <summary>A Use target outside the case's points (S004: the dress-up trunk).</summary>
+    public sealed class ExtraUseTarget
+    {
+        /// <summary>Whether Pip (feet position) can use it now.</summary>
+        public Func<Vector3, bool> Offered { get; set; }
+
+        public string VerbKey { get; set; }
+
+        public string IconName { get; set; } = UiSpriteCatalog.IconExamine;
+
+        public Vector3 Marker { get; set; }
+
+        public Action Interact { get; set; }
     }
 }

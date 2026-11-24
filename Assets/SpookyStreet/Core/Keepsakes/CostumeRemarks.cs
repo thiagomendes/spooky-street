@@ -1,15 +1,17 @@
 using System;
 using System.Collections.Generic;
 using SpookyStreet.Core.Case;
+using Lines = SpookyStreet.Core.Localization.LocalizationKeys.CaseLines;
 
 namespace SpookyStreet.Core.Keepsakes
 {
     /// <summary>One witness remark about a worn costume piece (engagement §1.9): said once ever, by one friend.</summary>
     public sealed class CostumeRemark
     {
-        internal CostumeRemark(string id, CostumePiece piece, Speaker speaker, bool afterStamp)
+        internal CostumeRemark(string id, CostumePiece piece, Speaker speaker, bool afterStamp, string lineKey)
         {
             Id = id;
+            LineKey = lineKey;
             Piece = piece;
             Speaker = speaker;
             AfterStamp = afterStamp;
@@ -22,6 +24,12 @@ namespace SpookyStreet.Core.Keepsakes
 
         public Speaker Speaker { get; }
 
+        /// <summary>The spoken line (a case line key with its vignette and voice, S004 A2).</summary>
+        public string LineKey { get; }
+
+        /// <summary>The line as the speaker says it.</summary>
+        public ScriptLine Line => new ScriptLine(Speaker, LineKey);
+
         /// <summary>Only once case 01 is closed (Aunt Kit stands at her open booth only then).</summary>
         public bool AfterStamp { get; }
 
@@ -30,19 +38,19 @@ namespace SpookyStreet.Core.Keepsakes
 
     /// <summary>
     /// The three remarks (S004 §2.1): June on the cape, Mr. Vale on the pail, Aunt Kit on the hat after the stamp. They
-    /// are greetings, never testimony. Their lines, vignettes and voices come with the dress-up (stream A2); this table
-    /// holds the stable IDs and the once-only rule so the save can record them now.
+    /// are greetings, never testimony: stable IDs, the once-only rule and each remark's line (with its vignette in
+    /// C01Vignettes.Remarks and its voice in LineVoices).
     /// </summary>
     public static class CostumeRemarks
     {
         public static readonly CostumeRemark JuneCape =
-            new CostumeRemark("keepsake.remark.june.star_cape", CostumePieces.StarCape, Speaker.June, false);
+            new CostumeRemark("keepsake.remark.june.star_cape", CostumePieces.StarCape, Speaker.June, false, Lines.JuneStarCape);
 
         public static readonly CostumeRemark ValePail =
-            new CostumeRemark("keepsake.remark.vale.lantern_pail", CostumePieces.LanternPail, Speaker.Vale, false);
+            new CostumeRemark("keepsake.remark.vale.lantern_pail", CostumePieces.LanternPail, Speaker.Vale, false, Lines.ValeLanternPail);
 
         public static readonly CostumeRemark KitHat =
-            new CostumeRemark("keepsake.remark.kit.showman_hat", CostumePieces.ShowmanHat, Speaker.Kit, true);
+            new CostumeRemark("keepsake.remark.kit.showman_hat", CostumePieces.ShowmanHat, Speaker.Kit, true, Lines.KitShowmanHat);
 
         public static readonly IReadOnlyList<CostumeRemark> All = new[] { JuneCape, ValePail, KitHat };
 

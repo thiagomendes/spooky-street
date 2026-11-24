@@ -13,7 +13,27 @@ namespace SpookyStreet.Core.Localization
             public const string PageFriends = "keepsake.page.friends";
             public const string PageMoon = "keepsake.page.moon";
 
-            public static readonly string[] All = { PageLanterns, PageFriends, PageMoon };
+
+            // A2: the notebook's keepsakes page and the dress-up trunk (S004 §2.1). No total anywhere.
+
+            /// <summary>Plural: the number beside the small stack of folded bats not yet in a page (never a total).</summary>
+            public const string NotebookBatStack = "keepsake.notebook.bat_stack";
+
+            /// <summary>Accessible name of the notebook's keepsakes page.</summary>
+            public const string NotebookPage = "keepsake.notebook.page";
+
+            /// <summary>Accessible name of the trunk screen's close disc.</summary>
+            public const string TrunkClose = "keepsake.trunk.close";
+
+            public const string PieceStarCape = "keepsake.piece.star_cape";
+            public const string PiecePail = "keepsake.piece.lantern_pail";
+            public const string PieceHat = "keepsake.piece.showman_hat";
+
+            public static readonly string[] All =
+            {
+                PageLanterns, PageFriends, PageMoon, NotebookBatStack, NotebookPage, TrunkClose, PieceStarCape, PiecePail,
+                PieceHat,
+            };
         }
     }
 }
