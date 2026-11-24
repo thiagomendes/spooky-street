@@ -124,6 +124,7 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `c01.line.vale.closed` | Three bows! From my bench I'd never have guessed. | Três reverências! Do meu banco, eu jamais teria adivinhado. | 59/69 | "Jamais" adds an old-fashioned touch. |
 | `c01.line.vale.saved_sweet` | Saved that one for you, detective. | Guardei esse para você, detetive. | 33/48 |  |
 | `c01.line.vale.remembers` | Evening, detective. I watch the owl now, not the door. | Boa noite, detetive. Agora eu observo a coruja, não a porta. | 60/75 |  |
+| `c01.line.vale.lantern_pail` | A lantern pail. Very proper for the evening. | Um balde-lanterna. Muito apropriado para a noite. | 49/62 |  |
 
 ## June (shy, whispery, conspiratorial)
 
@@ -140,6 +141,7 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `c01.line.june.resolve` | Hear that? Three knocks, three bows. | Ouviu? Três batidas, três reverências. | 38/51 |  |
 | `c01.line.june.closed` | Knock, knock… knock. I'll be tapping that all night! | Toc, toc… toc. Vou ficar batucando isso a noite toda! | 53/73 | "Batucando" = drumming a rhythm with the fingers. It is a very Brazilian word. |
 | `c01.line.june.remembers` | Psst, Pip! The door opens for me now. Come play outside! | Psiu, Pip! A porta agora abre para mim. Vem brincar lá fora! | 60/78 | "Psiu" is the Brazilian "psst". |
+| `c01.line.june.star_cape` | Stars on your cape! You look like the night sky! | Estrelas na sua capa! Você parece o céu da noite! | 49/67 |  |
 
 ## Aunt Kit (theatrical)
 
@@ -148,6 +150,7 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `c01.line.kit.first_show` | First show of the night. Best seats are on the porch. | Primeiro show da noite. Os melhores lugares são na varanda. | 59/74 |  |
 | `c01.line.kit.thanks` | My old owl is bowing again. Thank you, both of you. | Minha velha coruja voltou a se curvar. Obrigada, vocês duas! | 60/71 | "Vocês duas": Pip and June are both girls. Kit is a woman, so "Obrigada". |
 | `c01.line.kit.remembers` | Welcome back, detective! My old owl had friends once, long ago. | Bem-vinda de volta, detetive! Minha velha coruja já teve amigos, há muito tempo. | 80/88 | "Bem-vinda" because Pip is a girl. It hints at the friends and adds nothing. |
+| `c01.line.kit.showman_hat` | A showman's hat! You'd fit right in. | Uma cartola de artista! Combina com o show. | 43/51 |  |
 | `c01.line.kit.ask` | So, detective, what happened here? | E então, detetive, o que aconteceu aqui? | 40/48 |  |
 
 ## Notebook: screen and questions
@@ -272,6 +275,7 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `ui.verb.connect` | Connect | Encaixar | 8/12 | "Encaixar" (snap into place) is a child's word. It says no more than "connect". |
 | `ui.verb.open` | Open | Abrir | 5/8 |  |
 | `ui.verb.knock` | Knock | Bater | 5/9 | "Bater" is what you do at a door. It names no result. |
+| `ui.verb.dress_up` | Dress up | Fantasiar | 9/13 |  |
 
 ## Story scenes
 
@@ -339,3 +343,9 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `keepsake.page.lanterns` | An old drawing: lanterns all along Lantern Lane. | Um desenho antigo: lanternas por toda a Rua das Lanternas. | 58/67 | "Lanternas por toda a Rua das Lanternas" keeps the English echo of the street's name. |
 | `keepsake.page.friends` | An old drawing: five friends painting lanterns. | Um desenho antigo: cinco amigos pintando lanternas. | 51/66 | "Amigos" (masculine plural) is the neutral form for a mixed group. It does not say who they are. |
 | `keepsake.page.moon` | An old drawing: tall houses, and a moon on a chimney. | Um desenho antigo: casas altas e uma lua numa chaminé. | 54/74 |  |
+| `keepsake.notebook.bat_stack` | one: {0} paper bat / other: {0} paper bats | one: {0} morcego / other: {0} morcegos | 12/20 |  |
+| `keepsake.notebook.page` | Old drawings | Desenhos antigos | 16/19 |  |
+| `keepsake.trunk.close` | Close the trunk | Fechar o baú | 12/23 |  |
+| `keepsake.piece.star_cape` | Star cape | Capa estrelada | 14/15 |  |
+| `keepsake.piece.lantern_pail` | Lantern pail | Balde-lanterna | 14/19 |  |
+| `keepsake.piece.showman_hat` | Showman's hat | Cartola de artista | 18/20 |  |
