@@ -138,7 +138,7 @@ namespace SpookyStreet.UI
             sheet.Heading(Keys.Time);
             var week = model.Week;
             sheet.Paragraph(week.TotalKey, 32, UiFactory.Ink, UiFactory.BoldFont, 0f, () => week.TotalArgs);
-            var dots = sheet.Row(96f, 14f);
+            var dots = sheet.Row(108f, 14f);
             foreach (var day in week.Days)
             {
                 DayDot(dots, day);
@@ -239,7 +239,7 @@ namespace SpookyStreet.UI
 
         private static void DayDot(RectTransform row, PlaytimeDay day)
         {
-            var cell = ReadingSheet.Cell(row, "Day" + (int)day.Weekday, new Vector2(84f, 92f));
+            var cell = ReadingSheet.Cell(row, "Day" + (int)day.Weekday, new Vector2(84f, 104f));
             float size = day.Level == 0 ? 22f : 22f + day.Level * 10f;
             var dot = UiFactory.Sprite(cell, "Dot", UiFactory.Circle,
                 day.Level == 0 ? UiFactory.WithAlpha(ReadingSheet.Graphite, 0.25f) : Palette.HauntedPurple,
@@ -247,7 +247,7 @@ namespace SpookyStreet.UI
             dot.rectTransform.anchoredPosition = new Vector2(0f, -28f);
             var label = UiFactory.Label(cell, "Weekday", day.WeekdayKey, 26, TextAnchor.MiddleCenter,
                 day.IsToday ? UiFactory.Ink : ReadingSheet.Graphite, day.IsToday ? UiFactory.BoldFont : UiFactory.BodyFont);
-            UiFactory.Place(label.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 18f), new Vector2(84f, 36f));
+            UiFactory.Place(label.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 24f), new Vector2(84f, 48f));
         }
     }
 }

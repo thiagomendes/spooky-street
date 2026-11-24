@@ -20,7 +20,7 @@ namespace SpookyStreet.Tests.Visual
     /// <summary>
     /// S004 stream E frames (75–76, reserved for stream E): 75 the "For grown-ups" page mid-case (one question solved,
     /// two friends, two places, 12 bats, a week of play), 75b the same page scrolled to the keepsakes and the week,
-    /// 75c the page in Brazilian Portuguese; 76 the settings card with the accessibility switches (keyboard focus on
+    /// 75c the page in Brazilian Portuguese, 75d the answers, places and friends; 76 the settings card with the accessibility switches (keyboard focus on
     /// Reduce motion, switched on), 76b the card in pt-BR; review frames 76c the credits and 76d the credits in pt-BR.
     /// </summary>
     [Category("Visual")]
@@ -171,7 +171,10 @@ namespace SpookyStreet.Tests.Visual
             yield return Shot(english ? "75_parent_page" : "75c_parent_page" + suffix, page.Sheet.Canvas);
             if (english)
             {
-                page.Sheet.ScrollBy(page.Sheet.ScrollRange * 0.62f);
+                page.Sheet.ScrollBy(page.Sheet.ScrollRange * 0.3f);
+                yield return WaitUnscaled(0.2f);
+                yield return Shot("75d_parent_page_answers", page.Sheet.Canvas);
+                page.Sheet.ScrollBy(page.Sheet.ScrollRange * 0.32f);
                 yield return WaitUnscaled(0.2f);
                 yield return Shot("75b_parent_page_lower", page.Sheet.Canvas);
             }
@@ -192,7 +195,6 @@ namespace SpookyStreet.Tests.Visual
             menus.CreditsEntry.onClick.Invoke();
             yield return WaitUnscaled(0.3f);
             Assert.AreEqual(2, corner.Credits.LicencesShown);
-            corner.Credits.Sheet.ScrollBy(320f);
             yield return WaitUnscaled(0.2f);
             yield return Shot(english ? "76c_credits" : "76d_credits" + suffix, corner.Credits.Sheet.Canvas);
             corner.Credits.Close();

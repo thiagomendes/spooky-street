@@ -241,12 +241,14 @@ namespace SpookyStreet.Tests.PlayMode
 
             // The gate by keys: Q and P held together.
             Press(_keyboard.qKey);
+            yield return Wait(0.5f);
+            Assert.IsTrue(Menus.Gate.IsZoneHeld(0), "Q holds the first spot");
             Press(_keyboard.pKey);
             yield return Wait(ParentGate.DefaultHoldSeconds + 0.4f);
+            Assert.IsTrue(Menus.SettingsOpen, "Q and P held for 3 s pass the gate");
             Release(_keyboard.qKey);
             Release(_keyboard.pKey);
             yield return Frames(2);
-            Assert.IsTrue(Menus.SettingsOpen, "Q and P held for 3 s pass the gate");
             var nav = Menus.SettingsNavigation;
             Assert.AreEqual(SettingsCard.Helper, nav.Focus, "focus starts on the first row");
 

@@ -113,7 +113,7 @@ namespace SpookyStreet.Core.Parent
             new SettingRow(Haptics, Keys.SettingHaptics, "pg.knock_ring", 1, 4, p => p.Haptics, (p, b) => p.Haptics = b),
             new SettingRow(ReducedMotion, Keys.SettingReducedMotion, "pg.quiet", 2, 1, p => p.ReducedMotion, (p, b) => p.ReducedMotion = b),
             new SettingRow(LargeCaptions, Keys.SettingLargeCaptions, "pg.eye", 2, 2, p => p.LargeCaptions, (p, b) => p.LargeCaptions = b),
-            new SettingRow(OpaqueCaptions, Keys.SettingOpaqueCaptions, "pg.memory", 2, 3, p => p.OpaqueCaptions, (p, b) => p.OpaqueCaptions = b),
+            new SettingRow(OpaqueCaptions, Keys.SettingOpaqueCaptions, "pg.lamp", 2, 3, p => p.OpaqueCaptions, (p, b) => p.OpaqueCaptions = b),
         };
 
         public static readonly IReadOnlyList<(string Id, string LabelKey)> Entries = new[]
