@@ -217,7 +217,7 @@ namespace SpookyStreet.Tests.Project
             try
             {
                 var parts = Children(bat);
-                foreach (var (name, sign) in new[] { (KeepsakeArt.WingLeft, -1f), (KeepsakeArt.WingRight, 1f) })
+                foreach (var (name, sign) in new[] { (KeepsakeArt.WingLeft, 1f), (KeepsakeArt.WingRight, -1f) })
                 {
                     var wing = parts[name];
                     Vector3 open = MeshCentre(wing) - wing.position;
@@ -354,6 +354,29 @@ namespace SpookyStreet.Tests.Project
             Assert.AreEqual(TextureImporterType.Default, importer.textureType);
         }
 
+        /// <summary>
+        /// Where a bone is in the model's frame in the bind pose: from the bind pose of a skinned mesh that uses it
+        /// (bindpose = bone.worldToLocal x mesh.localToWorld at bind time).
+        /// </summary>
+        private static Vector3 BindPosition(GameObject model, string bone)
+        {
+            foreach (var skin in model.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                var bones = skin.bones;
+                for (int i = 0; i < bones.Length; i++)
+                {
+                    if (bones[i] != null && bones[i].name == bone)
+                    {
+                        Matrix4x4 bind = skin.transform.localToWorldMatrix * skin.sharedMesh.bindposes[i].inverse;
+                        return bind.MultiplyPoint3x4(Vector3.zero);
+                    }
+                }
+            }
+
+            Assert.Fail("No skinned mesh of " + model.name + " uses the bone " + bone);
+            return Vector3.zero;
+        }
+
         [Test]
         public void CostumePiecesSitWherePipsBonesAre()
         {
@@ -369,11 +392,16 @@ namespace SpookyStreet.Tests.Project
             Assert.IsTrue(bones.ContainsKey(KeepsakeArt.HatBone), "Pip.fbx has no " + KeepsakeArt.HatBone + " bone");
             Assert.IsTrue(bones.ContainsKey(KeepsakeArt.PailBone), "Pip.fbx has no " + KeepsakeArt.PailBone + " bone");
             Assert.IsTrue(bones.ContainsKey(KeepsakeArt.PipPailMesh), "Pip.fbx has no " + KeepsakeArt.PipPailMesh + " mesh to hide");
-            // Both are authored in Pip's model space in her rest pose: compare in the prefabs' world frames.
-            Vector3 head = bones[KeepsakeArt.HatBone].position;
-            Vector3 grip = bones[KeepsakeArt.PailBone].position;
+            // Both are authored in Pip's model space in her rest (bind) pose. The prefab's own transforms hold an
+            // exported pose, not the bind pose (CI run 161: her right hand is up there), so the bones' bind places
+            // come from the skinned meshes' bind poses, as the game must take them (KeepsakeArt.HatBone remarks).
+            Vector3 head = BindPosition(pip, KeepsakeArt.HatBone);
+            Vector3 grip = BindPosition(pip, KeepsakeArt.PailBone);
             var hatBox = ModelBounds(hat);
             var pailBox = ModelBounds(pail);
+            Debug.Log($"[KeepsakeArtImportTests] Head bind {head:F3} (prefab pose {bones[KeepsakeArt.HatBone].position:F3}), " +
+                      $"Pail bind {grip:F3} (prefab pose {bones[KeepsakeArt.PailBone].position:F3}); hat {hatBox.min:F3}..{hatBox.max:F3}, " +
+                      $"pail {pailBox.min:F3}..{pailBox.max:F3}");
             Assert.That(hatBox.min.y - head.y, Is.InRange(0.15f, 0.32f), "the brim rests on her hair, above the head bone");
             Assert.Less(new Vector2(hatBox.center.x - head.x, hatBox.center.z - head.z).magnitude, 0.12f, "on her head, a little tilted");
             Assert.That(hatBox.size.y, Is.InRange(0.08f, 0.24f), "a small hat");

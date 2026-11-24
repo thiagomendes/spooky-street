@@ -91,10 +91,10 @@ All names and numbers are in `Assets/SpookyStreet/Core/World/KeepsakeArt.cs` (en
   `ModelKit.Spawn` gives `*_Glow` children their emissive material; `GlowLevels.KeepsakeLantern` (0.9, under the
   bloom threshold) applies to every part named `Keepsake*_Glow`.
 - **Paper bat** (`PaperBatKeepsake`). Origin at the body's lowest point, front toward the model's -Z, 0.34 m span.
-  Exported open. Shut: `Wing_L.localRotation = rest * Quaternion.AngleAxis(-WingShutDegrees, Vector3.forward)`
-  and `Wing_R.localRotation = rest * Quaternion.AngleAxis(+WingShutDegrees, Vector3.forward)` (150°). The hinge is
+  Exported open. Shut: `Wing_L.localRotation = rest * Quaternion.AngleAxis(+WingShutDegrees, Vector3.forward)`
+  and `Wing_R.localRotation = rest * Quaternion.AngleAxis(-WingShutDegrees, Vector3.forward)` (150°). The hinge is
   the wing's local **Z**: the children of an imported model keep the builder's Z-up axes under the root's turn
-  (this is what CI run 153 taught; `KeepsakeArtImportTests` proves the turn on the import). The flutter is a blend
+  (CI runs 153 and 161 taught the axis and the sense; `KeepsakeArtImportTests` proves the turn on the import). The flutter is a blend
   between shut and 0. Shut, the bat is ink black with a small cream belly; open, the cream inner fold
   and its pencil lines show. That is the difference from the decorative `PaperBat`, which keeps its glowing edge.
 - **Bat mobile** (`BatMobile`). Origin at the hook on the eave; it hangs 1.02 m and is 0.66 m across. Children:
@@ -104,15 +104,17 @@ All names and numbers are in `Assets/SpookyStreet/Core/World/KeepsakeArt.cs` (en
   nearly open, turned outward.
 - **Dress-up trunk** (`DressUpTrunk`). The porch crate's size (0.6 m) and build, so it can replace the crate on
   the arrival porch. `TrunkLid` is hinged on the back edge; open is
-  `rest * Quaternion.AngleAxis(TrunkLidOpenDegrees, Vector3.right)` (-105°, tested on the import).
+  `rest * Quaternion.AngleAxis(TrunkLidOpenDegrees, Vector3.right)` (+105°, tested on the import).
   Inside lie the folded star cloth, the hat and the lantern (always there: showing only earned pieces is stream
   A's choice of when the lid opens, or a later split of the contents).
-- **Costume pieces.** The hat and the lantern pail are meshes in Pip's model space in her rest pose. Instantiate
-  under Pip's model root with an identity local transform while she is in her bind pose (right after
-  instantiation), then `SetParent(bone, true)`: `HatBone` = `Head`, `PailBone` = `Pail`. To attach later, take the
-  same relation from the prefab asset: `local = prefabBone.worldToLocalMatrix × prefabRoot.localToWorldMatrix`.
-  With the lantern pail, hide the `Pip_Pail` renderer. The star cape is a texture swap on the material Pip's atlas
-  meshes share: `Resources.Load<Texture2D>(KeepsakeArt.StarCapeTexture)` in place of `Pip_BaseColor`.
+- **Costume pieces.** The hat and the lantern pail are meshes in Pip's model space in her **bind pose**
+  (`HatBone` = `Head`, `PailBone` = `Pail`). Do not attach from the prefab's or the instance's current transforms:
+  they hold an exported or animated pose (CI run 161: her right hand is raised in the prefab). Take the bone's bind
+  pose from a skinned mesh of the Pip prefab asset that uses it (index `i` in `skin.bones`):
+  `m = skin.sharedMesh.bindposes[i] * skin.transform.worldToLocalMatrix * piecePrefab.transform.localToWorldMatrix`,
+  then `piece.SetParent(bone, false)` and set its local position, rotation and scale from `m`. With the lantern
+  pail, hide the `Pip_Pail` renderer. The star cape is a texture swap on the material Pip's atlas meshes share:
+  `Resources.Load<Texture2D>(KeepsakeArt.StarCapeTexture)` in place of `Pip_BaseColor`.
 - **Sketch pages.** `Resources.Load<Sprite>(KeepsakeArt.SketchPage(n))`, 1024 × 768 with a ragged transparent
   edge. Each shows the creases of ten folds (5 × 2), so the page can assemble from ten pieces cut on that grid.
 - **Troupe photo.** `OwlHouseStage.TroupePhoto`; children `Puppet_Owl`, `Puppet_Fox`, `Puppet_Moth`,

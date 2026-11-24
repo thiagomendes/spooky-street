@@ -85,8 +85,8 @@ namespace SpookyStreet.Core.World
         /// upright fold by this many degrees (from the open pose, which already leans 12) over the front, so only the
         /// ink-black backs show. The fold is the wing's
         /// local Z (<c>Vector3.forward</c>): children of an imported model keep the builder's Z-up axes under the root's
-        /// turn. <see cref="WingLeft"/>: <c>rest * AngleAxis(-WingShutDegrees, forward)</c>; <see cref="WingRight"/>:
-        /// <c>rest * AngleAxis(+WingShutDegrees, forward)</c> (proved on the import by KeepsakeArtImportTests).
+        /// turn. <see cref="WingLeft"/>: <c>rest * AngleAxis(+WingShutDegrees, forward)</c>; <see cref="WingRight"/>:
+        /// <c>rest * AngleAxis(-WingShutDegrees, forward)</c> (proved on the import by KeepsakeArtImportTests).
         /// </summary>
         public const float WingShutDegrees = 150f;
 
@@ -122,7 +122,7 @@ namespace SpookyStreet.Core.World
         /// in its own frame.
         /// </summary>
         public const string TrunkLid = "TrunkLid";
-        public const float TrunkLidOpenDegrees = -105f;
+        public const float TrunkLidOpenDegrees = 105f;
         public const float TrunkSize = 0.6f;
 
         // ---- Pip's costume pieces: Resources/Models/Costume ----
@@ -135,7 +135,14 @@ namespace SpookyStreet.Core.World
         /// </summary>
         public const string StarCapeTexture = CostumeFolder + "PipStarCape_BaseColor";
 
-        /// <summary>Showman's hat: a mesh in Pip's model space (rest pose), to ride her <see cref="HatBone"/>.</summary>
+        /// <summary>
+        /// Showman's hat: a mesh in Pip's model space in her bind pose, to ride her <see cref="HatBone"/>. Attach from
+        /// the bind pose, not from the prefab's transforms (they hold an exported pose): with <c>skin</c> a skinned mesh
+        /// of the Pip prefab asset that uses the bone at index <c>i</c>, and <c>piece</c> the piece's prefab asset,
+        /// <c>m = skin.sharedMesh.bindposes[i] * skin.transform.worldToLocalMatrix * piece.transform.localToWorldMatrix</c>
+        /// is the piece's local matrix under the bone (position <c>m.GetColumn(3)</c>, rotation <c>m.rotation</c>,
+        /// scale <c>m.lossyScale</c>). The same holds for the lantern pail.
+        /// </summary>
         public const string ShowmanHat = "PipShowmanHat";
         public const string HatBone = "Head";
 
