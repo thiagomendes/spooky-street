@@ -180,12 +180,12 @@ because the artifact host is blocked from the cloud container, and reviewed by e
 | **151** (`45162234557`) | 7de271c | green, first try | 732/732 | 137/137 | 17/17 | Row notes were empty: best fit at 26 in a 34-unit box draws nothing. The pseudo Remove label and the title pill were truncated. |
 | **157** (`45170245627`) | 0698241 | green | 732/732 | 137/137 | 17/17 | The notes show ("In the game", "Downloading 40%") and the pill fits "[Łáñgüágé: [Þšéüðö]~·~·]". The +35 % pseudo note "Downloaded · 70 KB" wrapped over its row. |
 | **158** (`45356276859`) | 5ac5865 (with main b097e6b, F1) | green | 749/749 | 142/142 | 18/18 | The F1 focus outline rings More languages and the rows are taller with no overlap, but the pseudo note lost its second line to best fit (fixed in the next commit). |
-| **RUN159** | HEAD159 | RESULT159 | E159 | P159 | V159 | REVIEW159 |
+| **162** (`45363353848`) | 149d3f5 | **green (final)** | 749/749 | 142/142 | 18/18 | The pseudo note wraps to two lines inside its row. Every frame reads cleanly (see below). |
 
 What the runs show:
 
 - **`LanguagePackTests`** 32/32 and **`PluralRulesTests`** pass in Unity's EditMode as well as `tools/core-tests`.
-  **`LanguageScreenFocusTests`** passes 2/2 (from run 158).
+  **`LanguageScreenFocusTests`** passes 2/2 (runs 158 and 162).
 - **`LanguagePackPlayTests`** passes 4/4 in every run. `TheRealDownloaderFetchesFromALocalHttpHost` was **not
   ignored**, so the real UnityWebRequest downloader fetched the catalog and the pack from the loopback
   `HttpListener`. The log line `[Languages] download qps-ploc: Interrupted (36246 of 72493 bytes arrived)` is the
@@ -237,4 +237,6 @@ What the runs show:
   and more slots in `LanguageScreenFocus`.
 - **Orphaned files.** A crash between switching the index and deleting the old file can leave one orphaned old pack
   file. It is harmless: the index no longer lists it.
+- **Pseudo Remove label.** In the pseudo-language the Remove label ("[Rémövé~·]") loses its last characters at the
+  26-unit minimum. The English "Remove" fits. D2 should check the pt-BR "Remover" in its frames.
 - **No glyphs on the Remove/Download icons.** They reuse `icon_close`, `icon_arrow` and `icon_check`. No new art.
