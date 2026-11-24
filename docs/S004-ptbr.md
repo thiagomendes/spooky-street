@@ -104,13 +104,30 @@ looked at.
 | Run | Head | Result | EditMode | PlayMode | Visual | What it showed |
 |---|---|---|---|---|---|---|
 | **174** (`45385885298`) | 8b0d8cb | red | 797/797 | 143/144 | 20/20 | One assertion was wrong: with pt-BR listed, focus still starts on More languages, not on pt-BR's Use, so the D1 behaviour is kept and the assertion fixed. Frame 74e showed Mr. Vale's line cut after one line, which led to the bubble fix. The other pt-BR frames read cleanly. |
-| **RUN** (`RUNID`) | HEAD | RESULT | | | | |
+| 175 (`45394127630`) | d18327a | cancelled | | | | Superseded by the push of the main b7c2e5e merge (`cancel-in-progress`). |
+| **179** (`45394994617`) | 12f7754 (with main b7c2e5e) | **green (final)** | 835/835 | 151/151 | 21/21 | `PortugueseTableTests` 8/8 and `LanguagePackTests` 32/32 in Unity EditMode. `LanguagePackPlayTests` 5/5, including the new Brazilian-device test. `NonverbalUiTests` 9/9, including every case line drawn to its end in English and pt-BR. `LanguageCaptureTests` 2/2. Mr. Vale's line now wraps to two lines inside the bubble. |
 
 ## 4. Frames
 
 `docs/evidence/s004/ptbr/` (final run):
 
-FRAMES
+- `74_notebook_ptbr_run179.jpg`: the Q-entry page titled "Como a June entrou?", with the three slots and the
+  sticker tray. The title has room to spare.
+- `73c_language_screen_ptbr_run179.jpg`: "Idiomas". English shows "Já vem no jogo" and "Usar". Português (Brasil)
+  shows "Já vem no jogo" and "Em uso". Below them is "Mais idiomas". Nothing is cut.
+- `74c_title_ptbr_run179.jpg`: the case-name strip "Três batidas na Rua das Lanternas", "Novo jogo" and the pill
+  "Idioma: Português (Brasil)". All fit.
+- `74d_dialogue_bea_ptbr_run179.jpg`: Bea's surprised portrait and her 55-character line on one line. The skip
+  button reads "Pular".
+- `74e_dialogue_vale_ptbr_run179.jpg`: Mr. Vale's portrait. "Aquela porta da frente? Eu a via do meu banco. Ficou /
+  fechada." wraps to two lines inside the strip.
+  - `74e_dialogue_vale_ptbr_cut_run174.jpg` shows the same line before the fix, cut after "Ficou".
+- `73_language_screen_run179.jpg`: the D1 frame, in English. It now has three rows: English in use, pt-BR with Use,
+  and the pseudo pack downloading at 40 %.
+- `74p_notebook_pseudo_run179.jpg`: the +35 % check, "[Höw ðíð Jüñé gét íñ?~·~·~·~]". It fits.
+
+Every frame has 0 % magenta (the capture assertion). All pt-BR glyphs (ã, ç, é, ê, í, ó, ú, …) are drawn by Andika
+and Sniglet, with no fallback font.
 
 ## 5. Wording the owner should check (also marked UNSURE on the review page)
 
