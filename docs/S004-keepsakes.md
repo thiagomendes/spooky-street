@@ -54,7 +54,7 @@ side-yard hedges' south face, z 6.52), where no bat may be visible from the plaz
 | # | Tier | Area | Spot | Needs | Bat centre (x, y, z) | Anchor |
 |---|---|---|---|---|---|---|
 | 01 | loop | arrival porch | on the east rail's north post, the first thing in reach (opens as Pip arrives) | walk | 1.95, 1.72, −13.05 | arrival porch |
-| 02 | loop | arrival porch | on the small moving box | walk | 0.75, 1.02, −14.72 | arrival porch |
+| 02 | loop | arrival porch | on the west rail's back post, behind the candy-bowl crate (1.65 m from the bowl) | walk | −1.95, 1.72, −14.95 | arrival porch |
 | 03 | loop | plaza | on the party table's free corner | tap | 5.16, 0.84, −1.98 | plaza |
 | 04 | loop | arrival path | at the street lamp's foot, plaza side | walk | 2.20, 0.12, −9.25 | arrival porch |
 | 05 | loop | plaza south-west | in the fallen leaves between the path and Bea's corner | walk | −2.60, 0.12, −3.20 | bicycle corner |

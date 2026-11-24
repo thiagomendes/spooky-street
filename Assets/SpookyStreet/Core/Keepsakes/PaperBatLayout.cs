@@ -457,8 +457,8 @@ namespace SpookyStreet.Core.Keepsakes
                 // ---- Loop: walk and tap jump only (a third on the main loop) ----
                 new PaperBatSpot(1, BatTier.Loop, "arrival porch", "on the east rail's north post, the first thing in reach",
                     walk, CaseAnchors.ArrivalPorch, 1.95f, 1.72f, -13.05f, 1.6f, 0.6f, 1.55f, 0.6f, -13.1f),
-                new PaperBatSpot(2, BatTier.Loop, "arrival porch", "on the small moving box", walk, CaseAnchors.ArrivalPorch,
-                    0.75f, 1.02f, -14.72f, 0.9f, 0.6f, 0.75f, 0.6f, -14.2f),
+                new PaperBatSpot(2, BatTier.Loop, "arrival porch", "on the west rail's back post, behind the candy-bowl crate",
+                    walk, CaseAnchors.ArrivalPorch, -1.95f, 1.72f, -14.95f, 1.6f, 0.6f, -1.6f, 0.6f, -14.9f),
                 new PaperBatSpot(3, BatTier.Loop, "plaza", "on the party table's free corner", tap, CaseAnchors.Plaza,
                     5.16f, 0.84f, -1.98f, 0.72f, 0.72f, 5.6f, 0f, -1.4f),
                 new PaperBatSpot(4, BatTier.Loop, "arrival path", "at the street lamp's foot, on the plaza side", walk,
