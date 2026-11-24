@@ -34,7 +34,7 @@ status=0
 docker run --rm \
   --workdir /project \
   --shm-size=1025m \
-  --env UNITY_SERIAL --env UNITY_EMAIL --env UNITY_PASSWORD \
+  --env UNITY_SERIAL --env UNITY_EMAIL --env UNITY_PASSWORD --env UNITY_STEP_TIMEOUT \
   --env HOME=/root \
   --volume "$PWD:/project" \
   "$image" \
