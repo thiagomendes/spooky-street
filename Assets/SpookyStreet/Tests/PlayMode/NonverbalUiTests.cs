@@ -8,6 +8,7 @@ using SpookyStreet.Core.Case;
 using SpookyStreet.Core.Flow;
 using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.Localization;
+using SpookyStreet.UI.Nonverbal;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -157,6 +158,73 @@ namespace SpookyStreet.Tests.PlayMode
             director.Captions.ShowNow("c01.hint.arrival.observe");
             yield return null;
             Assert.IsFalse(director.Captions.ShowsVignette, "hints have no mini stage");
+            director.Captions.Clear();
+        }
+
+        [UnityTest]
+        public IEnumerator EachLineShowsItsEmotionsPortraitAndCaptionsShowNone()
+        {
+            // S004 §2.6: the face disc shows the speaker's badge in the line's LineVoices emotion.
+            yield return StartGame();
+            var director = Director;
+            var dialogue = director.Dialogue;
+            Assert.IsTrue(PortraitAtlas.Available, "the portrait atlas loads from Resources");
+            var lines = new[]
+            {
+                new ScriptLine(Speaker.Bea, Lines.BeaSawCape), // surprised
+                new ScriptLine(Speaker.Bea, Lines.BeaClosed), // happy
+                new ScriptLine(Speaker.June, Lines.JuneListenFloor), // whisper
+                new ScriptLine(Speaker.Pip, Lines.ExamineCloth), // thinking
+                new ScriptLine(Speaker.Vale, Lines.ValeDoorShut), // neutral
+            };
+            dialogue.Play(lines);
+            foreach (var line in lines)
+            {
+                yield return Wait(0.3f);
+                Assert.AreEqual(line.Key, dialogue.CurrentLine.Key);
+                string expected = LinePortraits.SpriteName(line);
+                Assert.IsNotNull(expected, line.Key);
+                Assert.AreEqual(expected, dialogue.PortraitId, line.Key + ": the emotion's portrait");
+                var image = dialogue.PortraitImage;
+                Assert.IsTrue(image.enabled && image.gameObject.activeInHierarchy, line.Key + ": the badge shows");
+                Assert.AreEqual(expected, image.sprite.name, line.Key);
+                Assert.AreEqual(1f, image.color.a, 0.01f, line.Key + ": the swap settles fully opaque");
+                dialogue.Advance();
+                yield return null;
+            }
+
+            Assert.AreEqual("portrait.bea.surprised", LinePortraits.SpriteName(lines[0]));
+            Assert.AreEqual("portrait.june.whisper", LinePortraits.SpriteName(lines[2]));
+            Assert.IsFalse(dialogue.IsOpen);
+            Assert.IsNull(dialogue.PortraitId, "no portrait once the card closes");
+            director.Nonverbal.MemoryReplay.End(false);
+
+            // Reduced motion: the face swaps at once, with no fade.
+            dialogue.ReducedMotion = true;
+            dialogue.Play(lines.Take(2).ToArray());
+            yield return null;
+            dialogue.Advance();
+            yield return null;
+            Assert.AreEqual("portrait.bea.happy", dialogue.PortraitId);
+            Assert.AreEqual(1f, dialogue.PortraitImage.color.a, 0.01f, "reduced motion: no fade");
+            dialogue.Cancel();
+            dialogue.ReducedMotion = false;
+
+            // A caption has no face: the dialogue shows no badge for it, and the caption strip keeps its own look.
+            dialogue.Play(new[] { new ScriptLine(Speaker.Caption, Lines.CaptionGrille) });
+            yield return null;
+            Assert.IsNull(dialogue.PortraitId, "captions show no portrait");
+            Assert.IsFalse(dialogue.PortraitImage.enabled);
+            dialogue.Cancel();
+            director.Captions.ShowKey(Lines.CaptionGrille);
+            yield return Wait(0.25f);
+            var portraitTexture = PortraitAtlas.Texture;
+            foreach (var img in director.Captions.GetComponentsInChildren<UnityEngine.UI.Image>(true))
+            {
+                Assert.IsFalse(img.sprite != null && img.sprite.texture == portraitTexture,
+                    img.name + ": the caption strip shows no portrait");
+            }
+
             director.Captions.Clear();
         }
 

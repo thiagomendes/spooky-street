@@ -16,7 +16,8 @@ namespace SpookyStreet.Tests.Visual
     /// trail from the arrival porch (27) and Bea's vignette bubble mid-animation (24: since D26, only the silver flash she
     /// saw). The S002 hint frames (33 sparkle, 34 and 36 Use demos) moved to ClueHintCaptureTests with the S002.5b
     /// retiering (34 and 36 now show the move demo at the crate; 51 and 52 the area breeze and bats). The memory replay (25) and notebook page (26) frames were retired by S002.5a. The first-launch picture cards (28) were retired with D23.1
-    /// (one hybrid reading mode).
+    /// (one hybrid reading mode). 79 (S004 stream G) is Bea's surprised portrait on the same bubble, at the phone
+    /// aspect and at iPad 4:3.
     /// </summary>
     [Category("Visual")]
     public class NonverbalCaptureTests : InputTestFixture
@@ -37,11 +38,11 @@ namespace SpookyStreet.Tests.Visual
             }
         }
 
-        private static IEnumerator Shot(string name, Canvas canvas = null)
+        private static IEnumerator Shot(string name, Canvas canvas = null, int width = Width, int height = Height)
         {
             var game = GameBootstrap.Instance;
             yield return FrameCapture.Capture(game.CameraRig.OutputCamera, canvas != null ? canvas : game.Director.UiCanvas,
-                name, Width, Height);
+                name, width, height);
             float magenta = FrameCapture.MagentaFraction(FrameCapture.LastFrame);
             Assert.LessOrEqual(magenta, MaxMagenta, $"{name}: {magenta:P1} of the frame is error-shader magenta");
             Assert.Greater(FrameCapture.MeanLuminance(FrameCapture.LastFrame), 0.02f, $"{name}: frame is black");
@@ -126,6 +127,13 @@ namespace SpookyStreet.Tests.Visual
             }
 
             yield return Shot("24_bea_vignette");
+
+            // 79 (S004 stream G): the same beat shows Bea's surprised portrait in the bubble's face disc, her pumpkin
+            // stalk rising over the felt; again at an iPad 4:3 aspect to check the layout and safe area.
+            Assert.AreEqual("portrait.bea.surprised", director.Dialogue.PortraitId, "79: BeaSawCape is a surprised line");
+            Assert.IsTrue(director.Dialogue.PortraitImage.enabled, "79: the portrait badge shows");
+            yield return Shot("79_bea_portrait");
+            yield return Shot("79b_bea_portrait_4x3", null, 1024, 768);
             if (brain != null)
             {
                 brain.enabled = true;

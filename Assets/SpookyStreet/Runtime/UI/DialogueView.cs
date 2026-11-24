@@ -15,7 +15,8 @@ namespace SpookyStreet.UI
 {
     /// <summary>
     /// The speech card (docs/ui-language.md, docs/evidence/s000.2/ui/ui_dialogue.jpg): a stitched paper card at the
-    /// bottom with the speaker's portrait in a felt frame (a coloured initial until portrait art exists), an orange
+    /// bottom with the speaker's portrait in a felt frame (S004 §2.6: the speaker's badge in the line's babble emotion,
+    /// <see cref="PortraitAtlas"/>; the puppet face, then a coloured initial, when the atlas is missing), an orange
     /// felt name tab, line pips, "Tap to continue" with an orange next disc, and Skip top-right away from the reading
     /// path. A tap anywhere, Use, Jump, Enter or the gamepad face buttons advance; <see cref="DialogueAdvanceGate"/>
     /// makes sure holding a button never advances, so the press that opened the conversation cannot skip a line.
@@ -48,6 +49,9 @@ namespace SpookyStreet.UI
         private bool _largeText;
         private RectTransform _content;
         private Image _face;
+        private Image _badge;
+        private string _badgeId;
+        private float _badgeFade = 1f;
         private RectTransform _bubble;
         private Image _tail;
         private Image _stagePanel;
@@ -92,6 +96,15 @@ namespace SpookyStreet.UI
 
         /// <summary>The words of the current line are on screen (always on the v1 card).</summary>
         public bool TextLineVisible => IsOpen && (ShowsVignette ? _bubbleLine.gameObject.activeSelf : _card.gameObject.activeSelf);
+
+        /// <summary>The portrait badge of the current line (<c>portrait.bea.surprised</c>), or null when none shows.</summary>
+        public string PortraitId => IsOpen && _badge != null && _badge.enabled ? _badgeId : null;
+
+        /// <summary>The face disc's portrait image (for tests and captures).</summary>
+        public Image PortraitImage => _badge;
+
+        /// <summary>Disc diameter of a portrait badge as a fraction of the felt frame (inside the stitch ring).</summary>
+        public const float PortraitDiscFraction = 0.8f;
 
         /// <summary>Reduced motion: still beats with cross-fades, no pulsing.</summary>
         public bool ReducedMotion
@@ -195,6 +208,17 @@ namespace SpookyStreet.UI
             _face.rectTransform.anchorMax = new Vector2(0.9f, 0.9f);
             _face.rectTransform.sizeDelta = Vector2.zero;
             _face.preserveAspect = true;
+            // The portrait badge (S004 §2.6): the cell's sky disc on the frame's centre at 80 % of it, inside the
+            // stitch ring; the head and hat rise over the ring and the frame's top edge.
+            _badge = UiFactory.Sprite(_portrait.transform, "PortraitBadge", null, Color.white, new Vector2(0.5f, 0.5f),
+                Vector2.zero, Vector2.zero);
+            PortraitAtlas.AnchorsOnFrame(PortraitDiscFraction, out var badgeMin, out var badgeMax);
+            _badge.rectTransform.anchorMin = badgeMin;
+            _badge.rectTransform.anchorMax = badgeMax;
+            _badge.rectTransform.offsetMin = Vector2.zero;
+            _badge.rectTransform.offsetMax = Vector2.zero;
+            _badge.raycastTarget = false;
+            _badge.enabled = false;
 
             _nameTab = UiFactory.PaperTag(card.transform, "NameTab", null, 40, new Vector2(0f, 1f), new Vector2(240f, 6f),
                 new Vector2(210f, 66f), -3f, new Color(0.98f, 0.56f, 0.24f, 1f));
@@ -358,6 +382,10 @@ namespace SpookyStreet.UI
         {
             _lines.Clear();
             _map.Disable();
+            _badge.enabled = false;
+            _badgeId = null;
+            _badgeFade = 1f;
+            _badge.color = Color.white;
             Vignette.Stop();
             ShowsVignette = false;
             gameObject.SetActive(false);
@@ -377,7 +405,7 @@ namespace SpookyStreet.UI
             _line.text = Localizer.Get(line.Key);
             _bubbleLine.text = _line.text;
             _name.SetKey(CaseSpeakers.NameKey(line.Speaker));
-            ApplyPortrait(line.Speaker);
+            ApplyPortrait(line);
             var visual = C01Vignettes.For(line.Key);
             var vignette = visual != null && !visual.UsesV1Strip && PuppetAtlas.Available
                 ? C01Vignettes.Get(visual.VignetteId)
@@ -489,8 +517,9 @@ namespace SpookyStreet.UI
             }
         }
 
-        private void ApplyPortrait(Speaker speaker)
+        private void ApplyPortrait(ScriptLine line)
         {
+            var speaker = line.Speaker;
             string felt;
             Color tint = Color.white;
             Color ink = UiFactory.Ink;
@@ -515,9 +544,19 @@ namespace SpookyStreet.UI
 
             UiFactory.ApplySurface(_portrait, felt, Palette.JackOrange, tint);
             string name = Localizer.Get(CaseSpeakers.NameKey(speaker) ?? string.Empty);
-            _face.sprite = PuppetAtlas.Get(FacePart(speaker));
+            var badge = PortraitAtlas.For(line);
+            string badgeId = badge != null ? badge.name : null;
+            if (badgeId != _badgeId && _badge.enabled && badge != null && !_reducedMotion)
+            {
+                _badgeFade = 0f; // a gentle swap when the face changes between lines (none with reduced motion)
+            }
+
+            _badgeId = badgeId;
+            _badge.sprite = badge;
+            _badge.enabled = badge != null;
+            _face.sprite = badge == null ? PuppetAtlas.Get(FacePart(speaker)) : null;
             _face.enabled = _face.sprite != null;
-            _initial.text = _face.enabled ? string.Empty : InitialOf(name);
+            _initial.text = _face.enabled || _badge.enabled ? string.Empty : InitialOf(name);
             _initial.color = ink;
         }
 
@@ -577,6 +616,12 @@ namespace SpookyStreet.UI
                 float s = Mathf.Lerp(0.96f, 1f, 1f - (1f - _flutter) * (1f - _flutter));
                 _card.localScale = new Vector3(s, s, 1f);
                 _bubble.localScale = new Vector3(s, s, 1f);
+            }
+
+            if (_badgeFade < 1f)
+            {
+                _badgeFade = _reducedMotion ? 1f : Mathf.Min(1f, _badgeFade + Time.unscaledDeltaTime / 0.15f);
+                _badge.color = new Color(1f, 1f, 1f, Mathf.Lerp(0.35f, 1f, _badgeFade));
             }
 
             if (ShowsVignette)
