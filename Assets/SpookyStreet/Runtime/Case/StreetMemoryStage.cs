@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using SpookyStreet.App;
+using SpookyStreet.Characters;
+using SpookyStreet.Core.Animation;
 using SpookyStreet.Core.Case;
+using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.Core.Street;
 using SpookyStreet.Core.World;
 using SpookyStreet.Save;
@@ -30,9 +33,35 @@ namespace SpookyStreet.Case
         /// <summary>Diameter of the owl sticker's paper disc on Bea's basket (metres).</summary>
         public const float StickerSize = 0.15f;
 
+        /// <summary>Where the booth's little bell dings (beside the ticket shutter, under the eave).</summary>
+        public static readonly Vector3 BellPoint = new Vector3(CaseStage.KitBooth.Position.X + 0.55f, 2.15f,
+            CaseStage.KitBooth.Position.Z + 0.35f);
+
+        /// <summary>Mr. Vale checks his watch on the hour only within this distance of the lens (and on screen).</summary>
+        public const float ValeInViewDistance = 24f;
+
+        private const float BellSeconds = 0.9f;
+
         private StreetStore _store;
         private Light _boothLamp;
         private GameObject _sticker;
+        private SpriteRenderer _bell;
+        private float _bellTime = -1f;
+        private float _bellSize = 1f;
+
+        /// <summary>The owl booth's show "on the hour" and the three-knock touch reward (S004).</summary>
+        public BoothShowClock ShowClock { get; } = new BoothShowClock();
+
+        /// <summary>Bell dings so far (tests).</summary>
+        public int BellDings { get; private set; }
+
+        /// <summary>Times Mr. Vale checked his watch on the hour (tests).</summary>
+        public int ValeWatchChecks { get; private set; }
+
+        /// <summary>Raised when a show plays in the world (on the hour, or after three knocks).</summary>
+        public event Action<BoothShow> ShowPlayed;
+
+        public SpriteRenderer Bell => _bell;
 
         /// <summary>The street file (null until <see cref="Load"/>).</summary>
         public StreetStore Store => _store;
@@ -72,6 +101,13 @@ namespace SpookyStreet.Case
             lamp.transform.position = new Vector3(kit.X, kit.Y + 1.9f, kit.Z - 0.55f);
             lamp.enabled = false;
             _boothLamp = lamp;
+
+            _bell = new GameObject("BoothBellDing").AddComponent<SpriteRenderer>();
+            _bell.transform.SetParent(transform, false);
+            _bell.sprite = PuppetAtlas.Get(PuppetParts.Sparkle);
+            _bell.sortingOrder = 60;
+            _bell.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            _bell.gameObject.SetActive(false);
 
             if (game != null && game.Witnesses != null && game.Witnesses.Bicycle != null)
             {
@@ -209,6 +245,102 @@ namespace SpookyStreet.Case
             }
 
             Refresh(caseState, true);
+        }
+
+        /// <summary>
+        /// Every frame of play (the director): once the street remembers case 01 (and its memories are not resting),
+        /// the owl's 9 s wind cycle becomes the show clock: every <see cref="BoothShowClock.IntervalSeconds"/> of play on
+        /// the street (<paramref name="onStreet"/>: outside, nothing holding the screen) the bell dings, the owl bows
+        /// three times, and Mr. Vale checks his watch if he is in view.
+        /// </summary>
+        public void Tick(float dt, bool onStreet, WorkshopView workshop, Witness vale, Camera lens)
+        {
+            ShowClock.SetRunning(Live.OwlBows && workshop != null);
+            if (ShowClock.Running && workshop.WindEnabled)
+            {
+                // The show clock drives the owl now; the replay's rebuild turns the wind back on (ApplyWorld).
+                workshop.WindEnabled = false;
+            }
+
+            if (ShowClock.Advance(dt, onStreet) == BoothShow.OnTheHour)
+            {
+                RingBell();
+                workshop.PlayShow();
+                if (vale != null && lens != null && InView(lens, vale.transform.position + Vector3.up))
+                {
+                    vale.PlayGesture(CharacterClips.CheckWatch, new Vector3(0f, 1.4f, CaseRouteLayout.FrontZ - 0.1f));
+                    ValeWatchChecks++;
+                }
+
+                ShowPlayed?.Invoke(BoothShow.OnTheHour);
+            }
+
+            StepBell(dt, lens);
+        }
+
+        /// <summary>
+        /// A knock on the booth's shutter (Use, only offered after the stamp): a small ding of paper light; the third in
+        /// a row makes the owl bow. Inert while the clock is off. Returns what happened.
+        /// </summary>
+        public BoothShow KnockShutter(WorkshopView workshop)
+        {
+            var show = ShowClock.Knock();
+            if (!ShowClock.Running)
+            {
+                return BoothShow.None;
+            }
+
+            Ding(0.45f);
+            if (show == BoothShow.Knocked && workshop != null)
+            {
+                workshop.PlayShow();
+                ShowPlayed?.Invoke(BoothShow.Knocked);
+            }
+
+            return show;
+        }
+
+        /// <summary>The booth's little bell dings (on the hour, and in the cutscenes).</summary>
+        public void RingBell()
+        {
+            BellDings++;
+            Ding(1f);
+        }
+
+        private void Ding(float size)
+        {
+            _bellTime = 0f;
+            _bellSize = size;
+        }
+
+        private static bool InView(Camera lens, Vector3 point)
+        {
+            var v = lens.WorldToViewportPoint(point);
+            return v.z > 0f && v.z < ValeInViewDistance && v.x > 0f && v.x < 1f && v.y > 0f && v.y < 1f;
+        }
+
+        private void StepBell(float dt, Camera lens)
+        {
+            if (_bell == null || _bellTime < 0f)
+            {
+                return;
+            }
+
+            _bellTime += dt;
+            if (_bellTime > BellSeconds || lens == null)
+            {
+                _bellTime = -1f;
+                _bell.gameObject.SetActive(false);
+                return;
+            }
+
+            float u = _bellTime / BellSeconds;
+            float size = 0.22f * _bellSize * Mathf.Sin(u * Mathf.PI);
+            _bell.gameObject.SetActive(true);
+            _bell.transform.SetPositionAndRotation(BellPoint, lens.transform.rotation * Quaternion.Euler(0f, 0f, _bellTime * 90f));
+            float native = _bell.sprite != null ? _bell.sprite.bounds.size.y : 1f;
+            _bell.transform.localScale = Vector3.one * (Mathf.Max(0.001f, size) / Mathf.Max(0.01f, native));
+            _bell.color = new Color(1f, 0.93f, 0.7f, Mathf.Sin(u * Mathf.PI));
         }
 
         private void Refresh(CaseState caseState, bool world)

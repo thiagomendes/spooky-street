@@ -8,8 +8,9 @@ namespace SpookyStreet.Core.Cutscenes
     /// When a cutscene plays (D28, narrative bible §5): each plays once per save on its own and is rewatchable from
     /// the notebook's case page. The opening plays on a new game before control; the reveal plays when the step that
     /// stamps the case (the three deductions plus the reopening, D26) has happened in this session, so it is never
-    /// ahead of the child and never doubles the reopening (which the world action plays). Continue and a reload never
-    /// start a cutscene.
+    /// ahead of the child and never doubles the reopening (which the world action plays). S004: the seed follows the
+    /// reveal's first play; "the street remembers" plays on the first load after the stamp (not in the run where the
+    /// stamp landed, never while a replay rests the memories). Otherwise Continue and a reload start nothing.
     /// </summary>
     public static class CutscenePolicy
     {
@@ -17,8 +18,17 @@ namespace SpookyStreet.Core.Cutscenes
         public static string OnNewGame(IReadOnlyCollection<string> seen) =>
             Contains(seen, C01Cutscenes.OpeningId) ? null : C01Cutscenes.OpeningId;
 
-        /// <summary>Continue (or a reload): nothing plays by itself.</summary>
-        public static string OnContinue() => null;
+        /// <summary>
+        /// Continue (the first load of a save in this run of the game): "the street remembers" once, when the case is
+        /// stamped, the street lays its memories over the world (<paramref name="memoriesShown"/>: false while a
+        /// replayed case rests them, D29), the stamp did not land in this run (<paramref name="stampedThisSession"/>), and
+        /// this save has not seen it. Nothing else plays by itself on a Continue.
+        /// </summary>
+        public static string OnContinue(IReadOnlyCollection<string> seen, CaseState state, bool memoriesShown,
+            bool stampedThisSession) =>
+            Stamped(state) && memoriesShown && !stampedThisSession && !Contains(seen, C01Cutscenes.StreetRemembersId)
+                ? C01Cutscenes.StreetRemembersId
+                : null;
 
         /// <summary>After a case step: the reveal when this step stamped the case and the save has not seen it.</summary>
         public static string AfterStep(CaseStep step, IReadOnlyCollection<string> seen) =>
@@ -26,7 +36,19 @@ namespace SpookyStreet.Core.Cutscenes
                 ? C01Cutscenes.RevealId
                 : null;
 
-        /// <summary>The notebook's case page offers it: the opening always, the reveal once the case is stamped.</summary>
+        /// <summary>
+        /// When a cutscene ends: the seed follows the reveal's first play (played through or skipped: the night always
+        /// ends on the seed), once per save and only once stamped. A rewatch never chains.
+        /// </summary>
+        public static string AfterCutscene(string endedId, bool rewatch, IReadOnlyCollection<string> seen, CaseState state) =>
+            endedId == C01Cutscenes.RevealId && !rewatch && Stamped(state) && !Contains(seen, C01Cutscenes.SeedId)
+                ? C01Cutscenes.SeedId
+                : null;
+
+        /// <summary>
+        /// The notebook offers it: the opening always; the reveal, the seed and "the street remembers" once the case is
+        /// stamped (so never while a replay is open: its facts start over).
+        /// </summary>
         public static bool CanRewatch(string id, CaseState state)
         {
             switch (id)
@@ -34,11 +56,15 @@ namespace SpookyStreet.Core.Cutscenes
                 case C01Cutscenes.OpeningId:
                     return true;
                 case C01Cutscenes.RevealId:
-                    return state != null && state.Has(CaseFact.CaseStamped);
+                case C01Cutscenes.SeedId:
+                case C01Cutscenes.StreetRemembersId:
+                    return Stamped(state);
                 default:
                     return false;
             }
         }
+
+        private static bool Stamped(CaseState state) => state != null && state.Has(CaseFact.CaseStamped);
 
         /// <summary>The cutscenes the case page offers now, in story order.</summary>
         public static IReadOnlyList<string> Rewatchable(CaseState state)
@@ -64,6 +90,10 @@ namespace SpookyStreet.Core.Cutscenes
                     return C01Cutscenes.Opening;
                 case C01Cutscenes.RevealId:
                     return C01Cutscenes.Reveal(state, answers);
+                case C01Cutscenes.SeedId:
+                    return Stamped(state) ? C01Cutscenes.Seed : null;
+                case C01Cutscenes.StreetRemembersId:
+                    return Stamped(state) ? C01Cutscenes.StreetRemembers : null;
                 default:
                     return null;
             }

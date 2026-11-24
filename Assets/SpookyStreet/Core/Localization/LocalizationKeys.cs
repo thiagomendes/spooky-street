@@ -319,6 +319,9 @@ namespace SpookyStreet.Core.Localization
             public const string Connect = "ui.verb.connect";
             public const string Open = "ui.verb.open";
 
+            /// <summary>Knock on Kit's booth after case 01 (S004: three knocks make the owl bow).</summary>
+            public const string Knock = "ui.verb.knock";
+
             public static readonly string[] All =
             {
                 Talk,
@@ -328,6 +331,7 @@ namespace SpookyStreet.Core.Localization
                 Lift,
                 Connect,
                 Open,
+                Knock,
             };
         }
 
