@@ -17,15 +17,25 @@ namespace SpookyStreet.World
     /// peel sound, and the bat is gone for good (bats never respawn). Every find is written to <c>keepsakes.json</c> at
     /// once. No counter, no pop-up and no total anywhere (engagement §2): <see cref="Found"/> lets the notebook disc wobble
     /// once when a page completes (stream A2).
-    /// <para><b>Art swap point (stream B2).</b> Each bat shows <see cref="KeepsakeModel"/> from
-    /// <c>Resources/Models/Environment</c> when that model exists (the collectible bat with its flutter-open shape key);
-    /// until then it is the greybox: the decorative <see cref="EnvironmentLayout.PaperBat"/> mesh over a cream paper card
-    /// that unfolds behind it, or two plain paper quads without models.</para>
+    /// <para><b>Art (stream B2, wired in A2).</b> Each bat is <see cref="KeepsakeModel"/> from
+    /// <c>Resources/Models/Environment</c>: ink black when shut, its hinged wings (<c>Wing_L</c>, <c>Wing_R</c>, turning
+    /// about their local Z, <see cref="KeepsakeArt.WingShutDegrees"/> from open) spreading as Pip comes near to show the
+    /// cream, pencilled inner fold. It never glows, unlike the decorative bats. Without the model it is the greybox: the
+    /// decorative <see cref="EnvironmentLayout.PaperBat"/> mesh over a cream paper card, or two plain paper quads.</para>
     /// </summary>
     public sealed class PaperBatCollectibles : MonoBehaviour
     {
-        /// <summary>The B2 collectible bat model (Resources/Models/Environment/KeepsakeBat.fbx); absent until B2 lands.</summary>
-        public const string KeepsakeModel = "KeepsakeBat";
+        /// <summary>The B2 collectible bat model (Resources/Models/Environment/PaperBatKeepsake.fbx).</summary>
+        public const string KeepsakeModel = KeepsakeArt.PaperBat;
+
+        /// <summary>The collectible's size in the world (its 0.34 m span reads at the play camera's distance).</summary>
+        public const float ModelScale = 1.2f;
+
+        /// <summary>Half the shut bat's height (unscaled): a bat in the air or on a hook is centred on its spot.</summary>
+        public const float ModelHalfHeight = 0.06f;
+
+        /// <summary>The wings beat this far (degrees) about open while a bat flutters.</summary>
+        public const float FlapDegrees = 18f;
 
         /// <summary>Pip nearer than this (metres from her chest) makes a bat flutter open.</summary>
         public const float FlutterDistance = 2.4f;
@@ -55,6 +65,10 @@ namespace SpookyStreet.World
             public Transform Root;
             public Transform Wings;
             public Transform Fold;
+            public Transform WingLeft;
+            public Transform WingRight;
+            public Quaternion LeftRest;
+            public Quaternion RightRest;
             public float Open;
             public float Phase;
         }
@@ -129,7 +143,16 @@ namespace SpookyStreet.World
                 GameObject art = null;
                 if (UsesKeepsakeModel)
                 {
-                    art = kit.Spawn(KeepsakeModel, wings, Vector3.zero);
+                    // Origin at the body's lowest point: on its surface when perched, centred when it hangs or floats.
+                    float rest = float.IsNaN(spot.SitY) ? -ModelHalfHeight * ModelScale : spot.SitY - spot.Y;
+                    art = kit.Spawn(KeepsakeModel, wings, new Vector3(0f, rest, 0f), 0f, ModelScale);
+                    if (art != null)
+                    {
+                        view.WingLeft = ModelKit.FindDeep(art.transform, KeepsakeArt.WingLeft);
+                        view.WingRight = ModelKit.FindDeep(art.transform, KeepsakeArt.WingRight);
+                        view.LeftRest = view.WingLeft != null ? view.WingLeft.localRotation : Quaternion.identity;
+                        view.RightRest = view.WingRight != null ? view.WingRight.localRotation : Quaternion.identity;
+                    }
                 }
                 else if (greyboxMesh)
                 {
@@ -202,6 +225,30 @@ namespace SpookyStreet.World
             }
 
             Refresh();
+        }
+
+        /// <summary>Puts an earned costume piece on or takes it off, written at once (S004 A2). False when nothing changed.</summary>
+        public bool Wear(string pieceId, bool on)
+        {
+            bool changed = false;
+            if (_store != null)
+            {
+                TryStore(() => changed = _store.Wear(pieceId, on));
+            }
+
+            return changed;
+        }
+
+        /// <summary>Records a costume remark as said (once ever), written at once.</summary>
+        public bool MarkSaid(string remarkId)
+        {
+            bool changed = false;
+            if (_store != null)
+            {
+                TryStore(() => changed = _store.Said(remarkId));
+            }
+
+            return changed;
         }
 
         /// <summary>Takes a bat (the pickup, and tests): writes the find, puffs, plays the paper sound. False if not new.</summary>
@@ -301,6 +348,28 @@ namespace SpookyStreet.World
         private static void Pose(BatView view)
         {
             float open = Mathf.SmoothStep(0f, 1f, view.Open);
+            if (view.WingLeft != null || view.WingRight != null)
+            {
+                // The model: shut, the wings fold over the front (ink black, a cream belly); opening, they spread to
+                // show the cream inner fold and (without reduced motion) beat a little.
+                float flap = AmbientMotion.ReducedMotion ? 0f
+                    : (Mathf.Sin(Time.time * 9f + view.Phase) * 0.5f + 0.5f) * FlapDegrees * open;
+                float shut = KeepsakeArt.WingShutDegrees * (1f - open) + flap;
+                if (view.WingLeft != null)
+                {
+                    view.WingLeft.localRotation = view.LeftRest * Quaternion.AngleAxis(shut, Vector3.forward);
+                }
+
+                if (view.WingRight != null)
+                {
+                    view.WingRight.localRotation = view.RightRest * Quaternion.AngleAxis(-shut, Vector3.forward);
+                }
+
+                // A small lift as it wakes, so it reads as fluttering up to Pip.
+                view.Wings.localPosition = new Vector3(0f, 0.04f * open, 0f);
+                return;
+            }
+
             float flutter = AmbientMotion.ReducedMotion ? 0f : Mathf.Sin(Time.time * 7f + view.Phase) * 10f * open;
             view.Wings.localRotation = Quaternion.Euler(-EnvironmentDressing.BatTilt * open + flutter, 0f, 0f);
             view.Wings.localPosition = new Vector3(0f, 0.05f * open, 0f);

@@ -107,6 +107,11 @@ namespace SpookyStreet.Core.Localization
             public const string JuneRemembers = "c01.line.june.remembers";
             public const string KitRemembers = "c01.line.kit.remembers";
 
+            // Costume remarks (S004 §2.1, engagement §1.9): one friend notices a worn keepsake piece, once ever.
+            public const string JuneStarCape = "c01.line.june.star_cape";
+            public const string ValeLanternPail = "c01.line.vale.lantern_pail";
+            public const string KitShowmanHat = "c01.line.kit.showman_hat";
+
             public static readonly string[] All =
             {
                 CaptionArrivalKnocks,
@@ -151,6 +156,9 @@ namespace SpookyStreet.Core.Localization
                 ValeRemembers,
                 JuneRemembers,
                 KitRemembers,
+                JuneStarCape,
+                ValeLanternPail,
+                KitShowmanHat,
             };
         }
 
@@ -322,6 +330,9 @@ namespace SpookyStreet.Core.Localization
             /// <summary>Knock on Kit's booth after case 01 (S004: three knocks make the owl bow).</summary>
             public const string Knock = "ui.verb.knock";
 
+            /// <summary>Open the dress-up trunk on the arrival porch (S004 keepsakes).</summary>
+            public const string DressUp = "ui.verb.dress_up";
+
             public static readonly string[] All =
             {
                 Talk,
@@ -332,6 +343,7 @@ namespace SpookyStreet.Core.Localization
                 Connect,
                 Open,
                 Knock,
+                DressUp,
             };
         }
 

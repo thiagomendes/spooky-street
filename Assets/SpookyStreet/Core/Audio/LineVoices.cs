@@ -62,6 +62,11 @@ namespace SpookyStreet.Core.Audio
             { Keys.ValeRemembers, BabbleEmotion.Happy },
             { Keys.JuneRemembers, BabbleEmotion.Happy },
             { Keys.KitRemembers, BabbleEmotion.Thinking },
+
+            // Costume remarks (S004): a friend delighted by what Pip wears.
+            { Keys.JuneStarCape, BabbleEmotion.Happy },
+            { Keys.ValeLanternPail, BabbleEmotion.Happy },
+            { Keys.KitShowmanHat, BabbleEmotion.Happy },
         };
 
         /// <summary>The line keys with a voice row.</summary>

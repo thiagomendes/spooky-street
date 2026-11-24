@@ -92,15 +92,15 @@ namespace SpookyStreet.Tests.PlayMode
             (Speaker.Vale, new[]
             {
                 Lines.ValeDoorShut, Lines.ValeInviteSit, Lines.ValeRepeat, Lines.ValeWasShut, Lines.ValeOpenNow,
-                Lines.ValeClosed, Lines.ValeSavedSweet, Lines.ValeRemembers,
+                Lines.ValeClosed, Lines.ValeSavedSweet, Lines.ValeRemembers, Lines.ValeLanternPail,
             }),
             (Speaker.June, new[]
             {
                 Lines.JuneGreet, Lines.JuneGreetShortcut, Lines.JuneDoorSticks, Lines.JuneDoorAlreadyOpen,
                 Lines.JuneLatchReminder, Lines.JuneLatchThanks, Lines.JuneListenFloor, Lines.JuneGoOutside,
-                Lines.JuneResolve, Lines.JuneClosed, Lines.JuneRemembers,
+                Lines.JuneResolve, Lines.JuneClosed, Lines.JuneRemembers, Lines.JuneStarCape,
             }),
-            (Speaker.Kit, new[] { Lines.KitFirstShow, Lines.KitThanks, Lines.KitAsk, Lines.KitRemembers }),
+            (Speaker.Kit, new[] { Lines.KitFirstShow, Lines.KitThanks, Lines.KitAsk, Lines.KitRemembers, Lines.KitShowmanHat }),
             (Speaker.Pip, new[]
             {
                 Lines.ExamineStreamer, Lines.ExamineCloth, Lines.ExamineSill, Lines.ExamineDoorStuck, Lines.ExamineBowl,

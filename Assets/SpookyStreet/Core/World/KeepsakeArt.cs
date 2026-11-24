@@ -188,6 +188,27 @@ namespace SpookyStreet.Core.World
         /// <summary>Resources path of sketch page 1..3 (a sprite: old paper with a ragged, transparent edge).</summary>
         public static string SketchPage(int page) => "UI/SketchPages/sketch_page_" + Checked(page, SketchPages);
 
+        // ---- the dress-up trunk's picture cards: Resources/UI/CostumeIcons (tools/blender/chars/costume_pieces.py icons) ----
+        public const string CostumeIconAssetFolder = "Assets/SpookyStreet/Content/Resources/UI/CostumeIcons/";
+        public const int CostumeIconSize = 256;
+
+        /// <summary>Resources path of a piece's card picture; <paramref name="pieceId"/> is its stable ID
+        /// (<c>keepsake.costume.star_cape</c> → <c>UI/CostumeIcons/costume_icon_star_cape</c>).</summary>
+        public static string CostumeIcon(string pieceId)
+        {
+            if (string.IsNullOrEmpty(pieceId))
+            {
+                throw new ArgumentException("A piece ID is needed.", nameof(pieceId));
+            }
+
+            int dot = pieceId.LastIndexOf('.');
+            return "UI/CostumeIcons/costume_icon_" + pieceId.Substring(dot + 1);
+        }
+
+        public static bool IsCostumeIconAssetPath(string assetPath) =>
+            assetPath != null && assetPath.StartsWith(CostumeIconAssetFolder, StringComparison.Ordinal) &&
+            assetPath.EndsWith(".png", StringComparison.OrdinalIgnoreCase);
+
         public static bool IsSketchPageAssetPath(string assetPath) =>
             assetPath != null && assetPath.StartsWith(SketchPageAssetFolder, StringComparison.Ordinal) &&
             assetPath.EndsWith(".png", StringComparison.OrdinalIgnoreCase);

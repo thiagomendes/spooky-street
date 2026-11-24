@@ -337,6 +337,28 @@ namespace SpookyStreet.Tests.Project
         }
 
         [Test]
+        public void CostumeIconsImportAsTransparentSprites()
+        {
+            // S004 A2: the dress-up trunk's card pictures (tools/blender/chars/costume_pieces.py icons).
+            foreach (var piece in SpookyStreet.Core.Keepsakes.CostumePieces.All)
+            {
+                string resource = KeepsakeArt.CostumeIcon(piece.Id);
+                string path = "Assets/SpookyStreet/Content/Resources/" + resource + ".png";
+                Assert.IsTrue(KeepsakeArt.IsCostumeIconAssetPath(path), path);
+                var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+                Assert.IsNotNull(importer, path + " is committed");
+                Assert.AreEqual(TextureImporterType.Sprite, importer.textureType, path);
+                Assert.AreEqual(SpriteImportMode.Single, importer.spriteImportMode, path);
+                Assert.IsTrue(importer.alphaIsTransparency, path);
+                Assert.IsFalse(importer.mipmapEnabled, path);
+                var sprite = Resources.Load<Sprite>(resource);
+                Assert.IsNotNull(sprite, resource + " loads as a Sprite");
+                Assert.AreEqual(KeepsakeArt.CostumeIconSize, sprite.texture.width, path);
+                Assert.AreEqual(KeepsakeArt.CostumeIconSize, sprite.texture.height, path);
+            }
+        }
+
+        [Test]
         public void StarCapeIsPipsAtlasAtTheSameSize()
         {
             var star = Resources.Load<Texture2D>(KeepsakeArt.StarCapeTexture);
