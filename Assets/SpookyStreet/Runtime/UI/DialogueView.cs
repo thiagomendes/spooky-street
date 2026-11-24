@@ -59,7 +59,9 @@ namespace SpookyStreet.UI
         private bool _reducedMotion;
 
         /// <summary>Bubble size and the stage inset (canvas units; the mock's 520×120 pt stage at @2x).</summary>
-        public static readonly Vector2 BubbleSize = new Vector2(1060f, 327f);
+        // 351 tall (S004 D2, was 327): the strip under the stage holds two lines of words, so long lines (June's 84
+        // characters in English, 88 in pt-BR) wrap instead of losing their end.
+        public static readonly Vector2 BubbleSize = new Vector2(1060f, 351f);
         public const float StageInset = 26f;
         public const float StageHeight = 231f;
         public const float BubbleBottom = 40f;
@@ -136,6 +138,9 @@ namespace SpookyStreet.UI
 
         /// <summary>The visible line's text (as localized).</summary>
         public string CurrentText => _line != null ? _line.text : null;
+
+        /// <summary>The words under the vignette (tests check that a long line is drawn to its end).</summary>
+        public Text BubbleLine => _bubbleLine;
 
         public Button SkipButton { get; private set; }
 
@@ -296,8 +301,8 @@ namespace SpookyStreet.UI
 
             _bubbleLine = UiFactory.Label(_bubble, "TextLine", null, 30, TextAnchor.MiddleCenter, Graphite,
                 UiFactory.BoldFont);
-            UiFactory.Place(_bubbleLine.rectTransform, new Vector2(0.5f, 0f), new Vector2(30f, 36f),
-                new Vector2(BubbleSize.x - 300f, 60f));
+            UiFactory.Place(_bubbleLine.rectTransform, new Vector2(0.5f, 0f), new Vector2(30f, 47f),
+                new Vector2(BubbleSize.x - 300f, 86f));
 
             var next = UiFactory.FeltDisc(_bubble, "NextDisc", UiSpriteCatalog.FeltDiscOrange, Palette.CandyCornYellow,
                 UiSpriteCatalog.IconNext, UiFactory.Ink, null, 88f, new Vector2(1f, 0f), new Vector2(-4f, 12f), 1f);

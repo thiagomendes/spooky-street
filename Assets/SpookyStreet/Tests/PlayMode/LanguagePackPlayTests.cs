@@ -155,8 +155,8 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsNotNull(portugueseRow.Use, "a built-in language is used with no download");
             Assert.IsNull(portugueseRow.Remove, "a built-in language cannot be removed");
             yield return null;
-            Assert.AreEqual(LanguageScreenFocus.Main(1), screen.Navigation.Focus,
-                "gamepad and keyboard (F1): English is in use, so focus starts on pt-BR's Use");
+            Assert.AreEqual(LanguageScreenFocus.More, screen.Navigation.Focus,
+                "gamepad and keyboard (F1): English is in use, so focus starts on More languages (as in D1)");
 
             screen.MoreButton.onClick.Invoke();
             yield return null;

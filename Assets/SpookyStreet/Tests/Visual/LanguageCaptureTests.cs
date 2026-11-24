@@ -256,6 +256,9 @@ namespace SpookyStreet.Tests.Visual
             Director.Perform(CaseAction.Talk(Speaker.Vale));
             yield return WaitUnscaled(2.5f);
             Assert.IsTrue(Director.Dialogue.IsOpen, "74e: Mr. Vale's line is on the card");
+            var words = Director.Dialogue.BubbleLine;
+            Assert.GreaterOrEqual(words.cachedTextGenerator.characterCountVisible, words.text.Length - 1,
+                "74e: Mr. Vale's 61-character line wraps to two lines and is drawn to its end");
             yield return Shot("74e_dialogue_vale_ptbr", Director.UiCanvas);
             if (brain != null)
             {
