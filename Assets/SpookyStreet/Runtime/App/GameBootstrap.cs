@@ -166,6 +166,8 @@ namespace SpookyStreet.App
                 menus.RequireParent(passed);
                 return true;
             });
+            LanguageScreen.Blocked = () => Director != null && Director.Nonverbal != null &&
+                                           Director.Nonverbal.Menus != null && Director.Nonverbal.Menus.GateOpen;
             Adopt(LanguageScreen.gameObject);
             Ui.OpenLanguages = LanguageScreen.Open;
         }

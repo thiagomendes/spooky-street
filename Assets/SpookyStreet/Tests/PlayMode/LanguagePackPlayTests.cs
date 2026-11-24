@@ -7,6 +7,7 @@ using System.Threading;
 using NUnit.Framework;
 using SpookyStreet.App;
 using SpookyStreet.Case;
+using SpookyStreet.Core.Flow;
 using SpookyStreet.Core.Localization;
 using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.Localization;
@@ -148,6 +149,9 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(1, screen.Rows.Count, "English only before a grown-up asks for more");
             Assert.IsNotNull(screen.RowFor("en").InUseTag, "English is in use");
             Assert.AreEqual("English", screen.RowFor("en").Name.text);
+            yield return null;
+            Assert.AreEqual(LanguageScreenFocus.More, screen.Navigation.Focus,
+                "gamepad and keyboard (F1): English is in use, so focus starts on More languages");
 
             screen.MoreButton.onClick.Invoke();
             yield return null;
@@ -167,7 +171,10 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsNotNull(pseudoRow.Remove);
             Assert.AreEqual("en", Localizer.ActiveLocale, "downloading does not switch");
 
-            pseudoRow.Use.onClick.Invoke();
+            // Use by keyboard or gamepad: focus the pseudo row's main slot and press Submit (the same path as a tap).
+            screen.Navigation.FocusOn(LanguageScreenFocus.Main(1));
+            Assert.AreEqual(LanguageScreenFocus.Main(1), screen.Navigation.Focus);
+            screen.Navigation.Submit();
             yield return null;
             Assert.AreEqual(PseudoLocalizer.Locale, Localizer.ActiveLocale);
             StringAssert.StartsWith("[", game.Ui.CaseName.text, "the title's case name is in the pseudo-language");
@@ -197,9 +204,9 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(row == null || row.Download != null, "the pseudo pack is no longer on the device");
             Assert.IsNull(game.Languages.Packs.TableFor(PseudoLocalizer.Locale));
 
-            screen.CloseButton.onClick.Invoke();
+            screen.Navigation.Back();
             yield return null;
-            Assert.IsFalse(screen.IsOpen);
+            Assert.IsFalse(screen.IsOpen, "Back (Escape, East) closes the screen like the close disc");
         }
 
         [UnityTest]

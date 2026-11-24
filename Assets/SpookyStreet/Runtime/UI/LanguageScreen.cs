@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using SpookyStreet.App;
 using SpookyStreet.Core.Art;
+using SpookyStreet.Core.Flow;
 using SpookyStreet.Core.Localization;
 using SpookyStreet.Localization;
 using UnityEngine;
@@ -16,22 +17,24 @@ namespace SpookyStreet.UI
     /// language on the device with its native name, where it comes from and a Use button (no gate). "More languages"
     /// asks for the parent gate, then fetches the host's catalog; Download and Remove sit behind that gate. A modal
     /// paper card over a night-violet scrim, on its own canvas just under the gate's.
-    /// Navigation hook for the S004 F1 base: <see cref="FocusOrder"/>, <see cref="DefaultFocus"/> and
-    /// <see cref="Back"/>; buttons also get explicit up/down navigation so a gamepad works today.
+    /// Gamepad and keyboard through the S004 F1 base: a <see cref="UiFocusScreen"/> over
+    /// <see cref="LanguageScreenFocus"/> (fixed slot ids re-bound to each rebuild's buttons); Back runs Close. It is
+    /// paused while the parent gate is up (<see cref="Blocked"/>), so keys meant for the gate never reach the rows.
     /// </summary>
     public sealed class LanguageScreen : MonoBehaviour
     {
         /// <summary>Above the game UI (10) and the case UI, under the parent gate (16) so the gate shows on top.</summary>
         public const int SortingOrder = 14;
 
-        public const int MaxRows = 4;
+        public const int MaxRows = LanguageScreenFocus.Rows;
         private const float CardWidth = 900f;
         private const float CardHeight = 680f;
         private const float RowTop = -128f;
-        private const float RowHeight = 104f;
+        private const float RowHeight = 124f;
 
         private readonly List<Row> _rows = new List<Row>();
-        private readonly List<Selectable> _focus = new List<Selectable>();
+        private readonly List<RectTransform> _emptySlots = new List<RectTransform>();
+        private UiFocusScreen _nav;
         private LanguageController _languages;
         private Func<Action, bool> _requireParent;
         private RectTransform _card;
@@ -71,11 +74,11 @@ namespace SpookyStreet.UI
 
         public IReadOnlyList<Row> Rows => _rows;
 
-        /// <summary>Top-to-bottom focus order (rows' buttons, More languages, Close) for gamepad and keyboard.</summary>
-        public IReadOnlyList<Selectable> FocusOrder => _focus;
+        /// <summary>Gamepad and keyboard navigation (F1): focus, Navigate, Submit, Back.</summary>
+        public UiFocusScreen Navigation => _nav;
 
-        /// <summary>The first button top-down (a language's Use, else More languages, else Close).</summary>
-        public Selectable DefaultFocus => _focus.Count > 0 ? _focus[0] : null;
+        /// <summary>True while something above the screen (the parent gate) takes the input.</summary>
+        public Func<bool> Blocked { get; set; }
 
         public event Action Opened;
 
@@ -91,10 +94,11 @@ namespace SpookyStreet.UI
             screen.Canvas = canvas;
             screen._languages = languages;
             screen._requireParent = requireParent;
+            // Built hidden: attaching the focus helper to an active root would clear the title's uGUI selection.
+            canvas.gameObject.SetActive(false);
             screen.Build();
             languages.Packs.Changed += screen.MarkDirty;
             languages.LanguageChanged += screen.MarkDirty;
-            canvas.gameObject.SetActive(false);
             return screen;
         }
 
@@ -117,7 +121,7 @@ namespace SpookyStreet.UI
             _downloadsUnlocked = false;
             Canvas.gameObject.SetActive(true);
             Rebuild();
-            Select(DefaultFocus);
+            _nav.FocusOn(LanguageScreenFocus.Main(0));
             Opened?.Invoke();
         }
 
@@ -173,6 +177,15 @@ namespace SpookyStreet.UI
 
         private void MarkDirty() => _dirty = true;
 
+        private void Update()
+        {
+            bool blocked = Blocked != null && Blocked();
+            if (_nav != null && _nav.enabled == blocked)
+            {
+                _nav.enabled = !blocked;
+            }
+        }
+
         private void LateUpdate()
         {
             if (_dirty && IsOpen)
@@ -215,23 +228,51 @@ namespace SpookyStreet.UI
 
             MoreButton = UiFactory.SecondaryButton(_card, "MoreLanguages", K.More, new Vector2(0.5f, 0f),
                 new Vector2(0f, 70f), new Vector2(440f, 96f), RequestMore, UiSpriteCatalog.IconGlobe);
+
+            // A hidden stand-in per row slot: a slot with no button this rebuild is skipped by the focus graph.
+            for (int i = 0; i < LanguageScreenFocus.Rows * 2; i++)
+            {
+                var empty = UiFactory.Rect(_card, "EmptySlot" + i);
+                empty.gameObject.SetActive(false);
+                _emptySlots.Add(empty);
+            }
+
+            _nav = UiFocusScreen.Attach(Canvas.gameObject, LanguageScreenFocus.Build(), Canvas.transform);
+            _nav.Bind(LanguageScreenFocus.Close, CloseButton);
+            _nav.Bind(LanguageScreenFocus.More, MoreButton);
+            BindSlots();
+        }
+
+        /// <summary>Points each row slot at this rebuild's buttons (ids stay, so focus stays on the same slot).</summary>
+        private void BindSlots()
+        {
+            for (int i = 0; i < LanguageScreenFocus.Rows; i++)
+            {
+                var row = i < _rows.Count ? _rows[i] : null;
+                Selectable main = row == null ? null : row.Use != null ? row.Use
+                    : row.Remove == null && row.Download != null ? row.Download : null;
+                Selectable side = row == null ? null : row.Remove != null ? row.Remove
+                    : row.Use != null && row.Download != null ? row.Download : null;
+                BindSlot(LanguageScreenFocus.Main(i), main, _emptySlots[i * 2]);
+                BindSlot(LanguageScreenFocus.Side(i), side, _emptySlots[i * 2 + 1]);
+            }
+        }
+
+        private void BindSlot(string id, Selectable selectable, RectTransform empty)
+        {
+            if (selectable != null)
+            {
+                _nav.Bind(id, selectable);
+            }
+            else
+            {
+                _nav.Bind(id, empty, null);
+            }
         }
 
         private void Rebuild()
         {
             _dirty = false;
-            string keepLocale = null;
-            string keepButton = null;
-            var current = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
-            foreach (var row in _rows)
-            {
-                if (current != null && current.transform.parent == row.Root.transform)
-                {
-                    keepLocale = row.Locale;
-                    keepButton = current.name;
-                }
-            }
-
             foreach (var row in _rows)
             {
                 row.Root.SetActive(false);
@@ -239,7 +280,6 @@ namespace SpookyStreet.UI
             }
 
             _rows.Clear();
-            _focus.Clear();
             var packs = _languages.Packs;
             var options = new List<LanguageOption>();
             foreach (var option in packs.Options)
@@ -256,43 +296,10 @@ namespace SpookyStreet.UI
                 _rows.Add(BuildRow(options[i], i));
             }
 
-            foreach (var row in _rows)
-            {
-                AddFocus(row.Use);
-                AddFocus(row.Download);
-                AddFocus(row.Remove);
-            }
-
             bool downloads = packs.DownloadsConfigured;
             MoreButton.gameObject.SetActive(downloads);
-            if (downloads)
-            {
-                AddFocus(MoreButton);
-            }
-
-            AddFocus(CloseButton);
-            LinkNavigation();
+            BindSlots();
             RefreshStatus(packs, options);
-            if (EventSystem.current != null && IsOpen)
-            {
-                // Keep focus on the same row's same button across a rebuild (download progress rebuilds the rows).
-                var kept = keepLocale != null ? RowFor(keepLocale) : null;
-                var again = kept != null ? kept.Root.transform.Find(keepButton) : null;
-                if (again != null && again.GetComponent<Selectable>() != null)
-                {
-                    Select(again.GetComponent<Selectable>());
-                }
-                else if (keepLocale != null && kept != null)
-                {
-                    Select(kept.Use != null ? kept.Use : kept.Download != null ? kept.Download : (Selectable)kept.Remove);
-                }
-
-                var selected = EventSystem.current.currentSelectedGameObject;
-                if (selected == null || !selected.activeInHierarchy)
-                {
-                    Select(DefaultFocus);
-                }
-            }
         }
 
         private void RefreshStatus(LanguagePacks packs, List<LanguageOption> shown)
@@ -353,8 +360,8 @@ namespace SpookyStreet.UI
             row.Name.text = option.NativeName; // the language's own name, from its table: never translated
             row.Note = UiFactory.Label(root, "Note", null, UiFactory.CaptionSize, TextAnchor.MiddleLeft,
                 UiFactory.WithAlpha(UiFactory.Ink, 0.75f), UiFactory.BoldFont);
-            UiFactory.Place(row.Note.rectTransform, left, new Vector2(12f, -50f), new Vector2(300f, 40f), left);
-            row.Note.verticalOverflow = VerticalWrapMode.Overflow; // one caption line; never clipped to nothing
+            UiFactory.Place(row.Note.rectTransform, left, new Vector2(12f, -48f), new Vector2(290f, 62f), left);
+            row.Note.alignment = TextAnchor.UpperLeft; // up to two caption lines (+35 % languages wrap)
             var note = row.Note.gameObject.AddComponent<LocalizedText>();
             long kb = Math.Max(1, (option.Size + 1023) / 1024);
             if (option.Downloading)
@@ -362,9 +369,9 @@ namespace SpookyStreet.UI
                 int percent = Mathf.RoundToInt(option.Progress * 100f);
                 note.SetKey(K.Downloading, () => new object[] { percent });
                 var track = UiFactory.Sprite(root, "ProgressTrack", null, UiFactory.WithAlpha(Palette.HauntedPurple, 0.25f),
-                    left, new Vector2(12f, -92f), new Vector2(300f, 8f));
+                    left, new Vector2(12f, -112f), new Vector2(300f, 8f));
                 track.rectTransform.pivot = left;
-                track.rectTransform.anchoredPosition = new Vector2(12f, -92f);
+                track.rectTransform.anchoredPosition = new Vector2(12f, -112f);
                 row.Progress = UiFactory.Sprite(track.transform, "Fill", null, Palette.JackOrange,
                     new Vector2(0f, 0.5f), Vector2.zero, new Vector2(300f * Mathf.Clamp01(option.Progress), 8f));
                 row.Progress.rectTransform.pivot = new Vector2(0f, 0.5f);
@@ -424,28 +431,6 @@ namespace SpookyStreet.UI
             }
 
             return row;
-        }
-
-        private void AddFocus(Selectable selectable)
-        {
-            if (selectable != null && selectable.gameObject.activeSelf)
-            {
-                _focus.Add(selectable);
-            }
-        }
-
-        private void LinkNavigation()
-        {
-            for (int i = 0; i < _focus.Count; i++)
-            {
-                var nav = new Navigation
-                {
-                    mode = Navigation.Mode.Explicit,
-                    selectOnUp = _focus[(i - 1 + _focus.Count) % _focus.Count],
-                    selectOnDown = _focus[(i + 1) % _focus.Count],
-                };
-                _focus[i].navigation = nav;
-            }
         }
 
         private static void Select(Selectable selectable)
