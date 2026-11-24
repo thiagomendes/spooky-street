@@ -234,7 +234,16 @@ namespace SpookyStreet.Tests.PlayMode
                         yield return Tap(_keyboard.spaceKey);
                         break;
                     default:
-                        cutscenes.Player.Frame.SkipButton.onClick.Invoke();
+                        // The disc skips at once; a press in the first moments is ignored, so tap again, as a child would.
+                        for (int tap = 0; tap < 4 && !cutscenes.Player.LastSkipped; tap++)
+                        {
+                            cutscenes.Player.Frame.SkipButton.onClick.Invoke();
+                            if (!cutscenes.Player.LastSkipped)
+                            {
+                                yield return WaitReal(0.5f);
+                            }
+                        }
+
                         break;
                 }
 
@@ -538,13 +547,9 @@ namespace SpookyStreet.Tests.PlayMode
                     continue;
                 }
 
-                // Down to the tray, home to the left, right to the sticker; Submit picks, Submit places.
+                // Down to the tray, then left or right to the sticker; Submit picks, Submit places.
                 yield return Direction(0, 1);
-                for (int i = 0; i < 7; i++)
-                {
-                    yield return Direction(-1, 0);
-                }
-
+                Assert.AreEqual(CursorRow.Tray, notebook.CursorRow, "down reaches the tray");
                 var tray = new List<string>();
                 foreach (var s in notebook.TrayStickers)
                 {
@@ -553,9 +558,9 @@ namespace SpookyStreet.Tests.PlayMode
 
                 int index = tray.IndexOf(id);
                 Assert.GreaterOrEqual(index, 0, id + " is in the tray");
-                for (int i = 0; i < index; i++)
+                for (int i = 0; i < 12 && notebook.CursorIndex != index; i++)
                 {
-                    yield return Direction(1, 0);
+                    yield return Direction(notebook.CursorIndex < index ? 1 : -1, 0);
                 }
 
                 Assert.AreEqual(index, notebook.CursorIndex, id);
@@ -652,9 +657,14 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(ScreenFocus.PauseSettings, nav.Focus);
             yield return Tap(_gamepad.buttonSouth);
             yield return Frames(2);
+            Assert.IsTrue(Menus.GateOpen, "a fresh gate for the gear");
             Press(_gamepad.leftShoulder);
+            yield return WaitReal(0.5f);
+            Assert.IsTrue(Menus.Gate.IsZoneHeld(0), "the left bumper holds the first spot");
             Press(_gamepad.rightShoulder);
-            yield return WaitReal(ParentGate.DefaultHoldSeconds + 0.5f);
+            yield return WaitReal(0.5f);
+            Assert.IsTrue(Menus.Gate.IsZoneHeld(1), "the right bumper holds the second spot");
+            yield return WaitReal(ParentGate.DefaultHoldSeconds + 0.3f);
             Release(_gamepad.leftShoulder);
             Release(_gamepad.rightShoulder);
             yield return Frames(2);
@@ -788,10 +798,13 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual("Mergulhar", text.text);
             Canvas.ForceUpdateCanvases();
             var generator = new TextGenerator();
-            generator.Populate(text.text, text.GetGenerationSettings(text.rectTransform.rect.size));
+            var settings = text.GetGenerationSettings(text.rectTransform.rect.size);
+            generator.Populate(text.text, settings);
             Assert.GreaterOrEqual(generator.characterCountVisible, 9, "every letter shows");
             Assert.AreEqual(1, generator.lineCount, "on one line");
-            Assert.AreEqual(UiFactory.CaptionSize, generator.fontSizeUsedForBestFit, "at the full caption size");
+            // Sizes here are in screen pixels (the canvas scale): best fit kept the largest size the label allows.
+            Assert.AreEqual(UiFactory.CaptionSize, text.resizeTextMaxSize);
+            Assert.AreEqual(settings.resizeTextMaxSize, generator.fontSizeUsedForBestFit, "at the full caption size");
 
             // Every other verb the tag can show fits the same way (Levantar, Encaixar, Fantasiar…).
             foreach (string key in new[]

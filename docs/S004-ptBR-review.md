@@ -240,7 +240,7 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `c01.hint.arrival.observe` | Listen! Where did those knocks come from? | Escute! De onde vieram essas batidas? | 37/58 |  |
 | `c01.hint.arrival.locate` | The blue house is straight ahead, past the plaza. | A casa azul fica bem em frente, depois da praça. | 48/69 |  |
 | `c01.hint.check_view.observe` | Mr. Vale's bench looks comfy. What can you see from there? | O banco do Sr. Vale parece confortável. O que dá para ver de lá? | 64/81 |  |
-| `c01.hint.check_view.locate` | Mr. Vale's bench is near the end of the little fence, across from the big tree. | O banco do Sr. Vale fica perto do fim da cerquinha, longe da árvore grande. | 75/109 | "Leste" (east), as in English. Children may not know it, but the hint is not changed. |
+| `c01.hint.check_view.locate` | Mr. Vale's bench is at the end of the little fence. | O banco do Sr. Vale fica no fim da cerquinha. | 45/71 | "Leste" (east), as in English. Children may not know it, but the hint is not changed. |
 | `c01.hint.find_way_in.observe` | A breeze keeps tugging toward the side yard. | Uma brisa fica puxando para o quintal lateral. | 46/62 | "Quintal lateral" = side yard. "Quintal do lado" was avoided because it can mean the neighbour's yard. |
 | `c01.hint.find_way_in.locate` | Behind the side-yard hedge, a ramp climbs up high. | Atrás da cerca viva do quintal lateral, uma rampa sobe bem alto. | 64/70 |  |
 | `c01.hint.meet_june.observe` | A lamp is glowing up in the attic. | Uma luz brilha lá em cima, no sótão. | 36/48 | "Uma luz brilha" for a lamp glowing. It is no more precise than the English. |

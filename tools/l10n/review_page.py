@@ -41,7 +41,7 @@ NOTES = {
     "ui.dialogue.skip": "See ui.memory.skip.",
     "ui.cutscene.skip": "See ui.memory.skip.",
     "ui.cutscene.skip_again": "See ui.memory.skip.",
-    "c01.hint.check_view.locate": "Owner decision (2026-11-24): no compass points (a 6-year-old may not know \"leste\"). \"Cerquinha\" (the little picket fence) and \"árvore grande\" (the plaza maple) are what the child sees. It names the area only.",
+    "c01.hint.check_view.locate": "Owner decision (2026-11-24): no compass points (a 6-year-old may not know \"leste\"). \"Cerquinha\" (the little picket fence) is what the child sees; the line fits two caption lines. It names the area only.",
     "ui.hint.move.jump": "\"Aperte\" works for touch, gamepad and keyboard (S004 accessibility pass); \"rapidinho\" keeps the short press, as opposed to \"Segure\" for the high jump.",
     "ui.parent_gate.hint": "Singular \"Adulto:\" plus the você imperative, as Brazilian parental gates read.",
     "ui.parent_gate.hint_gamepad": "\"Botões de ombro\" is the platform-neutral term in Brazilian game manuals (L/R, LB/RB).",

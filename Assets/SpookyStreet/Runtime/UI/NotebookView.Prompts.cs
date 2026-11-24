@@ -32,10 +32,16 @@ namespace SpookyStreet.UI
             _pageNextPrompt = ControlGlyphView.Create(_next.transform, "PagePrompt", new Vector2(0.5f, 0f),
                 new Vector2(0f, -38f), 52f);
             _closePrompt = ControlGlyphView.Create(CloseButton.transform, "BackPrompt", new Vector2(0f, 0f),
-                new Vector2(-14f, -14f), 48f);
+                new Vector2(-14f, -14f), 58f);
             _promptLayer = UiFactory.Stretch(UiFactory.Rect(content, "FocusPrompt"));
             _submitPrompt = ControlGlyphView.Create(_promptLayer, "SubmitPrompt", new Vector2(0.5f, 0.5f), Vector2.zero,
-                52f);
+                64f);
+
+            // Bone paper behind the face buttons: they sit on the dark tray and the night sky.
+            _pagePrevPrompt.Backed = true;
+            _pageNextPrompt.Backed = true;
+            _closePrompt.Backed = true;
+            _submitPrompt.Backed = true;
         }
 
         private void TickPrompts()
