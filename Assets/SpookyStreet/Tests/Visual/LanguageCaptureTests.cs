@@ -18,9 +18,11 @@ using N = SpookyStreet.Core.Case.CaseNotebook;
 namespace SpookyStreet.Tests.Visual
 {
     /// <summary>
-    /// S004 D1 language packs (frames 73–74, reserved for stream D): 73 the language screen with the pseudo pack
-    /// downloading after the parent gate; 74 the notebook's Q-entry page in the pseudo-language (+35 % text). Review
-    /// frames: the language screen once the pack is in use, and the title in the pseudo-language.
+    /// S004 stream D language frames (73–74, reserved for stream D). D1: 73 the language screen with the pseudo pack
+    /// downloading after the parent gate (English and the built-in pt-BR above it); 74p the notebook's Q-entry page in
+    /// the pseudo-language (+35 % text); review frames 73b (screen, pack in use) and 74b (title, pseudo). D2: 74 the
+    /// Q-entry page in Brazilian Portuguese; review frames 73c (screen in pt-BR), 74c (title), 74d (Bea's line with
+    /// her portrait) and 74e (Mr. Vale's line).
     /// </summary>
     [Category("Visual")]
     public class LanguageCaptureTests : InputTestFixture
@@ -187,7 +189,90 @@ namespace SpookyStreet.Tests.Visual
             notebook.ShowPage(notebook.PageQuestions.IndexOf(N.Question(N.QuestionEntry)));
             yield return WaitUnscaled(1.0f);
             Director.Captions.Clear();
-            yield return Shot("74_notebook_pseudo", Director.UiCanvas);
+            yield return Shot("74p_notebook_pseudo", Director.UiCanvas);
+        }
+
+        [UnityTest]
+        [Timeout(240000)]
+        public IEnumerator CapturesTheGameInBrazilianPortuguese()
+        {
+            yield return SceneManager.LoadSceneAsync("LanternLane", LoadSceneMode.Single);
+            for (int i = 0; i < 10; i++)
+            {
+                yield return null;
+            }
+
+            // 73c: the language screen after choosing the built-in pt-BR (no gate, no download).
+            var game = GameBootstrap.Instance;
+            var screen = game.LanguageScreen;
+            game.Ui.LanguageButton.onClick.Invoke();
+            yield return null;
+            Assert.IsNotNull(screen.RowFor("pt-BR"), "pt-BR ships in the app");
+            screen.RowFor("pt-BR").Use.onClick.Invoke();
+            yield return null;
+            yield return null;
+            Assert.AreEqual("pt-BR", Localizer.ActiveLocale);
+            Assert.AreEqual("Três batidas na Rua das Lanternas", game.Ui.CaseName.text);
+            yield return WaitUnscaled(0.3f);
+            yield return Shot("73c_language_screen_ptbr", screen.Canvas);
+
+            // 74c: the title in pt-BR.
+            screen.Back();
+            yield return null;
+            yield return WaitUnscaled(0.3f);
+            yield return Shot("74c_title_ptbr", game.Ui.GetComponent<Canvas>());
+
+            // 74d / 74e: Bea's first line with her portrait, then Mr. Vale's, on the speech card (framed like 14_dialogue).
+            game.Ui.NewGameButton.onClick.Invoke();
+            yield return WaitUnscaled(1.0f);
+            yield return Do(A(CaseActionKind.HearKnocks));
+            var bea = CaseStage.Find(CaseStage.PointBea).Position;
+            var bike = CaseStage.Find(CaseStage.PointBicycle).Position;
+            var beaAt = new Vector3(bea.X, 0f, bea.Z);
+            Vector3 away = beaAt - new Vector3(bike.X, 0f, bike.Z);
+            away = (away.normalized + Vector3.right).normalized;
+            game.Pip.Teleport(beaAt + away * 2.4f + Vector3.up * 0.1f);
+            game.Pip.transform.rotation = Quaternion.LookRotation(-away, Vector3.up);
+            game.CameraRig.Orbit.RequestRecenter();
+            yield return WaitUnscaled(1.5f);
+            Director.Perform(CaseAction.Talk(Speaker.Bea));
+            yield return WaitUnscaled(1.0f);
+            Assert.IsTrue(Director.Dialogue.IsOpen, "74d: Bea's line is on the card");
+            Assert.IsTrue(Director.Dialogue.PortraitImage.enabled, "74d: her portrait shows");
+            var camera = game.CameraRig.OutputCamera;
+            var brain = camera.GetComponent("CinemachineBrain") as Behaviour;
+            if (brain != null)
+            {
+                brain.enabled = false;
+            }
+
+            var pip = game.Pip.transform;
+            camera.transform.position = pip.position + pip.right * 0.9f + Vector3.up * 1.3f - pip.forward * 1.4f;
+            camera.transform.LookAt(beaAt + Vector3.up * 1.05f);
+            yield return WaitUnscaled(1.5f);
+            yield return Shot("74d_dialogue_bea_ptbr", Director.UiCanvas);
+            Director.Dialogue.Skip();
+            yield return null;
+            Director.Perform(CaseAction.Talk(Speaker.Vale));
+            yield return WaitUnscaled(2.5f);
+            Assert.IsTrue(Director.Dialogue.IsOpen, "74e: Mr. Vale's line is on the card");
+            yield return Shot("74e_dialogue_vale_ptbr", Director.UiCanvas);
+            if (brain != null)
+            {
+                brain.enabled = true;
+            }
+
+            // 74: the notebook's "Como a June entrou?" page in pt-BR, two clues found.
+            Director.Dialogue.Skip();
+            yield return null;
+            yield return Do(A(CaseActionKind.SitOnBench), A(CaseActionKind.ExamineCloth));
+            Director.OpenNotebook();
+            yield return null;
+            var notebook = Director.Notebook;
+            notebook.ShowPage(notebook.PageQuestions.IndexOf(N.Question(N.QuestionEntry)));
+            yield return WaitUnscaled(1.0f);
+            Director.Captions.Clear();
+            yield return Shot("74_notebook_ptbr", Director.UiCanvas);
         }
     }
 }

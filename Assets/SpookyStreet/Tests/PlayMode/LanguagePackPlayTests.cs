@@ -146,12 +146,17 @@ namespace SpookyStreet.Tests.PlayMode
             game.Ui.LanguageButton.onClick.Invoke();
             yield return null;
             Assert.IsTrue(screen.IsOpen);
-            Assert.AreEqual(1, screen.Rows.Count, "English only before a grown-up asks for more");
+            Assert.AreEqual(2, screen.Rows.Count, "English and the built-in pt-BR before a grown-up asks for more");
             Assert.IsNotNull(screen.RowFor("en").InUseTag, "English is in use");
             Assert.AreEqual("English", screen.RowFor("en").Name.text);
+            var portugueseRow = screen.RowFor("pt-BR");
+            Assert.IsNotNull(portugueseRow, "pt-BR ships in the app (S004 D2)");
+            Assert.AreEqual("Português (Brasil)", portugueseRow.Name.text);
+            Assert.IsNotNull(portugueseRow.Use, "a built-in language is used with no download");
+            Assert.IsNull(portugueseRow.Remove, "a built-in language cannot be removed");
             yield return null;
-            Assert.AreEqual(LanguageScreenFocus.More, screen.Navigation.Focus,
-                "gamepad and keyboard (F1): English is in use, so focus starts on More languages");
+            Assert.AreEqual(LanguageScreenFocus.Main(1), screen.Navigation.Focus,
+                "gamepad and keyboard (F1): English is in use, so focus starts on pt-BR's Use");
 
             screen.MoreButton.onClick.Invoke();
             yield return null;
@@ -172,8 +177,8 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual("en", Localizer.ActiveLocale, "downloading does not switch");
 
             // Use by keyboard or gamepad: focus the pseudo row's main slot and press Submit (the same path as a tap).
-            screen.Navigation.FocusOn(LanguageScreenFocus.Main(1));
-            Assert.AreEqual(LanguageScreenFocus.Main(1), screen.Navigation.Focus);
+            screen.Navigation.FocusOn(LanguageScreenFocus.Main(2));
+            Assert.AreEqual(LanguageScreenFocus.Main(2), screen.Navigation.Focus, "row 2: after English and pt-BR");
             screen.Navigation.Submit();
             yield return null;
             Assert.AreEqual(PseudoLocalizer.Locale, Localizer.ActiveLocale);
@@ -207,6 +212,39 @@ namespace SpookyStreet.Tests.PlayMode
             screen.Navigation.Back();
             yield return null;
             Assert.IsFalse(screen.IsOpen, "Back (Escape, East) closes the screen like the close disc");
+        }
+
+        /// <summary>
+        /// S004 D2: pt-BR ships in the app. A Brazilian device starts in it with no request; the title, the language
+        /// pill and the screen read Portuguese; choosing English is kept over the device language at the next launch.
+        /// </summary>
+        [UnityTest]
+        [Timeout(120000)]
+        public IEnumerator TheBuiltInPortugueseStartsOnABrazilianDeviceAndNeedsNoDownload()
+        {
+            LanguageController.DeviceLocalesOverride = new[] { "pt-BR" };
+            yield return LoadGame();
+            var game = GameBootstrap.Instance;
+            Assert.AreEqual("pt-BR", Localizer.ActiveLocale, "the device language picks the built-in table");
+            Assert.AreEqual("Três batidas na Rua das Lanternas", game.Ui.CaseName.text);
+            Assert.AreEqual("Novo jogo", Label(game.Ui.NewGameButton));
+            StringAssert.Contains("Português (Brasil)", game.Ui.LanguageButton.GetComponent<CraftButton>().Label.text);
+            Assert.IsEmpty(_host.Requests, "a built-in language needs no request");
+
+            var screen = game.LanguageScreen;
+            game.Ui.LanguageButton.onClick.Invoke();
+            yield return null;
+            Assert.IsNotNull(screen.RowFor("pt-BR").InUseTag, "pt-BR is in use");
+            Assert.AreEqual("Mais idiomas", Label(screen.MoreButton));
+            screen.RowFor("en").Use.onClick.Invoke();
+            yield return null;
+            Assert.AreEqual("en", Localizer.ActiveLocale);
+            Assert.AreEqual("Three Knocks on Lantern Lane", game.Ui.CaseName.text);
+            Assert.IsTrue(game.Audio.Preferences.LocaleChosen);
+
+            Localizer.ResetForTests();
+            yield return LoadGame();
+            Assert.AreEqual("en", Localizer.ActiveLocale, "the player's choice wins over the device language");
         }
 
         [UnityTest]
