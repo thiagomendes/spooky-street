@@ -17,7 +17,7 @@ namespace SpookyStreet.Tests.Visual
     /// S004 A1 frames (stream A's reserved number 65; 66–68 stay for A2): a paper bat fluttering open by Pip inside the
     /// treehouse cabin (65_bat_treehouse_deck), the folded bat on the street lamp's head seen from the path
     /// (65b_bat_lamp_head), the side-yard ramp bat open beside Pip (65c_bat_side_yard_ramp) and the arrival porch at the
-    /// start in the play camera, the rail bat opening (65d_bat_porch_start). Greybox bat art until stream B2's model.
+    /// start in the play camera, the rail bat opening (65d_bat_porch_start). Since A2 the bats are stream B2's model.
     /// Pickup is switched off so Pip can stand close.
     /// </summary>
     [Category("Visual")]

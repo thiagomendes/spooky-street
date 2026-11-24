@@ -36,6 +36,9 @@ namespace SpookyStreet.Case
         /// <summary>The pieces Pip wears (null without Pip's avatar).</summary>
         public PipCostume Costume { get; private set; }
 
+        /// <summary>True while the notebook disc wobbles (a completed page, or notebook news).</summary>
+        public bool NotebookDiscWobbling => _discWobble > 0f;
+
         /// <summary>Pages completed this session that assemble the next time the notebook opens.</summary>
         public KeepsakeNotebook KeepsakePages => _keepsakePages;
 
@@ -82,7 +85,8 @@ namespace SpookyStreet.Case
                 return;
             }
 
-            string line = ContinueRecap.Build(State, AnchorId).LineKey;
+            // The open question (or the closed stamp); before any question, the case's name.
+            string line = ContinueRecap.Build(State, AnchorId).LineKey ?? TitleKeys.TitleCaseName;
             craft.SetDetail(TitleKeys.TitleContinueDetail, () => Keepsakes.State.BatCount,
                 () => new object[] { Localizer.Get(line), Keepsakes.State.BatCount });
         }
