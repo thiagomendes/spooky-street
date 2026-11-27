@@ -34,6 +34,12 @@ namespace SpookyStreet.UI
 
         public event Action Closed;
 
+        /// <summary>
+        /// Extra lines after the keepsakes (living street: neighbours greeted and, in test builds only, the frame-time
+        /// readout). Set by the world; null for none.
+        /// </summary>
+        public static Action<ReadingSheet> AppendSections { get; set; }
+
         public static ParentPage Create(Func<ParentProgressPage> source)
         {
             var sheet = ReadingSheet.Create("ParentPage", Keys.Heading);
@@ -133,6 +139,7 @@ namespace SpookyStreet.UI
             sheet.Paragraph(Keys.Bats, 30, null, null, 0f, () => new object[] { model.BatsFound, model.BatsTotal });
             sheet.Paragraph(Keys.Pages, 30, null, null, 0f, () => new object[] { model.PagesEarned, model.PagesTotal });
             sheet.Paragraph(Keys.Pieces, 30, null, null, 0f, () => new object[] { model.PiecesEarned, model.PiecesTotal });
+            AppendSections?.Invoke(sheet);
 
             // Time played this week: a rounded total and seven day dots; no goal, no comparison.
             sheet.Heading(Keys.Time);

@@ -156,14 +156,26 @@ namespace SpookyStreet.Tests.Core
                 if (Math.Abs(p.Z - EnvironmentLayout.HedgeLineZ) < 1e-3f) north.Add(p.X);
                 else if (Math.Abs(p.Z + EnvironmentLayout.HedgeLineZ) < 1e-3f) south.Add(p.X);
                 else if (Math.Abs(p.X + EnvironmentLayout.HedgeLineX) < 1e-3f) west.Add(p.Z);
-                else if (Math.Abs(p.X - EnvironmentLayout.HedgeLineX) < 1e-3f) east.Add(p.Z);
+                else if (Math.Abs(p.X - EnvironmentLayout.HedgeLineX) < 1e-3f ||
+                         Math.Abs(p.X - EnvironmentLayout.HedgeLineX - EnvironmentLayout.EastGapNudge) < 1e-3f) east.Add(p.Z);
                 else Assert.Fail($"stray hedge at ({p.X}, {p.Z})");
             }
 
             AssertCovered(north, -EnvironmentLayout.HedgeLineX + 0.5f, EnvironmentLayout.HedgeLineX - 0.5f, "north");
             AssertCovered(south, -EnvironmentLayout.HedgeLineX + 0.5f, EnvironmentLayout.HedgeLineX - 0.5f, "south");
             AssertCovered(west, -EnvironmentLayout.HedgeLineZ, EnvironmentLayout.HedgeLineZ, "west");
-            AssertCovered(east, -EnvironmentLayout.HedgeLineZ, EnvironmentLayout.HedgeLineZ, "east");
+
+            // Living street (D34): the east edge is closed except the lane's 6 m gap, which leads into the east lane.
+            AssertCovered(east.FindAll(z => z < 0f), -EnvironmentLayout.HedgeLineZ, EnvironmentLayout.EastGapMinZ, "east (south of the gap)");
+            AssertCovered(east.FindAll(z => z > 0f), EnvironmentLayout.EastGapMaxZ, EnvironmentLayout.HedgeLineZ, "east (north of the gap)");
+            foreach (float z in east)
+            {
+                Assert.IsTrue(z + EnvironmentLayout.HedgeLength * 0.5f <= EnvironmentLayout.EastGapMinZ + 1e-3f ||
+                              z - EnvironmentLayout.HedgeLength * 0.5f >= EnvironmentLayout.EastGapMaxZ - 1e-3f,
+                    $"an east hedge at z = {z} closes the lane's gap");
+            }
+
+            Assert.AreEqual(6f, EnvironmentLayout.EastGapMaxZ - EnvironmentLayout.EastGapMinZ, 1e-4f, "a 6 m gap (§2.2)");
         }
 
         private static void AssertCovered(List<float> centres, float from, float to, string edge)

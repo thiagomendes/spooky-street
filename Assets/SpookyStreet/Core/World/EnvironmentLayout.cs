@@ -339,7 +339,7 @@ namespace SpookyStreet.Core.World
 
         /// <summary>Lawn grid extent (tile edges): the block plus a ring under the neighbours and the far edges.</summary>
         public const float LawnMinX = -30f;
-        public const float LawnMaxX = 30f;
+        public const float LawnMaxX = 46f; // living street (D34): the lawn runs on under the east lane to the Green's corner
         public const float LawnMinZ = -18f;
         public const float LawnMaxZ = 34f;
 
@@ -375,6 +375,13 @@ namespace SpookyStreet.Core.World
         public const float HedgeLength = 6f;
         public const float HedgeDepth = 0.8f;
 
+        /// <summary>The gap in the east hedge where the lane runs on to the east lane (living-street §2.2, D34).</summary>
+        public const float EastGapMinZ = -3f;
+        public const float EastGapMaxZ = 3f;
+
+        /// <summary>Outward step of the two east modules that overlap their neighbours beside the gap.</summary>
+        public const float EastGapNudge = 0.12f;
+
         /// <summary>Hedge lines on the greybox hedge colliders (which stay and do the blocking).</summary>
         public const float HedgeLineZ = 17.5f;
         public const float HedgeLineX = 21.5f;
@@ -404,7 +411,7 @@ namespace SpookyStreet.Core.World
             Neighbour(NeighbourHouseB, -10.3f, 24.5f, -5f),
             Neighbour(NeighbourHouseA, 11.5f, 24f, 12f),
             Neighbour(NeighbourHouseC, 21.5f, 23.2f, 20f),
-            Neighbour(NeighbourHouseA, 29f, 3f, 80f), // east side, beyond the bench
+            // The east skyline house (29, 3) gave way to the east lane and its porch houses (living-street §2.2).
         };
 
         /// <summary>Fallen maple leaves beside the walk (on lawn or sidewalk, never on the path stones).</summary>
@@ -532,9 +539,16 @@ namespace SpookyStreet.Core.World
             {
                 float z = -15f + HedgeLength * i;
                 hedges.Add(Sized(BoundaryHedgeLong, -HedgeLineX, 0f, z, -90f));
-                hedges.Add(Sized(BoundaryHedgeLong, HedgeLineX, 0f, z, 90f));
+                // Living street (D34, living-street §2.2): the east column opens where Lantern Lane runs through.
+                if (z + HedgeLength * 0.5f <= EastGapMinZ + 1e-3f || z - HedgeLength * 0.5f >= EastGapMaxZ - 1e-3f)
+                {
+                    hedges.Add(Sized(BoundaryHedgeLong, HedgeLineX, 0f, z, 90f));
+                }
             }
 
+            // The modules beside the gap step out a little where they overlap their neighbours (no z-fighting).
+            hedges.Add(Sized(BoundaryHedgeLong, HedgeLineX + EastGapNudge, 0f, EastGapMinZ - HedgeLength * 0.5f, 90f));
+            hedges.Add(Sized(BoundaryHedgeLong, HedgeLineX + EastGapNudge, 0f, EastGapMaxZ + HedgeLength * 0.5f, 90f));
             return hedges.ToArray();
         }
 
