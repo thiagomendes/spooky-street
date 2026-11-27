@@ -150,11 +150,49 @@ strip; the card's caption now takes its place (the notes still play in the revea
 
 ## 5. CI evidence
 
-Pending: filled in from the branch's validation run.
+**CI run 196** (`45479016132`, head c047770, `origin/main` c939735 already contained): all green.
 
-## 6. Frames
+| Results | Total | Passed | Failed |
+|---|---|---|---|
+| EditMode (Unity) | 876 | 876 | 0 |
+| PlayMode | 165 | 165 | 0 |
+| Visual | 24 | 24 | 0 |
+| Core (`tools/core-tests`, local and the static job) | 811 | 811 | 0 |
 
-Pending: filled in from the branch's validation run.
+New fixtures in that run:
+
+- `StickerMemoryTests` 6/6
+- `StickerMemoryPlayTests` 3/3
+- `StickerMemoryCaptureTests` 1/1
+
+Updated fixtures, also green: `CaseWiringTests`, `UiNavigationTests`, `DeductionNotebookTests` and `ControlGlyphsTests`.
+
+**Earlier run on the branch.** Run 194 (`45467853469`, head e612407) compiled, and EditMode and PlayMode were all
+green. The capture failed for two reasons:
+
+- the frame numbers 82–84 were already taken by the keepsake captures;
+- the card runs on real time, and one software-rendered CI frame outlasted the whole card, so the memory had closed
+  before the capture.
+
+The capture now uses frames 90–92, holds the notebook's clock and sets the card's time directly.
+
+## 6. Frames (reviewed)
+
+The frames are from run 196, in `docs/evidence/s004/sticker_memory/`. All three are 0.00 % magenta.
+
+| Frame | Shows | Review |
+|---|---|---|
+| ![](evidence/s004/sticker_memory/90_sticker_memory_cloth_run196.jpg) 90 | The silver cloth's memory after a tap, in English: the treehouse bridge-head post with the white scrap in the middle, the attic windows behind, the cloth sticker in the corner. Caption: "The silver cloth, caught on the ramp." | The place reads at once, and the lifted sticker shows below in the tray with its orange stitch. The card covers the question and the slots, never the tray. The scrap is small in the picture. |
+| ![](evidence/s004/sticker_memory/91_sticker_memory_arm_ptbr_run196.jpg) 91 | The loose arm's memory in Portuguese, drawn while Pip stands on the street: the workshop nook through the near wall, the striped arm across the frame. Caption: "Na oficina: um braço listrado, pendurado solto." | The interior memory works: the rooms are drawn and there is no sky wall. The caption fits on one line. |
+| ![](evidence/s004/sticker_memory/92_sticker_memory_streamer_pad_run196.jpg) 92 | The decoy streamer's memory from Inspect on a gamepad: Bea beside her bicycle on the plaza. Caption: "On Bea's bike: a crinkly foil streamer." The outline rings the streamer sticker, nothing is lifted. | The decoy gets the same card as every clue. Two weaknesses: the foil itself barely reads (Bea fills the frame and the streamer is small on the bike), and the Inspect glyph at the outline's top-left corner is mostly hidden under the card's lower edge, with only the lit West button showing. |
+
+Self-assessment: 4/5.
+
+- The pictures make each sticker's place recognisable without reading, which was the owner's problem.
+- Open points:
+  - the streamer shot should be closer and lower on the bike;
+  - the Inspect glyph should move to a corner the card cannot cover, for example the outline's bottom-left;
+  - small things (the cloth) could use a tighter field of view than the reveal's.
 
 ## 7. Known gaps
 
