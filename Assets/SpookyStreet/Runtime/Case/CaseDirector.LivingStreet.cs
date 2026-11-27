@@ -34,6 +34,7 @@ namespace SpookyStreet.Case
 
                 SetModal(open);
             };
+            Notebook.Neighbourhood = () => Living != null ? Living.State : null;
             foreach (var target in Living.Targets)
             {
                 Targets.AddExtra(target);

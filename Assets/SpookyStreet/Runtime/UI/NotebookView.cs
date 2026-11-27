@@ -312,6 +312,9 @@ namespace SpookyStreet.UI
             // S004: the keepsakes page after the case pages (earned sketch pages and the bat stack).
             BuildKeepsakePage();
 
+            // Living street: the street page last (Pip's porch and the neighbours she has met), once there is one.
+            BuildStreetPage();
+
             for (int i = 0; i < _pages.Count; i++)
             {
                 _dots.Add(UiFactory.Sprite(_dotRow, "Dot" + i, IconFactory.Disc, Palette.WarmPaper, new Vector2(0.5f, 0.5f),

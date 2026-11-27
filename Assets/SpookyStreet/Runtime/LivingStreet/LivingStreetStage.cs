@@ -5,7 +5,6 @@ using SpookyStreet.Case;
 using SpookyStreet.Core.Art;
 using SpookyStreet.Core.Audio;
 using SpookyStreet.Core.Case;
-using SpookyStreet.Core.Cutscenes;
 using SpookyStreet.Core.LivingStreet;
 using SpookyStreet.Core.World;
 using SpookyStreet.Save;
@@ -138,7 +137,7 @@ namespace SpookyStreet.LivingStreet
                 IconName = UiSpriteCatalog.IconTalk,
                 Marker = new Vector3(LivingStreetLayout.PorchStandX, 1.7f, LivingStreetLayout.PorchStandZ),
                 Offered = feet => Allowed() && Crowd.Crowd.WaitingAtPorch >= 0 && LivingStreetLayout.TreatInReach(feet.x, feet.z),
-                Interact = GiveTreat,
+                Interact = () => GiveTreat(),
             });
         }
 

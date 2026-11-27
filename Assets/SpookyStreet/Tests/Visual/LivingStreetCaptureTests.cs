@@ -213,6 +213,16 @@ namespace SpookyStreet.Tests.Visual
             var walker = Stage.Crowd.Bodies[0].Root;
             Frame(walker.position + walker.forward * 2.2f + new Vector3(0.6f, 1.3f, 0f), walker.position + Vector3.up * 0.6f);
             yield return Shot("r_living_street_walker", Director.UiCanvas, ReviewWidth, ReviewHeight);
+
+            // Review: the notebook's street page (Pip's porch with her lantern, the neighbours she has met).
+            yield return Wait(Crowd.CheerSeconds);
+            Director.OpenNotebook();
+            yield return null;
+            var notebook = Director.Notebook;
+            Assert.IsNotNull(notebook.StreetPage);
+            notebook.ShowPage(notebook.PageCount - 1);
+            yield return Wait(0.8f);
+            yield return Shot("r_living_street_page", Director.UiCanvas, ReviewWidth, ReviewHeight);
             if (brain != null)
             {
                 brain.enabled = true;

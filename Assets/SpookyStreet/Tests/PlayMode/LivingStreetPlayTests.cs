@@ -210,6 +210,15 @@ namespace SpookyStreet.Tests.PlayMode
             StringAssert.Contains("street.free.door.fogg", File.ReadAllText(file));
             Assert.IsTrue(Stage.Ring(fogg));
             Assert.AreEqual(2, Stage.State.Visits(fogg.Id));
+
+            // The notebook's street page shows Mr. Fogg's face, and only his (no slot for neighbours not yet met).
+            Director.OpenNotebook();
+            yield return null;
+            var notebook = Director.Notebook;
+            Assert.IsNotNull(notebook.StreetPage, "the street page appears once Pip has rung a bell");
+            Assert.AreEqual(1, notebook.StreetFaces.Count);
+            Assert.IsNull(notebook.StreetLantern, "no lantern drawn before she folds one");
+            notebook.Close();
         }
 
         [UnityTest]
