@@ -24,6 +24,10 @@ namespace SpookyStreet.UI
     /// nav.Bind("close", closeButton); nav.Bind("music", musicButton); …
     /// </code>
     /// The map is on while the root is active; prompts follow the scheme through <see cref="AddPrompt"/>.
+    /// Screens stack (S004 F2): only the screen enabled last (<see cref="IsTop"/>) reads input and shows its outline, so
+    /// a card opened over another one (settings over the pause card, the gate over the title) never shares a press with
+    /// the screen below. When the top screen closes, the one below takes input back with its focus where it was; no
+    /// screen reads input on the frame the stack changed, so the press that closed a card never acts on the next one.
     /// </summary>
     public sealed class UiFocusScreen : MonoBehaviour
     {
@@ -33,6 +37,9 @@ namespace SpookyStreet.UI
             public Selectable Selectable;
             public Action Submit;
         }
+
+        private static readonly List<UiFocusScreen> Stack = new List<UiFocusScreen>();
+        private static int s_stackChangedFrame = -1;
 
         private readonly Dictionary<string, Element> _elements = new Dictionary<string, Element>(StringComparer.Ordinal);
         private readonly List<(ControlGlyphView View, ControlPrompt Prompt)> _prompts = new List<(ControlGlyphView, ControlPrompt)>();
@@ -49,6 +56,12 @@ namespace SpookyStreet.UI
         public UiFocus Outline { get; private set; }
 
         public UiNavigateActions Actions => _actions;
+
+        /// <summary>True for the screen enabled last of those enabled now: it alone reads input and shows its outline.</summary>
+        public bool IsTop => _hooked && Stack.Count > 0 && Stack[Stack.Count - 1] == this;
+
+        /// <summary>The screen that reads input now (null when no screen is up).</summary>
+        public static UiFocusScreen Top => Stack.Count > 0 ? Stack[Stack.Count - 1] : null;
 
         /// <summary>Runs before Back exits; return true to keep the screen open (it handled Back itself).</summary>
         public Func<bool> BackOverride { get; set; }
@@ -215,6 +228,9 @@ namespace SpookyStreet.UI
             }
 
             _hooked = true;
+            Stack.Remove(this);
+            Stack.Add(this);
+            s_stackChangedFrame = Time.frameCount;
             _actions.Enable();
             ControlSchemeTracker.Changed += OnSchemeChanged;
             SyncEnabled();
@@ -236,6 +252,11 @@ namespace SpookyStreet.UI
             }
 
             _hooked = false;
+            if (Stack.Remove(this))
+            {
+                s_stackChangedFrame = Time.frameCount;
+            }
+
             _actions?.Disable();
             ControlSchemeTracker.Changed -= OnSchemeChanged;
             if (Outline != null)
@@ -257,6 +278,12 @@ namespace SpookyStreet.UI
 
         private void Update()
         {
+            // Only the top screen reads input, and none on the frame a screen opened or closed (that press was theirs).
+            if (!IsTop || s_stackChangedFrame == Time.frameCount)
+            {
+                return;
+            }
+
             var direction = _actions.DirectionPressed();
             if (direction.HasValue)
             {
@@ -291,7 +318,7 @@ namespace SpookyStreet.UI
             SyncEnabled();
             SetFocus(Graph.Resolve(Focus));
             RectTransform target = null;
-            if (ControlSchemeTracker.Current != ControlScheme.Touch && Focus != null &&
+            if (IsTop && ControlSchemeTracker.Current != ControlScheme.Touch && Focus != null &&
                 _elements.TryGetValue(Focus, out var element))
             {
                 target = element.Rect;

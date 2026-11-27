@@ -21,6 +21,12 @@ namespace SpookyStreet.UI
         /// <summary>Distance Pip must walk before the first prompt fades out.</summary>
         public const float PromptDismissDistance = 2f;
 
+        /// <summary>
+        /// The Use disc's verb tag (S004 F2, owner 2026-11-24): wide enough for "Mergulhar" at full caption size (it was
+        /// 150, sized for "Mergulho"), still clear of the Jump disc.
+        /// </summary>
+        public const float VerbTagWidth = 184f;
+
         /// <summary>Stick ghost centre, measured from the movement-side bottom corner of the safe area.</summary>
         public static readonly Vector2 StickRest = new Vector2(215f, 195f);
 
@@ -81,6 +87,27 @@ namespace SpookyStreet.UI
 
         /// <summary>What the title's gear does (set by the game: the parent gate, then settings).</summary>
         public System.Action OpenSettings { get; set; }
+
+        /// <summary>
+        /// Gamepad and keyboard on the title (S004 F2, on the F1 base): Continue, New game, the gear and the language
+        /// pill, with the candy outline. Replaces the uGUI selection, which showed no focus on the orange button.
+        /// </summary>
+        public UiFocusScreen TitleNavigation { get; private set; }
+
+        /// <summary>
+        /// Gamepad and keyboard on the pause card: Resume, Back to title, the globe and the gear. It sits under every
+        /// card it opens (settings, the language screen, the gate) and gets its focus back when they close.
+        /// </summary>
+        public UiFocusScreen PauseNavigation { get; private set; }
+
+        /// <summary>The pause card's gear (added by the case's non-verbal layer) joins the card's focus graph.</summary>
+        public void BindPauseSettings(Button gear)
+        {
+            if (PauseNavigation != null && gear != null)
+            {
+                PauseNavigation.Bind(ScreenFocus.PauseSettings, gear);
+            }
+        }
 
         /// <summary>
         /// Contextual Use disc, shown in play: the interaction's verb when one is in range, otherwise "Roll" with the
@@ -179,13 +206,11 @@ namespace SpookyStreet.UI
             _title.SetActive(state == GameState.Title);
             _hud.SetActive(state == GameState.Playing);
             _pause.SetActive(state == GameState.Paused);
-            GameObject titleFocus = _continueButton.gameObject.activeSelf ? _continueButton.gameObject
-                : _newGameButton.gameObject;
-            GameObject select = state == GameState.Title ? titleFocus
-                : state == GameState.Paused ? _resumeButton.gameObject : null;
+            // Focus is the screens' own (UiFocusScreen): it starts on Continue (or New game) and on Resume each time
+            // they open. No uGUI selection, so the default UI module never presses a button a second time.
             if (EventSystem.current != null)
             {
-                EventSystem.current.SetSelectedGameObject(select);
+                EventSystem.current.SetSelectedGameObject(null);
             }
         }
 
@@ -340,7 +365,7 @@ namespace SpookyStreet.UI
                 Palette.CandyCornYellow, UiSpriteCatalog.IconRoll, Palette.InkBlack, null, UiFactory.UseDiameter,
                 bottomCorner, MirrorOffset(new Vector2(-330f, 118f)), 1f);
             var verb = UiFactory.PaperTag(use.transform, "VerbTag", LocalizationKeys.HudRoll, UiFactory.CaptionSize,
-                new Vector2(0.5f, 0f), new Vector2(0f, -10f), new Vector2(150f, 54f), -2f, UiFactory.PlayPaper);
+                new Vector2(0.5f, 0f), new Vector2(0f, -10f), new Vector2(VerbTagWidth, 54f), -2f, UiFactory.PlayPaper);
             verb.raycastTarget = false;
             _useVerb = verb.GetComponentInChildren<LocalizedText>(true);
             var useIcon = use.transform.Find("Icon");
@@ -519,6 +544,19 @@ namespace SpookyStreet.UI
             TitleSettingsButton.targetGraphic = gear;
             TitleSettingsButton.transition = Selectable.Transition.None;
             TitleSettingsButton.onClick.AddListener(() => OpenSettings?.Invoke());
+
+            // Gamepad and keyboard (S004 F2): Back never starts anything on the title; it returns to the first button.
+            var nav = UiFocusScreen.Attach(root.gameObject, ScreenFocus.Title(), content);
+            nav.Bind(ScreenFocus.TitleContinue, _continueButton);
+            nav.Bind(ScreenFocus.TitleNewGame, _newGameButton);
+            nav.Bind(ScreenFocus.TitleSettings, TitleSettingsButton);
+            nav.Bind(ScreenFocus.TitleLanguage, LanguageButton);
+            nav.BackOverride = () =>
+            {
+                nav.FocusOn(_continueButton.gameObject.activeSelf ? ScreenFocus.TitleContinue : ScreenFocus.TitleNewGame);
+                return true;
+            };
+            TitleNavigation = nav;
         }
 
         /// <summary>
@@ -567,8 +605,8 @@ namespace SpookyStreet.UI
             UiFactory.Place(heading.rectTransform, top, new Vector2(0f, -80f), new Vector2(480f, 96f));
             _resumeButton = UiFactory.PrimaryButton(card.transform, "ResumeButton", LocalizationKeys.PauseResume, top,
                 new Vector2(0f, -200f), new Vector2(440f, 112f), () => _flow.Resume(), UiSpriteCatalog.IconPlay);
-            UiFactory.SecondaryButton(card.transform, "BackToTitleButton", LocalizationKeys.PauseBackToTitle, top,
-                new Vector2(0f, -340f), new Vector2(400f, 96f), () => _flow.QuitToTitle());
+            var toTitle = UiFactory.SecondaryButton(card.transform, "BackToTitleButton", LocalizationKeys.PauseBackToTitle,
+                top, new Vector2(0f, -340f), new Vector2(400f, 96f), () => _flow.QuitToTitle());
 
             // Top-left globe (the settings gear takes the top-right corner): the language screen, no gate to switch.
             var globe = UiFactory.FeltDisc(card.transform, "LanguageButton", UiSpriteCatalog.FeltDiscNight,
@@ -578,6 +616,15 @@ namespace SpookyStreet.UI
             PauseLanguageButton.targetGraphic = globe;
             PauseLanguageButton.transition = Selectable.Transition.None;
             PauseLanguageButton.onClick.AddListener(() => OpenLanguages?.Invoke());
+
+            // Gamepad and keyboard (S004 F2): Back resumes, like Resume. The gear joins when the case layer adds it.
+            var graph = ScreenFocus.Pause();
+            graph.SetEnabled(ScreenFocus.PauseSettings, false);
+            var nav = UiFocusScreen.Attach(_pause, graph, card.transform);
+            nav.Bind(ScreenFocus.PauseResume, _resumeButton);
+            nav.Bind(ScreenFocus.PauseToTitle, toTitle);
+            nav.Bind(ScreenFocus.PauseLanguage, PauseLanguageButton);
+            PauseNavigation = nav;
         }
     }
 }

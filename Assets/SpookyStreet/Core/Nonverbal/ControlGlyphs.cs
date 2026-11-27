@@ -42,6 +42,9 @@ namespace SpookyStreet.Core.Nonverbal
 
         /// <summary>UI navigation: watch a cutscene again from the notebook.</summary>
         Rewatch,
+
+        /// <summary>UI navigation: open the focused sticker's memory card (D32) without picking it up.</summary>
+        Inspect,
     }
 
     /// <summary>How a glyph is drawn.</summary>
@@ -129,6 +132,7 @@ namespace SpookyStreet.Core.Nonverbal
         public const string KeyPageLeft = "<Keyboard>/q";
         public const string KeyPageRight = "<Keyboard>/r";
         public const string KeyRewatch = "<Keyboard>/v";
+        public const string KeyInspect = "<Keyboard>/f";
         public const string PadUse = "<Gamepad>/buttonWest";
         public const string PadJump = "<Gamepad>/buttonSouth";
         public const string PadNext = "<Gamepad>/buttonSouth";
@@ -141,6 +145,7 @@ namespace SpookyStreet.Core.Nonverbal
         public const string PadPageLeft = "<Gamepad>/leftShoulder";
         public const string PadPageRight = "<Gamepad>/rightShoulder";
         public const string PadRewatch = "<Gamepad>/buttonNorth";
+        public const string PadInspect = "<Gamepad>/buttonWest";
 
         public static ControlGlyph For(ControlScheme scheme, ControlPrompt prompt)
         {
@@ -216,6 +221,8 @@ namespace SpookyStreet.Core.Nonverbal
                     return new ControlGlyph(GlyphShape.PadShoulder, PadPageRight, PadButton.RightShoulder);
                 case ControlPrompt.Rewatch:
                     return new ControlGlyph(GlyphShape.PadFace, PadRewatch, PadButton.North);
+                case ControlPrompt.Inspect:
+                    return new ControlGlyph(GlyphShape.PadFace, PadInspect, PadButton.West);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(prompt), prompt, "unknown prompt");
             }
@@ -251,6 +258,8 @@ namespace SpookyStreet.Core.Nonverbal
                     return new ControlGlyph(GlyphShape.Key, KeyPageRight);
                 case ControlPrompt.Rewatch:
                     return new ControlGlyph(GlyphShape.Key, KeyRewatch);
+                case ControlPrompt.Inspect:
+                    return new ControlGlyph(GlyphShape.Key, KeyInspect);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(prompt), prompt, "unknown prompt");
             }

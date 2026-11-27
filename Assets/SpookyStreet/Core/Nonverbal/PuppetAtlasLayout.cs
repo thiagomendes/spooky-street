@@ -141,6 +141,8 @@ namespace SpookyStreet.Core.Nonverbal
             new PuppetRect("pg.sill_snag", 1634, 214, 200, 200, 0.85f, 0),
             new PuppetRect("pg.latch_bar", 1022, 10, 200, 200, 0.85f, 0),
             new PuppetRect("pg.sparkle", 1226, 10, 200, 200, 0.85f, 0),
+            new PuppetRect("pg.camera_turn", 1430, 10, 200, 200, 0.85f, 0),
+            new PuppetRect("pg.phone_buzz", 1634, 10, 200, 200, 0.85f, 0),
         };
 
         public static readonly IReadOnlyList<PuppetRect> Extras = new[]

@@ -309,6 +309,36 @@ def sparkle_part():
     return sp
 
 
+def camera_turn():
+    """Settings, camera speed (S004 F2): a bone-paper camera with an indigo lens under an orange arrow turning round it."""
+    sp = Sprite(CELL, CELL, 0)
+    g = G(sp, CELL / 2, CELL / 2, CELL * 0.9)
+    g.arc(0.0, 0.06, 0.4, 200, 340, ORANGE, 2.6)
+    g.shape([(0.33, -0.2), (0.43, -0.1), (0.3, -0.07)], ORANGE)
+    g.rect(-0.12, -0.1, 0.04, 0.0, BONE_D, r=0.02)
+    g.rect(-0.3, -0.04, 0.3, 0.26, BONE, r=0.05, kind="paper")
+    g.circ(0.02, 0.11, 0.12, INDIGO)
+    g.circ(0.02, 0.11, 0.055, U.hexc("7F8DB8"), outline=False)
+    g.dot(-0.01, 0.08, 0.02, BONE)
+    g.dot(-0.21, 0.03, 0.025, ORANGE)
+    return sp
+
+
+def phone_buzz():
+    """Settings, vibration (S004 F2): an indigo phone with a bone screen and orange buzz marks on both sides."""
+    sp = Sprite(CELL, CELL, 0)
+    g = G(sp, CELL / 2, CELL / 2, CELL * 0.9)
+    g.rect(-0.15, -0.34, 0.15, 0.34, INDIGO, r=0.06)
+    g.rect(-0.1, -0.26, 0.1, 0.22, BONE, r=0.02, kind="paper", outline=False)
+    g.dot(0.0, 0.28, 0.025, BONE)
+    for side in (-1, 1):
+        for i, x in enumerate((0.24, 0.35)):
+            h = 0.2 - i * 0.05
+            zig = [(side * (x + (0.03 if k % 2 else -0.03)), -h + k * h / 2) for k in range(5)]
+            g.line(zig, ORANGE, 1.6)
+    return sp
+
+
 SPECIAL = {
     "pg.bridge": (wide_bridge, 2, 1, 0.7, 0),
     "pg.memory": (memory_frame, 3, 1, 0.98, 0),
@@ -327,6 +357,8 @@ SPECIAL = {
     "pg.sill_snag": (sill_snag, 1, 1, DEFAULT_HEIGHT, 0),
     "pg.latch_bar": (latch_bar, 1, 1, DEFAULT_HEIGHT, 0),
     "pg.sparkle": (sparkle_part, 1, 1, DEFAULT_HEIGHT, 0),
+    "pg.camera_turn": (camera_turn, 1, 1, DEFAULT_HEIGHT, 0),
+    "pg.phone_buzz": (phone_buzz, 1, 1, DEFAULT_HEIGHT, 0),
 }
 
 EXTRAS = [

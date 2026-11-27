@@ -1,8 +1,10 @@
 using System;
 using SpookyStreet.Core.Art;
 using SpookyStreet.Core.Flow;
+using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.Core.Parent;
 using SpookyStreet.Localization;
+using SpookyStreet.World;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -122,6 +124,99 @@ namespace SpookyStreet.UI
             nav.PageLeft = () => ScrollBy(-ViewportHeight);
             nav.PageRight = () => ScrollBy(ViewportHeight);
             Navigation = nav;
+            BuildScrollHint(paper.rectTransform);
+        }
+
+        // ------------------------------------------------------------------------------------- scroll hint (S004 F2)
+
+        private Image _fadeBottom;
+        private Image _fadeTop;
+        private GameObject _moreBelow;
+        private RectTransform _chevron;
+
+        /// <summary>
+        /// The sheet says it scrolls (S004 F2; the pages gave no sign of it): the paper fades out at the bottom edge with
+        /// a bobbing down chevron while more lies below, and at the top edge once it has scrolled. On gamepad and
+        /// keyboard the chevron carries the page-down glyph (right bumper, R); touch needs none. No words.
+        /// </summary>
+        private void BuildScrollHint(RectTransform paper)
+        {
+            Color paperColor = Palette.WarmPaper;
+            _fadeBottom = UiFactory.Sprite(paper, "MoreBelowFade", IconFactory.BottomFade, paperColor,
+                new Vector2(0.5f, 0f), Vector2.zero, Vector2.zero);
+            _fadeBottom.raycastTarget = false;
+            var fb = _fadeBottom.rectTransform;
+            fb.anchorMin = new Vector2(0f, 0f);
+            fb.anchorMax = new Vector2(1f, 0f);
+            fb.pivot = new Vector2(0.5f, 0f);
+            fb.offsetMin = new Vector2(44f, 26f);
+            fb.offsetMax = new Vector2(-44f, 26f + 110f);
+
+            _fadeTop = UiFactory.Sprite(paper, "MoreAboveFade", IconFactory.BottomFade, paperColor,
+                new Vector2(0.5f, 1f), Vector2.zero, Vector2.zero);
+            _fadeTop.raycastTarget = false;
+            var ft = _fadeTop.rectTransform;
+            // Under the heading, opaque at the top edge of the viewport (the bottom fade, flipped).
+            ft.anchorMin = new Vector2(0f, 1f);
+            ft.anchorMax = new Vector2(1f, 1f);
+            ft.pivot = new Vector2(0.5f, 0.5f);
+            ft.sizeDelta = new Vector2(-88f, 60f);
+            ft.anchoredPosition = new Vector2(0f, -118f - 30f);
+            ft.localScale = new Vector3(1f, -1f, 1f);
+
+            var group = UiFactory.Rect(paper, "MoreBelow");
+            UiFactory.Place(group, new Vector2(0.5f, 0f), new Vector2(0f, 58f), new Vector2(64f, 64f));
+            var chevron = UiFactory.Sprite(group, "Chevron", IconFactory.ChevronUp, Palette.HauntedPurple,
+                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(64f, 64f));
+            chevron.raycastTarget = false;
+            chevron.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 180f);
+            _chevron = chevron.rectTransform;
+            _moreBelow = group.gameObject;
+            MoreBelowPrompt = Navigation.AddPrompt(ControlPrompt.PageRight, group, new Vector2(0.5f, 0.5f),
+                new Vector2(72f, 0f), 52f);
+            UpdateScrollHint();
+        }
+
+        /// <summary>The page-down glyph beside the chevron (a bumper or a key cap; nothing on touch).</summary>
+        public ControlGlyphView MoreBelowPrompt { get; private set; }
+
+        /// <summary>The "more below" chevron and fade show (tests, captures).</summary>
+        public bool MoreBelowShowing => _moreBelow != null && _moreBelow.activeSelf;
+
+        /// <summary>The top fade shows (the sheet has scrolled).</summary>
+        public bool MoreAboveShowing => _fadeTop != null && _fadeTop.gameObject.activeSelf;
+
+        private void UpdateScrollHint()
+        {
+            if (_moreBelow == null)
+            {
+                return;
+            }
+
+            float range = ScrollRange;
+            bool below = range > 1f && Scrolled < range - 1f;
+            bool above = range > 1f && Scrolled > 1f;
+            if (_moreBelow.activeSelf != below)
+            {
+                _moreBelow.SetActive(below);
+                _fadeBottom.gameObject.SetActive(below);
+            }
+
+            if (_fadeTop.gameObject.activeSelf != above)
+            {
+                _fadeTop.gameObject.SetActive(above);
+            }
+
+            if (below && !AmbientMotion.ReducedMotion)
+            {
+                float bob = Mathf.Sin(Time.unscaledTime * 3f) * 5f;
+                _chevron.anchoredPosition = new Vector2(0f, bob);
+            }
+        }
+
+        private void LateUpdate()
+        {
+            UpdateScrollHint();
         }
 
         private float ViewportHeight => _viewport != null ? Mathf.Max(100f, _viewport.rect.height - 60f) : 400f;

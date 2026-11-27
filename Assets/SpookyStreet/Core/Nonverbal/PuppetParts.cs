@@ -29,6 +29,10 @@ namespace SpookyStreet.Core.Nonverbal
         public const string LatchBar = "pg.latch_bar";
         public const string Sparkle = "pg.sparkle";
 
+        // Settings pictures (S004 F2): camera speed and vibration no longer share a picture with another row.
+        public const string CameraTurn = "pg.camera_turn";
+        public const string PhoneBuzz = "pg.phone_buzz";
+
         /// <summary>v1 pictogram names, grouped as in the v1 parts sheet.</summary>
         private static readonly string[] V1 =
         {
@@ -54,7 +58,7 @@ namespace SpookyStreet.Core.Nonverbal
 
         private static readonly string[] V2 = { JuneRun, PipBody, BeaArm, Clock, ClockHand, Puff, Stage, EyeShut, KeyRing };
 
-        private static readonly string[] V3 = { WaveHand, SillSnag, LatchBar, Sparkle };
+        private static readonly string[] V3 = { WaveHand, SillSnag, LatchBar, Sparkle, CameraTurn, PhoneBuzz };
 
         /// <summary>Every part ID: v1, then v2, then v3.</summary>
         public static readonly IReadOnlyList<string> All = Build();
