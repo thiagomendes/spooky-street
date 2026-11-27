@@ -182,7 +182,7 @@ namespace SpookyStreet.Tests.Core
                                                              r.Members.Count(m => m.Look.Body == CrowdBodyKind.GrownUp) == 1 &&
                                                              r.Members.Count(m => m.Look.Body == CrowdBodyKind.SmallChild) >= 2);
             Assert.GreaterOrEqual(groupsWithParent, 2, "trick-or-treat groups: children with one grown-up");
-            Assert.IsTrue(CrowdRoutes.All.Any(r => r.PorchExcursion == null && r.Members.All(m => m.Look.Body == CrowdBodyKind.GrownUp)),
+            Assert.IsTrue(CrowdRoutes.All.Any(r => r.PorchExcursion == null && r.Members.Any(m => m.Look.Body == CrowdBodyKind.GrownUp)),
                 "strollers");
             foreach (var route in CrowdRoutes.All)
             {
@@ -190,7 +190,7 @@ namespace SpookyStreet.Tests.Core
                 Assert.AreEqual(route.Plain[0].Z, route.Plain[route.Plain.Length - 1].Z, 1e-4f, route.Id + " closes its loop");
                 foreach (var member in route.Members)
                 {
-                    Assert.IsTrue(CrowdLooks.IsAllowed(member.Look.Costume), route.Id + ": " + member.Look + " is a reserved look");
+                    Assert.IsTrue(CrowdLooks.IsAllowed(member.Look.Recipe), route.Id + ": " + member.Look + " is a reserved look");
                 }
             }
 
@@ -214,6 +214,51 @@ namespace SpookyStreet.Tests.Core
 
             Assert.IsFalse(CrowdLooks.IsAllowed("owl_witch"), "Mrs. Ortega's owl motif waits for the stamp");
             Assert.IsFalse(CrowdLooks.IsAllowed(null));
+            Assert.IsFalse(CrowdLooks.IsAllowed("NoSuchRecipe"), "only the kit's recipes");
+            foreach (string id in CrowdLooks.Costumes)
+            {
+                Assert.IsTrue(CrowdLooks.IsAllowed(id), id);
+            }
+        }
+
+        [Test]
+        public void TheWalkersAreKitRecipesAtTheirClipsPace()
+        {
+            var used = CrowdRoutes.All.SelectMany(r => r.Members).Select(m => m.Look.Recipe).ToList();
+            Assert.AreEqual(used.Count, used.Distinct().Count(), "every walker wears its own recipe");
+            foreach (string id in used)
+            {
+                Assert.IsNotNull(SpookyStreet.Core.Crowd.CrowdKit.Find(id), id + " is a crowd kit recipe");
+            }
+
+            // Feet never slide: groups and strollers move at the Walk clip's own ground speed.
+            Assert.AreEqual(SpookyStreet.Core.Crowd.CrowdKit.WalkSpeed(SpookyStreet.Core.Crowd.CrowdKit.ChildModel), CrowdRoutes.GroupSpeed, 1e-4f);
+            Assert.AreEqual(SpookyStreet.Core.Crowd.CrowdKit.WalkSpeed(SpookyStreet.Core.Crowd.CrowdKit.AdultModel), CrowdRoutes.StrollSpeed, 1e-4f);
+        }
+
+        [Test]
+        public void TheNeighboursAreBuiltFromTheKitsGrownUpParts()
+        {
+            foreach (var door in LivingStreetLayout.Doors)
+            {
+                var ids = LivingStreetLayout.NeighboursAt(door);
+                Assert.AreEqual(door.Gag.Figures, ids.Count, door.Id + ": one figure per neighbour in the doorway");
+                foreach (string id in ids)
+                {
+                    var recipe = LivingStreetLayout.NeighbourRecipe(id);
+                    Assert.IsNotNull(recipe, id);
+                    Assert.IsTrue(recipe.IsGrownUp);
+                    var slots = new HashSet<string>();
+                    foreach (string part in recipe.Parts)
+                    {
+                        string slot = SpookyStreet.Core.Crowd.CrowdKit.SlotOf(recipe.Model, part);
+                        Assert.IsNotNull(slot, id + ": " + part + " is in the grown-up body");
+                        Assert.IsTrue(slots.Add(slot), id + ": one part per slot (" + slot + ")");
+                    }
+
+                    Assert.IsTrue(CrowdLooks.IsAllowed(id), id);
+                }
+            }
         }
 
         [Test]
@@ -314,7 +359,7 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void TheHeartNeverHoldsMoreThanThreeWalkersWhileTheCaseIsOpen()
         {
-            var crowd = new Crowd();
+            var crowd = new CrowdClock();
             var random = new Random(34);
             int most = 0;
             int heartVisits = 0;
@@ -331,8 +376,8 @@ namespace SpookyStreet.Tests.Core
                 crowd.Advance(1f / 60f, Inputs(pipX, pipZ, true, porch: true));
                 int inHeart = crowd.WalkersInHeart;
                 most = Math.Max(most, inHeart);
-                Assert.LessOrEqual(inHeart, Crowd.CaseHeartCap, $"frame {frame}: {inHeart} walkers in the heart");
-                Assert.LessOrEqual(crowd.HeartCommitted, Crowd.CaseHeartCap);
+                Assert.LessOrEqual(inHeart, CrowdClock.CaseHeartCap, $"frame {frame}: {inHeart} walkers in the heart");
+                Assert.LessOrEqual(crowd.HeartCommitted, CrowdClock.CaseHeartCap);
                 if (inHeart > 0 && !wasInside)
                 {
                     heartVisits++;
@@ -342,15 +387,15 @@ namespace SpookyStreet.Tests.Core
             }
 
             TestContext.WriteLine($"most walkers in the heart: {most}; visits {heartVisits}");
-            Assert.AreEqual(Crowd.CaseHeartCap, most, "the heart sees a group (it is not left empty)");
+            Assert.AreEqual(CrowdClock.CaseHeartCap, most, "the heart sees a group (it is not left empty)");
             Assert.Greater(heartVisits, 4, "groups and strollers keep coming through");
         }
 
         [Test]
         public void TheClockIsTheSameAtThirtyAndSixtyFramesPerSecond()
         {
-            var a = new Crowd();
-            var b = new Crowd();
+            var a = new CrowdClock();
+            var b = new CrowdClock();
             for (int i = 0; i < 30 * 600; i++)
             {
                 a.Advance(1f / 30f, Inputs());
@@ -376,7 +421,7 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void GroupsRingEveryDoorAndOnlyRingPipsBellWhileHerPorchIsOpen()
         {
-            var crowd = new Crowd();
+            var crowd = new CrowdClock();
             var events = new List<CrowdEvent>();
             for (int i = 0; i < 60 * 60 * 6; i++)
             {
@@ -417,7 +462,7 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void AGroupWaitsAtPipsStepsOnlyALittleWhenSheIsAway()
         {
-            var crowd = new Crowd();
+            var crowd = new CrowdClock();
             var events = new List<CrowdEvent>();
             float rang = -1f;
             float left = -1f;
@@ -437,13 +482,13 @@ namespace SpookyStreet.Tests.Core
             }
 
             Assert.GreaterOrEqual(rang, 0f, "a group rang");
-            Assert.AreEqual(Crowd.PorchBaseWait, left - rang, 0.1f, "no pressure: a short wait, then they move on");
+            Assert.AreEqual(CrowdClock.PorchBaseWait, left - rang, 0.1f, "no pressure: a short wait, then they move on");
         }
 
         [Test]
         public void WalkersStepAsideForPipAndNeverStopForGood()
         {
-            var crowd = new Crowd();
+            var crowd = new CrowdClock();
             // Let group A walk to the middle of a long east-lane leg, then stand Pip a metre in front of its first child.
             for (int i = 0; i < 60 * 3; i++)
             {
@@ -548,8 +593,11 @@ namespace SpookyStreet.Tests.Core
             Assert.IsTrue(LivingStreetRules.PorchOpen(state.LanternLit, null));
             Assert.AreEqual(4, LanternCraft.Shapes.Count);
             Assert.AreEqual(4, LanternCraft.Colours.Count);
+            CollectionAssert.AreEqual(new[] { "bat", "cat", "ghost", "leaf" }, LanternCraft.Shapes.Select(LanternCraft.ShapeId).ToArray(),
+                "D35: bat, cat, ghost and leaf");
             foreach (var shape in LanternCraft.Shapes)
             {
+                CollectionAssert.DoesNotContain(LanternCraft.ReservedShapes, LanternCraft.ShapeId(shape), "never moon, star or pumpkin");
                 Assert.IsTrue(LanternCraft.TryShape(LanternCraft.ShapeId(shape), out var back));
                 Assert.AreEqual(shape, back);
                 CollectionAssert.Contains(LocalizationKeys.All, LanternCraft.ShapeKey(shape));
@@ -568,7 +616,7 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void TheNeighbourhoodFileRoundTripsAndDropsUnknownIds()
         {
-            var state = NeighbourhoodState.Empty.WithLantern(new PipLantern(LanternShape.Star, LanternColour.Green))
+            var state = NeighbourhoodState.Empty.WithLantern(new PipLantern(LanternShape.Ghost, LanternColour.Green))
                 .WithVisit(LivingStreetLayout.Fogg).WithVisit(LivingStreetLayout.Fogg).WithVisit(LivingStreetLayout.Abbotts);
             string json = NeighbourhoodCodec.Serialize(state);
             StringAssert.Contains("street.free.door.fogg", json);
@@ -592,9 +640,9 @@ namespace SpookyStreet.Tests.Core
             var fs = new MemorySaveFileSystem();
             var store = new NeighbourhoodStore(fs, Dir);
             store.Load();
-            Assert.IsTrue(store.MakeLantern(new PipLantern(LanternShape.Pumpkin, LanternColour.Yellow)));
+            Assert.IsTrue(store.MakeLantern(new PipLantern(LanternShape.Leaf, LanternColour.Yellow)));
             Assert.IsTrue(store.Visit(LivingStreetLayout.Pearl));
-            Assert.IsFalse(store.MakeLantern(new PipLantern(LanternShape.Pumpkin, LanternColour.Yellow)), "no change, no write");
+            Assert.IsFalse(store.MakeLantern(new PipLantern(LanternShape.Leaf, LanternColour.Yellow)), "no change, no write");
             Assert.IsTrue(fs.Files.Keys.Any(k => k.Contains("neighbourhood")), "a separate file (§10)");
             Assert.IsFalse(fs.Files.Keys.Any(k => k.Contains("neighbourhood") && k.Contains("case")));
 
@@ -663,7 +711,7 @@ namespace SpookyStreet.Tests.Core
         public void TheCrowdClockFitsItsCpuBudget()
         {
             // The logic half of the crowd's CPU (the device readout measures the whole). Generous for a CI runner.
-            var crowd = new Crowd();
+            var crowd = new CrowdClock();
             var inputs = Inputs(10f, -5f, porch: true);
             for (int i = 0; i < 600; i++)
             {

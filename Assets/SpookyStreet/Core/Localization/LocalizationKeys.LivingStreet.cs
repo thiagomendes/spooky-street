@@ -43,10 +43,10 @@ namespace SpookyStreet.Core.Localization
             public const string VerbMake = "ui.verb.make";
             public const string VerbTreat = "ui.verb.treat";
 
-            public const string ShapeMoon = "ui.lantern.shape.moon";
             public const string ShapeBat = "ui.lantern.shape.bat";
-            public const string ShapeStar = "ui.lantern.shape.star";
-            public const string ShapePumpkin = "ui.lantern.shape.pumpkin";
+            public const string ShapeCat = "ui.lantern.shape.cat";
+            public const string ShapeGhost = "ui.lantern.shape.ghost";
+            public const string ShapeLeaf = "ui.lantern.shape.leaf";
             public const string ColourOrange = "ui.lantern.colour.orange";
             public const string ColourPlum = "ui.lantern.colour.plum";
             public const string ColourGreen = "ui.lantern.colour.green";
@@ -68,7 +68,7 @@ namespace SpookyStreet.Core.Localization
             {
                 SpeakerFogg, SpeakerPearl, SpeakerAbbotts, FoggFirst, FoggAgain, FoggThird, PearlFirst, PearlAgain, PearlThird,
                 AbbottsFirst, AbbottsAgain, AbbottsThird, PipTrickOrTreat, PipHappyHalloween, PipMyLantern, CrowdTrickOrTreat,
-                CrowdThanks, VerbRing, VerbMake, VerbTreat, ShapeMoon, ShapeBat, ShapeStar, ShapePumpkin, ColourOrange,
+                CrowdThanks, VerbRing, VerbMake, VerbTreat, ShapeBat, ShapeCat, ShapeGhost, ShapeLeaf, ColourOrange,
                 ColourPlum, ColourGreen, ColourYellow, Fold, Close, StreetPage, FrameHeading, FrameLine, FrameCrowd,
                 FrameWaiting, NeighboursMet,
             };

@@ -93,9 +93,10 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.That(crowd.Bodies.Count, Is.InRange(6, 8));
             PlacePip(new Vector3(-12f, 0.1f, -8f), new Vector3(0f, 0f, 0f)); // out of the walkers' way
 
-            var lastMetres = new float[crowd.Crowd.GroupCount];
-            var laps = new int[crowd.Crowd.GroupCount];
+            var lastMetres = new float[crowd.Clock.GroupCount];
+            var laps = new int[crowd.Clock.GroupCount];
             var start = new List<Vector3>();
+            var farthest = new float[crowd.Bodies.Count];
             foreach (var body in crowd.Bodies)
             {
                 start.Add(body.Root.position);
@@ -118,9 +119,11 @@ namespace SpookyStreet.Tests.PlayMode
                 }
 
                 int inHeart = 0;
-                foreach (var body in crowd.Bodies)
+                for (int i = 0; i < crowd.Bodies.Count; i++)
                 {
+                    var body = crowd.Bodies[i];
                     Vector3 p = body.Root.position;
+                    farthest[i] = Mathf.Max(farthest[i], (p - start[i]).magnitude);
                     float d = LivingStreetRules.ClueDistance(p.x, p.z, out string clue);
                     if (d < worst)
                     {
@@ -132,10 +135,10 @@ namespace SpookyStreet.Tests.PlayMode
                 }
 
                 mostInHeart = Mathf.Max(mostInHeart, inHeart);
-                Assert.LessOrEqual(inHeart, Crowd.CaseHeartCap, "the heart holds at most three walkers during case 01 (D34)");
+                Assert.LessOrEqual(inHeart, CrowdClock.CaseHeartCap, "the heart holds at most three walkers during case 01 (D34)");
                 for (int g = 0; g < laps.Length; g++)
                 {
-                    float m = crowd.Crowd.LapMetres(g);
+                    float m = crowd.Clock.LapMetres(g);
                     if (m + 5f < lastMetres[g])
                     {
                         laps[g]++;
@@ -156,23 +159,38 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.GreaterOrEqual(worst, LivingStreetRules.ClueClearance, worstAt);
             for (int g = 0; g < laps.Length; g++)
             {
-                Assert.GreaterOrEqual(laps[g], 1, crowd.Crowd.RouteOf(g).Id + " walked its whole loop");
+                Assert.GreaterOrEqual(laps[g], 1, crowd.Clock.RouteOf(g).Id + " walked its whole loop");
             }
 
             int moved = 0;
             for (int i = 0; i < crowd.Bodies.Count; i++)
             {
-                moved += (crowd.Bodies[i].Root.position - start[i]).sqrMagnitude > 1f ? 1 : 0;
+                // The farthest a walker got from where it started (a loop brings it back home, so not the end point).
+                moved += farthest[i] > 5f ? 1 : 0;
             }
 
             Assert.AreEqual(crowd.Bodies.Count, moved, "every walker moves");
             Assert.Greater(Stage.Frames.Count, 100, "the frame readout records while playing");
             Assert.Less(crowdMs / Mathf.Max(1, frames), 2.0, "the crowd stays a small part of a frame even in the editor");
 
-            // Walkers never block Pip: they carry no colliders.
+            // Walkers never block Pip: they carry no colliders. Each is the crowd kit's merged body: one draw call.
             foreach (var body in crowd.Bodies)
             {
                 Assert.IsEmpty(body.Root.GetComponentsInChildren<Collider>(), body.Root.name + " must not collide");
+                Assert.IsTrue(body.IsKit, body.Root.name + " uses the crowd kit, not a placeholder");
+                Assert.AreEqual(1, body.DrawCalls, body.Root.name + ": one merged skinned mesh");
+                int drawn = 0;
+                foreach (var skinned in body.Root.GetComponentsInChildren<SkinnedMeshRenderer>())
+                {
+                    drawn += skinned.enabled ? 1 : 0;
+                }
+
+                Assert.LessOrEqual(drawn, 1, body.Root.name + ": at most one renderer drawn (LOD0 or LOD1)");
+                int lod0 = CrowdKitBodyFactory.Triangles(body, 0);
+                int lod1 = CrowdKitBodyFactory.Triangles(body, 1);
+                Debug.Log($"[LivingStreetPlayTests] {body.Root.name}: LOD0 {lod0} triangles, LOD1 {lod1}");
+                Assert.That(lod0, Is.InRange(1000, SpookyStreet.Core.Crowd.CrowdKit.MaxLod0Triangles));
+                Assert.That(lod1, Is.InRange(1, SpookyStreet.Core.Crowd.CrowdKit.MaxLod1Triangles));
             }
         }
 
@@ -254,7 +272,7 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(Stage.PorchOpen, "the radio points elsewhere, so groups may visit");
             Time.timeScale = 6f;
             float until = Time.realtimeSinceStartup + 60f;
-            while (Stage.Crowd.Crowd.WaitingAtPorch < 0 && Time.realtimeSinceStartup < until)
+            while (Stage.Crowd.Clock.WaitingAtPorch < 0 && Time.realtimeSinceStartup < until)
             {
                 if (Director.Dialogue.IsOpen)
                 {
@@ -265,15 +283,15 @@ namespace SpookyStreet.Tests.PlayMode
             }
 
             Time.timeScale = 1f;
-            Assert.GreaterOrEqual(Stage.Crowd.Crowd.WaitingAtPorch, 0, "a group waits at Pip's steps");
+            Assert.GreaterOrEqual(Stage.Crowd.Clock.WaitingAtPorch, 0, "a group waits at Pip's steps");
             Assert.Greater(Stage.PorchRings, 0, "the group rang her bell");
             yield return Wait(0.3f);
             Assert.IsTrue(Director.Targets.ExtraActive);
             Assert.AreEqual(Keys.VerbTreat, Director.Targets.VerbKey);
             Director.Targets.Interact();
             Assert.AreEqual(1, Stage.TreatsGiven);
-            yield return Wait(Crowd.CheerSeconds + 0.5f);
-            Assert.AreEqual(-1, Stage.Crowd.Crowd.WaitingAtPorch, "the group cheers and walks on");
+            yield return Wait(CrowdClock.CheerSeconds + 0.5f);
+            Assert.AreEqual(-1, Stage.Crowd.Clock.WaitingAtPorch, "the group cheers and walks on");
 
             // Replay case keeps the lantern (D31); the file holds it beside the case save.
             Director.Replay();

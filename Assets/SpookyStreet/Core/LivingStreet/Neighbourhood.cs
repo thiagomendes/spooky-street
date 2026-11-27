@@ -5,13 +5,17 @@ using Keys = SpookyStreet.Core.Localization.LocalizationKeys.LivingStreet;
 
 namespace SpookyStreet.Core.LivingStreet
 {
-    /// <summary>The shapes of Pip's paper lantern (living-street §4.2), chosen from pictures.</summary>
+    /// <summary>
+    /// The shapes of Pip's paper lantern (living-street §4.2, D35), chosen from pictures: bat, cat, ghost and leaf.
+    /// Never moon, star or pumpkin: those are reserved looks (§3.4 rule 6: the Players' moon, June's star witch, Bea's
+    /// pumpkin), and a lantern in one of them would read as a clue or a friend's sign.
+    /// </summary>
     public enum LanternShape
     {
-        Moon,
         Bat,
-        Star,
-        Pumpkin,
+        Cat,
+        Ghost,
+        Leaf,
     }
 
     /// <summary>
@@ -51,22 +55,25 @@ namespace SpookyStreet.Core.LivingStreet
     public static class LanternCraft
     {
         public static readonly IReadOnlyList<LanternShape> Shapes =
-            new[] { LanternShape.Moon, LanternShape.Bat, LanternShape.Star, LanternShape.Pumpkin };
+            new[] { LanternShape.Bat, LanternShape.Cat, LanternShape.Ghost, LanternShape.Leaf };
 
         public static readonly IReadOnlyList<LanternColour> Colours =
             new[] { LanternColour.Orange, LanternColour.Plum, LanternColour.Green, LanternColour.Yellow };
 
-        /// <summary>What the screen starts on the first time (the street's own lantern colour).</summary>
-        public static readonly PipLantern Default = new PipLantern(LanternShape.Moon, LanternColour.Orange);
+        /// <summary>What the screen starts on the first time: a bat like Pip's costume, in the street's lantern orange.</summary>
+        public static readonly PipLantern Default = new PipLantern(LanternShape.Bat, LanternColour.Orange);
+
+        /// <summary>Shapes no lantern may take (D35, §3.4 rule 6).</summary>
+        public static readonly IReadOnlyList<string> ReservedShapes = new[] { "moon", "star", "pumpkin" };
 
         public static string ShapeId(LanternShape shape)
         {
             switch (shape)
             {
-                case LanternShape.Moon: return "moon";
                 case LanternShape.Bat: return "bat";
-                case LanternShape.Star: return "star";
-                default: return "pumpkin";
+                case LanternShape.Cat: return "cat";
+                case LanternShape.Ghost: return "ghost";
+                default: return "leaf";
             }
         }
 
@@ -115,10 +122,10 @@ namespace SpookyStreet.Core.LivingStreet
         {
             switch (shape)
             {
-                case LanternShape.Moon: return Keys.ShapeMoon;
                 case LanternShape.Bat: return Keys.ShapeBat;
-                case LanternShape.Star: return Keys.ShapeStar;
-                default: return Keys.ShapePumpkin;
+                case LanternShape.Cat: return Keys.ShapeCat;
+                case LanternShape.Ghost: return Keys.ShapeGhost;
+                default: return Keys.ShapeLeaf;
             }
         }
 

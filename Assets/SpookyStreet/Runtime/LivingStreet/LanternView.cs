@@ -6,7 +6,6 @@ using SpookyStreet.Core.LivingStreet;
 using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.Localization;
 using SpookyStreet.UI;
-using SpookyStreet.UI.Nonverbal;
 using UnityEngine;
 using UnityEngine.UI;
 using Keys = SpookyStreet.Core.Localization.LocalizationKeys.LivingStreet;
@@ -25,7 +24,7 @@ namespace SpookyStreet.LivingStreet
         public const float SwatchSize = 96f;
 
         private readonly Dictionary<LanternShape, Image> _shapes = new Dictionary<LanternShape, Image>();
-        private readonly Dictionary<LanternShape, Image> _shapeArt = new Dictionary<LanternShape, Image>();
+        private readonly Dictionary<LanternShape, List<Image>> _shapeArt = new Dictionary<LanternShape, List<Image>>();
         private readonly Dictionary<LanternColour, Image> _swatches = new Dictionary<LanternColour, Image>();
         private readonly Dictionary<LanternShape, Button> _shapeButtons = new Dictionary<LanternShape, Button>();
         private readonly Dictionary<LanternColour, Button> _colourButtons = new Dictionary<LanternColour, Button>();
@@ -77,9 +76,9 @@ namespace SpookyStreet.LivingStreet
                 var card = UiFactory.PaperCard(rows, "Shape_" + LanternCraft.ShapeId(shape), new Vector2(0.5f, 1f),
                     new Vector2(x, -36f - CardSize.y * 0.5f), CardSize, i % 2 == 0 ? -1.5f : 1.2f);
                 card.raycastTarget = true;
-                var art = UiFactory.Sprite(card.transform, "Picture", ShapeSprite(shape), Color.white, new Vector2(0.5f, 0.5f),
-                    new Vector2(0f, 14f), new Vector2(96f, 96f));
-                art.preserveAspect = true;
+                var picture = UiFactory.Rect(card.transform, "Picture");
+                UiFactory.Place(picture, new Vector2(0.5f, 0.5f), new Vector2(0f, 14f), new Vector2(96f, 96f));
+                var art = LanternGlyph.Build(picture, shape, 96f, Color.white);
                 var name = UiFactory.Label(card.transform, "Name", LanternCraft.ShapeKey(shape), 24, TextAnchor.MiddleCenter,
                     UiFactory.Ink, UiFactory.BoldFont);
                 UiFactory.Place(name.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 22f), new Vector2(CardSize.x - 12f, 36f));
@@ -145,17 +144,6 @@ namespace SpookyStreet.LivingStreet
             Refresh();
         }
 
-        private static Sprite ShapeSprite(LanternShape shape)
-        {
-            switch (shape)
-            {
-                case LanternShape.Moon: return PuppetAtlas.Get("pg.moon");
-                case LanternShape.Bat: return PuppetAtlas.Get("pg.bat");
-                case LanternShape.Star: return PuppetAtlas.Get("pg.star");
-                default: return UiFactory.Circle;
-            }
-        }
-
         /// <summary>Opens on <paramref name="current"/> (Pip's lantern, or the table's default the first time).</summary>
         public void Open(PipLantern current)
         {
@@ -187,7 +175,10 @@ namespace SpookyStreet.LivingStreet
                 bool chosen = pair.Key == Shape;
                 pair.Value.color = chosen ? Color.white : new Color(0.86f, 0.84f, 0.8f, 1f);
                 pair.Value.rectTransform.localScale = Vector3.one * (chosen ? 1.08f : 1f);
-                _shapeArt[pair.Key].color = chosen ? tint : new Color(tint.r, tint.g, tint.b, 0.55f);
+                foreach (var part in _shapeArt[pair.Key])
+                {
+                    part.color = chosen ? tint : new Color(tint.r, tint.g, tint.b, 0.55f);
+                }
             }
 
             foreach (var pair in _swatches)

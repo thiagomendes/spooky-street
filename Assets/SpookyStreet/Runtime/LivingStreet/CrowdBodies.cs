@@ -1,16 +1,20 @@
 using System.Collections.Generic;
 using SpookyStreet.App;
+using SpookyStreet.Characters;
+using SpookyStreet.Core.Crowd;
 using SpookyStreet.Core.LivingStreet;
 using SpookyStreet.World;
 using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
 using UnityEngine.Rendering;
 
 namespace SpookyStreet.LivingStreet
 {
     /// <summary>
     /// One walker's body in the world. The crowd view moves its root along the loop and asks it to animate; the body
-    /// decides how (placeholder primitives now, the crowd kit's skinned mesh later). Bodies never collide: walkers step
-    /// aside for Pip by rule, the camera boom ignores them, and Pip never gets stuck on one (living-street §3.4 rule 4).
+    /// decides how. Bodies never collide: walkers step aside for Pip by rule, the camera boom ignores them, and Pip never
+    /// gets stuck on one (living-street §3.4 rule 4). The root faces its +Z.
     /// </summary>
     public abstract class CrowdBody
     {
@@ -24,8 +28,14 @@ namespace SpookyStreet.LivingStreet
         /// <summary>The detail the budget gave this walker this frame.</summary>
         public WalkerDetail Detail { get; private set; } = WalkerDetail.Full;
 
-        /// <summary>Renderers drawn now (the readout's "drawn" count).</summary>
+        /// <summary>Drawn now (the readout's "drawn" count).</summary>
         public bool Drawn => Detail != WalkerDetail.Hidden;
+
+        /// <summary>True for the crowd kit's merged bodies (false: a placeholder).</summary>
+        public virtual bool IsKit => false;
+
+        /// <summary>Draw calls this body costs while drawn (tests: the kit's merged walker is one).</summary>
+        public abstract int DrawCalls { get; }
 
         public void SetDetail(WalkerDetail detail)
         {
@@ -38,16 +48,18 @@ namespace SpookyStreet.LivingStreet
             ApplyDetail(detail);
         }
 
-        /// <summary>Poses the body for <paramref name="time"/> seconds of its own clock.</summary>
+        /// <summary>
+        /// Poses the body: <paramref name="time"/> is the walker's own clock, <paramref name="speed"/> its ground speed
+        /// now, <paramref name="dt"/> the animation step (the view passes 1/15 s for walkers animated at 15 Hz).
+        /// </summary>
         public abstract void Animate(float time, float speed, WalkerGesture gesture, float dt);
 
         protected abstract void ApplyDetail(WalkerDetail detail);
     }
 
     /// <summary>
-    /// The swap point for the crowd's bodies (living-street §7; the costume kit is built on
-    /// <c>feature/living-street-crowd-art</c>, its prefab and part names in docs/living-street-crowd-art.md). A factory
-    /// returns null for a look it cannot build, and the view then falls back to the placeholder.
+    /// The swap point for the crowd's bodies (living-street §7). A factory returns null for a look it cannot build, and
+    /// the view falls back to the next one (the kit first, the placeholder when the kit's models are not committed).
     /// </summary>
     public interface ICrowdBodyFactory
     {
@@ -55,228 +67,422 @@ namespace SpookyStreet.LivingStreet
     }
 
     /// <summary>
-    /// The crowd kit's bodies, when committed: <c>Resources/Models/Crowd/Crowd_&lt;Body&gt;_&lt;costume&gt;</c> prefabs
-    /// (one merged skinned mesh per walker on the shared crowd atlas, one draw call) with an Animator whose states are the
-    /// kit's clips (<see cref="Clips"/>). Until the kit lands every look falls back to the placeholders, so this costs
-    /// nothing now. Names live here only, so the art branch's doc and this code meet in one place.
+    /// The crowd costume kit's walkers (docs/living-street-crowd-art.md; contract <see cref="CrowdKit"/>): the body's FBX
+    /// is instantiated once per walker, the recipe's parts are merged at spawn into one skinned mesh per level of detail
+    /// (every part shares the skeleton's bind pose, so the merge is a concatenation remapped onto one bone array: one draw
+    /// call), the unused parts are destroyed, and the shared Crowd atlas is applied (its glow variant at 0.9 for lantern
+    /// carriers, under the attic window). The kit's clips (Idle, Walk, Wave, Talk) run on a small Playables graph that
+    /// the view evaluates by hand, so culled walkers cost no animation at all and far walkers animate at 15 Hz. Walk plays
+    /// at the walker's speed over the clip's own ground speed, so feet never slide. Merged meshes are cached per recipe.
     /// </summary>
     public sealed class CrowdKitBodyFactory : ICrowdBodyFactory
     {
-        public const string Folder = "Models/Crowd/";
+        /// <summary>Glow of the paper lanterns some walkers carry (the art doc's level; below the attic window).</summary>
+        public const float LanternGlow = 0.9f;
 
-        /// <summary>The kit's clip (Animator state) names (living-street §7).</summary>
-        public static class Clips
+        public const string LanternPart = "Lantern_Paper";
+
+        private sealed class Merged
         {
-            public const string Stroll = "Stroll";
-            public const string Idle = "Idle";
-            public const string HoldOutPail = "HoldOutPail";
-            public const string Cheer = "Cheer";
-            public const string Wave = "Wave";
-            public const string LookUp = "LookUp";
+            public Mesh Mesh;
+            public string[] Bones;
+            public string RootBone;
         }
 
-        /// <summary>Paper standee child shown beyond 18 m (a flat cut-out with a 4-frame bob), if the prefab has one.</summary>
-        public const string StandeeChild = "Standee";
-
-        public static string PrefabName(WalkerLook look) =>
-            "Crowd_" + (look.Body == CrowdBodyKind.GrownUp ? "GrownUp" : "SmallChild") + "_" + look.Costume;
+        private static readonly Dictionary<string, Merged> Cache = new Dictionary<string, Merged>();
 
         public CrowdBody Create(WalkerLook look, Transform parent, MaterialLibrary materials)
         {
-            var prefab = Resources.Load<GameObject>(Folder + PrefabName(look));
+            var recipe = look.KitRecipe;
+            if (recipe == null || materials == null)
+            {
+                return null;
+            }
+
+            var kit = new ModelKit(materials, CrowdKit.Folder + "/") { FallbackAtlas = CrowdKit.Atlas };
+            var prefab = kit.Load(recipe.Model);
             if (prefab == null)
             {
                 return null;
             }
 
-            var instance = Object.Instantiate(prefab, parent, false);
-            instance.name = PrefabName(look);
-            return new KitBody(instance.transform);
+            var root = new GameObject("Walker_" + recipe.Id).transform;
+            root.SetParent(parent, false);
+            var model = Object.Instantiate(prefab, root, false);
+            model.name = recipe.Model;
+            model.transform.localPosition = Vector3.zero;
+            model.transform.localRotation = Quaternion.Euler(0f, NpcAvatar.ModelYawOffset, 0f) * prefab.transform.localRotation;
+
+            bool lantern = false;
+            foreach (string part in recipe.Parts)
+            {
+                lantern |= part == LanternPart;
+            }
+
+            var material = lantern ? kit.GlowMaterialFor(recipe.Model, LanternGlow) : kit.MaterialFor(recipe.Model);
+            var parts = model.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            var lod0 = Build(recipe, 0, parts, model.transform, material);
+            var lod1 = Build(recipe, 1, parts, model.transform, material);
+            foreach (var smr in parts)
+            {
+                Object.Destroy(smr.gameObject);
+            }
+
+            if (lod0 == null)
+            {
+                Object.Destroy(root.gameObject);
+                return null;
+            }
+
+            var animator = model.GetComponentInChildren<Animator>();
+            if (animator == null)
+            {
+                animator = model.AddComponent<Animator>();
+            }
+
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            var clips = Resources.LoadAll<AnimationClip>(CrowdKit.Folder + "/" + recipe.Model);
+            var life = root.gameObject.AddComponent<CrowdWalkerLife>();
+            return new KitBody(root, lod0, lod1, animator, clips, CrowdKit.WalkSpeed(recipe.Model), life);
         }
+
+        /// <summary>One merged skinned mesh of the recipe's parts at a level of detail (null when a part is missing).</summary>
+        private static SkinnedMeshRenderer Build(CrowdWalkerRecipe recipe, int lod, SkinnedMeshRenderer[] parts, Transform model,
+            Material material)
+        {
+            string key = recipe.Model + "/" + recipe.Id + "/" + lod;
+            if (!Cache.TryGetValue(key, out var merged) || merged.Mesh == null)
+            {
+                merged = Merge(recipe, lod, parts);
+                if (merged == null)
+                {
+                    return null;
+                }
+
+                Cache[key] = merged;
+            }
+
+            var bones = new Transform[merged.Bones.Length];
+            for (int i = 0; i < bones.Length; i++)
+            {
+                bones[i] = ModelKit.FindDeep(model, merged.Bones[i]);
+                if (bones[i] == null)
+                {
+                    return null;
+                }
+            }
+
+            var go = new GameObject("Merged_LOD" + lod);
+            go.transform.SetParent(model, false);
+            var renderer = go.AddComponent<SkinnedMeshRenderer>();
+            renderer.sharedMesh = merged.Mesh;
+            renderer.bones = bones;
+            renderer.rootBone = ModelKit.FindDeep(model, merged.RootBone) ?? bones[0];
+            renderer.sharedMaterial = material;
+            renderer.updateWhenOffscreen = true; // the view culls walkers itself; bounds follow the clips
+            renderer.shadowCastingMode = ShadowCastingMode.Off; // a paper disc instead of a real-time shadow (§8)
+            renderer.skinnedMotionVectors = false;
+            return renderer;
+        }
+
+        private static Merged Merge(CrowdWalkerRecipe recipe, int lod, SkinnedMeshRenderer[] parts)
+        {
+            var names = CrowdKit.MeshNames(recipe, lod);
+            var vertices = new List<Vector3>();
+            var normals = new List<Vector3>();
+            var tangents = new List<Vector4>();
+            var uvs = new List<Vector2>();
+            var weights = new List<BoneWeight>();
+            var triangles = new List<int>();
+            var bones = new List<Transform>();
+            var bindposes = new List<Matrix4x4>();
+            var index = new Dictionary<Transform, int>();
+            bool allTangents = true;
+            string rootBone = null;
+            foreach (string name in names)
+            {
+                SkinnedMeshRenderer part = null;
+                foreach (var smr in parts)
+                {
+                    if (smr.name == name)
+                    {
+                        part = smr;
+                        break;
+                    }
+                }
+
+                var mesh = part != null ? part.sharedMesh : null;
+                if (mesh == null || !mesh.isReadable)
+                {
+                    if (Debug.isDebugBuild)
+                    {
+                        Debug.LogWarning($"[Crowd] {recipe.Id}: part {name} missing or unreadable at LOD{lod}");
+                    }
+
+                    return null;
+                }
+
+                rootBone ??= part.rootBone != null ? part.rootBone.name : null;
+                var partBones = part.bones;
+                var partBind = mesh.bindposes;
+                var map = new int[partBones.Length];
+                for (int b = 0; b < partBones.Length; b++)
+                {
+                    if (!index.TryGetValue(partBones[b], out int k))
+                    {
+                        k = bones.Count;
+                        bones.Add(partBones[b]);
+                        bindposes.Add(b < partBind.Length ? partBind[b] : Matrix4x4.identity);
+                        index[partBones[b]] = k;
+                    }
+
+                    map[b] = k;
+                }
+
+                int start = vertices.Count;
+                int count = mesh.vertexCount;
+                vertices.AddRange(mesh.vertices);
+                var n = mesh.normals;
+                normals.AddRange(n.Length == count ? n : new Vector3[count]);
+                var t = mesh.tangents;
+                allTangents &= t.Length == count;
+                tangents.AddRange(t.Length == count ? t : new Vector4[count]);
+                var uv = mesh.uv;
+                uvs.AddRange(uv.Length == count ? uv : new Vector2[count]);
+                foreach (var w in mesh.boneWeights)
+                {
+                    weights.Add(new BoneWeight
+                    {
+                        boneIndex0 = map[w.boneIndex0], weight0 = w.weight0,
+                        boneIndex1 = map[w.boneIndex1], weight1 = w.weight1,
+                        boneIndex2 = map[w.boneIndex2], weight2 = w.weight2,
+                        boneIndex3 = map[w.boneIndex3], weight3 = w.weight3,
+                    });
+                }
+
+                for (int s = 0; s < mesh.subMeshCount; s++)
+                {
+                    foreach (int i in mesh.GetTriangles(s))
+                    {
+                        triangles.Add(start + i);
+                    }
+                }
+            }
+
+            var combined = new Mesh
+            {
+                name = "Crowd_" + recipe.Id + "_LOD" + lod,
+                indexFormat = vertices.Count > 65535 ? IndexFormat.UInt32 : IndexFormat.UInt16,
+            };
+            combined.SetVertices(vertices);
+            combined.SetNormals(normals);
+            if (allTangents)
+            {
+                combined.SetTangents(tangents);
+            }
+
+            combined.SetUVs(0, uvs);
+            combined.boneWeights = weights.ToArray();
+            combined.bindposes = bindposes.ToArray();
+            combined.SetTriangles(triangles, 0);
+            combined.RecalculateBounds();
+            combined.UploadMeshData(true);
+            var boneNames = new string[bones.Count];
+            for (int i = 0; i < boneNames.Length; i++)
+            {
+                boneNames[i] = bones[i].name;
+            }
+
+            return new Merged { Mesh = combined, Bones = boneNames, RootBone = rootBone };
+        }
+
+        /// <summary>Triangles of a merged walker at LOD0 and LOD1 (tests and the log).</summary>
+        public static int Triangles(CrowdBody body, int lod) =>
+            body is KitBody kit ? kit.Triangles(lod) : 0;
 
         private sealed class KitBody : CrowdBody
         {
-            private readonly Animator _animator;
-            private readonly Renderer[] _renderers;
-            private readonly Transform _standee;
-            private string _state;
+            private const float BlendRate = 5f;
+            private readonly SkinnedMeshRenderer _lod0;
+            private readonly SkinnedMeshRenderer _lod1;
+            private readonly AnimationClipPlayable[] _clips;
+            private readonly float[] _weights;
+            private readonly Dictionary<string, int> _slot = new Dictionary<string, int>();
+            private readonly float _walkSpeed;
+            private readonly CrowdWalkerLife _life;
+            private AnimationMixerPlayable _mixer;
+            private int _target = -1;
 
-            public KitBody(Transform root) : base(root)
+            public KitBody(Transform root, SkinnedMeshRenderer lod0, SkinnedMeshRenderer lod1, Animator animator,
+                AnimationClip[] clips, float walkSpeed, CrowdWalkerLife life) : base(root)
             {
-                _animator = root.GetComponentInChildren<Animator>();
-                _renderers = root.GetComponentsInChildren<Renderer>(true);
-                _standee = ModelKit.FindDeep(root, StandeeChild);
-                foreach (var r in _renderers)
+                _lod0 = lod0;
+                _lod1 = lod1;
+                _walkSpeed = walkSpeed;
+                _life = life;
+                var graph = PlayableGraph.Create("Crowd_" + root.name);
+                graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
+                life.Graph = graph;
+                var output = AnimationPlayableOutput.Create(graph, "Crowd", animator);
+                _mixer = AnimationMixerPlayable.Create(graph, clips.Length);
+                output.SetSourcePlayable(_mixer);
+                _clips = new AnimationClipPlayable[clips.Length];
+                _weights = new float[clips.Length];
+                for (int i = 0; i < clips.Length; i++)
                 {
-                    r.shadowCastingMode = ShadowCastingMode.Off;
+                    _clips[i] = AnimationClipPlayable.Create(graph, clips[i]);
+                    graph.Connect(_clips[i], 0, _mixer, i);
+                    _mixer.SetInputWeight(i, 0f);
+                    _slot[clips[i].name] = i;
+                }
+
+                graph.Play();
+                Play("Idle", true);
+                graph.Evaluate(0f);
+                ApplyDetail(WalkerDetail.Full);
+            }
+
+            public override bool IsKit => true;
+
+            public override int DrawCalls => 1;
+
+            public int Triangles(int lod)
+            {
+                var r = lod == 0 ? _lod0 : _lod1;
+                return r != null && r.sharedMesh != null ? (int)(r.sharedMesh.GetIndexCount(0) / 3) : 0;
+            }
+
+            private void Play(string clip, bool snap)
+            {
+                if (!_slot.TryGetValue(clip, out int slot) && !_slot.TryGetValue("Idle", out slot))
+                {
+                    return;
+                }
+
+                if (slot == _target)
+                {
+                    return;
+                }
+
+                _target = slot;
+                if (clip == "Wave")
+                {
+                    _clips[slot].SetTime(0.0);
+                }
+
+                if (snap)
+                {
+                    for (int i = 0; i < _weights.Length; i++)
+                    {
+                        _weights[i] = i == slot ? 1f : 0f;
+                        _mixer.SetInputWeight(i, _weights[i]);
+                    }
                 }
             }
 
             public override void Animate(float time, float speed, WalkerGesture gesture, float dt)
             {
-                if (_animator == null)
+                if (!_life.Graph.IsValid())
                 {
                     return;
                 }
 
-                string state = gesture == WalkerGesture.HoldOut ? Clips.HoldOutPail
-                    : gesture == WalkerGesture.Cheer ? Clips.Cheer
-                    : gesture == WalkerGesture.Look ? Clips.LookUp
-                    : speed > 0.05f ? Clips.Stroll : Clips.Idle;
-                if (state != _state)
+                // The kit's clips only: Walk when moving, Wave for a cheer, Talk for a grown-up's chat at a porch, else Idle.
+                string clip = speed > 0.05f ? "Walk"
+                    : gesture == WalkerGesture.Cheer ? "Wave"
+                    : gesture == WalkerGesture.Look ? "Talk"
+                    : "Idle";
+                Play(clip, false);
+                if (_slot.TryGetValue("Walk", out int walk))
                 {
-                    _state = state;
-                    _animator.CrossFade(state, 0.2f);
+                    _clips[walk].SetSpeed(speed > 0.05f ? Mathf.Clamp(speed / _walkSpeed, 0.2f, 1.5f) : 1f);
                 }
 
-                // The view decides when to animate (15 Hz far away), so the animator runs by hand.
-                _animator.Update(dt);
+                if (clip == "Wave" && _clips[_target].GetTime() >= _clips[_target].GetAnimationClip().length)
+                {
+                    _clips[_target].SetTime(0.0); // the cheer repeats while it lasts
+                }
+
+                for (int i = 0; i < _weights.Length; i++)
+                {
+                    float goal = i == _target ? 1f : 0f;
+                    _weights[i] = Mathf.MoveTowards(_weights[i], goal, BlendRate * dt);
+                    _mixer.SetInputWeight(i, _weights[i]);
+                }
+
+                _life.Graph.Evaluate(dt);
             }
 
             protected override void ApplyDetail(WalkerDetail detail)
             {
+                bool near = detail == WalkerDetail.Full || _lod1 == null;
                 bool shown = detail != WalkerDetail.Hidden;
-                bool standee = detail == WalkerDetail.Standee && _standee != null;
-                foreach (var r in _renderers)
+                _lod0.enabled = shown && near;
+                if (_lod1 != null)
                 {
-                    bool isStandee = _standee != null && r.transform.IsChildOf(_standee);
-                    r.enabled = shown && (standee ? isStandee : !isStandee);
-                }
-
-                if (_animator != null)
-                {
-                    // Updated by hand in Animate; culled walkers do no animation work at all.
-                    _animator.enabled = false;
+                    _lod1.enabled = shown && !near;
                 }
             }
         }
     }
 
+    /// <summary>Destroys a kit walker's Playables graph with it (graphs are not garbage collected).</summary>
+    public sealed class CrowdWalkerLife : MonoBehaviour
+    {
+        public PlayableGraph Graph { get; set; }
+
+        private void OnDestroy()
+        {
+            if (Graph.IsValid())
+            {
+                Graph.Destroy();
+            }
+        }
+    }
+
     /// <summary>
-    /// Placeholder bodies until the crowd kit lands: felt-coloured primitives with the kit's proportions (a small child
-    /// about 1.05 m, a grown-up about 1.7 m), a costume read from colour and one silhouette piece (a pointed hat, cat
-    /// ears, a crown, a sheet, a box head), a hand prop, and a soft paper disc under the feet instead of a shadow. Walk
-    /// swing, bob and the gestures are posed procedurally. Never final art.
+    /// The fallback when the crowd kit's models are not committed (a stripped checkout): felt-coloured primitives at the
+    /// kit's heights with a procedural walk swing. Never shipped art.
     /// </summary>
     public sealed class PlaceholderCrowdBodies : ICrowdBodyFactory
     {
-        private static Mesh _cone;
-
         public CrowdBody Create(WalkerLook look, Transform parent, MaterialLibrary materials) =>
             new PlaceholderBody(look, parent, materials);
-
-        /// <summary>The costume's two colours (main, accent) from the v1.3 Halloween families.</summary>
-        public static void Colours(WalkerLook look, out Color main, out Color accent)
-        {
-            switch (look.Costume)
-            {
-                case CrowdLooks.GhostSheet: main = Palette.Hex(0xE8DCC2); accent = Palette.InkBlack; break;
-                case CrowdLooks.Skeleton: main = Palette.InkBlack; accent = Palette.Hex(0xE6DDC8); break;
-                case CrowdLooks.BlackCat: main = Palette.Hex(0x2A2433); accent = Palette.JackOrange; break;
-                case CrowdLooks.WitchGreen: main = Palette.Hex(0x4F7A3A); accent = Palette.HauntedPurple; break;
-                case CrowdLooks.WitchPlum: main = Palette.Plum; accent = Palette.InkBlack; break;
-                case CrowdLooks.Spider: main = Palette.HauntedPurple; accent = Palette.InkBlack; break;
-                case CrowdLooks.CandyCorn: main = Palette.CandyCornYellow; accent = Palette.JackOrange; break;
-                case CrowdLooks.Robot: main = Palette.Hex(0xB58A5A); accent = Palette.Hex(0x8FA8C8); break;
-                case CrowdLooks.Bumblebee: main = Palette.CandyCornYellow; accent = Palette.InkBlack; break;
-                case CrowdLooks.FrogPrince: main = Palette.Hex(0x5E9A3A); accent = Palette.CandyCornYellow; break;
-                case CrowdLooks.PaperCrown: main = Palette.Hex(0x6B3D7A); accent = Palette.CandyCornYellow; break;
-                default: main = Palette.Hex(0x7E6C5F); accent = Palette.Plum; break;
-            }
-
-            if (look.Palette % 2 == 1)
-            {
-                main = Color.Lerp(main, Palette.NightViolet, 0.18f);
-            }
-        }
-
-        internal static Mesh Cone()
-        {
-            if (_cone != null)
-            {
-                return _cone;
-            }
-
-            const int sides = 12;
-            var vertices = new List<Vector3> { new Vector3(0f, 1f, 0f), Vector3.zero };
-            for (int i = 0; i <= sides; i++)
-            {
-                float a = i * Mathf.PI * 2f / sides;
-                vertices.Add(new Vector3(Mathf.Cos(a) * 0.5f, 0f, Mathf.Sin(a) * 0.5f));
-            }
-
-            var triangles = new List<int>();
-            for (int i = 0; i < sides; i++)
-            {
-                triangles.AddRange(new[] { 0, 2 + i + 1, 2 + i });
-                triangles.AddRange(new[] { 1, 2 + i, 2 + i + 1 });
-            }
-
-            _cone = new Mesh { name = "CrowdCone", vertices = vertices.ToArray(), triangles = triangles.ToArray() };
-            _cone.RecalculateNormals();
-            _cone.RecalculateBounds();
-            return _cone;
-        }
 
         private sealed class PlaceholderBody : CrowdBody
         {
             private readonly Transform _legL;
             private readonly Transform _legR;
-            private readonly Transform _armL;
-            private readonly Transform _armR;
-            private readonly Transform _torso;
-            private readonly Transform _head;
             private readonly float _height;
-            private readonly List<Renderer> _limbs = new List<Renderer>();
             private readonly List<Renderer> _all = new List<Renderer>();
 
             public PlaceholderBody(WalkerLook look, Transform parent, MaterialLibrary materials)
-                : base(new GameObject("Walker_" + look.Costume).transform)
+                : base(new GameObject("Walker_" + look.Recipe).transform)
             {
                 Root.SetParent(parent, false);
-                bool adult = look.Body == CrowdBodyKind.GrownUp;
-                _height = adult ? 1.7f : 1.05f;
+                _height = look.Body == CrowdBodyKind.GrownUp ? CrowdKit.AdultHeight : CrowdKit.ChildHeight;
                 float h = _height;
-                Colours(look, out var main, out var accent);
-                var skin = Palette.PipFace;
-
-                _torso = Pivot("Body", new Vector3(0f, h * 0.36f, 0f));
-                Part(PrimitiveType.Capsule, _torso, "Torso", new Vector3(0f, h * 0.17f, 0f),
-                    new Vector3(h * 0.3f, h * 0.24f, h * 0.22f), main, materials, false);
-                _head = Pivot("Head", new Vector3(0f, h * 0.8f, 0f));
-                Part(PrimitiveType.Sphere, _head, "Face", Vector3.zero, Vector3.one * h * (adult ? 0.17f : 0.24f),
-                    look.Costume == CrowdLooks.GhostSheet ? main : skin, materials, false);
-                _legL = Limb("Leg_L", new Vector3(-h * 0.07f, h * 0.36f, 0f), h * 0.36f, h * 0.08f, accent, materials);
-                _legR = Limb("Leg_R", new Vector3(h * 0.07f, h * 0.36f, 0f), h * 0.36f, h * 0.08f, accent, materials);
-                _armL = Limb("Arm_L", new Vector3(-h * 0.17f, h * 0.66f, 0f), h * 0.3f, h * 0.065f, main, materials);
-                _armR = Limb("Arm_R", new Vector3(h * 0.17f, h * 0.66f, 0f), h * 0.3f, h * 0.065f, main, materials);
-                Costume(look, h, main, accent, materials);
-                Prop(look, h, materials);
-
-                // A soft paper disc under the feet instead of a real-time shadow (§8).
-                var disc = Part(PrimitiveType.Cylinder, Root, "ShadowDisc", new Vector3(0f, 0.012f, 0f),
-                    new Vector3(h * 0.42f, 0.004f, h * 0.42f), Palette.NightAmbientGround, materials, false);
-                disc.receiveShadows = false;
+                int hash = (look.Recipe ?? string.Empty).GetHashCode() & 0x7fffffff;
+                var colours = new[] { Palette.HauntedPurple, Palette.Plum, Palette.NightViolet, Palette.InkBlack };
+                var main = colours[hash % colours.Length];
+                Part(PrimitiveType.Capsule, Root, "Torso", new Vector3(0f, h * 0.53f, 0f), new Vector3(h * 0.3f, h * 0.24f, h * 0.22f), main, materials);
+                Part(PrimitiveType.Sphere, Root, "Head", new Vector3(0f, h * 0.82f, 0f), Vector3.one * h * 0.22f, Palette.PipFace, materials);
+                _legL = Limb(new Vector3(-h * 0.07f, h * 0.36f, 0f), h, main, materials);
+                _legR = Limb(new Vector3(h * 0.07f, h * 0.36f, 0f), h, main, materials);
             }
 
-            private Transform Pivot(string name, Vector3 at)
-            {
-                var t = new GameObject(name).transform;
-                t.SetParent(Root, false);
-                t.localPosition = at;
-                return t;
-            }
+            public override int DrawCalls => _all.Count;
 
-            private Transform Limb(string name, Vector3 joint, float length, float thickness, Color color, MaterialLibrary materials)
+            private Transform Limb(Vector3 hip, float h, Color color, MaterialLibrary materials)
             {
-                var pivot = Pivot(name, joint);
-                Part(PrimitiveType.Capsule, pivot, name + "_Mesh", new Vector3(0f, -length * 0.5f, 0f),
-                    new Vector3(thickness, length * 0.5f, thickness), color, materials, true);
+                var pivot = new GameObject("Leg").transform;
+                pivot.SetParent(Root, false);
+                pivot.localPosition = hip;
+                Part(PrimitiveType.Capsule, pivot, "LegMesh", new Vector3(0f, -h * 0.18f, 0f), new Vector3(h * 0.08f, h * 0.18f, h * 0.08f), color, materials);
                 return pivot;
             }
 
-            private Renderer Part(PrimitiveType type, Transform parent, string name, Vector3 at, Vector3 scale, Color color,
-                MaterialLibrary materials, bool limb)
+            private void Part(PrimitiveType type, Transform parent, string name, Vector3 at, Vector3 scale, Color color, MaterialLibrary materials)
             {
                 var go = GameObject.CreatePrimitive(type);
                 go.name = name;
@@ -288,158 +494,20 @@ namespace SpookyStreet.LivingStreet
                 materials?.Apply(renderer, color);
                 renderer.shadowCastingMode = ShadowCastingMode.Off;
                 _all.Add(renderer);
-                if (limb)
-                {
-                    _limbs.Add(renderer);
-                }
-
-                return renderer;
-            }
-
-            private Renderer ConePart(Transform parent, string name, Vector3 at, Vector3 scale, Color color, MaterialLibrary materials)
-            {
-                var go = new GameObject(name, typeof(MeshFilter), typeof(MeshRenderer));
-                go.transform.SetParent(parent, false);
-                go.transform.localPosition = at;
-                go.transform.localScale = scale;
-                go.GetComponent<MeshFilter>().sharedMesh = Cone();
-                var renderer = go.GetComponent<MeshRenderer>();
-                materials?.Apply(renderer, color);
-                renderer.shadowCastingMode = ShadowCastingMode.Off;
-                _all.Add(renderer);
-                return renderer;
-            }
-
-            /// <summary>One silhouette piece per costume, so groups read apart at phone size.</summary>
-            private void Costume(WalkerLook look, float h, Color main, Color accent, MaterialLibrary materials)
-            {
-                float head = h * 0.12f;
-                switch (look.Costume)
-                {
-                    case CrowdLooks.GhostSheet:
-                        // A sheet falling from the head: a wide cone over the body, two ink eyes.
-                        ConePart(Root, "Sheet", new Vector3(0f, 0.05f, 0f), new Vector3(h * 0.5f, h * 0.86f, h * 0.5f), main, materials);
-                        Part(PrimitiveType.Sphere, _head, "Eye_L", new Vector3(-head * 0.35f, head * 0.15f, head * 0.85f),
-                            Vector3.one * head * 0.28f, accent, materials, false);
-                        Part(PrimitiveType.Sphere, _head, "Eye_R", new Vector3(head * 0.35f, head * 0.15f, head * 0.85f),
-                            Vector3.one * head * 0.28f, accent, materials, false);
-                        break;
-                    case CrowdLooks.BlackCat:
-                        ConePart(_head, "Ear_L", new Vector3(-head * 0.55f, head * 0.7f, 0f), new Vector3(head * 0.6f, head * 0.9f, head * 0.35f), main, materials);
-                        ConePart(_head, "Ear_R", new Vector3(head * 0.55f, head * 0.7f, 0f), new Vector3(head * 0.6f, head * 0.9f, head * 0.35f), main, materials);
-                        break;
-                    case CrowdLooks.WitchGreen:
-                    case CrowdLooks.WitchPlum:
-                        Part(PrimitiveType.Cylinder, _head, "HatBrim", new Vector3(0f, head * 0.7f, 0f), new Vector3(head * 3.2f, 0.01f, head * 3.2f), accent, materials, false);
-                        ConePart(_head, "Hat", new Vector3(0f, head * 0.7f, 0f), new Vector3(head * 1.6f, head * 3.2f, head * 1.6f), accent, materials);
-                        break;
-                    case CrowdLooks.Robot:
-                        Part(PrimitiveType.Cube, _head, "BoxHead", new Vector3(0f, head * 0.2f, 0f), Vector3.one * head * 2.3f, main, materials, false);
-                        Part(PrimitiveType.Cylinder, _head, "Antenna", new Vector3(0f, head * 1.7f, 0f), new Vector3(head * 0.15f, head * 0.6f, head * 0.15f), accent, materials, false);
-                        break;
-                    case CrowdLooks.Bumblebee:
-                        for (int i = 0; i < 2; i++)
-                        {
-                            Part(PrimitiveType.Cylinder, _torso, "Stripe" + i, new Vector3(0f, h * (0.12f + i * 0.1f), 0f),
-                                new Vector3(h * 0.31f, h * 0.02f, h * 0.23f), accent, materials, false);
-                        }
-
-                        Part(PrimitiveType.Sphere, _head, "Antenna_L", new Vector3(-head * 0.5f, head * 1.3f, 0f), Vector3.one * head * 0.3f, accent, materials, false);
-                        Part(PrimitiveType.Sphere, _head, "Antenna_R", new Vector3(head * 0.5f, head * 1.3f, 0f), Vector3.one * head * 0.3f, accent, materials, false);
-                        break;
-                    case CrowdLooks.Skeleton:
-                        for (int i = 0; i < 3; i++)
-                        {
-                            Part(PrimitiveType.Cube, _torso, "Rib" + i, new Vector3(0f, h * (0.12f + i * 0.06f), h * 0.11f),
-                                new Vector3(h * 0.2f, h * 0.018f, 0.01f), accent, materials, false);
-                        }
-
-                        break;
-                    case CrowdLooks.PaperCrown:
-                        Part(PrimitiveType.Cylinder, _head, "Crown", new Vector3(0f, head * 0.95f, 0f), new Vector3(head * 1.5f, head * 0.35f, head * 1.5f), accent, materials, false);
-                        break;
-                    case CrowdLooks.Spider:
-                        for (int i = 0; i < 4; i++)
-                        {
-                            float side = i < 2 ? -1f : 1f;
-                            var leg = Part(PrimitiveType.Capsule, _torso, "SpiderLeg" + i,
-                                new Vector3(side * h * 0.2f, h * (0.12f + (i % 2) * 0.09f), 0f), new Vector3(h * 0.025f, h * 0.12f, h * 0.025f),
-                                accent, materials, false);
-                            leg.transform.localRotation = Quaternion.Euler(0f, 0f, side * 60f);
-                        }
-
-                        break;
-                }
-            }
-
-            private void Prop(WalkerLook look, float h, MaterialLibrary materials)
-            {
-                if (look.Prop == null)
-                {
-                    return;
-                }
-
-                Color color = look.Prop == "pail" ? Palette.JackOrange : look.Prop == "bag" ? Palette.WarmPaper : Palette.CandyCornYellow;
-                var prop = Part(look.Prop == "bag" ? PrimitiveType.Cube : PrimitiveType.Cylinder, _armR, "Prop_" + look.Prop,
-                    new Vector3(0f, -h * 0.32f, 0f), new Vector3(h * 0.13f, h * 0.07f, h * 0.13f), color, materials, true);
-                if (look.Prop == "lantern" && materials != null)
-                {
-                    prop.sharedMaterial = materials.Glow(Palette.CandyCornYellow, 1.2f);
-                }
             }
 
             public override void Animate(float time, float speed, WalkerGesture gesture, float dt)
             {
-                float stride = speed > 0.05f ? Mathf.Sin(time * Mathf.PI * 2f * (1.6f + speed * 0.4f)) : 0f;
-                float swing = 28f * Mathf.Clamp01(speed / 1.1f);
-                _legL.localRotation = Quaternion.Euler(stride * swing, 0f, 0f);
-                _legR.localRotation = Quaternion.Euler(-stride * swing, 0f, 0f);
-                float bob = speed > 0.05f ? Mathf.Abs(stride) * 0.03f * _height : Mathf.Sin(time * 1.7f) * 0.006f;
-                _torso.localPosition = new Vector3(0f, _height * 0.36f + bob, 0f);
-                _head.localPosition = new Vector3(0f, _height * 0.8f + bob, 0f);
-                float armL = -stride * swing * 0.8f;
-                float armR = stride * swing * 0.8f;
-                float headTilt = 0f;
-                switch (gesture)
-                {
-                    case WalkerGesture.HoldOut:
-                        armR = -70f;
-                        armL = -20f;
-                        break;
-                    case WalkerGesture.Cheer:
-                        float hop = Mathf.Abs(Mathf.Sin(time * 9f));
-                        armL = armR = -165f + hop * 15f;
-                        _torso.localPosition += new Vector3(0f, hop * 0.05f, 0f);
-                        _head.localPosition += new Vector3(0f, hop * 0.05f, 0f);
-                        break;
-                    case WalkerGesture.Look:
-                        headTilt = -12f;
-                        break;
-                    case WalkerGesture.Wait:
-                        headTilt = Mathf.Sin(time * 0.8f) * 6f;
-                        break;
-                }
-
-                _armL.localRotation = Quaternion.Euler(armL, 0f, 0f);
-                _armR.localRotation = Quaternion.Euler(armR, 0f, 0f);
-                _head.localRotation = Quaternion.Euler(headTilt, gesture == WalkerGesture.Wait ? Mathf.Sin(time * 0.5f) * 20f : 0f, 0f);
+                float stride = speed > 0.05f ? Mathf.Sin(time * Mathf.PI * 2f * 1.8f) * 28f : 0f;
+                _legL.localRotation = Quaternion.Euler(stride, 0f, 0f);
+                _legR.localRotation = Quaternion.Euler(-stride, 0f, 0f);
             }
 
             protected override void ApplyDetail(WalkerDetail detail)
             {
-                bool shown = detail != WalkerDetail.Hidden;
                 foreach (var r in _all)
                 {
-                    r.enabled = shown;
-                }
-
-                if (detail == WalkerDetail.Standee)
-                {
-                    // Far away: the limbs go (a flat paper read of the body), and nothing animates.
-                    foreach (var r in _limbs)
-                    {
-                        r.enabled = false;
-                    }
+                    r.enabled = detail != WalkerDetail.Hidden;
                 }
             }
         }

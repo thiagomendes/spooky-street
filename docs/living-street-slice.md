@@ -14,7 +14,7 @@ quarteirão do mistério ao mesmo tempo, sempre longe das pistas.
 **O que a criança faz:** toca a campainha de cada casa. Cada uma abre de um jeito: o Sr. Fogg escancara a porta com
 um tranco, a Vovó Pearl abre devagar e a luz da varanda fica mais quente, e os Abbott aparecem os dois juntos dando
 pulinhos. Na segunda visita chamam a Pip pelo nome, na terceira fazem outra brincadeira. Na mesa das lanternas ela
-escolhe uma forma (lua, morcego, estrela, abóbora) e uma cor; a lanterna fica acesa na varanda dela e, a partir daí,
+escolhe uma forma (morcego, gato, fantasminha, folha) e uma cor; a lanterna fica acesa na varanda dela e, a partir daí,
 os grupos passam a tocar a campainha da Pip, e ela entrega um doce. O caderno ganha uma página da rua com a varanda e
 os vizinhos que ela já conheceu.
 
@@ -25,25 +25,32 @@ novo" mantém.
 **Para medir no iPhone:** na página "Para adultos" (atrás do portão dos pais), as versões de teste mostram o tempo dos
 quadros (mediana, 95% e 99%) e quanto a multidão custa por quadro.
 
-**O que ainda é provisório:** os corpos das pessoas (bonecos simples até o kit de fantasias chegar), o som da
-campainha (um sininho já aprovado no lugar do som novo) e os vizinhos não têm voz própria.
+**Quem anda na rua:** as crianças e os adultos fantasiados do kit novo (fantasminha de lençol, esqueleto, gatinhos,
+robô de papelão, milho doce, rainha e rei de coroa de papel), cada um uma peça só, andando no passo da própria
+animação.
+
+**O que ainda é provisório:** as portas, os vizinhos (com roupa de casa, feitos de peças do kit), a mesa e as
+lanternas são peças simples até a arte delas; o som da campainha é um sininho já aprovado no lugar do som novo; os
+vizinhos não têm voz própria.
 
 ## 1. What was built
 
 | §9 phase 1 item | Where | State |
 |---|---|---|
 | Core crowd clock, loops, yield rule, exclusion zones, tests at 30/60 fps | `Core/LivingStreet/Crowd.cs`, `CrowdRoutes.cs`, `LivingStreetRules.cs` | done |
-| Crowd kit v1 (bodies, costumes, clips) | other agent, `feature/living-street-crowd-art` | swap point ready (§4); placeholders until then |
+| Crowd kit v1 (bodies, costumes, clips) | merged from main (`Core/Crowd/CrowdKit.cs`, `docs/living-street-crowd-art.md`); wired in `CrowdKitBodyFactory` | done: 8 of the 9 recipes walk |
 | East lane: three porch houses, lane extension, the Green's first corner, hedge gap, route and sightline tests | `Core/LivingStreet/LivingStreetLayout.cs`, `Runtime/LivingStreet/LivingStreetSet.cs`, `EnvironmentLayout`, `CollisionRules`, `GreyboxBuilder` | done (houses reuse the street set's reviewed porch houses) |
 | Doors: bell, three gags, treats, first and repeat lines, pt-BR | `NeighbourDoors.cs`, `LivingStreetStage.cs` | done; treat is a flight to Pip, not yet shown in her pail; no vignettes or voices for the neighbours (§6) |
 | Lantern table: shape and colour picker, Pip's porch lantern, groups ringing Pip's bell, her treat | `Neighbourhood.cs` (`LanternCraft`), `LanternView.cs`, `Crowd` porch excursion | done |
 | `neighbourhood.json` and the street page | `NeighbourhoodStore`, `NotebookView.Street.cs`, `StreetPageRules` | done |
-| Performance: LOD1, standees, culling, quality tiers, frame-time readout | `CrowdBudget.cs` (`CrowdBudget`, `FrameTimeStats`, `FrameReadoutPolicy`), `CrowdView.cs`, grown-ups' page | culling, 15 Hz band, standee band and tiers done; real LOD1 meshes and paper standees come with the kit |
+| Performance: LOD1, standees, culling, quality tiers, frame-time readout | `CrowdBudget.cs` (`CrowdBudget`, `FrameTimeStats`, `FrameReadoutPolicy`), `CrowdView.cs`, grown-ups' page | culling, LOD1 (the kit's `_Lo` meshes) from 12 m and beyond the animated cap, 15 Hz animation band, tiers done; flat paper standees are not made (the kit has none): far walkers show LOD1 without animation |
 | CI run, frames, evidence doc | this file | see §8 |
 
 ## 2. The map change
 
-- The heart's east hedge opens at z −3…+3 (`EnvironmentLayout.EastGapMinZ/MaxZ`). The two modules beside the gap
+- The heart's east hedge opens over 6 m at z −5.4…+0.6 (`EnvironmentLayout.EastGapMinZ/MaxZ`), not the design's −3…+3:
+  keepsake paper bat 17 perches on that hedge's top at z = 1 and the 30 bats stay as tested (CI run 201 caught it).
+  The two modules beside the gap
   overlap their neighbours and step out 12 cm so they never z-fight. The north hedge stays closed: the owl house's yard,
   the side yard and the treehouse get no new approach.
 - The east lane runs x 22…46, z −14…+18. It is the largest area that stays inside the painted sky dome (radius 52 m
@@ -76,23 +83,35 @@ campainha (um sininho já aprovado no lugar do som novo) e os vizinhos não têm
 | Save | `neighbourhood.json` beside the case and street files, same atomic write, previous copy and recovery; a newer schema is kept untouched. New game clears it (and asks first if it holds anything); Replay keeps it (D31). |
 | The case's tests | Unchanged except the two that described the closed east edge: the hedge coverage test now proves the gap and the closed rest, and the boundary run test uses `InsideWalls`. |
 
-## 4. The crowd kit swap point
+## 4. The crowd kit in the street
 
-`Runtime/LivingStreet/CrowdBodies.cs`:
+`Runtime/LivingStreet/CrowdBodies.cs`, following `docs/living-street-crowd-art.md`:
 
-- `ICrowdBodyFactory.Create(WalkerLook, parent, materials)` returns a `CrowdBody` or null. `CrowdView` asks the kit
-  factory first and falls back to `PlaceholderCrowdBodies`.
-- `CrowdKitBodyFactory` loads `Resources/Models/Crowd/Crowd_<SmallChild|GrownUp>_<costume>` (costume IDs are
-  `CrowdLooks.Costumes`), drives its Animator by hand with the §7 clip names (`Stroll`, `Idle`, `HoldOutPail`,
-  `Cheer`, `Wave`, `LookUp`) and shows an optional `Standee` child beyond 18 m. If `docs/living-street-crowd-art.md`
-  names things differently, only these constants change.
-- `WalkerLook` (body, costume, palette, prop) is Core data, so the routes already say who wears what.
+- Each walker's look is a kit recipe (`WalkerLook.Recipe`): group A is `CatGrownUp` with `GhostKid` and `CatKid`,
+  group B is `SkeletonGrownUp` with `RobotKid` and `QueenKid`, the strollers are `KingGrownUp` with `CandyCornKid` (a
+  grandpa and grandchild). `SkeletonKid` is the one recipe not walking (the slice keeps 8 walkers).
+- `CrowdKitBodyFactory` instantiates the body's FBX, merges the recipe's parts into one `SkinnedMeshRenderer` per LOD
+  (concatenation remapped onto one bone array, as the shared bind poses allow), destroys the unused parts, and gives the
+  shared Crowd atlas (the glow variant at 0.9 for lantern carriers). Merged meshes are cached per recipe and LOD.
+- The clips (Idle, Walk, Wave, Talk) run on a manual Playables graph per walker: Walk while moving, its speed scaled
+  by ground speed over `CrowdKit.WalkSpeed` (the routes move at exactly that pace, so feet do not slide); Wave for a
+  cheer at Pip's porch; Talk for a stop to look at a porch; Idle otherwise. Culled walkers do no animation work.
+- Neighbours in their doorways are kit grown-up parts in house clothes (`LivingStreetLayout.NeighbourRecipes`), a
+  placeholder until their own art.
+- `ICrowdBodyFactory` stays the swap point; `PlaceholderCrowdBodies` is only the fallback for a checkout without the
+  kit's models.
+- Art gaps (placeholders, swap point `LivingStreetSet.ArtNames`): the door leaf (`LivingStreet_DoorLeaf`) and Pip's
+  lanterns (`LivingStreet_Lantern_<shape>`) are paper primitives until models with those names are committed in
+  `Models/Environment`; the houses reuse the street set's reviewed porch houses; the table is the party table with
+  string lights.
+- D35: the lantern shapes are bat, cat, ghost and leaf (never moon, star or pumpkin); the screen and the street page
+  draw them from paper shapes (`LanternGlyph`).
 
 ## 5. iPhone budget
 
 - Tiers from the URP quality level: high 8 / medium 6 / low 4 animated walkers in view, standees 12 / 8 / 6.
 - Off-screen walkers are not drawn or animated (frustum test per walker); beyond 12 m they animate at 15 Hz, staggered;
-  beyond 18 m, or past the tier's animated cap, they become standees (placeholders drop their limbs).
+  beyond 18 m, or past the tier's animated cap, they show the kit's LOD1 mesh without animation (the "standee" band; flat paper standees are not made).
 - The lane's static pieces are one statically batched root; nothing in it casts a shadow; walkers have a paper disc,
   not a shadow.
 - `CrowdView` times its own work each frame with a stopwatch (logic, culling and posing). Measured cost: §8.
@@ -103,8 +122,8 @@ campainha (um sininho já aprovado no lugar do som novo) e os vizinhos não têm
 
 ## 6. Weak points and what is left
 
-- Placeholder bodies: primitives, about 10 renderers per walker (the kit's one draw call per walker comes with the
-  merged meshes). They read as costumed people at a distance, not as premium art.
+- The door leaves, the neighbours' house clothes, the table pieces and the lanterns are placeholders (see §4).
+- No flat paper standees: beyond 18 m a walker keeps its LOD1 mesh without animation.
 - The doorbell borrows the approved notebook chime; a real bell needs synthesis and the owner's ear (D20.1).
 - Neighbours have no voice or vignette: their lines play as captions. Free-world vignettes are a phase 2 item.
 - The treat flies to Pip's hands; showing it in her pail waits for the pail art.

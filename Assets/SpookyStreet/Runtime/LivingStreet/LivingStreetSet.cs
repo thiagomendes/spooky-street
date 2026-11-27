@@ -36,6 +36,22 @@ namespace SpookyStreet.LivingStreet
         private readonly List<Renderer> _static = new List<Renderer>();
         private MaterialLibrary _materials;
         private Transform _lanternShape;
+        private ModelKit _env;
+
+        /// <summary>
+        /// The swap point for the slice's pieces that have no art yet (living-street §7, crowd-art doc "not done"): when the
+        /// art pass commits a model under these names in <c>Models/Environment</c>, it replaces the paper placeholder.
+        /// </summary>
+        public static class ArtNames
+        {
+            /// <summary>A front door leaf, pivot on its hinge edge at the sill, closed along +X, front toward -Z.</summary>
+            public const string DoorLeaf = "LivingStreet_DoorLeaf";
+
+            /// <summary>Pip's paper lantern in a shape (D35: bat, cat, ghost, leaf), about 0.4 m, paper parts tinted.</summary>
+            public static string Lantern(LanternShape shape) => "LivingStreet_Lantern_" + LanternCraft.ShapeId(shape);
+        }
+        private readonly ICrowdBodyFactory _kitBodies = new CrowdKitBodyFactory();
+        private readonly ICrowdBodyFactory _placeholders = new PlaceholderCrowdBodies();
 
         public Transform StaticRoot { get; private set; }
 
@@ -75,6 +91,7 @@ namespace SpookyStreet.LivingStreet
             StaticRoot.SetParent(transform, false);
 
             var env = materials != null ? new ModelKit(materials, EnvironmentDressing.ModelFolder) { FallbackAtlas = ModelKit.DefaultFallbackAtlas } : null;
+            _env = env;
             var street = materials != null ? new ModelKit(materials, EnvironmentDressing.ModelFolder) { FallbackAtlas = EnvironmentLayout.StreetAtlas } : null;
 
             foreach (var door in LivingStreetLayout.Doors)
@@ -187,7 +204,7 @@ namespace SpookyStreet.LivingStreet
 
             // Three folded lanterns waiting on the table: a moon, a star and a pumpkin, in paper colours.
             var table = new Vector3(LivingStreetLayout.TableX, 1.12f, LivingStreetLayout.TableZ);
-            var shapes = new[] { LanternShape.Moon, LanternShape.Star, LanternShape.Pumpkin };
+            var shapes = new[] { LanternShape.Cat, LanternShape.Ghost, LanternShape.Leaf };
             var colours = new[] { LanternColour.Yellow, LanternColour.Plum, LanternColour.Orange };
             for (int i = 0; i < shapes.Length; i++)
             {
@@ -244,17 +261,46 @@ namespace SpookyStreet.LivingStreet
             root.SetParent(parent, false);
             var colour = Palette.Hex(LanternCraft.ColourRgb(lantern.Colour));
             var glow = _materials != null ? _materials.Glow(colour, GlowPipLantern) : null;
+
+            // Swap point: the lantern's own model when the art pass commits it (tinted with the chosen paper colour).
+            var art = _env != null ? _env.Spawn(ArtNames.Lantern(lantern.Shape), root, Vector3.zero, 0f, size) : null;
+            if (art != null)
+            {
+                foreach (var r in art.GetComponentsInChildren<Renderer>(true))
+                {
+                    r.sharedMaterial = glow != null ? glow : r.sharedMaterial;
+                    r.shadowCastingMode = ShadowCastingMode.Off;
+                }
+
+                return root;
+            }
+
             var ink = Palette.InkBlack;
             float s = 0.38f * size;
             switch (lantern.Shape)
             {
-                case LanternShape.Moon:
-                    // A crescent: a glowing disc with a darker bite.
-                    Primitive(PrimitiveType.Cylinder, root, "Moon", Vector3.zero, new Vector3(s, 0.04f * size, s), colour, glow)
-                        .transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-                    Primitive(PrimitiveType.Cylinder, root, "Bite", new Vector3(s * 0.28f, s * 0.1f, -0.01f),
-                        new Vector3(s * 0.8f, 0.045f * size, s * 0.8f), Palette.NightViolet, null).transform.localRotation =
-                        Quaternion.Euler(90f, 0f, 0f);
+                case LanternShape.Cat:
+                    // A round head with two pointed ears and two ink eyes.
+                    Primitive(PrimitiveType.Sphere, root, "Head", Vector3.zero, new Vector3(s * 0.7f, s * 0.62f, s * 0.55f), colour, glow);
+                    for (int side = -1; side <= 1; side += 2)
+                    {
+                        Primitive(PrimitiveType.Cube, root, "Ear", new Vector3(side * s * 0.2f, s * 0.3f, 0f),
+                            new Vector3(s * 0.2f, s * 0.2f, 0.05f * size), colour, glow).transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+                        Primitive(PrimitiveType.Sphere, root, "Eye", new Vector3(side * s * 0.12f, s * 0.04f, -s * 0.27f),
+                            Vector3.one * s * 0.09f, ink, null);
+                    }
+
+                    break;
+                case LanternShape.Ghost:
+                    // A friendly sheet ghost: a round top over a short sheet, two ink eyes.
+                    Primitive(PrimitiveType.Sphere, root, "Top", new Vector3(0f, s * 0.12f, 0f), new Vector3(s * 0.6f, s * 0.6f, s * 0.5f), colour, glow);
+                    Primitive(PrimitiveType.Cylinder, root, "Sheet", new Vector3(0f, -s * 0.12f, 0f), new Vector3(s * 0.6f, s * 0.22f, s * 0.5f), colour, glow);
+                    for (int side = -1; side <= 1; side += 2)
+                    {
+                        Primitive(PrimitiveType.Sphere, root, "Eye", new Vector3(side * s * 0.11f, s * 0.14f, -s * 0.24f),
+                            Vector3.one * s * 0.09f, ink, null);
+                    }
+
                     break;
                 case LanternShape.Bat:
                     Primitive(PrimitiveType.Sphere, root, "Body", Vector3.zero, new Vector3(s * 0.55f, s * 0.6f, s * 0.5f), colour, glow);
@@ -266,18 +312,18 @@ namespace SpookyStreet.LivingStreet
                     }
 
                     break;
-                case LanternShape.Star:
-                    for (int k = 0; k < 2; k++)
+                default:
+                    // A three-lobed maple leaf, flat paper, with its stem.
+                    Primitive(PrimitiveType.Cube, root, "Lobe", new Vector3(0f, s * 0.1f, 0f), new Vector3(s * 0.4f, s * 0.4f, 0.05f * size),
+                        colour, glow).transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+                    for (int side = -1; side <= 1; side += 2)
                     {
-                        Primitive(PrimitiveType.Cube, root, "Star" + k, Vector3.zero, new Vector3(s * 0.62f, s * 0.62f, 0.06f * size),
-                            colour, glow).transform.localRotation = Quaternion.Euler(0f, 0f, 45f * k);
+                        Primitive(PrimitiveType.Cube, root, "Lobe", new Vector3(side * s * 0.2f, -s * 0.03f, 0f),
+                            new Vector3(s * 0.3f, s * 0.3f, 0.05f * size), colour, glow).transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
                     }
 
-                    break;
-                default:
-                    Primitive(PrimitiveType.Sphere, root, "Pumpkin", Vector3.zero, new Vector3(s * 0.75f, s * 0.6f, s * 0.75f), colour, glow);
-                    Primitive(PrimitiveType.Cylinder, root, "Stem", new Vector3(0f, s * 0.34f, 0f), new Vector3(0.04f * size, 0.05f * size, 0.04f * size),
-                        Palette.Hex(0x4F7A3A), null);
+                    Primitive(PrimitiveType.Cylinder, root, "Stem", new Vector3(0f, -s * 0.32f, 0f), new Vector3(0.02f * size, s * 0.12f, 0.02f * size),
+                        Palette.Hex(0x6B5A4E), null);
                     break;
             }
 
@@ -311,7 +357,8 @@ namespace SpookyStreet.LivingStreet
                 door.WallLocalZ - 0.08f);
             Color paint = door.Id == LivingStreetLayout.Abbotts ? Palette.Hex(0xB5602A)
                 : door.Id == LivingStreetLayout.Pearl ? Palette.HauntedPurple : Palette.Plum;
-            var leaf = Primitive(PrimitiveType.Cube, rig.Hinge, "Leaf",
+            var leafArt = _env != null ? _env.Spawn(ArtNames.DoorLeaf, rig.Hinge, Vector3.zero) : null;
+            var leaf = leafArt != null ? leafArt.GetComponentInChildren<Renderer>() : Primitive(PrimitiveType.Cube, rig.Hinge, "Leaf",
                 new Vector3(LivingStreetLayout.DoorWidth * 0.5f, LivingStreetLayout.DoorHeight * 0.5f, 0f),
                 new Vector3(LivingStreetLayout.DoorWidth, LivingStreetLayout.DoorHeight, 0.05f), paint, null);
             rig.Leaf = leaf.transform;
@@ -328,21 +375,14 @@ namespace SpookyStreet.LivingStreet
                 new Vector3(door.DoorLocalX + LivingStreetLayout.DoorWidth * 0.5f + 0.18f, LivingStreetLayout.DoorSill + 1.1f, door.WallLocalZ - 0.03f),
                 new Vector3(0.07f, 0.01f, 0.07f), Palette.CandyCornYellow, null).transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
 
-            // The neighbour(s): placeholder grown-ups standing in the doorway, facing the street.
-            var bodies = new PlaceholderCrowdBodies();
-            var looks = door.Id == LivingStreetLayout.Fogg
-                ? new[] { new WalkerLook(CrowdBodyKind.GrownUp, CrowdLooks.PatchworkGiant, 0, null) }
-                : door.Id == LivingStreetLayout.Pearl
-                    ? new[] { new WalkerLook(CrowdBodyKind.GrownUp, CrowdLooks.WitchPlum, 1, null) }
-                    : new[]
-                    {
-                        new WalkerLook(CrowdBodyKind.GrownUp, CrowdLooks.FrogPrince, 0, null),
-                        new WalkerLook(CrowdBodyKind.GrownUp, CrowdLooks.CandyCorn, 0, null),
-                    };
-            for (int i = 0; i < looks.Length; i++)
+            // The neighbour(s) in the doorway, facing the street: the crowd kit's grown-up in house clothes (their own art
+            // comes later; the kit factory is the swap point), the placeholder if the kit is missing.
+            var ids = LivingStreetLayout.NeighboursAt(door);
+            for (int i = 0; i < ids.Count; i++)
             {
-                var body = bodies.Create(looks[i], frame, _materials);
-                float across = looks.Length == 1 ? 0.18f : (i == 0 ? -0.22f : 0.38f);
+                var look = new WalkerLook(ids[i]);
+                var body = _kitBodies.Create(look, frame, _materials) ?? _placeholders.Create(look, frame, _materials);
+                float across = ids.Count == 1 ? 0.18f : (i == 0 ? -0.22f : 0.38f);
                 var rest = new Vector3(door.DoorLocalX + across, LivingStreetLayout.DoorSill, door.WallLocalZ - 0.3f);
                 body.Root.localPosition = rest;
                 // Bodies face +Z in their own frame; the house front faces -Z, so the neighbour turns to the street.
@@ -375,7 +415,7 @@ namespace SpookyStreet.LivingStreet
 
                     float hop = rig.Door.Gag.Hop ? Mathf.Abs(Mathf.Sin((rig.Clock + i * 0.25f) * 6f)) * 0.12f : 0f;
                     body.Root.localPosition = rig.FigureRest[i] + Vector3.up * hop;
-                    body.Animate(rig.Clock, 0f, doors.LastRinger(id) == Ringer.Group ? WalkerGesture.Cheer : WalkerGesture.HoldOut, dt);
+                    body.Animate(rig.Clock, 0f, doors.LastRinger(id) == Ringer.Group ? WalkerGesture.Cheer : WalkerGesture.Look, dt);
                 }
 
                 if (rig.Lamp != null && rig.LampBright != null)

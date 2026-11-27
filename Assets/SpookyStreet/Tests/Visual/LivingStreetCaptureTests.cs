@@ -13,8 +13,8 @@ using UnityEngine.TestTools;
 namespace SpookyStreet.Tests.Visual
 {
     /// <summary>
-    /// The living street's test slice (docs/living-street-slice.md): 95 the east lane with walkers on their loops, 96 a
-    /// door answering Pip's ring (Mr. Fogg in his doorway), 97 Pip's lit porch lantern with a group at her bell. Review
+    /// The living street's test slice (docs/living-street-slice.md): 94 the east lane with walkers on their loops, 95 a
+    /// door answering Pip's ring (Mr. Fogg in his doorway), 96 Pip's lit porch lantern with a group at her bell. Review
     /// frames: the lantern table's screen, the Green's corner, the heart with walkers passing south of the plaza, and a
     /// walker close up (placeholder bodies until the crowd kit lands).
     /// </summary>
@@ -69,6 +69,11 @@ namespace SpookyStreet.Tests.Visual
 
                 yield return null;
             }
+        }
+
+        private static IEnumerator Null()
+        {
+            yield return null;
         }
 
         private static IEnumerator StartGame()
@@ -148,28 +153,30 @@ namespace SpookyStreet.Tests.Visual
             yield return StartGame();
             Assert.IsNotNull(Stage);
 
-            // 95: the east lane from the hedge gap, the porch houses and walkers on their loops.
+            // 94: the east lane from the hedge gap, the porch houses and walkers on their loops.
             PlacePip(new Vector3(23.4f, 0.1f, -0.6f), new Vector3(34f, 0f, 0f));
             var brain = Frame(new Vector3(21.2f, 2.4f, -2.2f), new Vector3(34f, 1.4f, 1.2f));
             yield return RunCrowdUntil(() => WalkersInView(26f) >= 5, 40f);
             yield return Wait(0.3f);
-            Debug.Log($"[LivingStreetCaptureTests] 95: {WalkersInView(26f)} walkers in view");
-            yield return Shot("95_living_street_walkers", Director.UiCanvas);
+            Debug.Log($"[LivingStreetCaptureTests] 94: {WalkersInView(26f)} walkers in view");
+            Director.Captions.Clear(); // the arrival's knock caption belongs to the case, not this frame
+            yield return Null();
+            yield return Shot("94_living_street_walkers", Director.UiCanvas);
 
             // Review: the heart with walkers passing south of the plaza (never near a clue, never in the bench's view).
             Frame(new Vector3(4f, 2.6f, -12f), new Vector3(14f, 1f, -3.5f));
-            yield return RunCrowdUntil(() => Stage.Crowd.Crowd.WalkersInHeart >= 2, 40f);
+            yield return RunCrowdUntil(() => Stage.Crowd.Clock.WalkersInHeart >= 2, 40f);
             yield return Wait(0.2f);
             yield return Shot("r_living_street_heart", Director.UiCanvas, ReviewWidth, ReviewHeight);
 
-            // 96: Pip rings Mr. Fogg's bell; he flings the door open and stands in the lit doorway.
+            // 95: Pip rings Mr. Fogg's bell; he flings the door open and stands in the lit doorway.
             var fogg = LivingStreetLayout.Door(LivingStreetLayout.Fogg);
             PlacePip(new Vector3(fogg.StandX, 0.1f, fogg.StandZ - 0.2f), new Vector3(fogg.DoorX, 1f, fogg.DoorZ));
             yield return Wait(0.6f);
             Assert.IsTrue(Stage.Ring(fogg));
             yield return Wait(fogg.Gag.OpenSeconds + 0.6f);
             Frame(new Vector3(fogg.StandX + 2.4f, 2.1f, fogg.StandZ - 3.4f), new Vector3(fogg.DoorX - 0.2f, 1.5f, fogg.DoorZ));
-            yield return Shot("96_living_street_door", Director.UiCanvas);
+            yield return Shot("95_living_street_door", Director.UiCanvas);
 
             // Review: the Abbotts answer together (two in the doorway).
             var abbotts = LivingStreetLayout.Door(LivingStreetLayout.Abbotts);
@@ -199,13 +206,13 @@ namespace SpookyStreet.Tests.Visual
             yield return Wait(0.3f);
             Assert.IsTrue(Stage.Set.PorchLanternLit);
 
-            // 97: Pip on her porch under her lit lantern; a group at her steps rings her bell.
+            // 96: Pip on her porch under her lit lantern; a group at her steps rings her bell.
             PlacePip(new Vector3(0.2f, 0.62f, -13.6f), new Vector3(0.3f, 0f, -10f));
             Frame(new Vector3(-3.6f, 2.0f, -9.0f), new Vector3(0.0f, 1.3f, -12.6f));
-            yield return RunCrowdUntil(() => Stage.Crowd.Crowd.WaitingAtPorch >= 0, 90f);
-            Assert.GreaterOrEqual(Stage.Crowd.Crowd.WaitingAtPorch, 0, "a group came to Pip's bell");
+            yield return RunCrowdUntil(() => Stage.Crowd.Clock.WaitingAtPorch >= 0, 90f);
+            Assert.GreaterOrEqual(Stage.Crowd.Clock.WaitingAtPorch, 0, "a group came to Pip's bell");
             yield return Wait(0.8f);
-            yield return Shot("97_living_street_porch", Director.UiCanvas);
+            yield return Shot("96_living_street_porch", Director.UiCanvas);
 
             // Review: a walker close up (placeholder body), and the treat handed over.
             Assert.IsTrue(Stage.GiveTreat());
@@ -215,7 +222,7 @@ namespace SpookyStreet.Tests.Visual
             yield return Shot("r_living_street_walker", Director.UiCanvas, ReviewWidth, ReviewHeight);
 
             // Review: the notebook's street page (Pip's porch with her lantern, the neighbours she has met).
-            yield return Wait(Crowd.CheerSeconds);
+            yield return Wait(CrowdClock.CheerSeconds);
             Director.OpenNotebook();
             yield return null;
             var notebook = Director.Notebook;

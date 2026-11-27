@@ -19,7 +19,7 @@ namespace SpookyStreet.LivingStreet
     /// The living street's test slice in play (docs/living-street.md §9 phase 1, D33/D34; docs/living-street-slice.md):
     /// the east lane, the crowd on its loops, the three doors that answer a ring, the paper lantern table, Pip's lantern
     /// on her porch with groups ringing her bell once it is lit, the neighbourhood file and the frame-time readout. The
-    /// case director ticks it and owns the modal state; every rule lives in Core (<see cref="Crowd"/>,
+    /// case director ticks it and owns the modal state; every rule lives in Core (<see cref="CrowdClock"/>,
     /// <see cref="NeighbourDoors"/>, <see cref="NeighbourhoodStore"/>, <see cref="LivingStreetRules"/>).
     /// </summary>
     public sealed class LivingStreetStage : MonoBehaviour
@@ -136,7 +136,7 @@ namespace SpookyStreet.LivingStreet
                 VerbKey = Keys.VerbTreat,
                 IconName = UiSpriteCatalog.IconTalk,
                 Marker = new Vector3(LivingStreetLayout.PorchStandX, 1.7f, LivingStreetLayout.PorchStandZ),
-                Offered = feet => Allowed() && Crowd.Crowd.WaitingAtPorch >= 0 && LivingStreetLayout.TreatInReach(feet.x, feet.z),
+                Offered = feet => Allowed() && Crowd.Clock.WaitingAtPorch >= 0 && LivingStreetLayout.TreatInReach(feet.x, feet.z),
                 Interact = () => GiveTreat(),
             });
         }
@@ -356,8 +356,8 @@ namespace SpookyStreet.LivingStreet
         /// <summary>Pip hands the waiting group a sweet from her bowl (the Use button on her porch; tests call it).</summary>
         public bool GiveTreat()
         {
-            int group = Crowd.Crowd.WaitingAtPorch;
-            if (group < 0 || !Crowd.Crowd.Serve(group))
+            int group = Crowd.Clock.WaitingAtPorch;
+            if (group < 0 || !Crowd.Clock.Serve(group))
             {
                 return false;
             }
@@ -479,7 +479,7 @@ namespace SpookyStreet.LivingStreet
                 () => new object[] { frames.Median.ToString("F1"), frames.P95.ToString("F1"), frames.P99.ToString("F1") });
             var crowd = Crowd;
             sheet.Paragraph(Keys.FrameCrowd, 26, null, null, 0f,
-                () => new object[] { frames.CrowdMs.ToString("F2"), crowd.Crowd.WalkerCount, crowd.Drawn });
+                () => new object[] { frames.CrowdMs.ToString("F2"), crowd.Clock.WalkerCount, crowd.Drawn });
         }
     }
 }

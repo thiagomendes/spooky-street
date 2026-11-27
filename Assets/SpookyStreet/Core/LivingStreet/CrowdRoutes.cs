@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SpookyStreet.Core.Crowd;
 
 namespace SpookyStreet.Core.LivingStreet
 {
@@ -63,31 +64,29 @@ namespace SpookyStreet.Core.LivingStreet
     }
 
     /// <summary>
-    /// One walker's look: a base body and a costume from the kit's unreserved themes (§3.4 rule 6, §7), a palette
-    /// variant and a hand prop. The runtime turns this into a body: placeholders now, the crowd kit's merged skinned
-    /// meshes later (the swap point is the runtime's <c>ICrowdBodyFactory</c>).
+    /// One walker's look: a crowd kit recipe (<see cref="CrowdKit.Walkers"/>, the art contract of
+    /// docs/living-street-crowd-art.md), whose parts the runtime merges into one skinned mesh. The swap point for other
+    /// bodies is the runtime's <c>ICrowdBodyFactory</c>.
     /// </summary>
     public readonly struct WalkerLook
     {
-        public WalkerLook(CrowdBodyKind body, string costume, int palette, string prop)
+        public WalkerLook(string recipe)
         {
-            Body = body;
-            Costume = costume;
-            Palette = palette;
-            Prop = prop;
+            Recipe = recipe;
         }
 
-        public CrowdBodyKind Body { get; }
+        /// <summary>The kit recipe id ("GhostKid").</summary>
+        public string Recipe { get; }
 
-        /// <summary>Costume theme ID (<see cref="CrowdLooks.Costumes"/>).</summary>
-        public string Costume { get; }
+        /// <summary>The kit recipe (null for an unknown id).</summary>
+        public CrowdWalkerRecipe KitRecipe => CrowdKit.Find(Recipe) ?? LivingStreetLayout.NeighbourRecipe(Recipe);
 
-        public int Palette { get; }
+        public CrowdBodyKind Body => KitRecipe != null && KitRecipe.IsGrownUp ? CrowdBodyKind.GrownUp : CrowdBodyKind.SmallChild;
 
-        /// <summary>Hand prop ID ("pail", "bag", "lantern" or null).</summary>
-        public string Prop { get; }
+        /// <summary>The Walk clip's own ground speed for this body (move at it, or scale the clip, so feet never slide).</summary>
+        public float WalkSpeed => CrowdKit.WalkSpeed(KitRecipe != null ? KitRecipe.Model : CrowdKit.ChildModel);
 
-        public override string ToString() => Body + "/" + Costume + "/" + Palette + "/" + (Prop ?? "-");
+        public override string ToString() => Recipe;
     }
 
     /// <summary>A member's place in its group: how far behind the group's point on the loop and how far to its side.</summary>
@@ -164,28 +163,23 @@ namespace SpookyStreet.Core.LivingStreet
         }
     }
 
-    /// <summary>The costume themes the crowd may wear, and the looks the game reserves (living-street §3.4 rule 6).</summary>
+    /// <summary>The looks the crowd may wear: the kit's recipes, none of them reserved (living-street §3.4 rule 6).</summary>
     public static class CrowdLooks
     {
-        public const string GhostSheet = "ghost_sheet";
-        public const string Skeleton = "skeleton";
-        public const string BlackCat = "black_cat";
-        public const string WitchGreen = "witch_green";
-        public const string WitchPlum = "witch_plum";
-        public const string Spider = "spider";
-        public const string CandyCorn = "candy_corn";
-        public const string Robot = "cardboard_robot";
-        public const string Bumblebee = "bumblebee";
-        public const string FrogPrince = "frog_prince";
-        public const string PaperCrown = "paper_crown";
-        public const string PatchworkGiant = "patchwork_giant";
-
-        /// <summary>The kit's unreserved themes (§7).</summary>
-        public static readonly IReadOnlyList<string> Costumes = new[]
+        /// <summary>The kit's recipe ids.</summary>
+        public static IReadOnlyList<string> Costumes
         {
-            GhostSheet, Skeleton, BlackCat, WitchGreen, WitchPlum, Spider, CandyCorn, Robot, Bumblebee, FrogPrince, PaperCrown,
-            PatchworkGiant,
-        };
+            get
+            {
+                var ids = new List<string>();
+                foreach (var walker in CrowdKit.Walkers)
+                {
+                    ids.Add(walker.Id);
+                }
+
+                return ids;
+            }
+        }
 
         /// <summary>
         /// Looks no crowd costume may use: the case's clue materials, the heroes' and future residents' themes, and the
@@ -197,30 +191,40 @@ namespace SpookyStreet.Core.LivingStreet
             "dragon", "pirate", "gingerbread_witch", "wizard", "ghost_in_overalls", "owl", "fox", "moth", "moon", "bell",
         };
 
-        public static bool IsAllowed(string costume)
+        /// <summary>True for a kit recipe none of whose parts carries a reserved word.</summary>
+        public static bool IsAllowed(string recipe)
         {
-            if (string.IsNullOrEmpty(costume))
+            if (string.IsNullOrEmpty(recipe))
+            {
+                return false;
+            }
+
+            var walker = CrowdKit.Find(recipe) ?? LivingStreetLayout.NeighbourRecipe(recipe);
+            if (walker == null)
             {
                 return false;
             }
 
             foreach (string reserved in Reserved)
             {
-                if (costume.IndexOf(reserved, StringComparison.Ordinal) >= 0)
+                if (recipe.IndexOf(reserved, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     return false;
                 }
             }
 
-            foreach (string allowed in Costumes)
+            foreach (string part in walker.Parts)
             {
-                if (string.Equals(allowed, costume, StringComparison.Ordinal))
+                foreach (string word in CrowdKit.ReservedWords)
                 {
-                    return true;
+                    if (part.IndexOf(word, StringComparison.Ordinal) >= 0)
+                    {
+                        return false;
+                    }
                 }
             }
 
-            return false;
+            return true;
         }
     }
 
@@ -233,8 +237,11 @@ namespace SpookyStreet.Core.LivingStreet
     /// </summary>
     public static class CrowdRoutes
     {
-        public const float GroupSpeed = 1.05f;
-        public const float StrollSpeed = 1.15f;
+        /// <summary>Groups walk at the kit's Walk clip pace (the child's and the grown-up's match), so feet never slide.</summary>
+        public static readonly float GroupSpeed = CrowdKit.WalkSpeed(CrowdKit.ChildModel);
+
+        /// <summary>The strolling pair keeps the grown-up's Walk pace.</summary>
+        public static readonly float StrollSpeed = CrowdKit.WalkSpeed(CrowdKit.AdultModel);
 
         private const float N = LivingStreetLayout.NorthLineZ;
         private const float S = LivingStreetLayout.SouthLineZ;
@@ -288,43 +295,45 @@ namespace SpookyStreet.Core.LivingStreet
         private static RouteNode[] StrollLoop() => new[]
         {
             new RouteNode(43.0f, 0.4f),
-            new RouteNode(23.4f, 0.4f, RouteNodeKind.HeartGate),
-            new RouteNode(18.0f, -2.6f),
+            new RouteNode(24.6f, 0.4f),
+            new RouteNode(23.4f, -2.2f, RouteNodeKind.HeartGate),
+            new RouteNode(18.0f, -3.2f),
             new RouteNode(11.2f, -4.0f),
             new RouteNode(11.6f, -6.4f),
             new RouteNode(17.2f, -6.0f),
-            new RouteNode(21.0f, -0.6f),
-            new RouteNode(23.6f, -0.4f, RouteNodeKind.HeartExit),
+            new RouteNode(21.0f, -3.0f),
+            new RouteNode(23.6f, -2.8f, RouteNodeKind.HeartExit),
+            new RouteNode(24.8f, -0.4f),
             new RouteNode(30.8f, -0.4f),
             new RouteNode(31.0f, -0.4f, RouteNodeKind.Look, null, 180f, 4f),
             new RouteNode(43.0f, -0.4f),
             new RouteNode(43.0f, 0.4f),
         };
 
-        private static WalkerLook Kid(string costume, int palette, string prop) =>
-            new WalkerLook(CrowdBodyKind.SmallChild, costume, palette, prop);
+        private static WalkerLook Look(string recipe) => new WalkerLook(recipe);
 
-        private static WalkerLook Adult(string costume, int palette) => new WalkerLook(CrowdBodyKind.GrownUp, costume, palette, null);
-
-        /// <summary>The slice's three groups, eight walkers.</summary>
+        /// <summary>
+        /// The slice's three groups, eight walkers, all from the crowd kit: a cat mum with a ghost and a cat child, a
+        /// skeleton dad with a robot and a little queen, and a paper-crown grandpa strolling with a candy-corn grandchild.
+        /// </summary>
         public static readonly IReadOnlyList<CrowdRoute> All = new[]
         {
             new CrowdRoute("group_a", GroupSpeed, DoorCircuit(), PorchExcursion(), new[]
             {
-                new MemberSlot(0f, -0.35f, Kid(CrowdLooks.GhostSheet, 0, "pail")),
-                new MemberSlot(0.45f, 0.35f, Kid(CrowdLooks.BlackCat, 1, "bag")),
-                new MemberSlot(1.3f, 0f, Adult(CrowdLooks.WitchGreen, 0)),
+                new MemberSlot(0f, -0.35f, Look("GhostKid")),
+                new MemberSlot(0.45f, 0.35f, Look("CatKid")),
+                new MemberSlot(1.3f, 0f, Look("CatGrownUp")),
             }, 3f),
             new CrowdRoute("group_b", GroupSpeed, DoorCircuit(), PorchExcursion(), new[]
             {
-                new MemberSlot(0f, 0.35f, Kid(CrowdLooks.Robot, 0, "pail")),
-                new MemberSlot(0.4f, -0.35f, Kid(CrowdLooks.Bumblebee, 0, "lantern")),
-                new MemberSlot(1.3f, 0f, Adult(CrowdLooks.Skeleton, 1)),
+                new MemberSlot(0f, 0.35f, Look("RobotKid")),
+                new MemberSlot(0.4f, -0.35f, Look("QueenKid")),
+                new MemberSlot(1.3f, 0f, Look("SkeletonGrownUp")),
             }, 33f),
             new CrowdRoute("strollers", StrollSpeed, StrollLoop(), null, new[]
             {
-                new MemberSlot(0f, -0.38f, Adult(CrowdLooks.PaperCrown, 0)),
-                new MemberSlot(0.15f, 0.38f, Adult(CrowdLooks.Spider, 1)),
+                new MemberSlot(0f, -0.38f, Look("KingGrownUp")),
+                new MemberSlot(0.15f, 0.38f, Look("CandyCornKid")),
             }, 8f),
         };
 

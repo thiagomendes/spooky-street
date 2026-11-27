@@ -375,9 +375,12 @@ namespace SpookyStreet.Core.World
         public const float HedgeLength = 6f;
         public const float HedgeDepth = 0.8f;
 
-        /// <summary>The gap in the east hedge where the lane runs on to the east lane (living-street §2.2, D34).</summary>
-        public const float EastGapMinZ = -3f;
-        public const float EastGapMaxZ = 3f;
+        /// <summary>
+        /// The 6 m gap in the east hedge where the lane runs on to the east lane (living-street §2.2, D34). It sits just
+        /// south of z = 0.6 so paper bat 17 keeps its perch on the hedge's top at z = 1 (the 30 bats stay as tested).
+        /// </summary>
+        public const float EastGapMinZ = -5.4f;
+        public const float EastGapMaxZ = 0.6f;
 
         /// <summary>Outward step of the two east modules that overlap their neighbours beside the gap.</summary>
         public const float EastGapNudge = 0.12f;

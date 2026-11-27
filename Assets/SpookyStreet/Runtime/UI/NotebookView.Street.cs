@@ -30,7 +30,7 @@ namespace SpookyStreet.UI
         public IReadOnlyList<Image> StreetFaces => _streetFaces;
 
         /// <summary>The lantern drawn on the porch (null before Pip folds one).</summary>
-        public Image StreetLantern { get; private set; }
+        public RectTransform StreetLantern { get; private set; }
 
         private void BuildStreetPage()
         {
@@ -72,10 +72,9 @@ namespace SpookyStreet.UI
                     UiFactory.WithAlpha(Palette.CandyCornYellow, 0.35f), new Vector2(0.5f, 0.5f), new Vector2(-124f, 70f),
                     new Vector2(110f, 110f));
                 glow.raycastTarget = false;
-                StreetLantern = UiFactory.Sprite(porch, "Lantern", LanternSprite(lantern.Shape),
-                    Palette.Hex(LanternCraft.ColourRgb(lantern.Colour)), new Vector2(0.5f, 0.5f), new Vector2(-124f, 70f),
-                    new Vector2(64f, 64f));
-                StreetLantern.preserveAspect = true;
+                StreetLantern = UiFactory.Rect(porch, "Lantern");
+                UiFactory.Place(StreetLantern, new Vector2(0.5f, 0.5f), new Vector2(-124f, 70f), new Vector2(64f, 64f));
+                LanternGlyph.Build(StreetLantern, lantern.Shape, 64f, Palette.Hex(LanternCraft.ColourRgb(lantern.Colour)));
                 AccessibleName.Set(StreetLantern.gameObject, LanternCraft.ShapeKey(lantern.Shape));
             }
 
@@ -105,15 +104,5 @@ namespace SpookyStreet.UI
             return image;
         }
 
-        private static Sprite LanternSprite(LanternShape shape)
-        {
-            switch (shape)
-            {
-                case LanternShape.Moon: return PuppetAtlas.Get("pg.moon");
-                case LanternShape.Bat: return PuppetAtlas.Get("pg.bat");
-                case LanternShape.Star: return PuppetAtlas.Get("pg.star");
-                default: return UiFactory.Circle;
-            }
-        }
     }
 }

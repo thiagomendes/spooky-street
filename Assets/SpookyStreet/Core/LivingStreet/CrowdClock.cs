@@ -71,7 +71,7 @@ namespace SpookyStreet.Core.LivingStreet
         /// <summary>False when Pip is indoors (she then never makes anyone step aside or wait).</summary>
         public bool PipOutside;
 
-        /// <summary>Case 01 is open: the heart holds at most <see cref="Crowd.CaseHeartCap"/> walkers (D34).</summary>
+        /// <summary>Case 01 is open: the heart holds at most <see cref="CrowdClock.CaseHeartCap"/> walkers (D34).</summary>
         public bool CaseOpen;
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace SpookyStreet.Core.LivingStreet
     /// </list>
     /// Nothing is saved: the crowd starts on its loops at every load.
     /// </summary>
-    public sealed class Crowd
+    public sealed class CrowdClock
     {
         public const int CaseHeartCap = 3;
 
@@ -151,11 +151,11 @@ namespace SpookyStreet.Core.LivingStreet
         private readonly float[][] _plainCumulative;
         private readonly WalkerPose[] _poses;
 
-        public Crowd() : this(CrowdRoutes.All)
+        public CrowdClock() : this(CrowdRoutes.All)
         {
         }
 
-        public Crowd(IReadOnlyList<CrowdRoute> routes)
+        public CrowdClock(IReadOnlyList<CrowdRoute> routes)
         {
             if (routes == null)
             {

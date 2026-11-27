@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using SpookyStreet.Core.Case;
+using SpookyStreet.Core.Crowd;
 using SpookyStreet.Core.World;
 
 namespace SpookyStreet.Core.LivingStreet
@@ -234,6 +235,49 @@ namespace SpookyStreet.Core.LivingStreet
             }
 
             return best;
+        }
+
+        /// <summary>
+        /// The neighbours in their doorways, built from the crowd kit's grown-up parts without costume pieces (they answer
+        /// the door in house clothes): placeholders for the named neighbours until their own art (living-street §4.1).
+        /// The Abbotts are two. Every part is in the kit (<see cref="CrowdKit.AdultParts"/>), one per slot.
+        /// </summary>
+        public static readonly IReadOnlyList<CrowdWalkerRecipe> NeighbourRecipes = new[]
+        {
+            new CrowdWalkerRecipe("Neighbour_Fogg", CrowdKit.AdultModel, "Body_King", "Hands_T6", "Shoes_Ink", "Head_King", "Hair_Crop"),
+            new CrowdWalkerRecipe("Neighbour_Pearl", CrowdKit.AdultModel, "Body_CatMum", "Hands_T2", "Shoes_Bone", "Head_CatMum", "Hair_Bun"),
+            new CrowdWalkerRecipe("Neighbour_AbbottA", CrowdKit.AdultModel, "Body_Skeleton", "Hands_T4", "Shoes_Orange", "Head_King", "Hair_Short"),
+            new CrowdWalkerRecipe("Neighbour_AbbottB", CrowdKit.AdultModel, "Body_King", "Hands_T2", "Shoes_Bone", "Head_King", "Hair_Crop"),
+        };
+
+        /// <summary>The neighbour recipe with <paramref name="id"/>, or null.</summary>
+        public static CrowdWalkerRecipe NeighbourRecipe(string id)
+        {
+            foreach (var recipe in NeighbourRecipes)
+            {
+                if (recipe.Id == id)
+                {
+                    return recipe;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Who answers <paramref name="door"/> (one recipe, two for the Abbotts).</summary>
+        public static IReadOnlyList<string> NeighboursAt(NeighbourDoor door)
+        {
+            if (door == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            switch (door.Id)
+            {
+                case Fogg: return new[] { "Neighbour_Fogg" };
+                case Pearl: return new[] { "Neighbour_Pearl" };
+                default: return new[] { "Neighbour_AbbottA", "Neighbour_AbbottB" };
+            }
         }
 
         /// <summary>The house models as placements (for the bounds checks; the runtime fits boxes to the meshes).</summary>

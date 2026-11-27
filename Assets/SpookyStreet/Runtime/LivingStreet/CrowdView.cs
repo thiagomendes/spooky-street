@@ -7,7 +7,7 @@ using UnityEngine;
 namespace SpookyStreet.LivingStreet
 {
     /// <summary>
-    /// The crowd in the world (living-street §8): runs the Core <see cref="Crowd"/> clock, puts each walker's body on its
+    /// The crowd in the world (living-street §8): runs the Core <see cref="CrowdClock"/> clock, puts each walker's body on its
     /// pose, and applies the tier's budget every frame (off-screen walkers are hidden and not animated; beyond 12 m they
     /// animate at 15 Hz; beyond 18 m or past the animated cap they are standees). Its own CPU time per frame is measured
     /// with a stopwatch for the device readout. Bodies come from <see cref="ICrowdBodyFactory"/> (the kit when its prefabs
@@ -25,7 +25,7 @@ namespace SpookyStreet.LivingStreet
         private double _time;
         private readonly Stopwatch _watch = new Stopwatch();
 
-        public Crowd Crowd { get; private set; }
+        public CrowdClock Clock { get; private set; }
 
         public CrowdBudget Budget { get; set; } = CrowdBudget.For(CrowdTier.High);
 
@@ -54,7 +54,7 @@ namespace SpookyStreet.LivingStreet
 
         private void Build(MaterialLibrary materials, ICrowdBodyFactory[] factories)
         {
-            Crowd = new Crowd();
+            Clock = new CrowdClock();
             var fallback = new PlaceholderCrowdBodies();
             foreach (var route in CrowdRoutes.All)
             {
@@ -92,7 +92,7 @@ namespace SpookyStreet.LivingStreet
         public void Tick(float dt, CrowdInputs inputs, List<CrowdEvent> events)
         {
             _watch.Restart();
-            Crowd.Advance(dt, inputs, events);
+            Clock.Advance(dt, inputs, events);
             Place(dt, false);
             _watch.Stop();
             LastMs = (float)_watch.Elapsed.TotalMilliseconds;
@@ -100,7 +100,7 @@ namespace SpookyStreet.LivingStreet
 
         private void Place(float dt, bool all)
         {
-            var poses = Crowd.Poses;
+            var poses = Clock.Poses;
             Vector3 eye = View != null ? View.transform.position : Vector3.zero;
             if (View != null)
             {
