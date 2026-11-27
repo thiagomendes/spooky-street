@@ -134,7 +134,7 @@ paper standees (§8, beyond 18 m) are not part of this kit: the review lineup at
 |---|---|
 | `docs/evidence/living-street/crowd_lineup.jpg` | the nine walkers beside Pip at the gameplay camera (3.8 m, 50°, phone frame) from the front and from behind, its greyscale, the LOD1 meshes at 12 m; the close lineup front and back |
 | `docs/evidence/living-street/walk_<Walker>.jpg` (nine) | eight Walk frames from the front three-quarter and eight in profile, four from behind, two at the gameplay camera crossing in front of Pip, Wave and Talk key frames, the face open and mid-blink, each clip's last frame beside Idle 0 |
-| `docs/evidence/living-street/ci_92*.jpg` | the CI capture frames in the game's light (below) |
+| `docs/evidence/living-street/ci_92_crowd_street.jpg`, `ci_92b_crowd_lineup.jpg`, `ci_92c_crowd_lineup_back.jpg` | the CI capture frames in the game's light (below) |
 
 What the iterations fixed, by looking:
 
@@ -150,7 +150,21 @@ What the iterations fixed, by looking:
    tail was scaled with her height and looked huge; it is now only a little longer than the child's.
 7. The blink lids came out darker than the face (the occlusion pass found them inside the skull); they skip it.
 
-CI_SECTION
+## In the game's light (CI run 46067820415, green, commit `3713e22`)
+
+`CrowdArtCaptureTests` (Visual) poses every walker in the game scene, as the slice will show it (its recipe's
+parts only, the shared atlas through `ModelKit`, the glow material for lantern carriers at 0.9, Walk or Idle
+sampled), and captures three frames: `ci_92_crowd_street.jpg` (the gameplay camera behind Pip on the path, the
+walkers crossing on the sidewalk), `ci_92b_crowd_lineup.jpg` (the nine with Pip in the middle, close) and
+`ci_92c_crowd_lineup_back.jpg` (everyone turned to the house). In the same run `CrowdArtImportTests` (7) and
+`CrowdKitTests` (6) passed.
+
+What the frames show: the costumes read by silhouette at the gameplay camera (sheet ghost, painted skeleton, box
+robot, candy-corn cone, crowns, the cats' tails); the crowd sits in the night's calm purples and inks under the
+porch light, so the lit attic window stays the brightest thing and Pip, in the middle, is still the one the eye
+finds; the paper lanterns glow warm and well under the window; nothing is magenta and no part is missing. In the
+game's light the crowd is darker than in the Blender sheets (moonlight and porch light only), which is right for
+background; the faces are small at the gameplay camera and read as skin and two eyes.
 
 ## Known limits
 
