@@ -9,7 +9,8 @@ namespace SpookyStreet.EditorTools
     /// <c>tools/blender/pages/sketch_pages.py</c>). Kept in code because tools/unity_meta.py writes bare importer metas:
     /// a single 2D sprite at its full 1024 × 768, sRGB with alpha (the page has a ragged, transparent edge), no mipmaps,
     /// clamp, ASTC 4×4 on iOS. The dress-up trunk's card pictures in <c>UI/CostumeIcons</c> (256², transparent, from
-    /// <c>tools/blender/chars/costume_pieces.py icons</c>) get the same settings. The models and textures of the other keepsakes follow <see cref="ModelImportRules"/>.
+    /// <c>tools/blender/chars/costume_pieces.py icons</c>) and the paper lantern picker's pictures in <c>UI/LanternPicker</c>
+    /// (256², transparent, from <c>tools/blender/env/lanterns_tiles.py</c>, <see cref="LanternArt"/>) get the same settings. The models and textures of the other keepsakes follow <see cref="ModelImportRules"/>.
     /// </summary>
     public sealed class KeepsakeArtImportRules : AssetPostprocessor
     {
@@ -17,11 +18,16 @@ namespace SpookyStreet.EditorTools
         public const int MaxTextureSize = 1024;
         public const int PixelsPerUnit = 100;
 
-        public override uint GetVersion() => 2;
+        /// <summary>The pictures this postprocessor imports as single 2D sprites.</summary>
+        public static bool IsSpritePath(string assetPath) =>
+            KeepsakeArt.IsSketchPageAssetPath(assetPath) || KeepsakeArt.IsCostumeIconAssetPath(assetPath) ||
+            LanternArt.IsTileAssetPath(assetPath);
+
+        public override uint GetVersion() => 3; // 3: the lantern picker's pictures
 
         private void OnPreprocessTexture()
         {
-            if (!KeepsakeArt.IsSketchPageAssetPath(assetPath) && !KeepsakeArt.IsCostumeIconAssetPath(assetPath))
+            if (!IsSpritePath(assetPath))
             {
                 return;
             }
