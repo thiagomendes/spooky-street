@@ -47,5 +47,8 @@
   task; if something cannot be done, do the rest and say clearly what is missing and why.
 - Reports to the owner are in Brazilian Portuguese and plain game language (what the child sees, hears or does),
   starting with the result; no branch names, run numbers or internal codes (owner, 2026-11-23).
+- Anything that needs an owner decision goes through the question tool (AskUserQuestion), never buried in a
+  report: two to four options with the recommended one first and marked "(Recomendado)". It notifies the owner's
+  phone and he answers there (owner, 2026-11-27).
 - Art is 100% original (spec v1.3): Blender Python scripts in `tools/blender/` (headless Blender 4.0.2, Eevee
   renders work); review every asset by rendering and looking at the image before it enters the game.
