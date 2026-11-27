@@ -22,6 +22,24 @@ namespace SpookyStreet.UI
                 size * 0.5f - 1f, radius), new Vector4(30f, 30f, 30f, 30f));
         });
 
+        /// <summary>
+        /// 9-sliced rounded rectangle outline with a <see cref="FrameStroke"/>-pixel stroke (the focus outline's ink
+        /// band, S004 F2): a solid edge under the candy stitch, so focus reads on cream paper as well as on felt.
+        /// </summary>
+        public static Sprite RoundedFrame => Get("RoundedFrame", () =>
+        {
+            const int size = 96;
+            const float radius = 24f;
+            return Paint("RoundedFrame", size, (x, y) =>
+            {
+                float outer = RoundBox(x, y, size * 0.5f, size * 0.5f, size * 0.5f - 1f, size * 0.5f - 1f, radius);
+                return Mathf.Abs(outer + FrameStroke * 0.5f) - FrameStroke * 0.5f;
+            }, new Vector4(32f, 32f, 32f, 32f));
+        });
+
+        /// <summary>Stroke of <see cref="RoundedFrame"/> in pixels (canvas units at 100 pixels per unit).</summary>
+        public const float FrameStroke = 7f;
+
         public static Sprite Disc => Get("Disc", () =>
             Paint("Disc", 128, (x, y) => Length(x - 64f, y - 64f) - 63f, Vector4.zero));
 
@@ -72,6 +90,33 @@ namespace SpookyStreet.UI
 
             texture.Apply(false, true);
             return Sprite.Create(texture, new Rect(0, 0, width, 4), new Vector2(0.5f, 0.5f), 100f);
+        });
+
+        /// <summary>
+        /// Vertical fade from opaque (bottom) to transparent (top): the "more below" edge of a scrolling sheet (S004
+        /// F2). Flip it (scale y −1) for the top edge.
+        /// </summary>
+        public static Sprite BottomFade => Get("BottomFade", () =>
+        {
+            const int height = 64;
+            var texture = new Texture2D(4, height, TextureFormat.RGBA32, false)
+            {
+                name = "BottomFade",
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+            };
+            for (int y = 0; y < height; y++)
+            {
+                float t = y / (height - 1f);
+                float alpha = 1f - t * t * (3f - 2f * t);
+                for (int x = 0; x < 4; x++)
+                {
+                    texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+                }
+            }
+
+            texture.Apply(false, true);
+            return Sprite.Create(texture, new Rect(0, 0, 4, height), new Vector2(0.5f, 0.5f), 100f);
         });
 
         /// <summary>Soft radial falloff (opaque centre, transparent edge): a quiet shade behind HUD clusters.</summary>

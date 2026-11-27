@@ -24,7 +24,24 @@ namespace SpookyStreet.UI
         private RectTransform _stick;
         private RectTransform _knob;
         private Image _holdRing;
+        private Image _backing;
         private float _size;
+
+        /// <summary>
+        /// A bone paper disc behind the face-button diamond (S004 F2, frame 77): the night-felt buttons vanish on dark
+        /// felt (the notebook tray, the night sky), so prompts placed there carry it. Key caps and bumpers are paper already.
+        /// </summary>
+        public bool Backed
+        {
+            get => _backing != null && _backing.enabled;
+            set
+            {
+                if (_backing != null)
+                {
+                    _backing.enabled = value;
+                }
+            }
+        }
 
         public ControlGlyph Glyph { get; private set; }
 
@@ -69,6 +86,10 @@ namespace SpookyStreet.UI
             _keyText.rectTransform.offsetMax = new Vector2(-10f, -4f);
 
             _face = UiFactory.Place(UiFactory.Rect(_root, "FaceButtons"), centre, Vector2.zero, Vector2.one * _size);
+            _backing = UiFactory.Sprite(_face, "Backing", UiFactory.Baked(UiSpriteCatalog.FeltDiscBone), UiFactory.PlayPaper,
+                centre, Vector2.zero, Vector2.one * _size * 1.12f);
+            UiFactory.InkShadow(_backing, new Vector2(2f, -3f), 0.45f);
+            _backing.enabled = false;
             _faceButtons = new Image[4];
             var spots = new[] { new Vector2(0f, -0.3f), new Vector2(0.3f, 0f), new Vector2(-0.3f, 0f), new Vector2(0f, 0.3f) };
             for (int i = 0; i < 4; i++)

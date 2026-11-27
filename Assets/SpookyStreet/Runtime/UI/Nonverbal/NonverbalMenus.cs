@@ -134,8 +134,16 @@ namespace SpookyStreet.UI.Nonverbal
             GateCloseButton = close.gameObject.AddComponent<Button>();
             GateCloseButton.transition = Selectable.Transition.None;
             GateCloseButton.onClick.AddListener(CancelGate);
+
+            // S004 F2: Back (Escape, East) cancels the gate on every scheme, and the gate sits on the screen stack, so
+            // nothing under it (the pause card, the title, the language screen) answers a press while it is up.
+            GateNavigation = UiFocusScreen.Attach(_gatePanel, ScreenFocus.Gate(), content);
+            GateNavigation.Bind(ScreenFocus.GateClose, GateCloseButton);
             _gatePanel.SetActive(false);
         }
+
+        /// <summary>Gamepad and keyboard on the gate: its close disc, which Back presses.</summary>
+        public UiFocusScreen GateNavigation { get; private set; }
 
         /// <summary>
         /// Puts up a fresh parent gate (one per guarded action); <paramref name="onPassed"/> runs only when both spots
@@ -526,15 +534,25 @@ namespace SpookyStreet.UI.Nonverbal
                 return;
             }
 
+            _returnFocus = SettingsNavigation != null ? SettingsNavigation.Focus : null;
             _settings.SetActive(false);
             open();
         }
 
-        /// <summary>A page opened from the card closed: the card comes back as it was (no new gate needed).</summary>
+        private string _returnFocus;
+
+        /// <summary>
+        /// A page opened from the card closed: the card comes back as it was (no new gate needed), with focus on the
+        /// entry that opened the page (S004 F2), so a gamepad or keyboard player is where they left off.
+        /// </summary>
         public void ReturnToSettings()
         {
             _settings.SetActive(true);
             RefreshSettings();
+            if (_returnFocus != null && SettingsNavigation != null)
+            {
+                SettingsNavigation.FocusOn(_returnFocus);
+            }
         }
 
         private Button SwitchRow(Transform card, string name, string art, string key, int column, int rowIndex,
@@ -640,6 +658,7 @@ namespace SpookyStreet.UI.Nonverbal
         /// <summary>The settings card (call from behind <see cref="RequireParent"/>).</summary>
         public void OpenSettings()
         {
+            _returnFocus = null;
             _settings.SetActive(true);
             RefreshSettings();
         }

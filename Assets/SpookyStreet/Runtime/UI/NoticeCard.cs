@@ -62,7 +62,16 @@ namespace SpookyStreet.UI
             _primary = UiFactory.PrimaryButton(_card.transform, "Primary", null, bottom, new Vector2(160f, 78f),
                 new Vector2(290f, 104f), () => _onPrimary?.Invoke());
             _primary.GetComponent<CraftButton>().Label.gameObject.AddComponent<LocalizedText>();
+
+            // Gamepad and keyboard (S004 F2): the candy outline and the screen stack, as on every other card.
+            Navigation = UiFocusScreen.Attach(root.gameObject, SpookyStreet.Core.Flow.ScreenFocus.Notice(true),
+                _card.transform);
+            Navigation.Bind(SpookyStreet.Core.Flow.ScreenFocus.NoticePrimary, _primary);
+            Navigation.Bind(SpookyStreet.Core.Flow.ScreenFocus.NoticeSecondary, _secondary);
         }
+
+        /// <summary>Gamepad and keyboard on the card: Back is the secondary (the safe choice), else the primary.</summary>
+        public UiFocusScreen Navigation { get; private set; }
 
         /// <summary>
         /// Shows the card. <paramref name="headingKey"/> and <paramref name="secondaryKey"/> may be null. Each action
@@ -103,11 +112,19 @@ namespace SpookyStreet.UI
             }
 
             ((RectTransform)_primary.transform).anchoredPosition = new Vector2(hasSecondary ? 160f : 0f, 78f);
+            Navigation.Graph.Exit = hasSecondary ? SpookyStreet.Core.Flow.ScreenFocus.NoticeSecondary
+                : SpookyStreet.Core.Flow.ScreenFocus.NoticePrimary;
+            bool wasOpen = IsOpen;
             gameObject.SetActive(true);
             transform.SetAsLastSibling();
+            if (!wasOpen || !hasSecondary)
+            {
+                Navigation.FocusOn(SpookyStreet.Core.Flow.ScreenFocus.NoticePrimary);
+            }
+
             if (EventSystem.current != null)
             {
-                EventSystem.current.SetSelectedGameObject(_primary.gameObject);
+                EventSystem.current.SetSelectedGameObject(null);
             }
         }
 

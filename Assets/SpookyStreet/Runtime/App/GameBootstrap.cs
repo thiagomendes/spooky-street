@@ -204,7 +204,7 @@ namespace SpookyStreet.App
         {
             // Escape and Start belong to a grown-up screen while one is up (its Back closes it), also on the frame it
             // closed, so one press never closes the screen and resumes the game too.
-            bool overlay = _overlayWasOpen || (GrownUps != null && GrownUps.AnyOpen);
+            bool overlay = _overlayWasOpen || ScreenTakesBack();
             if (_input.PausePressedThisFrame() && !overlay)
             {
                 Flow.TogglePause();
@@ -213,7 +213,28 @@ namespace SpookyStreet.App
 
         private void LateUpdate()
         {
-            _overlayWasOpen = GrownUps != null && GrownUps.AnyOpen;
+            _overlayWasOpen = ScreenTakesBack();
+        }
+
+        /// <summary>
+        /// A screen whose Back is Escape is up (S004 F2): a grown-up screen, the notebook, or any card on the screen
+        /// stack other than the title and the pause card (the trunk, a notice). Escape closes that screen only and
+        /// never also pauses or resumes the game.
+        /// </summary>
+        private bool ScreenTakesBack()
+        {
+            if (GrownUps != null && GrownUps.AnyOpen)
+            {
+                return true;
+            }
+
+            if (Director != null && Director.Notebook != null && Director.Notebook.IsOpen)
+            {
+                return true;
+            }
+
+            var top = UiFocusScreen.Top;
+            return top != null && Ui != null && top != Ui.PauseNavigation && top != Ui.TitleNavigation;
         }
 
         private void OnStateChanged(GameState previous, GameState current)

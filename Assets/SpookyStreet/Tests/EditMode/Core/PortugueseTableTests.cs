@@ -76,6 +76,19 @@ namespace SpookyStreet.Tests.Core
         /// Each text fits in the length of its English text through the pseudo-localizer (+35 % and two brackets),
         /// which is what every screen's layout is checked against in the visual captures.
         /// </summary>
+        /// <summary>
+        /// The only keys allowed past the budget, each with its own exact limit and the reason (owner's decision).
+        /// Any other key, or these keys growing further, still fails.
+        /// </summary>
+        private static readonly Dictionary<string, (int Limit, string Reason)> BudgetExceptions =
+            new Dictionary<string, (int, string)>
+            {
+                // Owner, 2026-11-24: the Use disc's air verb is the verb "Mergulhar", like "Rolar" and "Pular" (the noun
+                // "Mergulho" read as a label, not an action). One letter over "Dive"'s budget; the verb tag on the disc
+                // was widened so it shows whole at full size (AccessibilityPassTests; capture 78c).
+                { "ui.hud.dive", (9, "a verb like Rolar and Pular; the Use disc's verb tag was widened to fit it") },
+            };
+
         [Test]
         public void EveryTextStaysWithinThePlus35PercentBudget()
         {
@@ -89,6 +102,11 @@ namespace SpookyStreet.Tests.Core
                 {
                     string pt = entry.Form(category);
                     int budget = PseudoLocalizer.Transform(source.Form(category)).Length;
+                    if (BudgetExceptions.TryGetValue(entry.Key, out var exception))
+                    {
+                        Assert.Greater(exception.Limit, budget, entry.Key + " no longer needs its exception: remove it");
+                        budget = exception.Limit;
+                    }
                     if (pt.Length > budget)
                     {
                         problems.Add($"{entry.Key} ({category}): {pt.Length} > {budget}: {pt}");

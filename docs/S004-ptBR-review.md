@@ -46,11 +46,11 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `ui.hud.jump` | Jump | Pular | 5/8 | Its label is also the button name in the tips, so they all say "Pular" (or "Pule"). |
 | `ui.hud.use` | Use | Usar | 4/7 |  |
 | `ui.hud.roll` | Roll | Rolar | 5/8 |  |
-| `ui.hud.dive` | Dive | Mergulho | 8/8 | UNSURE. "Mergulhar" (9 letters) would match "Rolar" but goes over the 8-letter budget for this tag, so the noun "Mergulho" is used. |
+| `ui.hud.dive` | Dive | Mergulhar | 9/8 | Owner decision (2026-11-24): the verb "Mergulhar", like "Rolar" and "Pular". One letter over the 8-letter budget: the only budget exception (PortugueseTableTests); the verb tag was widened so it fits at full size. |
 | `tip.move.hold_jump` | Keep holding Jump to go much higher | Segure Pular para ir bem mais alto | 34/50 | "Segure" says that the finger stays on the button. |
 | `tip.move.chain_jump` | Jump again as you land! | Pule de novo ao tocar o chão! | 29/34 |  |
 | `tip.move.glide` | Hold Jump while falling to glide | Segure Pular ao cair para planar | 32/46 |  |
-| `tip.move.dive` | Use in the air to dive | Aperte no ar para mergulhar | 27/32 | "Use" refers to the orange button. "Aperte" (press) is clearer in Portuguese, because the tag above it reads Rolar or Mergulho, not Usar. |
+| `tip.move.dive` | Use in the air to dive | Aperte no ar para mergulhar | 27/32 | "Use" refers to the orange button. "Aperte" (press) is clearer in Portuguese, because the tag above it reads Rolar or Mergulhar, not Usar. |
 | `tip.move.wall_jump` | Jump to bounce off the wall! | Pule para quicar na parede! | 27/40 | "Quicar" is the word for a ball bouncing. Children know it. |
 | `tip.move.ledge_climb` | Jump to climb up! | Pule para subir! | 16/25 |  |
 | `ui.hud.hint` | Hint | Dica | 4/8 |  |
@@ -68,7 +68,7 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `ui.settings.sounds` | Sounds | Sons | 4/11 |  |
 | `ui.settings.voices` | Voices | Vozes | 5/11 |  |
 | `ui.memory.watch_again` | Watch the memory again | Ver a lembrança de novo | 23/32 |  |
-| `ui.memory.skip` | Skip memory | Pular lembrança | 15/17 | UNSURE: skip and jump are both "pular" in Portuguese. The skip button is at the top right with its own icon, and "Pular" is the standard word for skip ("Pular anúncio"). The alternative is "Passar". |
+| `ui.memory.skip` | Skip memory | Passar lembrança | 16/17 | Owner decision (2026-11-24): skip is "Passar" everywhere, so it is never confused with Pip's Jump button ("Pular"). |
 | `ui.parent_gate.hint` | Grown-ups: hold both spots for 3 seconds | Adulto: segure os dois pontos por 3 segundos | 44/56 | Singular "Adulto:" plus the você imperative, as Brazilian parental gates read. |
 | `ui.parent_gate.hint_gamepad` | Grown-ups: hold both shoulder buttons for 3 seconds | Adulto: segure os dois botões de ombro por 3 segundos | 53/71 | "Botões de ombro" is the platform-neutral term in Brazilian game manuals (L/R, LB/RB). |
 | `ui.parent_gate.hint_keyboard` | Grown-ups: hold Q and P together for 3 seconds | Adulto: segure Q e P juntos por 3 segundos | 42/65 |  |
@@ -240,7 +240,7 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `c01.hint.arrival.observe` | Listen! Where did those knocks come from? | Escute! De onde vieram essas batidas? | 37/58 |  |
 | `c01.hint.arrival.locate` | The blue house is straight ahead, past the plaza. | A casa azul fica bem em frente, depois da praça. | 48/69 |  |
 | `c01.hint.check_view.observe` | Mr. Vale's bench looks comfy. What can you see from there? | O banco do Sr. Vale parece confortável. O que dá para ver de lá? | 64/81 |  |
-| `c01.hint.check_view.locate` | Mr. Vale's bench is on the east side of the plaza. | O banco do Sr. Vale fica no lado leste da praça. | 48/70 | "Leste" (east), as in English. Children may not know it, but the hint is not changed. |
+| `c01.hint.check_view.locate` | Mr. Vale's bench is at the end of the little fence. | O banco do Sr. Vale fica no fim da cerquinha. | 45/71 | "Leste" (east), as in English. Children may not know it, but the hint is not changed. |
 | `c01.hint.find_way_in.observe` | A breeze keeps tugging toward the side yard. | Uma brisa fica puxando para o quintal lateral. | 46/62 | "Quintal lateral" = side yard. "Quintal do lado" was avoided because it can mean the neighbour's yard. |
 | `c01.hint.find_way_in.locate` | Behind the side-yard hedge, a ramp climbs up high. | Atrás da cerca viva do quintal lateral, uma rampa sobe bem alto. | 64/70 |  |
 | `c01.hint.meet_june.observe` | A lamp is glowing up in the attic. | Uma luz brilha lá em cima, no sótão. | 36/48 | "Uma luz brilha" for a lamp glowing. It is no more precise than the English. |
@@ -258,7 +258,7 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `c01.hint.free_roam.observe` | Case closed! Some clues are still out there. | Caso encerrado! Ainda tem pistas por aí. | 40/62 |  |
 | `c01.hint.free_roam.all_found` | Every clue found! The owl will bow again if you ask it. | Todas as pistas encontradas! A coruja se curva de novo se você pedir. | 69/77 |  |
 | `c01.hint.free_roam.locate` | Try the bicycle, the bench and the treehouse. | Experimente a bicicleta, o banco e a casa da árvore. | 52/63 |  |
-| `ui.hint.move.jump` | Tap Jump to hop up! | Toque em Pular para subir! | 26/28 | Mirrors the English "Tap"; F2 will make the prompts scheme-neutral in both languages. |
+| `ui.hint.move.jump` | Press Jump quickly to hop up! | Aperte Pular rapidinho para subir! | 34/42 | Mirrors the English "Tap"; F2 will make the prompts scheme-neutral in both languages. |
 | `ui.hint.move.high_jump` | Hold Jump to jump higher! | Segure Pular para ir mais alto! | 31/36 |  |
 | `ui.hint.move.glide` | Hold Jump while falling to glide! | Segure Pular ao cair para planar! | 33/47 |  |
 | `ui.hint.move.wall_kick` | Jump to bounce off the wall! | Pule para quicar na parede! | 27/40 |  |
@@ -270,7 +270,7 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 |---|---|---|---|---|
 | `ui.dialogue.continue` | Tap to continue | Toque para continuar | 20/23 |  |
 | `ui.dialogue.continue_button` | Press to continue | Aperte para continuar | 21/25 |  |
-| `ui.dialogue.skip` | Skip | Pular | 5/8 | See ui.memory.skip. |
+| `ui.dialogue.skip` | Skip | Passar | 6/8 | See ui.memory.skip. |
 | `ui.speaker.pip` | Pip | Pip | 3/7 |  |
 | `ui.speaker.bea` | Bea | Bea | 3/7 |  |
 | `ui.speaker.vale` | Mr. Vale | Sr. Vale | 8/13 | Owner decision: Sr. Vale. |
@@ -295,8 +295,8 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 
 | Key | English | Português | Len | Note |
 |---|---|---|---|---|
-| `ui.cutscene.skip` | Skip | Pular | 5/8 | See ui.memory.skip. |
-| `ui.cutscene.skip_again` | Press again to skip | Aperte de novo para pular | 25/28 |  |
+| `ui.cutscene.skip` | Skip | Passar | 6/8 | See ui.memory.skip. |
+| `ui.cutscene.skip_again` | Press again to skip | Aperte de novo para passar | 26/28 | See ui.memory.skip. |
 | `ui.cutscene.watch_opening` | Watch: Pip arrives | Ver: a Pip chega | 16/27 | "A Pip": Brazilians put an article before first names. |
 | `ui.cutscene.watch_reveal` | Watch: what happened | Ver: o que aconteceu | 20/29 |  |
 | `c01.cutscene.opening.town` | Evening in Candlebrook, on Lantern Lane. | Anoitece em Candlebrook, na Rua das Lanternas. | 46/56 | Candlebrook kept and the street translated (owner decision 2a). The English context was updated to say so. |

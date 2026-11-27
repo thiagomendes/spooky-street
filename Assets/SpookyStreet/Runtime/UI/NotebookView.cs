@@ -155,6 +155,7 @@ namespace SpookyStreet.UI
             HintButton.GetComponent<Image>().color = Color.white;
             AccessibleName.Set(HintButton.gameObject, HintKeys.HudHint);
             BuildInput();
+            BuildPrompts(content);
         }
 
         private static Button Disc(Transform parent, string name, string icon, Vector2 anchor, Vector2 position,
@@ -512,6 +513,7 @@ namespace SpookyStreet.UI
             TickComic(dt);
             TickKeepsakeAssembly(dt);
             TickSelection();
+            TickPrompts();
         }
 
         /// <summary>A label placed from the page's top-left corner (x, y down, width, height).</summary>
