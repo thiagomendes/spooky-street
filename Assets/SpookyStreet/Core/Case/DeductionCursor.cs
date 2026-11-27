@@ -80,6 +80,21 @@ namespace SpookyStreet.Core.Case
         }
 
         /// <summary>
+        /// The sticker under the cursor for Inspect (D32: its memory card), in the tray or sitting in a slot; null on an
+        /// empty slot or past the tray. Only reads: the held sticker, the cursor and the board stay as they are.
+        /// <paramref name="board"/> may be null (a solved page: the tray only).
+        /// </summary>
+        public string InspectTarget(DeductionBoard board, IReadOnlyList<string> tray)
+        {
+            if (Row == CursorRow.Tray)
+            {
+                return tray != null && Index < tray.Count ? tray[Index] : null;
+            }
+
+            return board != null && Index < board.SlotCount ? board.Slots[Index] : null;
+        }
+
+        /// <summary>
         /// Use on the cursor's target. In the tray: pick the sticker (or let it go if it is already held), and jump to
         /// the first empty slot. On a slot: place the held sticker, or send the slot's sticker home.
         /// </summary>

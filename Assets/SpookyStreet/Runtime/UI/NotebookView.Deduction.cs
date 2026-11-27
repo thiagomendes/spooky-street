@@ -423,6 +423,7 @@ namespace SpookyStreet.UI
             sticker.DragBegan = OnStickerDragBegan;
             sticker.Dragged = OnStickerDragged;
             sticker.DragEnded = OnStickerDragEnded;
+            sticker.Held = OnStickerHeld; // D32: holding shows its memory, never picks
             return sticker;
         }
 
@@ -677,6 +678,11 @@ namespace SpookyStreet.UI
 
         private void ShowNote(string stickerId)
         {
+            if (OpenMemory(stickerId))
+            {
+                return; // D32: the memory card carries the caption
+            }
+
             var sticker = CaseNotebook.Sticker(stickerId);
             if (sticker != null)
             {
@@ -694,6 +700,7 @@ namespace SpookyStreet.UI
                 return;
             }
 
+            CloseMemory(); // a pick opens the new sticker's memory below; a place or a return puts it away
             var before = SnapshotPositions(view);
             string target = _cursor.Row == Core.Case.CursorRow.Tray && _cursor.Index < view.TrayIds.Count
                 ? view.TrayIds[_cursor.Index]
@@ -908,6 +915,7 @@ namespace SpookyStreet.UI
 
             // It lifts and follows the thumb above everything on the page.
             _cursor.Drop();
+            CloseMemory(); // the slots come back into view for the drop
             _dragHome = sticker.Rect;
             sticker.Rect.SetParent(view.Overlay, true);
             sticker.Rect.SetAsLastSibling();
@@ -1089,6 +1097,7 @@ namespace SpookyStreet.UI
             _slideToFinal = -1f;
             HideThought();
             HidePlace();
+            CloseMemory();
             FinishTweens();
             if (_focusRing != null)
             {
@@ -1230,11 +1239,20 @@ namespace SpookyStreet.UI
             {
                 Submit();
             }
+            else if (_input.Pressed(_input.Inspect))
+            {
+                InspectAtCursor();
+            }
             else if (_input.Pressed(_input.Back))
             {
-                if (_cursor.Held != null)
+                if (MemoryOpen && _cursor.Held == null)
+                {
+                    CloseMemory(); // Back puts an inspected memory away before it closes the notebook
+                }
+                else if (_cursor.Held != null)
                 {
                     _cursor.Drop();
+                    CloseMemory(); // letting go puts its memory away too
                     RefreshSelection();
                 }
                 else
@@ -1256,6 +1274,7 @@ namespace SpookyStreet.UI
         public void Navigate(int dx, int dy)
         {
             _cursorVisible = true;
+            CloseMemory(); // the memory belongs to the sticker the cursor leaves
             var view = Current;
             if (view == null)
             {
@@ -1369,6 +1388,7 @@ namespace SpookyStreet.UI
                     _focusRing.Hide();
                 }
 
+                TickInspectPrompt();
                 return;
             }
 
@@ -1383,6 +1403,7 @@ namespace SpookyStreet.UI
             }
 
             _focusRing.Show(target);
+            TickInspectPrompt();
         }
     }
 }

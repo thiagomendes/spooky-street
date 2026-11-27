@@ -193,6 +193,7 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `ui.notebook.thinking` | Pip is thinking | Pip está pensando | 17/23 |  |
 | `ui.notebook.unknown_mark` | ? | ? | 1/4 |  |
 | `ui.notebook.discovery_separator` | ` · ` | ` · ` | 3/7 |  |
+| `ui.notebook.memory_card` | Memory of this sticker | Lembrança desta figurinha | 25/32 |  |
 
 ## Notebook: answers (shown only after the child solves)
 
@@ -413,3 +414,20 @@ Every user-facing line of `pt-BR.json` beside its English, grouped by screen and
 | `ui.credits.voices` | The voices are wordless babble, cut and pitched from syllables made with Google Gemini speech. The music was made with Google's Lyria music model. Both were checked by ear first. | As vozes são balbucios sem palavras, cortados e afinados a partir de sílabas feitas com a fala do Google Gemini. A música foi feita com o modelo Lyria, do Google. Tudo foi ouvido antes. | 185/243 |  |
 | `ui.credits.fonts` | Fonts: Andika by SIL International and Sniglet by Haley Fiege, Brenda Gallo and Pablo Impallari, under the SIL Open Font License 1.1. The licences follow, in English as published. | Fontes: Andika, da SIL International, e Sniglet, de Haley Fiege, Brenda Gallo e Pablo Impallari, sob a SIL Open Font License 1.1. As licenças seguem, em inglês, como publicadas. | 177/244 | The licence texts themselves stay in English, as published (OFL). |
 | `ui.credits.tools` | Made with Unity and Blender. | Feito com Unity e Blender. | 26/40 |  |
+
+## Other
+
+| Key | English | Português | Len | Note |
+|---|---|---|---|---|
+| `c01.memory.bea_flash` | Bea, by her bike: a silver flash, up high. | Bea, perto da bicicleta: um brilho prateado, lá no alto. | 56/59 |  |
+| `c01.memory.vale_door` | Mr. Vale, on his bench: the front door stayed shut. | Sr. Vale, no banco: a porta da frente ficou fechada. | 52/71 |  |
+| `c01.memory.bench_view` | From Mr. Vale's bench: the front door, and the hedge. | Do banco do Sr. Vale: a porta da frente e a cerca viva. | 55/74 |  |
+| `c01.memory.stuck_door` | At the blue house: the front door won't budge. | Na casa azul: a porta da frente não se mexe. | 44/65 |  |
+| `c01.memory.streamer` | On Bea's bike: a crinkly foil streamer. | Na bicicleta da Bea: uma fita de alumínio. | 42/55 |  |
+| `c01.memory.cloth` | The silver cloth, caught on the ramp. | O pano prateado, preso na rampa. | 32/52 |  |
+| `c01.memory.sill` | A silver thread on the little attic window. | Um fio prateado na janelinha do sótão. | 38/61 |  |
+| `c01.memory.floor_hum` | In the hall: the floorboards tremble with the knocks. | No corredor: as tábuas tremem com as batidas. | 45/74 |  |
+| `c01.memory.wooden_piece` | Behind the grille: a wooden piece lifts up. | Atrás da grade: uma peça de madeira sobe. | 41/61 |  |
+| `c01.memory.owl_panel` | In the workshop: an owl painted on the panel. | Na oficina: uma coruja pintada no painel. | 41/63 |  |
+| `c01.memory.owl_booth` | Above the front door: Kit's wooden owl. | Em cima da porta: a coruja de madeira da Tia Kit. | 49/55 |  |
+| `c01.memory.loose_arm` | In the workshop: a striped arm, hanging loose. | Na oficina: um braço listrado, pendurado solto. | 47/65 |  |
