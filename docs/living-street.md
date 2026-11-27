@@ -1,6 +1,6 @@
 # The living street: Lantern Lane on Halloween night (design for D33)
 
-Status: **design, for the owner's approval** (2026-11-27). Docs only. Nothing here is built yet. It answers D33
+Status: **approved by the owner on 2026-11-27 (D34)**, with the recommended answer to each decision in §10. Docs only. Nothing here is built yet. It answers D33
 (`docs/decisions.md`) and is grounded in `docs/narrative-bible.md` (the checklist is in §11), `docs/world-and-cases.md`,
 `docs/engagement.md`, `docs/mystery-first.md`, `Spooky-Street-Spec.md` v1.4 (§4 density, §6 premium bar, §8
 performance), `docs/portability.md`, `docs/roadmap.md`, `docs/S004-plan.md`, `docs/graphics-agent-standards.md`
