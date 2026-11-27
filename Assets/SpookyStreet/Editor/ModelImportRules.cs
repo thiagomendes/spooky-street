@@ -19,11 +19,17 @@ namespace SpookyStreet.EditorTools
         public const int MaxTextureSize = 2048;
         public const string IosPlatform = "iPhone";
 
-        public override uint GetVersion() => 7; // 7: June's KneeTap loops
+        public override uint GetVersion() => 8; // 8: crowd kit meshes readable
 
         public static bool IsGameModelPath(string path) => path.StartsWith(ModelsRoot, System.StringComparison.Ordinal);
 
         public static bool IsCharacterPath(string path) => IsGameModelPath(path) && path.Contains("/Characters/");
+
+        /// <summary>
+        /// The crowd kit (<c>Characters/Crowd</c>, <see cref="SpookyStreet.Core.Crowd.CrowdKit"/>): its part meshes are
+        /// merged into one skinned mesh per walker at spawn, which needs readable meshes.
+        /// </summary>
+        public static bool IsCrowdPath(string path) => IsCharacterPath(path) && path.Contains("/Characters/Crowd/");
 
         /// <summary>
         /// Street-set models (EnvironmentLayout.StreetSetModels) are combined at runtime with
@@ -76,7 +82,7 @@ namespace SpookyStreet.EditorTools
             importer.importVisibility = false;
             importer.importBlendShapes = false;
             importer.bakeAxisConversion = true;
-            importer.isReadable = IsStaticBatchedPath(assetPath);
+            importer.isReadable = IsStaticBatchedPath(assetPath) || IsCrowdPath(assetPath);
             importer.addCollider = false;
             importer.meshCompression = ModelImporterMeshCompression.Off;
             importer.importNormals = ModelImporterNormals.Import;
