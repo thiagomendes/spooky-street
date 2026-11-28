@@ -241,7 +241,11 @@ namespace SpookyStreet.Tests.Visual
             Assert.GreaterOrEqual(queued, 0, "a family waits its turn");
             yield return Wait(1.0f);
             var waiting = Stage.Crowd.Bodies[Stage.Crowd.Clock.FirstWalker(queued)].Root.position;
-            Frame(World(fogg, 1.0f, 5.5f, 2.6f) + new Vector3(0f, 0f, 0f), (waiting + new Vector3(fogg.StandX, 0.6f, fogg.StandZ)) * 0.5f);
+            // From the sidewalk beyond Pip, looking back past her at the family waiting a few metres back.
+            var pipAt = new Vector3(fogg.StandX, 0.6f, fogg.StandZ);
+            var along = waiting - pipAt;
+            along.y = 0f;
+            Frame(pipAt - along.normalized * 3.2f + new Vector3(0f, 1.7f, -1.6f), Vector3.Lerp(pipAt, waiting, 0.55f) + Vector3.up * 0.3f);
             Debug.Log($"[TrickOrTreatCaptureTests] 114: family {queued} waits at ({waiting.x:F1}, {waiting.z:F1}), Pip at the stand");
             yield return Shot("114_group_waits_turn");
             yield return Wait(NeighbourDoors.RingBeat);
@@ -292,7 +296,12 @@ namespace SpookyStreet.Tests.Visual
             }, 150f, 6f);
             yield return Wait(1.0f);
             var admire = Stage.Crowd.Bodies[Stage.Crowd.Clock.FirstWalker(strollers)].Root.position;
-            Frame(admire + new Vector3(2.6f, 1.5f, -3.0f), admire + new Vector3(-0.4f, 0.9f, 1.6f));
+            // From behind and beside them, looking where they look (the porch they admire is in the frame).
+            var gaze = Stage.Crowd.Bodies[Stage.Crowd.Clock.FirstWalker(strollers)].Root.forward;
+            gaze.y = 0f;
+            gaze.Normalize();
+            var beside = new Vector3(gaze.z, 0f, -gaze.x);
+            Frame(admire - gaze * 3.2f + beside * 1.6f + Vector3.up * 1.6f, admire + gaze * 3.5f + Vector3.up * 0.9f);
             Debug.Log($"[TrickOrTreatCaptureTests] 116d: strollers stopped at ({admire.x:F1}, {admire.z:F1})");
             yield return Shot("116d_admire_decoration");
         }

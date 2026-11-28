@@ -594,7 +594,18 @@ namespace SpookyStreet.LivingStreet
                 tris[b * 6 + 5] = v + 1;
             }
 
+            // Normals toward the street and plain UVs: the felt shader lights and samples every vertex.
+            var normals = new Vector3[bands * 4];
+            var uvs = new Vector2[bands * 4];
+            for (int i = 0; i < normals.Length; i++)
+            {
+                normals[i] = Vector3.back;
+                uvs[i] = new Vector2(0.5f, 0.5f);
+            }
+
             mesh.vertices = rig.SilhouetteVerts;
+            mesh.normals = normals;
+            mesh.uv = uvs;
             mesh.triangles = tris;
             mesh.bounds = new Bounds(new Vector3(centre, (bottom + top) * 0.5f, wall), new Vector3(width + 0.2f, top - bottom + 0.2f, 0.2f));
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
