@@ -54,9 +54,12 @@ namespace SpookyStreet.LivingStreet
         public const float HallLightIntensity = 0.75f;
         public const float HallLightRange = 3.2f;
 
-        /// <summary>The shadow and the dark glass sit in the window, between the lit room card and the paper cut-outs.</summary>
-        public const float WindowCoverDepth = -0.0109f;
-        public const float SilhouetteDepth = -0.0116f;
+        /// <summary>
+        /// The dark glass and the shadow sit in the window's opening in front of the lit room card (-1.0 cm) and the paper
+        /// cut-outs (-1.25 cm), behind the sash bars and the casing (house art, porch_kit.window).
+        /// </summary>
+        public const float WindowCoverDepth = -0.019f;
+        public const float SilhouetteDepth = -0.016f;
 
         private readonly List<DoorRig> _doors = new List<DoorRig>();
         private readonly List<Renderer> _static = new List<Renderer>();

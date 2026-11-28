@@ -181,6 +181,12 @@ namespace SpookyStreet.Tests.Visual
             Debug.Log($"[TrickOrTreatCaptureTests] 111: hall light {Stage.Doors.HallLight(fogg.Id):F2} (lamp on {rig.HallLight.enabled}), " +
                       $"window cover {rig.WindowCover.enabled}, shadow at {Stage.Doors.Silhouette(fogg.Id):F2}, shown {rig.Silhouette.enabled}");
             Assert.IsTrue(rig.Silhouette.enabled, "the shadow is in the window");
+            var card = rig.House != null ? SpookyStreet.World.ModelKit.FindDeep(rig.House, SpookyStreet.Core.World.LaneHouseArt.RoomGlow) : null;
+            var cardRenderer = card != null ? card.GetComponent<Renderer>() : null;
+            Debug.Log($"[TrickOrTreatCaptureTests] 111: shadow bounds {rig.Silhouette.bounds}, cover bounds {rig.WindowCover.bounds}, " +
+                      $"window centre {rig.Hinge.parent.TransformPoint(new Vector3(window, 1.75f, -2.75f))}, room cards " +
+                      $"{(cardRenderer != null ? cardRenderer.bounds.ToString() : "none")}, house at {(rig.House != null ? rig.House.position + " yaw " + rig.House.eulerAngles.y : "none")}, " +
+                      $"door frame yaw {rig.Hinge.parent.eulerAngles.y}");
             yield return Shot("111_doorbell_hall_light_shadow");
 
             // 112: the third ring: his hand on the door's edge, the leaf mid-way on its hinge curve.

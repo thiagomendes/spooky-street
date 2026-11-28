@@ -191,6 +191,24 @@ each door is dark until the first ring (the light switching on). Pip rings only 
 outside, nobody needs to come). Frame 107 (Mr. Fogg waving at a group's ring) is retired: a group's ring now brings
 him out with treats.
 
+Evidence: **CI run 46158239826 (run 223), commit `4c8caa8`: green** (EditMode 1012/1012, PlayMode 179/179, Visual
+32/32) with the art's clips merged (`feature/street-treat-clips`); **run 46164287260 (run 225), commit `7f7bbbb`:
+green** (the same counts). Run 220 (`3f1d677`, before the clips) passed EditMode 987/987 and PlayMode 179/179; its
+one Visual failure was the capture ringing too soon. Measured in play: Mr. Fogg's door peaks at 115 degrees and never
+turns faster than 266 degrees a second; a family queued at his door waits 4.5 to 5.7 m back; Pip pushed into a walker
+stops at its body (0.48 m, the bodies touching) and slides on; she gets through a family on the lane in 3.0 s; crowd
+cost 0.07 to 0.1 ms a frame in the editor. Frames (looked at; copies in `docs/evidence/living-street/treats/`):
+
+| Frame | What it shows |
+|---|---|
+| `ci_111_doorbell_hall_light_shadow.jpg` | after two rings at Mr. Fogg's: the warm light in front of his door, the window beside it lit (dark before the first ring). The shadow crossing that window did not draw in runs 223 and 225 (see weak points) |
+| `ci_112_door_mid_open.jpg` | the third ring: the orange door half way (54 of 115 degrees) on its hinge, Mr. Fogg at its edge inside the hall, Pip at the steps |
+| `ci_113_neighbour_treat_into_pail.jpg` | at the Abbotts': one dad leans down with GiveTreat over the robot child's pail, the little queen waits her turn in the arc, the other dad stays in the doorway |
+| `ci_114_group_waits_turn.jpg` | Pip at Mr. Fogg's path after one ring; the cat family waits back on the sidewalk by the hedge gap |
+| `ci_115_pip_hands_treat_porch.jpg` | Pip on her steps reaching a sweet down into the little queen's hands (HandTreat), the skeleton dad and his pail beside them |
+| `ci_116a/b/c_family_turns_corner.jpg` | the cat family curving round the lane's east end together, children a step ahead of their mum |
+| `ci_116d_admire_decoration.jpg` | the paper-crown grandpa and the candy-corn grandchild stopped, facing the Abbotts' jack-o'-lanterns |
+
 ## 7. Decisions taken (reversible)
 
 - The slice ends at x = 46 (sky dome), the Green is its first corner only.
