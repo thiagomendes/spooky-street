@@ -72,7 +72,10 @@ namespace SpookyStreet.Core.LivingStreet
         /// <summary>The saved memory ID (living-street §6 rule 8: <c>street.free.*</c>).</summary>
         public string StableId => "street.free.door." + Id;
 
-        /// <summary>House model (an existing street-set porch house).</summary>
+        /// <summary>
+        /// The street-set porch house the slice was laid out on: its size is the bounds footprint (the same as
+        /// <see cref="LaneHouseArt.Footprint"/>). The game spawns the lane's own house, <see cref="LaneHouseArt.House"/>.
+        /// </summary>
         public string House { get; }
 
         public float X { get; }
@@ -278,6 +281,73 @@ namespace SpookyStreet.Core.LivingStreet
                 case Pearl: return new[] { "Neighbour_Pearl" };
                 default: return new[] { "Neighbour_AbbottA", "Neighbour_AbbottB" };
             }
+        }
+
+        /// <summary>
+        /// How far in front of the front wall's face the neighbours stand in their doorway (on the landing or porch).
+        /// Mr. Fogg stands a little further out: his wave lifts his hand over the door head, and at the usual 0.3 m the
+        /// casing's head hid it for a few frames (docs/living-street-houses-art.md, Known limits). His landing is 0.5 m deep.
+        /// </summary>
+        public static float NeighbourOut(NeighbourDoor door) => door != null && door.Id == Fogg ? FoggOut : DoorwayOut;
+
+        public const float DoorwayOut = 0.3f;
+        public const float FoggOut = 0.45f;
+
+        /// <summary>Depth of the landing at Mr. Fogg's and the Abbotts' doors (Nana Pearl's porch is deeper).</summary>
+        public const float LandingDepth = 0.5f;
+
+        // --- Porch lights (docs/living-street-lane-houses.md) -----------------------------------------------------
+
+        /// <summary>
+        /// The porch lamp's glass glows at this (the slice's level for the lamps, under <see cref="GlowLevels.Lamp"/>); a
+        /// door whose gag has a <see cref="DoorGag.LampBoost"/> warms it while it is open.
+        /// </summary>
+        public const float PorchLampGlow = 0.9f;
+
+        /// <summary>
+        /// A small warm point light in front of the doors that face away from the moon (Mr. Fogg's and Nana Pearl's), so
+        /// their fronts read as they do in the art sheets. No shadows; far under the owl house's door lamp
+        /// (<see cref="OwlDoorLight"/>), so the owl house stays the best-lit front on the street.
+        /// </summary>
+        public static bool HasPorchLight(NeighbourDoor door) => door != null && door.Id != Abbotts;
+
+        public const float PorchLightIntensity = 0.55f;
+        public const float PorchLightRange = 4.5f;
+
+        /// <summary>Where the light hangs from the door's centre: across toward the lamp, height above the ground, out from the wall.</summary>
+        public const float PorchLightAcross = 0.45f;
+        public const float PorchLightHeight = 2.6f;
+        public const float PorchLightOut = 1.0f;
+
+        /// <summary>The owl house's door lamp (Atmosphere): the lane's porch lights stay under it.</summary>
+        public const float OwlDoorLight = 1.6f;
+
+        /// <summary>The porch light's intensity: 0 for a door without one; warmer with the lamp while the door's gag says so.</summary>
+        public static float PorchLight(NeighbourDoor door, bool answering)
+        {
+            if (!HasPorchLight(door))
+            {
+                return 0f;
+            }
+
+            return answering && door.Gag.LampBoost > 0f
+                ? PorchLightIntensity * (PorchLampGlow + door.Gag.LampBoost) / PorchLampGlow
+                : PorchLightIntensity;
+        }
+
+        /// <summary>The porch light's position in the house's own frame (x across, y up, z toward the back).</summary>
+        public static void PorchLightLocal(NeighbourDoor door, out float x, out float y, out float z)
+        {
+            x = door.DoorLocalX + PorchLightAcross;
+            y = PorchLightHeight;
+            z = door.WallLocalZ - PorchLightOut;
+        }
+
+        /// <summary>The porch light's world plan position.</summary>
+        public static void PorchLightWorld(NeighbourDoor door, out float x, out float z)
+        {
+            PorchLightLocal(door, out float lx, out _, out float lz);
+            EnvironmentLayout.LocalToWorld(door.X, door.Z, door.Yaw, lx, lz, out x, out z);
         }
 
         /// <summary>The house models as placements (for the bounds checks; the runtime fits boxes to the meshes).</summary>

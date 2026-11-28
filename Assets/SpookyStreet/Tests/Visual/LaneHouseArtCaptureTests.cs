@@ -15,15 +15,14 @@ using UnityEngine.TestTools;
 namespace SpookyStreet.Tests.Visual
 {
     /// <summary>
-    /// The east lane's three porch houses in the game's light (docs/living-street-houses-art.md), before the slice swaps
-    /// them in: this test puts the art where the slice's placeholders stand, the way the swap will (each house on its
-    /// door's placement, its leaf on the door rig's hinge, its lamp in the rig's lamp spot and driven by the rig, the
-    /// placeholder house, leaf, knob, lamp, bell and flat doorway card hidden). The neighbours are the slice's own
-    /// figures: their looks resolve to the crowd kit's neighbour recipes (<c>CrowdKit.Neighbours</c>).
-    /// 98_lane_houses: the gameplay camera behind Pip at the hedge gap, looking down the lane at the three houses.
-    /// 98b_lane_houses_back: from the Green's corner looking back west. 99_fogg_door, 100_pearl_door,
-    /// 101_abbotts_door: Pip rings each bell with the gameplay camera behind her, and the door answers with its gag
-    /// (Mr. Fogg's fling, Nana Pearl's slow door and warm lamp, the Abbotts' hop).
+    /// The east lane's three porch houses as the game builds them (docs/living-street-lane-houses.md): nothing is staged,
+    /// the slice spawns the houses, leaves, lamps and porch lights itself, and the neighbours are the crowd kit's
+    /// (<c>CrowdKit.Neighbours</c>). 102_lane_houses_ingame: the gameplay camera behind Pip at the hedge gap, looking
+    /// down the lane. 103_lane_houses_back_ingame: from the Green's corner looking back west. 104_fogg_door_ingame,
+    /// 105_pearl_door_ingame, 106_abbotts_door_ingame: Pip rings each bell with the gameplay camera behind her and the
+    /// door answers with its gag. 107_fogg_wave_ingame: a group rings Mr. Fogg's bell and he waves; the frame is taken
+    /// near the wave's highest point, and the log says whether his hand cleared the door head and the hood.
+    /// (Frames 98 to 101 were the art pass's staged swap of the same houses.)
     /// </summary>
     [Category("Visual")]
     public class LaneHouseArtCaptureTests : InputTestFixture
@@ -31,6 +30,18 @@ namespace SpookyStreet.Tests.Visual
         private const int Width = 1278;
         private const int Height = 590;
         private const float MaxMagenta = 0.005f;
+
+        // Mr. Fogg's door head, in the house's frame from the door's centre (tools/blender/env/lane_houses.py: the casing
+        // head stands 0.13 m proud up to 2.75 m; the hood is 0.87 m deep, its trim's lowest edge at 2.70 m, ±1.08 m wide).
+        private const float CasingOut = 0.13f;
+        private const float CasingBottom = 2.56f;
+        private const float CasingTop = 2.75f;
+        private const float CasingHalf = 0.77f;
+        private const float HoodOut = 0.87f;
+        private const float HoodBottom = 2.70f;
+        private const float HoodTop = 3.44f;
+        private const float HoodHalf = 1.08f;
+        private const float HandTop = 0.1f; // the hand above its wrist bone
 
         public override void Setup()
         {
@@ -76,54 +87,6 @@ namespace SpookyStreet.Tests.Visual
             Assert.Greater(FrameCapture.MeanLuminance(FrameCapture.LastFrame), 0.02f, $"{name}: frame is black");
         }
 
-        private static void Hide(Transform root, string name)
-        {
-            var t = ModelKit.FindDeep(root, name);
-            if (t != null)
-            {
-                t.gameObject.SetActive(false);
-            }
-        }
-
-        /// <summary>Puts one house's art in place of the slice's placeholder, as the swap will.</summary>
-        private static void SwapIn(LivingStreetSet set, LivingStreetSet.DoorRig rig, MaterialLibrary materials, float correction)
-        {
-            var door = rig.Door;
-            string id = door.Id;
-            var houses = new ModelKit(materials, LaneHouseArt.Folder) { FallbackAtlas = null };
-            var parts = new ModelKit(materials, LaneHouseArt.Folder) { FallbackAtlas = LaneHouseArt.Atlas(id) };
-            Hide(set.StaticRoot, door.House);
-            var house = houses.Spawn(LaneHouseArt.House(id), set.transform, new Vector3(door.X, 0f, door.Z), door.Yaw + correction);
-            Assert.IsNotNull(house, id + ": house");
-            Assert.IsNotNull(house.GetComponentInChildren<LODGroup>(), id + ": the house has its LOD group");
-
-            // the leaf on the rig's hinge (the slice's swing turns the hinge), the placeholder leaf and knob hidden
-            rig.Leaf.gameObject.SetActive(false);
-            Hide(rig.Hinge, "Knob");
-            var leaf = parts.Spawn(LaneHouseArt.DoorLeaf(id), rig.Hinge, Vector3.zero, correction);
-            Assert.IsNotNull(leaf, id + ": leaf");
-            rig.Leaf = leaf.transform;
-
-            // the lamp where the slice's lamp is, driven by the rig (Nana Pearl's warms while she answers)
-            var frame = rig.Hinge.parent;
-            var lamp = parts.Spawn(LaneHouseArt.PorchLamp(id), frame, rig.Lamp.transform.localPosition, correction);
-            Assert.IsNotNull(lamp, id + ": lamp");
-            rig.Lamp.gameObject.SetActive(false);
-            var glass = ModelKit.FindDeep(lamp.transform, LaneHouseArt.LampGlow).GetComponent<Renderer>();
-            rig.Lamp = glass;
-            rig.LampRest = parts.GlowMaterialFor(LaneHouseArt.PorchLamp(id), 0.9f);
-            rig.LampBright = parts.GlowMaterialFor(LaneHouseArt.PorchLamp(id), 0.9f + door.Gag.LampBoost);
-            glass.sharedMaterial = rig.LampRest;
-
-            // the house has its own bell button and its own lit hall behind the door
-            Hide(frame, "Doorbell");
-            Hide(frame, "Doorway");
-            foreach (var r in house.GetComponentsInChildren<Renderer>(true))
-            {
-                r.shadowCastingMode = ShadowCastingMode.Off;
-            }
-        }
-
         private static void Face(Vector3 at, Vector3 lookAt)
         {
             var game = GameBootstrap.Instance;
@@ -134,9 +97,39 @@ namespace SpookyStreet.Tests.Visual
             game.CameraRig.Orbit.RequestRecenter();
         }
 
+        private static IEnumerator FaceDoor(NeighbourDoor door)
+        {
+            Vector3 stand = new Vector3(door.StandX, 0.1f, door.StandZ);
+            Vector3 doorAt = new Vector3(door.DoorX, 0f, door.DoorZ);
+            Face(stand + (stand - doorAt).normalized * 0.25f, doorAt);
+            yield return Wait(1.6f);
+        }
+
+        /// <summary>True when the camera's line to the top of Mr. Fogg's hand passes through his door head or his hood.</summary>
+        private static bool HandHidden(Transform frame, NeighbourDoor door, Vector3 handWorld, Vector3 eyeWorld)
+        {
+            Vector3 hand = frame.InverseTransformPoint(handWorld + Vector3.up * HandTop);
+            Vector3 eye = frame.InverseTransformPoint(eyeWorld);
+            return Blocks(hand, eye, door, CasingOut, CasingBottom, CasingTop, CasingHalf)
+                   || Blocks(hand, eye, door, HoodOut, HoodBottom, HoodTop, HoodHalf);
+        }
+
+        private static bool Blocks(Vector3 hand, Vector3 eye, NeighbourDoor door, float outFromWall, float bottom, float top, float half)
+        {
+            float plane = door.WallLocalZ - outFromWall;
+            if (hand.z <= plane || eye.z >= plane)
+            {
+                return false; // the hand is already in front of this piece
+            }
+
+            float t = (plane - hand.z) / (eye.z - hand.z);
+            Vector3 at = hand + (eye - hand) * t;
+            return at.y > bottom && at.y < top && Mathf.Abs(at.x - door.DoorLocalX) < half;
+        }
+
         [UnityTest]
         [Timeout(300000)]
-        public IEnumerator CaptureTheLaneHouses()
+        public IEnumerator CaptureTheLaneHousesInTheGame()
         {
             yield return SceneManager.LoadSceneAsync("LanternLane", LoadSceneMode.Single);
             for (int i = 0; i < 10; i++)
@@ -161,35 +154,34 @@ namespace SpookyStreet.Tests.Visual
             game.Ui.FirstPrompt.SetActive(false);
             var stage = Director.Living;
             Assert.IsNotNull(stage, "the living street slice");
-            float correction = game.Environment.ModelYawCorrection;
             foreach (var rig in stage.Set.Doors)
             {
-                SwapIn(stage.Set, rig, game.Materials, correction);
+                Assert.IsNotNull(rig.House, rig.Door.Id + ": the lane house is the game's own");
+                Assert.AreEqual(LaneHouseArt.House(rig.Door.Id), rig.House.name);
+                Assert.AreEqual(LaneHouseArt.DoorLeaf(rig.Door.Id), rig.Leaf.name);
+                Assert.AreEqual(LaneHouseArt.LampGlow, rig.Lamp.name);
                 foreach (var body in rig.Figures)
                 {
                     Assert.IsTrue(body.IsKit, rig.Door.Id + ": the neighbour is a crowd kit body");
                 }
             }
 
-            // 98: down the lane from the hedge gap, the gameplay camera behind Pip.
+            // 102: down the lane from the hedge gap, the gameplay camera behind Pip.
             Face(new Vector3(23.4f, 0.1f, -0.6f), new Vector3(34f, 0f, 1.5f));
             yield return Wait(2.0f);
-            yield return Shot("98_lane_houses");
+            yield return Shot("102_lane_houses_ingame");
 
-            // 98b: from the Green's corner, looking back west along the lane.
+            // 103: from the Green's corner, looking back west along the lane.
             Face(new Vector3(43.2f, 0.1f, 0.4f), new Vector3(30f, 0f, 0.6f));
             yield return Wait(2.0f);
-            yield return Shot("98b_lane_houses_back");
+            yield return Shot("103_lane_houses_back_ingame");
 
-            string[] names = { "99_fogg_door", "100_pearl_door", "101_abbotts_door" };
+            string[] names = { "104_fogg_door_ingame", "105_pearl_door_ingame", "106_abbotts_door_ingame" };
             string[] ids = { LivingStreetLayout.Fogg, LivingStreetLayout.Pearl, LivingStreetLayout.Abbotts };
             for (int i = 0; i < ids.Length; i++)
             {
                 var door = LivingStreetLayout.Door(ids[i]);
-                Vector3 stand = new Vector3(door.StandX, 0.1f, door.StandZ);
-                Vector3 doorAt = new Vector3(door.DoorX, 0f, door.DoorZ);
-                Face(stand + (stand - doorAt).normalized * 0.25f, doorAt);
-                yield return Wait(1.6f);
+                yield return FaceDoor(door);
                 Assert.IsTrue(stage.Ring(door), door.Id + " answers");
                 // Mr. Fogg's fling peaks early; Nana Pearl's door eases open; the Abbotts hop in the doorway
                 yield return Wait(door.Gag.OpenSeconds + 0.5f);
@@ -199,6 +191,64 @@ namespace SpookyStreet.Tests.Visual
                 yield return Wait(NeighbourDoors.HoldSeconds + NeighbourDoors.CloseSeconds + 0.3f);
                 Director.Captions.Clear();
             }
+
+            // 107: a group rings Mr. Fogg's bell and he waves (the Wave clip, left hand high). Measure one wave's highest
+            // point and whether the camera sees the hand, then shoot near that point on the next swing.
+            var fogg = LivingStreetLayout.Door(LivingStreetLayout.Fogg);
+            var foggRig = stage.Set.Doors[0];
+            Assert.AreEqual(fogg.Id, foggRig.Door.Id);
+            yield return FaceDoor(fogg);
+            float until = Time.time + 8f;
+            while (stage.Doors.Busy(fogg.Id) && Time.time < until)
+            {
+                yield return null; // a walking group may be at his door
+            }
+
+            Assert.IsNotNull(stage.Doors.Ring(fogg.Id, Ringer.Group), "a group rings Mr. Fogg's bell");
+            until = Time.time + 1.5f;
+            while (!stage.Doors.NeighbourShown(fogg.Id) && Time.time < until)
+            {
+                yield return null;
+            }
+
+            var frame = foggRig.Hinge.parent;
+            var hand = ModelKit.FindDeep(foggRig.Figures[0].Root, "Hand_L");
+            var eye = game.CameraRig.OutputCamera.transform;
+            if (hand == null)
+            {
+                Debug.LogWarning("[LaneHouseArtCaptureTests] Mr. Fogg has no Hand_L bone; the wave is not measured");
+                yield return Wait(0.6f);
+            }
+            else
+            {
+                float peak = float.MinValue, peakOut = 0f;
+                int frames = 0, hidden = 0;
+                until = Time.time + 1.6f;
+                while (Time.time < until && stage.Doors.NeighbourShown(fogg.Id))
+                {
+                    yield return null;
+                    Vector3 local = frame.InverseTransformPoint(hand.position);
+                    frames++;
+                    hidden += HandHidden(frame, fogg, hand.position, eye.position) ? 1 : 0;
+                    if (local.y > peak)
+                    {
+                        peak = local.y;
+                        peakOut = fogg.WallLocalZ - local.z;
+                    }
+                }
+
+                Debug.Log($"[LaneHouseArtCaptureTests] fogg wave: wrist peak {peak:F2} m over the ground, {peakOut:F2} m out from " +
+                          $"the wall (stands {LivingStreetLayout.NeighbourOut(fogg):F2} m out); hand hidden by the door head or hood " +
+                          $"in {hidden} of {frames} frames; camera at {frame.InverseTransformPoint(eye.position)}");
+                until = Time.time + 1.6f;
+                while (Time.time < until && frame.InverseTransformPoint(hand.position).y < peak - 0.03f)
+                {
+                    yield return null;
+                }
+            }
+
+            yield return Shot("107_fogg_wave_ingame", keepCaptions: true);
+            yield return Wait(NeighbourDoors.HoldSeconds + NeighbourDoors.CloseSeconds + 0.3f);
         }
     }
 }

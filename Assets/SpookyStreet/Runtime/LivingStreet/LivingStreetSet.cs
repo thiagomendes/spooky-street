@@ -9,12 +9,14 @@ using UnityEngine.Rendering;
 namespace SpookyStreet.LivingStreet
 {
     /// <summary>
-    /// The east lane in the world (living-street §2.2, §9 phase 1): the three porch houses (the street set's reviewed
-    /// neighbour houses, now walkable up to their steps), the lane's hedges and sidewalk, lamps and pumpkins, the Green's
-    /// first corner with the lantern table under string lights, and on Pip's own porch a crook post for her lantern.
-    /// Static pieces sit under one batched root, culled as a whole with the lane (§8 sectors); each door has a hinged
-    /// leaf (the door gag rig, never a blend shape), a lit doorway behind it and its neighbour, hidden until the door
-    /// opens. Same pattern as <see cref="EnvironmentDressing"/>: without models it falls back to plain boxes.
+    /// The east lane in the world (living-street §2.2, §9 phase 1): the three porch houses (Mr. Fogg's, Nana Pearl's and
+    /// the Abbotts', docs/living-street-houses-art.md, walkable up to their steps), the lane's hedges and sidewalk, lamps
+    /// and pumpkins, the Green's first corner with the lantern table under string lights, and on Pip's own porch a crook
+    /// post for her lantern. Static pieces sit under one batched root, culled as a whole with the lane (§8 sectors); each
+    /// door has its own hinged leaf (the door gag rig, never a blend shape), its porch lamp and its neighbour, hidden until
+    /// the door opens; each house carries its own push button and lit hall. Same pattern as
+    /// <see cref="EnvironmentDressing"/>: without models it falls back to plain boxes, a paper leaf, a flat lit doorway
+    /// and a bell disc.
     /// </summary>
     public sealed class LivingStreetSet : MonoBehaviour
     {
@@ -27,6 +29,10 @@ namespace SpookyStreet.LivingStreet
             public Renderer Lamp;
             public Material LampRest;
             public Material LampBright;
+            /// <summary>The small warm light in front of the door (Mr. Fogg's and Nana Pearl's), or null.</summary>
+            public Light PorchLight;
+            /// <summary>The house model (null when the house fell back to a box).</summary>
+            public Transform House;
             public readonly List<CrowdBody> Figures = new List<CrowdBody>();
             public readonly List<Vector3> FigureRest = new List<Vector3>();
             public float Clock;
@@ -36,7 +42,6 @@ namespace SpookyStreet.LivingStreet
         private readonly List<Renderer> _static = new List<Renderer>();
         private MaterialLibrary _materials;
         private Transform _lanternShape;
-        private ModelKit _env;
         private ModelKit _lanterns;
         private Transform _bellButton;
         private Vector3 _bellRest;
@@ -56,14 +61,19 @@ namespace SpookyStreet.LivingStreet
         public float BellPressed => _bellPress;
 
         /// <summary>
-        /// The swap point for the slice's pieces that have no art yet (living-street §7, crowd-art doc "not done"): when the
-        /// art pass commits a model under these names in <c>Models/Environment</c>, it replaces the paper placeholder.
+        /// The lane's art (docs/living-street-houses-art.md, "The swap"), all in <see cref="LaneHouseArt.Folder"/>: each
+        /// door's house, leaf and porch lamp. When a model is missing its paper placeholder stands in.
         /// </summary>
         public static class ArtNames
         {
-            /// <summary>A front door leaf, pivot on its hinge edge at the sill, closed along +X, front toward -Z.</summary>
-            public const string DoorLeaf = "LivingStreet_DoorLeaf";
+            /// <summary>The house (its own atlas, LOD group, lit rooms and hall, push button).</summary>
+            public static string House(NeighbourDoor door) => LaneHouseArt.House(door.Id);
 
+            /// <summary>The door's leaf, pivot on its hinge edge at the sill, closed along +X, front toward -Z.</summary>
+            public static string DoorLeaf(NeighbourDoor door) => LaneHouseArt.DoorLeaf(door.Id);
+
+            /// <summary>The porch lamp, origin in its glass (<see cref="LaneHouseArt.LampGlow"/>).</summary>
+            public static string PorchLamp(NeighbourDoor door) => LaneHouseArt.PorchLamp(door.Id);
         }
         private readonly ICrowdBodyFactory _kitBodies = new CrowdKitBodyFactory();
         private readonly ICrowdBodyFactory _placeholders = new PlaceholderCrowdBodies();
@@ -107,13 +117,14 @@ namespace SpookyStreet.LivingStreet
             StaticRoot.SetParent(transform, false);
 
             var env = materials != null ? new ModelKit(materials, EnvironmentDressing.ModelFolder) { FallbackAtlas = ModelKit.DefaultFallbackAtlas } : null;
-            _env = env;
             var street = materials != null ? new ModelKit(materials, EnvironmentDressing.ModelFolder) { FallbackAtlas = EnvironmentLayout.StreetAtlas } : null;
 
+            // Each lane house finds its atlas by its own name; its leaf and lamp share it (a kit per door, below).
+            var houses = materials != null ? new ModelKit(materials, LaneHouseArt.Folder) { FallbackAtlas = null } : null;
             foreach (var door in LivingStreetLayout.Doors)
             {
-                var house = models && street != null
-                    ? street.Spawn(door.House, StaticRoot, new Vector3(door.X, 0f, door.Z), door.Yaw + correction)
+                var house = models && houses != null
+                    ? houses.Spawn(ArtNames.House(door), StaticRoot, new Vector3(door.X, 0f, door.Z), door.Yaw + correction)
                     : null;
                 if (house != null)
                 {
@@ -123,13 +134,16 @@ namespace SpookyStreet.LivingStreet
                 }
                 else
                 {
-                    EnvironmentLayout.Size(door.House, out float w, out float d);
+                    LaneHouseArt.Footprint(door.Id, out float w, out float d);
                     var box = Box(StaticRoot, "House_" + door.Id, new Vector3(door.X, 3f, door.Z), new Vector3(w * 0.8f, 6f, d * 0.7f),
                         Palette.HouseIndigo, true);
                     box.transform.localRotation = Quaternion.Euler(0f, door.Yaw, 0f);
                 }
 
-                _doors.Add(BuildDoor(door));
+                var parts = house != null ? new ModelKit(materials, LaneHouseArt.Folder) { FallbackAtlas = LaneHouseArt.Atlas(door.Id) } : null;
+                var rig = BuildDoor(door, parts, correction);
+                rig.House = house != null ? house.transform : null;
+                _doors.Add(rig);
             }
 
             if (streetSet && street != null)
@@ -410,7 +424,13 @@ namespace SpookyStreet.LivingStreet
         /// <summary>Pip's lantern glows a little under the street lamps and far under the attic window (GlowLevels).</summary>
         public const float GlowPipLantern = 1.3f;
 
-        private DoorRig BuildDoor(NeighbourDoor door)
+        /// <summary>
+        /// One door: the leaf on its hinge, the porch lamp, the porch light and the neighbour(s). With the house's art
+        /// (<paramref name="art"/>, the house's own atlas) the leaf and lamp are its models and the house carries the push
+        /// button and the lit hall; without it, paper placeholders (a flat leaf with a knob, a lamp ball, a bell disc and a
+        /// flat lit doorway card).
+        /// </summary>
+        private DoorRig BuildDoor(NeighbourDoor door, ModelKit art, float correction)
         {
             var rig = new DoorRig { Door = door };
             var frame = new GameObject("Door_" + door.Id).transform;
@@ -418,47 +438,96 @@ namespace SpookyStreet.LivingStreet
             frame.position = new Vector3(door.X, 0f, door.Z);
             frame.rotation = Quaternion.Euler(0f, door.Yaw, 0f);
 
-            // The lit doorway behind the leaf (seen only while the door is open).
-            var doorway = Primitive(PrimitiveType.Cube, frame, "Doorway",
-                new Vector3(door.DoorLocalX, LivingStreetLayout.DoorSill + LivingStreetLayout.DoorHeight * 0.5f, door.WallLocalZ - 0.045f),
-                new Vector3(LivingStreetLayout.DoorWidth - 0.06f, LivingStreetLayout.DoorHeight - 0.04f, 0.01f), Palette.PumpkinAmber,
-                _materials != null ? _materials.Glow(Palette.PumpkinAmber, 0.85f) : null);
-            doorway.shadowCastingMode = ShadowCastingMode.Off;
-
             // The leaf on its hinge (the door's left edge, seen from the street); it swings out toward the visitor.
             rig.Hinge = new GameObject("Hinge").transform;
             rig.Hinge.SetParent(frame, false);
             rig.Hinge.localPosition = new Vector3(door.DoorLocalX - LivingStreetLayout.DoorWidth * 0.5f, LivingStreetLayout.DoorSill,
-                door.WallLocalZ - 0.08f);
-            Color paint = door.Id == LivingStreetLayout.Abbotts ? Palette.Hex(0xB5602A)
-                : door.Id == LivingStreetLayout.Pearl ? Palette.HauntedPurple : Palette.Plum;
-            var leafArt = _env != null ? _env.Spawn(ArtNames.DoorLeaf, rig.Hinge, Vector3.zero) : null;
-            var leaf = leafArt != null ? leafArt.GetComponentInChildren<Renderer>() : Primitive(PrimitiveType.Cube, rig.Hinge, "Leaf",
-                new Vector3(LivingStreetLayout.DoorWidth * 0.5f, LivingStreetLayout.DoorHeight * 0.5f, 0f),
-                new Vector3(LivingStreetLayout.DoorWidth, LivingStreetLayout.DoorHeight, 0.05f), paint, null);
-            rig.Leaf = leaf.transform;
-            Primitive(PrimitiveType.Sphere, rig.Hinge, "Knob", new Vector3(LivingStreetLayout.DoorWidth - 0.14f, 1.0f, -0.05f),
-                Vector3.one * 0.07f, Palette.CandyCornYellow, null);
+                door.WallLocalZ - LaneHouseArt.HingeInset);
+            var leafArt = art != null ? art.Spawn(ArtNames.DoorLeaf(door), rig.Hinge, Vector3.zero, correction) : null;
+            if (leafArt != null)
+            {
+                Spawned++;
+                rig.Leaf = leafArt.transform;
+            }
+            else
+            {
+                Color paint = door.Id == LivingStreetLayout.Abbotts ? Palette.Hex(0xB5602A)
+                    : door.Id == LivingStreetLayout.Pearl ? Palette.HauntedPurple : Palette.Plum;
+                rig.Leaf = Primitive(PrimitiveType.Cube, rig.Hinge, "Leaf",
+                    new Vector3(LivingStreetLayout.DoorWidth * 0.5f, LivingStreetLayout.DoorHeight * 0.5f, 0f),
+                    new Vector3(LivingStreetLayout.DoorWidth, LivingStreetLayout.DoorHeight, 0.05f), paint, null).transform;
+                Primitive(PrimitiveType.Sphere, rig.Hinge, "Knob", new Vector3(LivingStreetLayout.DoorWidth - 0.14f, 1.0f, -0.05f),
+                    Vector3.one * 0.07f, Palette.CandyCornYellow, null);
+            }
 
-            // The porch lamp by the door (Nana Pearl's warms up while she answers) and the bell button.
-            var lampAt = new Vector3(door.DoorLocalX + LivingStreetLayout.DoorWidth * 0.5f + 0.32f, LivingStreetLayout.DoorSill + 1.85f,
-                door.WallLocalZ - 0.12f);
-            rig.LampRest = _materials != null ? _materials.Glow(Palette.PumpkinAmber, 0.9f) : null;
-            rig.LampBright = _materials != null ? _materials.Glow(Palette.PumpkinAmber, 0.9f + door.Gag.LampBoost) : null;
-            rig.Lamp = Primitive(PrimitiveType.Sphere, frame, "PorchLamp", lampAt, Vector3.one * 0.2f, Palette.PumpkinAmber, rig.LampRest);
-            Primitive(PrimitiveType.Cylinder, frame, "Doorbell",
-                new Vector3(door.DoorLocalX + LivingStreetLayout.DoorWidth * 0.5f + 0.18f, LivingStreetLayout.DoorSill + 1.1f, door.WallLocalZ - 0.03f),
-                new Vector3(0.07f, 0.01f, 0.07f), Palette.CandyCornYellow, null).transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            // The porch lamp by the door, its glass driven by the rig (Nana Pearl's warms up while she answers).
+            var lampAt = new Vector3(door.DoorLocalX + LaneHouseArt.LampAcross, LaneHouseArt.LampHeight, door.WallLocalZ - LaneHouseArt.LampOut);
+            float glow = LivingStreetLayout.PorchLampGlow;
+            var lampArt = art != null ? art.Spawn(ArtNames.PorchLamp(door), frame, lampAt, correction) : null;
+            var glass = lampArt != null ? ModelKit.FindDeep(lampArt.transform, LaneHouseArt.LampGlow) : null;
+            if (glass != null && glass.GetComponent<Renderer>() != null)
+            {
+                Spawned++;
+                rig.Lamp = glass.GetComponent<Renderer>();
+                rig.LampRest = art.GlowMaterialFor(ArtNames.PorchLamp(door), glow);
+                rig.LampBright = art.GlowMaterialFor(ArtNames.PorchLamp(door), glow + door.Gag.LampBoost);
+                rig.Lamp.sharedMaterial = rig.LampRest;
+            }
+            else
+            {
+                if (lampArt != null)
+                {
+                    Destroy(lampArt);
+                }
 
-            // The neighbour(s) in the doorway, facing the street: the crowd kit's grown-up in house clothes (their own art
-            // comes later; the kit factory is the swap point), the placeholder if the kit is missing.
+                rig.LampRest = _materials != null ? _materials.Glow(Palette.PumpkinAmber, glow) : null;
+                rig.LampBright = _materials != null ? _materials.Glow(Palette.PumpkinAmber, glow + door.Gag.LampBoost) : null;
+                rig.Lamp = Primitive(PrimitiveType.Sphere, frame, "PorchLamp", lampAt, Vector3.one * 0.2f, Palette.PumpkinAmber, rig.LampRest);
+            }
+
+            if (art == null)
+            {
+                // Placeholders the house art carries itself: the lit doorway behind the leaf and the bell's push button.
+                var doorway = Primitive(PrimitiveType.Cube, frame, "Doorway",
+                    new Vector3(door.DoorLocalX, LivingStreetLayout.DoorSill + LivingStreetLayout.DoorHeight * 0.5f, door.WallLocalZ - 0.045f),
+                    new Vector3(LivingStreetLayout.DoorWidth - 0.06f, LivingStreetLayout.DoorHeight - 0.04f, 0.01f), Palette.PumpkinAmber,
+                    _materials != null ? _materials.Glow(Palette.PumpkinAmber, 0.85f) : null);
+                doorway.shadowCastingMode = ShadowCastingMode.Off;
+                Primitive(PrimitiveType.Cylinder, frame, "Doorbell",
+                    new Vector3(door.DoorLocalX + LaneHouseArt.BellAcross, LaneHouseArt.BellHeight, door.WallLocalZ - 0.03f),
+                    new Vector3(0.07f, 0.01f, 0.07f), Palette.CandyCornYellow, null).transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            }
+
+            foreach (var r in frame.GetComponentsInChildren<Renderer>(true))
+            {
+                r.shadowCastingMode = ShadowCastingMode.Off;
+            }
+
+            // A small warm light in front of the fronts that face away from the moon (no shadows; under the owl house's).
+            if (LivingStreetLayout.HasPorchLight(door))
+            {
+                LivingStreetLayout.PorchLightLocal(door, out float lx, out float ly, out float lz);
+                var light = new GameObject("PorchLight").AddComponent<Light>();
+                light.transform.SetParent(frame, false);
+                light.transform.localPosition = new Vector3(lx, ly, lz);
+                light.type = LightType.Point;
+                light.color = Palette.PumpkinAmber;
+                light.intensity = LivingStreetLayout.PorchLight(door, false);
+                light.range = LivingStreetLayout.PorchLightRange;
+                light.shadows = LightShadows.None;
+                light.renderMode = LightRenderMode.Auto;
+                rig.PorchLight = light;
+            }
+
+            // The neighbour(s) in the doorway, facing the street: the crowd kit's neighbours in house clothes
+            // (CrowdKit.Neighbours), the placeholder if the kit is missing.
             var ids = LivingStreetLayout.NeighboursAt(door);
             for (int i = 0; i < ids.Count; i++)
             {
                 var look = new WalkerLook(ids[i]);
                 var body = _kitBodies.Create(look, frame, _materials) ?? _placeholders.Create(look, frame, _materials);
                 float across = ids.Count == 1 ? 0.18f : (i == 0 ? -0.22f : 0.38f);
-                var rest = new Vector3(door.DoorLocalX + across, LivingStreetLayout.DoorSill, door.WallLocalZ - 0.3f);
+                var rest = new Vector3(door.DoorLocalX + across, LivingStreetLayout.DoorSill, door.WallLocalZ - LivingStreetLayout.NeighbourOut(door));
                 body.Root.localPosition = rest;
                 // Bodies face +Z in their own frame; the house front faces -Z, so the neighbour turns to the street.
                 body.Root.localRotation = Quaternion.Euler(0f, 180f, 0f);
@@ -502,6 +571,11 @@ namespace SpookyStreet.LivingStreet
                 if (rig.Lamp != null && rig.LampBright != null)
                 {
                     rig.Lamp.sharedMaterial = shown && rig.Door.Gag.LampBoost > 0f ? rig.LampBright : rig.LampRest;
+                }
+
+                if (rig.PorchLight != null)
+                {
+                    rig.PorchLight.intensity = LivingStreetLayout.PorchLight(rig.Door, shown);
                 }
             }
         }
