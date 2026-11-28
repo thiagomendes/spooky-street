@@ -63,7 +63,9 @@ namespace SpookyStreet.Controls
     /// Floating stick (spec §5): the origin appears where the left thumb lands and trails the thumb when
     /// it travels past the radius. Tracks exactly one pointer id so a second finger cannot hijack it.
     /// At rest a ghost sits at <see cref="RestPosition"/> so a child sees where to put the thumb; it pulses
-    /// until the first real move, then stays as a faint marker.
+    /// until the first real move, then stays as a faint marker. The direction a child's thumb means is steadied by
+    /// <see cref="StickSteering"/> (tremor smoothing and a light pull onto up, the sides and the diagonals), so a
+    /// stick held straight walks straight (owner, 2026-11-28).
     /// </summary>
     public sealed class FloatingStick : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler
     {
@@ -84,8 +86,32 @@ namespace SpookyStreet.Controls
         private Canvas _canvas;
         private int _pointerId = int.MinValue;
         private Vector2 _origin;
+        private readonly StickSteering _steering = new StickSteering(new StickSteeringTuning());
+        private Vector2 _raw;
+        private Vector2 _steered;
+        private int _steeredFrame = -1;
 
-        public Vector2 Value { get; private set; }
+        /// <summary>The thumb's offset exactly as dragged (dead zone and radius applied, no steering).</summary>
+        public Vector2 RawValue => _raw;
+
+        /// <summary>
+        /// The stick as gameplay reads it: <see cref="RawValue"/> steadied once per frame (reading it again in the
+        /// same frame returns the same value).
+        /// </summary>
+        public Vector2 Value
+        {
+            get
+            {
+                if (_steeredFrame != Time.frameCount)
+                {
+                    _steeredFrame = Time.frameCount;
+                    _steering.Step(Time.deltaTime, _raw.x, _raw.y, out float x, out float y);
+                    _steered = new Vector2(x, y);
+                }
+
+                return _steered;
+            }
+        }
 
         public bool Active => _pointerId != int.MinValue;
 
@@ -111,7 +137,7 @@ namespace SpookyStreet.Controls
 
             _pointerId = eventData.pointerId;
             _origin = ToLocal(eventData);
-            Value = Vector2.zero;
+            _raw = Vector2.zero;
             SetAlpha(1f);
             UpdateVisuals(_origin);
         }
@@ -127,8 +153,8 @@ namespace SpookyStreet.Controls
             StickMath.FollowOrigin(_origin.x, _origin.y, finger.x, finger.y, Radius, out float ox, out float oy);
             _origin = new Vector2(ox, oy);
             StickMath.Evaluate(finger.x - _origin.x, finger.y - _origin.y, Radius, DeadZone, out float vx, out float vy);
-            Value = new Vector2(vx, vy);
-            HasMoved |= Value.sqrMagnitude > 0f;
+            _raw = new Vector2(vx, vy);
+            HasMoved |= _raw.sqrMagnitude > 0f;
             UpdateVisuals(finger);
         }
 
@@ -143,7 +169,10 @@ namespace SpookyStreet.Controls
         public void ResetStick()
         {
             _pointerId = int.MinValue;
-            Value = Vector2.zero;
+            _raw = Vector2.zero;
+            _steered = Vector2.zero;
+            _steeredFrame = -1;
+            _steering.Reset();
             ShowRest();
         }
 
