@@ -31,8 +31,8 @@ namespace SpookyStreet.Core.Nonverbal
     /// <summary>
     /// Where the notebook's Inspect glyph rides the focus outline (D32, docs/S004-sticker-memory.md §6): on a corner the
     /// open memory card cannot cover. The card hangs over the page from above, so the outline's top corners are the ones
-    /// it hides (frame 92 showed only the lit West button peeking out); the bottom-left corner comes first, then
-    /// bottom-right, then the top corners. When the whole outline is under the card (a slot sticker's memory), the
+    /// it hides (frame 92 showed only the lit West button peeking out); the bottom-left corner comes first, then the top
+    /// corners. The bottom-right corner belongs to the Submit glyph (NotebookView.Prompts), so Inspect never takes it. When the whole outline is under the card (a slot sticker's memory), the
     /// glyph sits just under the card's lower edge, level with the outline, so the button that puts the memory away
     /// still shows.
     /// </summary>
@@ -50,7 +50,6 @@ namespace SpookyStreet.Core.Nonverbal
             var corners = new[]
             {
                 (outline.XMin, outline.YMin), // bottom-left
-                (outline.XMax, outline.YMin), // bottom-right
                 (outline.XMin, outline.YMax), // top-left
                 (outline.XMax, outline.YMax), // top-right
             };

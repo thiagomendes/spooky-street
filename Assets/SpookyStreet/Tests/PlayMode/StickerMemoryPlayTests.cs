@@ -303,6 +303,7 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsNotNull(notebook.InspectPrompt, "the Inspect glyph shows by the outline");
             Assert.IsTrue(notebook.InspectPrompt.HasGlyph);
             Assert.AreEqual(PadButton.West, notebook.InspectPrompt.LitButton, "the gamepad glyph lights West");
+            Assert.IsTrue(notebook.InspectPrompt.Backed, "bone paper behind the glyph, so it reads on the dark tray");
 
             yield return Tap(_gamepad.buttonWest);
             Assert.AreEqual(first, notebook.MemorySticker, "West shows the memory of the ringed sticker");

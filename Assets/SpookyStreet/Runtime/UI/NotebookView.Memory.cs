@@ -137,8 +137,11 @@ namespace SpookyStreet.UI
 
             if (_inspectPrompt == null)
             {
+                // Bone paper behind it, like the Submit glyph: without it the face buttons vanish on the dark tray
+                // and on the memory card's paper (frame 92 showed only the lit West button).
                 _inspectPrompt = ControlGlyphView.Create(_viewport.parent, "InspectPrompt", new Vector2(0.5f, 0.5f),
-                    Vector2.zero, 46f);
+                    Vector2.zero, 56f);
+                _inspectPrompt.Backed = true;
             }
 
             var glyph = ControlGlyphs.For(scheme, ControlPrompt.Inspect);

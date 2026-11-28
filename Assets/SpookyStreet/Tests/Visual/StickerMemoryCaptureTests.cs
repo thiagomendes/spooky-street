@@ -186,6 +186,7 @@ namespace SpookyStreet.Tests.Visual
                 $"110: the card covers the glyph: {notebook.InspectPromptBox()} vs {notebook.MemoryCardBox()}");
             yield return Shot("110_inspect_glyph_clear_pad");
             Assert.IsTrue(notebook.InspectPrompt.gameObject.activeSelf, "110: the glyph shows");
+            Assert.IsTrue(notebook.InspectPrompt.Backed, "110: on bone paper");
             yield return Shot("110b_inspect_glyph_clear_pad_4x3", 1024, 768);
             Assert.IsFalse(notebook.InspectPromptBox().Overlaps(notebook.MemoryCardBox()), "110b: clear at 4:3 too");
             notebook.CanAnimate = animate;

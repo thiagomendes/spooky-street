@@ -37,11 +37,12 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void ACardOverTheBottomCornersSendsTheGlyphToAClearCorner()
         {
-            // A card hanging low over the left of the outline: bottom-right is the next clear corner.
+            // A card hanging low over the left of the outline: the top-right is the next clear corner (the bottom-right
+            // is the Submit glyph's).
             var low = new UiBox(-400f, -130f, -60f, 300f);
             var p = GlyphPlacement.Inspect(TraySticker, low, Glyph);
             Assert.IsFalse(At(p).Overlaps(low));
-            Assert.AreEqual((TraySticker.XMax, TraySticker.YMin), p, "bottom-right");
+            Assert.AreEqual((TraySticker.XMax, TraySticker.YMax), p, "top-right");
         }
 
         [Test]
