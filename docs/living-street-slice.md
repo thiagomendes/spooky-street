@@ -112,8 +112,8 @@ vizinhos não têm voz própria.
 - Tiers from the URP quality level: high 8 / medium 6 / low 4 animated walkers in view, standees 12 / 8 / 6.
 - Off-screen walkers are not drawn or animated (frustum test per walker); beyond 12 m they animate at 15 Hz, staggered;
   beyond 18 m, or past the tier's animated cap, they show the kit's LOD1 mesh without animation (the "standee" band; flat paper standees are not made).
-- The lane's static pieces are one statically batched root; nothing in it casts a shadow; walkers have a paper disc,
-  not a shadow.
+- The lane's static pieces are one statically batched root; nothing in it casts a shadow, and walkers cast no
+  real-time shadow (§8); a walker is one draw call (its merged mesh).
 - `CrowdView` times its own work each frame with a stopwatch (logic, culling and posing). Measured cost: §8.
 - The readout: the grown-ups' page (behind the parent gate) shows the frame-time median, 95th and 99th percentiles of
   this session's play and the crowd's mean cost, in development and test builds only (`FrameReadoutPolicy`; test build
@@ -143,4 +143,35 @@ vizinhos não têm voz própria.
 
 ## 8. Evidence
 
-Filled in after the CI run.
+**CI run 46079073794 (run 204), commit `d2855bd`: green** (static checks, EditMode, PlayMode, Visual). Before it, run 200
+failed to compile (an ambiguous `BabbleEmotion` and a method group) and run 201 failed two tests: keepsake bat 17 lost
+its hedge perch to the gap (the gap moved, §2) and "every walker moved" compared positions after exactly two laps (now
+the farthest distance from the start).
+
+Measured in run 204 (CI runner, editor, tier Low because the CI quality level is 0):
+
+- Crowd frame cost (`CrowdView`: clock, culling, LOD choice, posing and the kit's manual animation evaluation), over
+  2,160 frames of 3 game minutes at 5× speed: **mean 0.016 ms, max 0.070 ms** for 8 walkers. The camera in that test
+  looks at the plaza, so most walkers were culled (no animation work), which is the point of culling but means this
+  is not the worst case. Skinning runs on the render side and is not in this number. The device readout on the
+  grown-ups' page measures the real thing.
+- Core clock alone (`dotnet test`, this machine): about 1.1 µs per frame for 8 walkers.
+- Merged walkers: GhostKid 5,146 / 1,677 triangles (LOD0 / LOD1), CatKid 5,367 / 1,718, CatGrownUp 5,766 / 1,854,
+  RobotKid 5,361 / 1,705, QueenKid 6,473 / 2,115, SkeletonGrownUp 5,227 / 1,663, KingGrownUp 6,792 / 2,225,
+  CandyCornKid 5,960 / 1,933; one draw call each.
+- Closest any walker came to a case target in play: 4.81 m (the bench); in Core sampling of every loop with every
+  lateral slot: 2.09 m (the candy bowl, from Pip's porch stop). Most walkers in the heart at once: 3 in Core's 20
+  simulated minutes, 2 in play.
+
+Frames (looked at; copies in `docs/evidence/living-street/`):
+
+| Frame | What it shows | Notes |
+|---|---|---|
+| `ci_94_living_street_walkers.jpg` | the east lane from the hedge gap: Mr. Fogg's tower house left, Nana Pearl's gambrel porch beyond, the Abbotts' crooked house right, lamps, pumpkins, the string lights over the Green's corner, kit walkers on the lane | a walker crosses close to the camera at the left edge |
+| `ci_95_living_street_door.jpg` | Pip at Mr. Fogg's steps; the door leaf flung open, the lit doorway, Mr. Fogg (kit grown-up in house clothes) in it; "Trick or treat!" | door leaf and neighbour are placeholders |
+| `ci_96_living_street_porch.jpg` | Pip on her porch under her lit bat lantern; the skeleton dad and the little queen at her steps ringing; "Trick or treat!" | the bat lantern reads; it is large |
+| `ci_r_living_street_heart.jpg` | the heart from the arrival side: walkers on the south leg, Vale's bench and the owl house clear | |
+| `ci_r_living_street_green.jpg` | the lantern table under the string lights | primitive lanterns |
+| `ci_r_living_street_lantern_screen.jpg` | the lantern screen: bat, cat, ghost, leaf cards, four colour swatches, "Fold it!" | **the shape names do not show under the cards** (to fix); the bat glyph is small |
+| `ci_r_living_street_page.jpg` | the notebook's street page: Pip's porch with her lantern, Mr. Fogg's face disc | paper placeholder drawing |
+| `ci_r_living_street_walker.jpg` | a kit walker close up | |
