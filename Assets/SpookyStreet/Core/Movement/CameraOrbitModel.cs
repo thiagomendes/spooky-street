@@ -19,8 +19,21 @@ namespace SpookyStreet.Core.Movement
         /// <summary>Minimum horizontal speed (m/s) that counts as moving.</summary>
         public float MovingSpeed = 1f;
 
-        /// <summary>Auto-recenter turn speed in degrees per second.</summary>
+        /// <summary>Auto-recenter turn speed in degrees per second (the fastest it ever turns).</summary>
         public float RecenterSpeed = 90f;
+
+        /// <summary>
+        /// Auto-recenter turns at this many degrees per second for each degree Pip's heading is off behind the
+        /// lens (beyond <see cref="RecenterDeadZone"/>), up to <see cref="RecenterSpeed"/>. A proportional, gentle
+        /// follow: the old full-speed chase turned even a 1° thumb wobble into a turn (owner, 2026-11-28 zigzag).
+        /// </summary>
+        public float RecenterGain = 2.5f;
+
+        /// <summary>Heading offsets up to this many degrees leave the camera still (thumb wobble never turns it).</summary>
+        public float RecenterDeadZone = 6f;
+
+        /// <summary>Seconds of smoothing on the heading the camera recenters toward (a step's sway is not followed).</summary>
+        public float RecenterHeadingSmoothing = 0.4f;
 
         /// <summary>Speed of the explicit recenter command in degrees per second.</summary>
         public float ManualRecenterSpeed = 540f;
@@ -33,6 +46,8 @@ namespace SpookyStreet.Core.Movement
         private float _timeSinceManual = float.PositiveInfinity;
         private float _timeMovingSteadily;
         private bool _recenterRequested;
+        private float _smoothedHeading;
+        private bool _hasSmoothedHeading;
 
         public CameraOrbitModel(CameraOrbitTuning tuning, float initialYaw)
         {
@@ -74,6 +89,7 @@ namespace SpookyStreet.Core.Movement
             _recenterRequested = false;
             _timeSinceManual = float.PositiveInfinity;
             _timeMovingSteadily = 0f;
+            _hasSmoothedHeading = false;
             AutoRecentering = false;
         }
 
@@ -90,6 +106,17 @@ namespace SpookyStreet.Core.Movement
 
             _timeSinceManual += deltaTime;
             _timeMovingSteadily = horizontalSpeed >= _tuning.MovingSpeed ? _timeMovingSteadily + deltaTime : 0f;
+            if (!_hasSmoothedHeading || _timeMovingSteadily <= 0f)
+            {
+                _smoothedHeading = NormalizeAngle(headingYaw);
+                _hasSmoothedHeading = true;
+            }
+            else
+            {
+                float smoothing = _tuning.RecenterHeadingSmoothing;
+                float follow = smoothing > 1e-4f ? 1f - (float)Math.Exp(-deltaTime / smoothing) : 1f;
+                _smoothedHeading = NormalizeAngle(_smoothedHeading + DeltaAngle(_smoothedHeading, headingYaw) * follow);
+            }
 
             AutoRecentering = false;
             if (_recenterRequested)
@@ -106,8 +133,13 @@ namespace SpookyStreet.Core.Movement
 
             if (_timeSinceManual >= _tuning.RecenterDelay && _timeMovingSteadily >= _tuning.StableMovementTime)
             {
-                Yaw = MoveTowardsAngle(Yaw, headingYaw, _tuning.RecenterSpeed * deltaTime);
-                AutoRecentering = true;
+                float gap = Math.Abs(DeltaAngle(Yaw, _smoothedHeading));
+                float speed = Math.Min(_tuning.RecenterSpeed, _tuning.RecenterGain * (gap - _tuning.RecenterDeadZone));
+                if (speed > 0f)
+                {
+                    Yaw = MoveTowardsAngle(Yaw, _smoothedHeading, speed * deltaTime);
+                    AutoRecentering = true;
+                }
             }
         }
 
