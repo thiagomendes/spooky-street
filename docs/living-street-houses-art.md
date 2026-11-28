@@ -65,8 +65,8 @@ CrowdNeighbours`, `crowd_review.py --neighbours`.
 
 ## The swap (for the game agent)
 
-Nothing in the runtime was changed. `tests/Visual/LaneHouseArtCaptureTests.SwapIn` does the swap below in the running
-game and is the reference. In `LivingStreetSet`:
+**Done** (`docs/living-street-lane-houses.md`): `LivingStreetSet` now spawns the art itself; the staged `SwapIn` of
+this pass's capture test was replaced by in-game frames 102 to 107. The swap as it was specified, in `LivingStreetSet`:
 
 1. **Houses.** Spawn `LaneHouseArt.House(door.Id)` where `door.House` is spawned now (same position and yaw, same
    bounds collider), with any `ModelKit` on `LaneHouseArt.Folder`: the house finds its atlas by its own name. Keep
@@ -180,8 +180,7 @@ five frames), and no gap between two frames in the whole Visual step was longer 
 
 ## Known limits
 
-- **Not wired yet.** The slice still spawns its placeholders until the game agent makes the swap above; the captures
-  stage it in the running game. Only the neighbours already use their art (through `CrowdKit.Find`).
+- **Wired** since `docs/living-street-lane-houses.md` (frames 98 to 101 here were the staged swap).
 - **No real porch light.** The lane has no point lights, so Mr. Fogg's and Nana Pearl's fronts (they face away from
   the moon) are lit by the night ambient only: they read by their bone trim, lit windows, lamp and doorway, a step
   darker than the owl house's porch. A small warm point light per porch would lift them, at a phone cost the slice

@@ -29,8 +29,8 @@ quadros (mediana, 95% e 99%) e quanto a multidão custa por quadro.
 robô de papelão, milho doce, rainha e rei de coroa de papel), cada um uma peça só, andando no passo da própria
 animação.
 
-**O que ainda é provisório:** as portas, os vizinhos (com roupa de casa, feitos de peças do kit), a mesa e as
-lanternas são peças simples até a arte delas; o som da campainha é um sininho já aprovado no lugar do som novo; os
+**O que ainda é provisório:** (as casas, portas, lampiões e vizinhos já têm a arte própria, ver
+`docs/living-street-lane-houses.md`); o som da campainha é um sininho já aprovado no lugar do som novo; os
 vizinhos não têm voz própria.
 
 ## 1. What was built

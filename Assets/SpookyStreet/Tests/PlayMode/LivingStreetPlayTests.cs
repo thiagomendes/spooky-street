@@ -11,6 +11,7 @@ using SpookyStreet.Core.Save;
 using SpookyStreet.Core.World;
 using SpookyStreet.LivingStreet;
 using SpookyStreet.Localization;
+using SpookyStreet.World;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -238,6 +239,104 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(1, notebook.StreetFaces.Count);
             Assert.IsNull(notebook.StreetLantern, "no lantern drawn before she folds one");
             notebook.Close();
+        }
+
+        [UnityTest]
+        [Timeout(120000)]
+        public IEnumerator TheLaneStandsTheNeighboursOwnHousesDoorsAndLamps()
+        {
+            yield return StartGame();
+            if (!GameBootstrap.Instance.Environment.UsesModels)
+            {
+                Assert.Ignore("Environment models are not committed.");
+            }
+
+            var set = Stage.Set;
+            Assert.IsTrue(set.UsesModels);
+            Assert.AreEqual(LivingStreetLayout.Doors.Count, set.Doors.Count);
+            foreach (var rig in set.Doors)
+            {
+                var door = rig.Door;
+                string id = door.Id;
+
+                // The house: the lane's own model where the placeholder stood, with its LOD group and bounds collider.
+                Assert.IsNull(set.StaticRoot.Find(door.House), id + ": the placeholder street-set house is gone");
+                Assert.IsNull(set.StaticRoot.Find("House_" + id), id + ": no greybox house");
+                Assert.IsNotNull(rig.House, id + ": the house art is spawned");
+                Assert.AreEqual(LaneHouseArt.House(id), rig.House.name);
+                Assert.AreEqual(set.StaticRoot, rig.House.parent, id + ": culled with the lane's static root");
+                Assert.AreEqual(new Vector3(door.X, 0f, door.Z), rig.House.localPosition);
+                Assert.IsNotNull(rig.House.GetComponentInChildren<LODGroup>(), id + ": LOD0 near, LOD1 far");
+                Assert.IsNotNull(rig.House.GetComponent<BoxCollider>(), id + ": Pip walks round it, not through it");
+                Assert.IsNotNull(ModelKit.FindDeep(rig.House, LaneHouseArt.RoomGlow), id + ": its own lit hall and rooms");
+
+                // Its leaf on the rig's hinge, its lamp driven by the rig; the placeholder knob, bell and doorway card dropped.
+                var frame = rig.Hinge.parent;
+                Assert.AreEqual(LaneHouseArt.DoorLeaf(id), rig.Leaf.name);
+                Assert.AreEqual(rig.Hinge, rig.Leaf.parent, id + ": the leaf swings with the hinge");
+                Assert.AreEqual(LaneHouseArt.LampGlow, rig.Lamp.name);
+                Assert.IsNotNull(ModelKit.FindDeep(frame, LaneHouseArt.PorchLamp(id)), id + ": the lamp model");
+                Assert.AreSame(rig.LampRest, rig.Lamp.sharedMaterial, id + ": the lamp at rest");
+                foreach (string placeholder in new[] { "Knob", "Leaf", "PorchLamp", "Doorbell", "Doorway" })
+                {
+                    Assert.IsNull(ModelKit.FindDeep(frame, placeholder), id + ": no placeholder " + placeholder);
+                }
+
+                // The neighbours in house clothes from the crowd kit, standing on the landing.
+                Assert.AreEqual(door.Gag.Figures, rig.Figures.Count);
+                for (int i = 0; i < rig.Figures.Count; i++)
+                {
+                    Assert.IsTrue(rig.Figures[i].IsKit, id + ": a crowd kit neighbour");
+                    Assert.AreEqual(door.WallLocalZ - LivingStreetLayout.NeighbourOut(door), rig.FigureRest[i].z, 1e-4f);
+                }
+
+                // The porch light on the fronts that face away from the moon.
+                if (LivingStreetLayout.HasPorchLight(door))
+                {
+                    Assert.IsNotNull(rig.PorchLight, id + ": a porch light");
+                    Assert.AreEqual(LightType.Point, rig.PorchLight.type);
+                    Assert.AreEqual(LightShadows.None, rig.PorchLight.shadows, id + ": no real-time shadow");
+                    Assert.AreEqual(LivingStreetLayout.PorchLight(door, false), rig.PorchLight.intensity, 1e-4f);
+                    Assert.AreEqual(LivingStreetLayout.PorchLightRange, rig.PorchLight.range, 1e-4f);
+                }
+                else
+                {
+                    Assert.IsNull(rig.PorchLight, id);
+                }
+            }
+
+            var owlDoor = GameObject.Find("OwlHouseDoorLamp");
+            if (owlDoor != null)
+            {
+                Assert.AreEqual(LivingStreetLayout.OwlDoorLight, owlDoor.GetComponent<Light>().intensity, 1e-4f,
+                    "the lane's porch lights are measured against the owl house's door lamp");
+            }
+
+            // Nana Pearl answers: her lamp and her porch light warm while she is in the doorway, then cool again.
+            var pearl = LivingStreetLayout.Door(LivingStreetLayout.Pearl);
+            LivingStreetSet.DoorRig pearlRig = null;
+            foreach (var rig in set.Doors)
+            {
+                pearlRig = rig.Door.Id == pearl.Id ? rig : pearlRig;
+            }
+
+            PlacePip(new Vector3(pearl.StandX, 0.1f, pearl.StandZ - 0.3f), new Vector3(pearl.DoorX, 1f, pearl.DoorZ));
+            yield return Wait(0.3f);
+            float free = Time.realtimeSinceStartup + 8f;
+            while (Stage.Doors.Busy(pearl.Id) && Time.realtimeSinceStartup < free)
+            {
+                yield return Wait(0.1f); // a walking group may be at her door
+            }
+
+            Assert.IsTrue(Stage.Ring(pearl));
+            yield return Wait(pearl.Gag.OpenSeconds + 0.3f);
+            Assert.IsTrue(Stage.Doors.NeighbourShown(pearl.Id));
+            Assert.AreSame(pearlRig.LampBright, pearlRig.Lamp.sharedMaterial, "her lamp warms");
+            Assert.AreEqual(LivingStreetLayout.PorchLight(pearl, true), pearlRig.PorchLight.intensity, 1e-4f, "her porch light warms");
+            yield return Wait(NeighbourDoors.HoldSeconds + NeighbourDoors.CloseSeconds + 0.5f);
+            Assert.AreEqual(DoorPhase.Closed, Stage.Doors.Phase(pearl.Id));
+            Assert.AreSame(pearlRig.LampRest, pearlRig.Lamp.sharedMaterial);
+            Assert.AreEqual(LivingStreetLayout.PorchLight(pearl, false), pearlRig.PorchLight.intensity, 1e-4f);
         }
 
         [UnityTest]
