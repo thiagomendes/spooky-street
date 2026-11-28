@@ -25,7 +25,7 @@ namespace SpookyStreet.LivingStreet
     public sealed class LivingStreetStage : MonoBehaviour
     {
         /// <summary>Crowd sounds and calls are heard (and captioned) only this close to Pip.</summary>
-        public const float HearingDistance = 14f;
+        public const float HearingDistance = DoorCalls.HearingDistance;
 
         /// <summary>A treat flies from hand to hand in this long.</summary>
         public const float TreatFlightSeconds = 0.45f;
@@ -51,6 +51,15 @@ namespace SpookyStreet.LivingStreet
         public CrowdView Crowd { get; private set; }
 
         public NeighbourDoors Doors { get; } = new NeighbourDoors();
+
+        /// <summary>Which neighbours' doors have called while Pip stays near (a door calls once per stay).</summary>
+        public DoorCalls Calls { get; } = new DoorCalls();
+
+        /// <summary>Group calls at neighbours' doors that played (bell and caption; tests).</summary>
+        public int GroupCallsHeard { get; private set; }
+
+        /// <summary>Group rings at neighbours' doors, heard or not (tests).</summary>
+        public int GroupDoorRings { get; private set; }
 
         public LanternView LanternScreen { get; private set; }
 
@@ -187,6 +196,7 @@ namespace SpookyStreet.LivingStreet
         {
             LanternScreen.Cancel();
             Doors.Reset();
+            Calls.Reset();
             foreach (var flight in _flights)
             {
                 flight.Candy.gameObject.SetActive(false);
@@ -229,6 +239,7 @@ namespace SpookyStreet.LivingStreet
                 Frozen = frozen,
             };
             _events.Clear();
+            Calls.Update(pip.x, pip.z);
             Crowd.HideHeart = frozen;
             Crowd.Tick(dt, inputs, _events);
             foreach (var e in _events)
@@ -250,8 +261,11 @@ namespace SpookyStreet.LivingStreet
                 {
                     var door = LivingStreetLayout.Door(e.DoorId);
                     var answer = Doors.Ring(e.DoorId, Ringer.Group);
-                    if (answer != null && door != null && Near(pip, LivingStreetSet.DoorPoint(door)))
+                    GroupDoorRings++;
+                    // A door calls once while Pip stays near it (a long stay by one door no longer repeats the call).
+                    if (answer != null && door != null && Calls.Ring(door.Id, door.DoorX, door.DoorZ, pip.x, pip.z))
                     {
+                        GroupCallsHeard++;
                         Bell();
                         Say(Keys.CrowdTrickOrTreat, LivingStreetSet.DoorPoint(door));
                     }
@@ -278,8 +292,8 @@ namespace SpookyStreet.LivingStreet
 
         private bool Near(Vector3 pip, Vector3 at) => (pip - at).sqrMagnitude <= HearingDistance * HearingDistance;
 
-        /// <summary>The doorbell (bells, never knocks: §3.4 rule 5). A soft approved chime until the bell sound is made.</summary>
-        private static void Bell() => AudioCues.Play(AudioEvents.NoteCorrectGlow);
+        /// <summary>The doorbell's "ding-dong" (bells, never knocks: §3.4 rule 5), for every door and Pip's own button.</summary>
+        private static void Bell() => AudioCues.Doorbell();
 
         private void Say(string key, Vector3 from)
         {

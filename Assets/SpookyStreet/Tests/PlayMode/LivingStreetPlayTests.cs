@@ -4,8 +4,10 @@ using System.IO;
 using NUnit.Framework;
 using SpookyStreet.App;
 using SpookyStreet.Case;
+using SpookyStreet.Core.Audio;
 using SpookyStreet.Core.Case;
 using SpookyStreet.Core.Flow;
+using SpookyStreet.Core.Localization;
 using SpookyStreet.Core.LivingStreet;
 using SpookyStreet.Core.Save;
 using SpookyStreet.Core.World;
@@ -75,6 +77,19 @@ namespace SpookyStreet.Tests.PlayMode
 
                 yield return null;
             }
+        }
+
+        /// <summary>A label's text width in canvas units at its full font size on one line (no best-fit shrinking).</summary>
+        private static float FullSizeWidth(UnityEngine.UI.Text label, string value)
+        {
+            var settings = label.GetGenerationSettings(Vector2.zero);
+            settings.resizeTextForBestFit = false;
+            settings.fontSize = label.fontSize;
+            settings.scaleFactor = 1f;
+            settings.horizontalOverflow = HorizontalWrapMode.Overflow;
+            settings.verticalOverflow = VerticalWrapMode.Overflow;
+            settings.generateOutOfBounds = true;
+            return new TextGenerator().GetPreferredWidth(value, settings);
         }
 
         private static void PlacePip(Vector3 at, Vector3 lookAt)
@@ -210,7 +225,15 @@ namespace SpookyStreet.Tests.PlayMode
             var rig = Stage.Set.Doors[0];
             Assert.AreEqual(fogg.Id, rig.Door.Id);
             Assert.IsFalse(rig.Figures[0].Drawn, "Mr. Fogg waits inside until the door opens");
+            var heard = new List<string>();
+            System.Action<string> listen = heard.Add;
+            AudioCues.Requested += listen;
             Director.Targets.Interact();
+            AudioCues.Requested -= listen;
+            CollectionAssert.Contains(heard, AudioEvents.StreetDoorbell, "the ring is the doorbell's ding-dong");
+            CollectionAssert.DoesNotContain(heard, AudioEvents.NoteCorrectGlow, "never the notebook's chime");
+            Assert.IsNotNull(Resources.Load<AudioClip>(AudioEvents.CreateCatalog().Get(AudioEvents.StreetDoorbell).ResourcePath(1)),
+                "the doorbell's takes ship in the build");
             Assert.AreEqual(1, Stage.PipRings);
             Assert.AreEqual(1, Stage.State.Visits(fogg.Id));
             yield return Wait(fogg.Gag.OpenSeconds + 0.4f);
@@ -239,6 +262,54 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(1, notebook.StreetFaces.Count);
             Assert.IsNull(notebook.StreetLantern, "no lantern drawn before she folds one");
             notebook.Close();
+        }
+
+        [UnityTest]
+        [Timeout(180000)]
+        public IEnumerator ALongStayByOneDoorHearsTheGroupsCallOnce()
+        {
+            yield return StartGame();
+            var fogg = LivingStreetLayout.Door(LivingStreetLayout.Fogg);
+            PlacePip(new Vector3(fogg.StandX, 0.1f, fogg.StandZ - 0.3f), new Vector3(fogg.DoorX, 1f, fogg.DoorZ));
+            int foggRings = 0;
+            var bells = new List<string>();
+            System.Action<string> happened = what => foggRings += what == "group rang " + fogg.Id ? 1 : 0;
+            System.Action<string> listen = id =>
+            {
+                if (id == AudioEvents.StreetDoorbell)
+                {
+                    bells.Add(id);
+                }
+            };
+            Stage.Happened += happened;
+            AudioCues.Requested += listen;
+            Time.timeScale = 6f;
+            float until = Time.realtimeSinceStartup + 90f;
+            while (foggRings < 3 && Time.realtimeSinceStartup < until)
+            {
+                if (Director.Dialogue.IsOpen)
+                {
+                    Director.Dialogue.Skip();
+                }
+
+                yield return null;
+            }
+
+            Time.timeScale = 1f;
+            Stage.Happened -= happened;
+            AudioCues.Requested -= listen;
+            Debug.Log($"[LivingStreetPlayTests] rings at {fogg.Id}: {foggRings}, group rings {Stage.GroupDoorRings}, " +
+                      $"calls heard {Stage.GroupCallsHeard}, bells {bells.Count}");
+            Assert.GreaterOrEqual(foggRings, 3, "groups rang Mr. Fogg's door lap after lap");
+            Assert.IsTrue(Stage.Calls.Holding(fogg.Id), "his door called once and holds while Pip stays");
+            Assert.LessOrEqual(Stage.GroupCallsHeard, LivingStreetLayout.Doors.Count, "each door near her called at most once");
+            Assert.AreEqual(Stage.GroupCallsHeard, bells.Count, "a held call rings no bell either");
+
+            // She walks away to her own porch and back: his door may call again.
+            PlacePip(new Vector3(0f, 0.62f, -13.4f), Vector3.zero);
+            yield return null;
+            yield return null;
+            Assert.IsFalse(Stage.Calls.Holding(fogg.Id), "walking away lets the door call again");
         }
 
         [UnityTest]
@@ -363,6 +434,61 @@ namespace SpookyStreet.Tests.PlayMode
                 Assert.IsNotEmpty(pair.Value.text, pair.Key + " name");
                 Assert.LessOrEqual(pair.Value.preferredHeight, pair.Value.rectTransform.rect.height + 1f, pair.Key + " name fits");
             }
+
+            // Every name, in English and in Portuguese, fits on one line at full size with paper to spare on both
+            // sides ("Little ghost" used to fill its card, "Fantasminha" was wider than its card).
+            foreach (var locale in new[] { "en", "pt-BR" })
+            {
+                var asset = Resources.Load<TextAsset>("Localization/" + locale);
+                Assert.IsNotNull(asset, locale);
+                var table = StringTable.Parse(asset.text);
+                Localizer.Catalog.SetActive(table);
+                yield return null;
+                yield return null;
+                foreach (var pair in screen.ShapeNames)
+                {
+                    var label = pair.Value;
+                    Assert.IsTrue(table.TryGet(LanternCraft.ShapeKey(pair.Key), out string value), locale + " " + pair.Key);
+                    Assert.AreEqual(value, label.text, locale + ": the label shows the catalog's name");
+                    float width = FullSizeWidth(label, value);
+                    float box = label.rectTransform.rect.width;
+                    Debug.Log($"[LivingStreetPlayTests] {locale} '{value}': {width:F1} of {box:F0} units");
+                    Assert.LessOrEqual(width, LanternPickerLayout.LabelTextBudget,
+                        $"{locale} '{value}' is {width:F1} units, over the {LanternPickerLayout.LabelTextBudget} budget");
+                    Assert.GreaterOrEqual((box - width) * 0.5f, LanternPickerLayout.MinLabelMargin, $"{locale} '{value}' margin");
+                    Assert.AreEqual(1, label.cachedTextGenerator.lineCount, $"{locale} '{value}' stays on one line");
+                    Assert.GreaterOrEqual(label.cachedTextGenerator.fontSizeUsedForBestFit,
+                        Mathf.FloorToInt(label.fontSize * label.pixelsPerUnit) - 1, $"{locale} '{value}' is not shrunk");
+                }
+            }
+
+            Localizer.Catalog.ResetToFallback();
+            yield return null;
+
+            // Resting cards keep full paper and full pictures; the chosen one has its plum mat and is larger.
+            screen.ChooseShape(LanternShape.Leaf);
+            yield return null; // a frame later: nothing resets the chosen size
+            foreach (var shape in LanternCraft.Shapes)
+            {
+                bool chosen = shape == LanternShape.Leaf;
+                Assert.AreEqual(chosen, screen.ChosenMat(shape).gameObject.activeSelf, shape + " mat");
+                Assert.AreEqual(chosen ? LanternPickerLayout.ChosenScale : 1f, screen.ShapeSlot(shape).localScale.x, 1e-4f, shape + " size");
+                Assert.AreEqual(1f, screen.ShapeCard(shape).color.r, 1e-3f, shape + ": full paper");
+                foreach (var art in screen.ShapeArt(shape))
+                {
+                    Assert.AreEqual(1f, art.color.a, 1e-3f, shape + ": the picture is never faded");
+                }
+            }
+
+            // The board sits inside the screen and below the close disc.
+            var boardCorners = new Vector3[4];
+            screen.Board.GetWorldCorners(boardCorners);
+            var discCorners = new Vector3[4];
+            ((RectTransform)screen.CloseButton.transform).GetWorldCorners(discCorners);
+            bool apart = boardCorners[2].x < discCorners[0].x || boardCorners[2].y < discCorners[0].y;
+            Assert.IsTrue(apart, "the board never runs under the close disc");
+            Assert.Greater(boardCorners[0].x, 0f);
+            Assert.Less(boardCorners[2].x, Screen.width);
 
             // Gamepad and keyboard: the d-pad walks every shape and colour and presses them (touch is the same buttons).
             var nav = screen.Navigation;

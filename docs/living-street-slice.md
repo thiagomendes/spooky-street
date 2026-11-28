@@ -30,8 +30,14 @@ robô de papelão, milho doce, rainha e rei de coroa de papel), cada um uma peç
 animação.
 
 **O que ainda é provisório:** (as casas, portas, lampiões e vizinhos já têm a arte própria, ver
-`docs/living-street-lane-houses.md`); o som da campainha é um sininho já aprovado no lugar do som novo; os
-vizinhos não têm voz própria.
+`docs/living-street-lane-houses.md`); a campainha agora tem som próprio, um "dim-dom" de duas notas, que já está no
+jogo mas ainda espera o ouvido do dono (D20.1) e pode ser trocado; os vizinhos não têm voz própria.
+
+**Polimento (2026-11-28, §6.1):** toda campainha toca o "dim-dom" (antes era o sininho do caderno); na mesa das
+lanternas todos os nomes cabem inteiros, em inglês e em português, e os cartões não escolhidos ficam tão legíveis
+quanto o escolhido, que se destaca por um fundo ameixa, um tamanho um pouco maior e a costura laranja; um grupo não
+repete o "Doce ou travessura!" na mesma porta enquanto a Pip fica perto dela; no caderno, o botão de Examinar
+não fica mais escondido atrás do cartão da lembrança.
 
 ## 1. What was built
 
@@ -75,8 +81,8 @@ vizinhos não têm voz própria.
 | Nobody glances at hint areas | No stop faces an outdoor hint area within 12 m; no heart leg heads into one within 6 m. Pip's own porch stop faces her porch, which is the `arrival_porch` hint area: groups visit only while the radio's area is elsewhere (`LivingStreetRules.PorchOpen`), so a crowd at her steps never coincides with a hint pointing there. |
 | Out of the side yard, the bench's view of the door, the hedges | Every sample is inside the walls, outside `PaperBatLayout.InHiddenRegion`, more than 1 m from the bench-to-door sightline, crosses the hedge only through the gap, and heart legs stay south of the plaza. |
 | Walkers step aside for Pip | Pip within 1.25 m in front slows a group; Pip within 1.6 m makes it step 0.6 m away from her and creep past at a fifth of its pace. Bodies have no colliders (PlayMode checks), so Pip never gets stuck and the camera ignores them. |
-| Doorbells, not knocks | Doors and Pip's porch ring; the bell sound is a chime. String lint: no line mentions knocks, the owl, June, the blue house or the attic. |
-| Treats are never a currency or a count; no timers | Visits are capped at 3 (they only pick the line). No number in any child-facing key (test). The only total ("Neighbours greeted: 2 of 3") is on the grown-ups' page. A group at Pip's steps waits 4 s and moves on if she is away, longer (up to 20 s) while she is near; nothing is lost. |
+| Doorbells, not knocks | Doors and Pip's porch ring; the bell is its own two-tone "ding-dong" (`street_doorbell`, two notes, never the knocks' three-beat rhythm; §6.1). String lint: no line mentions knocks, the owl, June, the blue house or the attic. |
+| Treats are never a currency or a count; no timers | Visits are capped at 3 (they only pick the line). No number in any child-facing key (test). The only total ("Neighbours greeted: 2 of 3") is on the grown-ups' page. A group at Pip's steps waits 4 s and moves on if she is away, longer (up to 20 s) while she is near; nothing is lost. A neighbour's door calls (bell and caption) once while Pip stays near it, and again only after she walks away and back (`DoorCalls`: distance, not time; §6.1). |
 | Reserved looks | `CrowdLooks.IsAllowed` refuses every reserved theme; every route's members are checked. |
 | Cutscenes are staged | While a cutscene, the finale, the cutaway or a threshold crossing holds the screen, the crowd stands still and walkers in the heart are hidden. |
 | Strings | 36 keys in `en.json` and `pt-BR.json` with the same contexts; Pip is a girl in every context; pt-BR from §4.10 where it had drafts. |
@@ -124,12 +130,43 @@ vizinhos não têm voz própria.
 
 - The door leaves, the neighbours' house clothes, the table pieces and the lanterns are placeholders (see §4).
 - No flat paper standees: beyond 18 m a walker keeps its LOD1 mesh without animation.
-- The doorbell borrows the approved notebook chime; a real bell needs synthesis and the owner's ear (D20.1).
+- The doorbell is synthesised and ships, but the owner has not heard it yet (D20.1); it can be swapped after his
+  review (preview `docs/evidence/living-street/audio/doorbell_preview.mp3`).
 - Neighbours have no voice or vignette: their lines play as captions. Free-world vignettes are a phase 2 item.
 - The treat flies to Pip's hands; showing it in her pail waits for the pail art.
-- Groups ring a door every lap; heard only within 14 m of Pip, but a long stay by one door repeats the call.
+- Groups still ring every door every lap (the doors open, the walkers visit); only the repeated call is held while
+  Pip stays (§6.1).
 - No crowd audio bed (phase 2); the crowd is silent except calls and bells.
 - The street page uses paper shapes, not drawn art.
+
+### 6.1 Polish pass (2026-11-28, `feature/living-street-polish`)
+
+What the child notices, and how it is proved:
+
+| Item | What changed | Proof |
+|---|---|---|
+| Doorbell | Every doorbell (the three lane doors, rung by Pip or a group, and Pip's own push button) plays `street_doorbell`: a two-tone door chime, a bright "ding" (E5) and a "dong" a major third below (C5) 0.46 s later, struck metal tone bars (1 : 2.756 : 5.404 partials, a slowly beating fundamental, a tiny metallic strike tick), a warm housing and a short porch room. 4 takes, about 2.1 s, mastered to −21 LUFS in a new `street` category (the notebook's level, under the clues), true peak −7 to −10 dBTP. Synthesised by `tools/audio/spookyaudio/sounds.py` (D20); never the notebook chime. It ships before the owner's ear (D20.1) and stays replaceable: the 4 WAV masters in `Content/Resources/Audio/street_doorbell/`. | Audio tests (every take passes its checks, catalog sync, the import list); Core `AudioWiringTests` (the event, its category, the hook); PlayMode: Pip's ring at Mr. Fogg's door raises the doorbell, never the glow, and the clip loads. Preview: `docs/evidence/living-street/audio/doorbell_preview.mp3` (the 4 takes). |
+| Names on the lantern cards | Cards are 208 units wide (were 160), the board 954 x 512 (fits a 4:3 iPad's 1000 units, clear of the close disc). "Little ghost" (144 units) and pt-BR "Fantasminha" (165 units, wider than the old card: it overflowed) keep at least 10 units of paper on each side of their 192-unit box at the full 26-unit size. No text changed. | Core `LanternPickerLayoutTests`; PlayMode measures every name in en and pt-BR with the font at full size (one line, not shrunk, margin kept); frames 108 (en) and 109 (pt-BR, 4:3). |
+| Contrast of the cards not chosen | Resting cards keep full paper and their picture at full strength (they were dimmed to about 85 % and the picture faded to 55 %, which left its ink lines under 3:1). The chosen card stands out by three cues, none only a hue: a plum paper mat around it (over 3:1 against the board, WCAG 1.4.11), 6 % larger, and an orange stitch. Text stays ink on bone (13.8:1, `docs/ui-language.md`). | Core `LanternPickerLayoutTests` (WCAG arithmetic in `ColourContrast`); PlayMode (tints, alpha, mat, scale); frames 108, 109. |
+| A long stay by one door | `Core/LivingStreet/DoorCalls`: a neighbour's door plays its bell and "Trick or treat!" once while Pip stays within 14 m; it may call again only after she has walked 16 m away (no flicker on the edge) and come back. No timer, nothing counted on screen; the doors still open and the walkers still visit. Pip's own porch is exempt: a group there is asking her for a treat, and its call is what tells the child to give one. | Core `DoorCallsTests` (20 simulated minutes at Mr. Fogg's steps: 33 rings, 1 call); PlayMode `ALongStayByOneDoorHearsTheGroupsCallOnce`. |
+| Inspect glyph and the memory card | Two causes, both fixed. The glyph rode the outline's top-left corner, under the memory card's lower edge; it now rides the bottom-left corner, or a top corner the open card leaves clear (never the bottom-right, which is the Submit glyph's), and when the card covers the whole outline (a slot's memory) it waits just under the card (`Core/Nonverbal/GlyphPlacement`). And it had no bone backing, so its face buttons vanished on the dark tray and on the card's paper (the first CI run of this pass showed only its lit West dot even in the clear corner); it now has the same bone disc as the Submit glyph, at 56 units. | Core `GlyphPlacementTests`; PlayMode (tray and slot, gamepad); frames 110 and 110b (4:3). |
+
+Evidence of the polish pass: **CI run 46127845159 (run 216), commit `d818555`: green**, EditMode 968/968, PlayMode
+176/176, Visual 30/30 (new fixtures `DoorCallsTests` 4, `GlyphPlacementTests` 4, `LanternPickerLayoutTests` 5; new
+PlayMode test `ALongStayByOneDoorHearsTheGroupsCallOnce`: Mr. Fogg's door rang 3 times, each of the three doors called
+once). Measured names at 26 units: Bat 45, Cat 45, Little ghost 143, Leaf 54, Morcego 109, Gato 61, Fantasminha 165,
+Folha 70, each in a 192-unit box. Run 214 (`8139897`) was green too, but its frame 110 showed the Inspect glyph's
+missing backing, fixed in run 216. Frames (looked at; copies in `docs/evidence/living-street/`):
+
+| Frame | What it shows |
+|---|---|
+| `ci_108_lantern_picker_names_en.jpg` | the picker by touch: Bat, Cat, Little ghost, Leaf all whole with paper around them; resting cards at full paper and full orange pictures; the bat on its plum mat with an orange stitch |
+| `ci_109_lantern_picker_names_ptbr_4x3.jpg` | Portuguese on a 4:3 screen: Morcego, Gato, Fantasminha, Folha; the cat chosen in yellow; Fantasminha whole on a resting card; the board clear of the close disc |
+| `ci_110_inspect_glyph_clear_pad.jpg` | the streamer's memory on a gamepad: the Inspect glyph (West lit, on bone) at the outline's bottom-left, the Submit glyph at its bottom-right, both clear of the card |
+| `ci_110b_inspect_glyph_clear_pad_4x3.jpg` | the same on a 4:3 screen |
+
+Still weak: the Inspect glyph's disc overlaps the edge of the tray sticker below the outline; the doorbell awaits the
+owner's ear; with a group calling once per stay, a child who stays put hears the lane go quiet (the doors still open).
 
 ## 7. Decisions taken (reversible)
 
@@ -140,6 +177,12 @@ vizinhos não têm voz própria.
   strollers).
 - The lantern can be refolded at the table at any time (a new shape or colour replaces the old one).
 - A New game asks for confirmation when only the neighbourhood holds something.
+- (2026-11-28) The doorbell gets its own mastering category, `street` (−21 LUFS, like the notebook), not a reuse of
+  the notebook's, so later street sounds sit together.
+- (2026-11-28) The held call is by distance, not a cooldown: a child standing by a door hears it once, and a child who
+  comes back later hears it again; no clock is involved. Pip's porch keeps calling (see §6.1).
+- (2026-11-28) The chosen lantern card is marked by a plum mat, size and an orange stitch rather than by dimming the
+  others.
 
 ## 8. Evidence
 
@@ -170,4 +213,4 @@ Frames (looked at; copies in `docs/evidence/living-street/`; 95-95d are the lant
 | `ci_r_living_street_heart.jpg`, `ci_r_living_street_page.jpg`, `ci_r_living_street_walker.jpg` | review: walkers south of the plaza, the notebook's street page, a kit walker close |
 
 Weak: the door leaves, the neighbours' house clothes and the string-light posts are still placeholders; "Little ghost"
-fills its card's width; the doorbell sound is the borrowed chime.
+fills its card's width; the doorbell sound is the borrowed chime. (The last two are fixed by the polish pass, §6.1.)

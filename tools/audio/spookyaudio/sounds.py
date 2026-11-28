@@ -370,6 +370,48 @@ def ui_tap(rng, take):
 
 
 # ---------------------------------------------------------------------------------------------------------------
+# The living street: the doorbell (docs/living-street.md §3.4 rule 5: bells, never knocks)
+
+# A two-tone door chime: "ding" on the higher bar, "dong" a major third below, the classic falling call.
+DOORBELL_NOTES = ("E5", "C5")
+DOORBELL_DONG_AT = 0.46
+
+
+def _chime_bar(rng, freq, length, weight):
+    """One struck tone bar of a door chime: a free metal bar (1 : 2.756 : 5.404) with a slow, gently beating
+    fundamental (two modes a hair apart), a clear second partial and a short bright strike, so it rings like a bell
+    and never thuds like wood."""
+    n = dsp.samples(length)
+    modes = [(freq, 0.95, 1.0), (freq * 1.0016, 0.9, 0.55), (freq * 2.0, 0.5, 0.10),
+             (freq * 2.756, 0.32, 0.34), (freq * 5.404, 0.09, 0.12), (freq * 8.933, 0.035, 0.05)]
+    ring = dsp.modal_bank(n, modes, rng=rng, jitter=0.0015)
+    ring = dsp.strike(ring, 0.0009)
+    # the plunger's tiny metallic tick at the strike (bright and very short: a bell's attack, not a knock)
+    tick_n = dsp.samples(0.012)
+    tick = dsp.bandpass(dsp.white(rng, tick_n), 2500, 7000) * dsp.exp_decay(tick_n, 0.0018)
+    ring /= np.max(np.abs(ring)) + 1e-12
+    ring[:tick_n] += 0.08 * tick / (np.max(np.abs(tick)) + 1e-12)
+    return dsp.fade(ring * weight, 0.0, length * 0.35)
+
+
+def doorbell(rng, take):
+    """A friendly two-tone doorbell: "ding" then "dong", rung inside a porch (a short warm housing and a little
+    room). Two notes only, so it never has the knocks' three-beat rhythm."""
+    length = 2.0
+    out = np.zeros(dsp.samples(length))
+    detune = 2 ** (rng.uniform(-0.12, 0.12) / 12)
+    hi, lo = (models.note_hz(x) * detune for x in DOORBELL_NOTES)
+    dsp.place(out, _chime_bar(rng, hi, 1.4, 0.9), 0.01 + rng.uniform(0, 0.006))
+    dsp.place(out, _chime_bar(rng, lo, 1.5, 1.0), DOORBELL_DONG_AT + rng.uniform(-0.015, 0.015))
+    # the chime's wooden housing warms the tone a little; the porch adds a short soft room
+    out = dsp.peaking(out, 600, 2.0, 1.0)
+    out = dsp.peaking(out, 3500, -2.5, 0.8)
+    ir = dsp.reverb_ir(rng, rt60=0.7, length=0.8, early=((0.009, 0.3), (0.021, 0.18)))
+    out = dsp.convolve(out, ir, wet=0.18)
+    return dsp.fade(dsp.trim_tail(out, -58), 0.001, 0.25)
+
+
+# ---------------------------------------------------------------------------------------------------------------
 # Voices
 
 BABBLE = {
@@ -601,6 +643,16 @@ SOUNDS = [
           ui_tap, takes=5, budget=(0.04, 0.2), group="Notebook and UI",
           listen_for="Pleasant after 100 taps? Too clicky or too dull?"),
 ]
+
+SOUNDS.append(
+    Sound("street_doorbell", "street", "Doorbell: ding-dong",
+          "A friendly two-tone door chime: a bright 'ding' and a lower 'dong' a major third below, with a short warm "
+          "ring inside the porch.",
+          "Living street: every doorbell, the neighbours' doors (Pip or a trick-or-treat group rings) and Pip's own "
+          "push button once her lantern is lit (docs/living-street.md §3.4 rule 5: bells, never knocks).",
+          doorbell, takes=4, budget=(1.0, 2.4), group="Living street",
+          listen_for="Clearly a doorbell (ding-dong), never a knock? Friendly and short? Not too close to the "
+                     "notebook's glow?"))
 
 _VOICE_INFO = {
     "pip": ("Pip", "The curious new kid: a bright child voice, medium pace, questions that rise."),

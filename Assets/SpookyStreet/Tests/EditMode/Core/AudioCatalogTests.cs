@@ -15,8 +15,8 @@ namespace SpookyStreet.Tests.Core
         public void TheFirstSetIsValid()
         {
             var catalog = AudioEvents.CreateCatalog();
-            // The 25 S003 events, plus the v2 voices (25, six phrase takes each) and music (4, one take each; D20.2).
-            Assert.AreEqual(25 + 25 + 4, catalog.Count);
+            // The 25 S003 events, the street doorbell, the v2 voices (25, six takes each) and music (4; D20.2).
+            Assert.AreEqual(25 + 1 + 25 + 4, catalog.Count);
             CollectionAssert.IsEmpty(catalog.Validate());
             foreach (var def in catalog.Events)
             {

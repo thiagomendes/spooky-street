@@ -19,7 +19,8 @@ namespace SpookyStreet.Tests.Visual
     /// <summary>
     /// D32 sticker memory frames (docs/S004-sticker-memory.md): 90 the silver cloth's memory opened by a tap (English,
     /// mid-drift on the treehouse ramp), 91 the loose arm's memory in Brazilian Portuguese (an interior memory drawn
-    /// while Pip stands outside), 92 the decoy streamer's memory opened by Inspect on a gamepad, its glyph by the outline.
+    /// while Pip stands outside), 92 the decoy streamer's memory opened by Inspect on a gamepad, its glyph by the outline;
+    /// 110 and 110b (4:3) the same moment with the glyph on the outline's bottom-left corner, clear of the memory card.
     /// </summary>
     [Category("Visual")]
     public class StickerMemoryCaptureTests : InputTestFixture
@@ -51,10 +52,10 @@ namespace SpookyStreet.Tests.Visual
 
         private static CaseDirector Director => GameBootstrap.Instance.Director;
 
-        private static IEnumerator Shot(string name)
+        private static IEnumerator Shot(string name, int width = Width, int height = Height)
         {
             var game = GameBootstrap.Instance;
-            yield return FrameCapture.Capture(game.CameraRig.OutputCamera, game.Director.UiCanvas, name, Width, Height);
+            yield return FrameCapture.Capture(game.CameraRig.OutputCamera, game.Director.UiCanvas, name, width, height);
             float magenta = FrameCapture.MagentaFraction(FrameCapture.LastFrame);
             Assert.LessOrEqual(magenta, MaxMagenta, $"{name}: {magenta:P1} of the frame is error-shader magenta");
             Assert.Greater(FrameCapture.MeanLuminance(FrameCapture.LastFrame), 0.02f, $"{name}: frame is black");
@@ -178,6 +179,16 @@ namespace SpookyStreet.Tests.Visual
             Assert.IsTrue(notebook.InspectPrompt != null && notebook.InspectPrompt.HasGlyph, "92: the Inspect glyph shows");
             Assert.AreEqual(PadButton.West, notebook.InspectPrompt.LitButton);
             yield return Shot("92_sticker_memory_streamer_pad");
+
+            // 110: the same moment after the fix: the Inspect glyph rides the outline's bottom-left corner, clear of the
+            // memory card (frame 92 used to show it hidden under the card's lower edge). 110b: the same on a 4:3 screen.
+            Assert.IsFalse(notebook.InspectPromptBox().Overlaps(notebook.MemoryCardBox()),
+                $"110: the card covers the glyph: {notebook.InspectPromptBox()} vs {notebook.MemoryCardBox()}");
+            yield return Shot("110_inspect_glyph_clear_pad");
+            Assert.IsTrue(notebook.InspectPrompt.gameObject.activeSelf, "110: the glyph shows");
+            Assert.IsTrue(notebook.InspectPrompt.Backed, "110: on bone paper");
+            yield return Shot("110b_inspect_glyph_clear_pad_4x3", 1024, 768);
+            Assert.IsFalse(notebook.InspectPromptBox().Overlaps(notebook.MemoryCardBox()), "110b: clear at 4:3 too");
             notebook.CanAnimate = animate;
             notebook.Close();
             ControlSchemeTracker.Override = ControlScheme.Touch;

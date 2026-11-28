@@ -42,13 +42,16 @@ BANK = HERE / "generated" / "babble_bank.json"
 DEST = REPO / "Assets" / "SpookyStreet" / "Content" / "Resources" / "Audio"
 DATA_CS = REPO / "Assets" / "SpookyStreet" / "Core" / "Audio" / "VoiceMusicData.cs"
 
-# The effects the owner approved in the first listening review (D20.1). Never voice_* or music_*.
+# The effects the owner approved in the first listening review (D20.1), plus the doorbell below. Never voice_* or
+# music_*.
 APPROVED = (
     "clue_knocks_distant", "clue_floor_hum", "clue_cam_tap", "clue_wind_wheel",
     "step_wood", "step_grass", "step_stone",
     "move_jump", "move_land", "move_glide_open", "move_glide_loop",
     "ui_page_turn", "note_sticker_pick", "note_sticker_drop", "note_sticker_wobble", "note_correct_glow",
     "ui_tap", "amb_night",
+    # The living street's doorbell ships before the owner's listening review (brief of 2026-11-28); replaceable.
+    "street_doorbell",
 )
 
 # Stored as Ogg Vorbis (long and stereo), with the libvorbis quality; everything else keeps its WAV master.

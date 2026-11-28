@@ -75,7 +75,7 @@ namespace SpookyStreet.Tests.Project
                 }
             }
 
-            Assert.AreEqual(70, clips, "18 approved effects, 70 takes");
+            Assert.AreEqual(74, clips, "18 approved effects (70 takes) and the street doorbell (4 takes)");
         }
 
         [Test]

@@ -17,7 +17,7 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void ApprovedEffectsAreInTheCatalogAndOnlyTheV2VoicesAndMusic()
         {
-            Assert.AreEqual(18, AudioImportPlan.Approved.Length);
+            Assert.AreEqual(19, AudioImportPlan.Approved.Length, "the 18 effects of D20.1 and the street doorbell");
             Assert.IsEmpty(Catalog.Validate());
             foreach (var id in AudioImportPlan.Approved)
             {
@@ -96,6 +96,36 @@ namespace SpookyStreet.Tests.Core
                 Assert.AreEqual(id == AudioEvents.AmbNight, plan.Load == AudioLoad.Streaming, id + ": only the bed streams");
                 if (id != AudioEvents.AmbNight) Assert.AreEqual(".wav", AudioImportPlan.FileExtension(id));
             }
+        }
+
+        [Test]
+        public void TheDoorbellIsItsOwnSoundNeverTheNotebookChime()
+        {
+            var bell = Catalog.Get(AudioEvents.StreetDoorbell);
+            Assert.AreEqual(AudioBus.Sfx, bell.Bus);
+            Assert.AreEqual(4, bell.Variants);
+            Assert.IsFalse(bell.Loop);
+            Assert.Greater(bell.MinIntervalSeconds, 0.5f, "two rings at once play one ding-dong");
+            Assert.IsTrue(AudioImportPlan.IsApproved(AudioEvents.StreetDoorbell), "ships in the build");
+            Assert.AreEqual(AudioCategory.Street, AudioImportPlan.CategoryOf(AudioEvents.StreetDoorbell));
+            var plan = AudioImportPlan.For(bell);
+            Assert.AreEqual(AudioLoad.DecompressOnLoad, plan.Load, "short: decoded once, starts on the frame");
+            Assert.AreEqual(".wav", AudioImportPlan.FileExtension(AudioEvents.StreetDoorbell));
+
+            var heard = new List<string>();
+            AudioCues.ClearListeners();
+            AudioCues.Requested += heard.Add;
+            try
+            {
+                AudioCues.Doorbell();
+            }
+            finally
+            {
+                AudioCues.ClearListeners();
+            }
+
+            CollectionAssert.AreEqual(new[] { AudioEvents.StreetDoorbell }, heard);
+            CollectionAssert.DoesNotContain(heard, AudioEvents.NoteCorrectGlow, "the borrowed chime is gone");
         }
 
         [Test]
