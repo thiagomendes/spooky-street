@@ -71,6 +71,7 @@ BELL_AT = (0.75, 1.5)
 HALL = 0.95  # depth of the lit hall seen through the open door
 
 LOD = [0]  # the level being built (set by the export)
+ROOF_PART = None  # the export sets a part name so roofs get their own texel density
 
 GLOW_WINDOW = (0.98, 0.70, 0.36)
 
@@ -135,9 +136,11 @@ def shingle_panel(b, P, width, length, pitch, M, keep=None, deck_outline=None, f
     """A roof plane: deck, fascia and shingles; origin at the eave centre, x along the eave, rising toward +Y.
     `keep(cx, y0, y1, hw)` trims tabs; `deck_outline` (x, y) shapes the deck (default the full rectangle)."""
     Mp = M @ R("X", pitch)
+    prev = getattr(b, "part", None)
+    b.part = ROOF_PART  # roofs get fewer texels per metre than walls (seen from below and afar)
     with b.at(Mp):
-        if deck_outline:
-            b.prism(P["roofdeck"], [(x, -y) for x, y in deck_outline], 0.07, T(0, 0.0, 0) @ R("X", -90), tint=0.8)
+        if deck_outline:  # the outline (x, up the slope) stands in local XZ; turned flat, its depth goes under the plane
+            b.prism(P["roofdeck"], list(deck_outline), 0.07, R("X", -90), tint=0.8)
         else:
             b.box(P["roofdeck"], (width, length, 0.07), (0, length / 2, -0.035), bevel=0, tint=0.8)
         if fascia:
@@ -152,6 +155,7 @@ def shingle_panel(b, P, width, length, pitch, M, keep=None, deck_outline=None, f
             pk.ARC = arc
     else:
         pk.shingles(b, mat or P["shingle"], width, length, Mp, keep=keep, palette=P["_roof_tints"], skirt=0.06)
+    b.part = prev
 
 
 def trapezoid_keep(half_bottom, half_top, length, extra=None):
@@ -319,7 +323,7 @@ def build_fogg(craft):
              dict(x=-2.15 - (x0 + x1) / 2, z=s1 + 0.45, w=0.8, h=1.25, shutters=False),
              dict(x=2.55 - (x0 + x1) / 2, z=s1 + 0.45, w=0.8, h=1.25, shutters=False, lit=True, room="window")]
     side = [dict(x=-1.0, z=0.7, w=0.8, h=1.3), dict(x=1.3, z=s1 + 0.45, w=0.8, h=1.25, shutters=False)]
-    block(b, craft, P, x0, x1, y0, y1, s1 + s2, front=front, left=side, right=side, back=())
+    block(b, craft, P, x0, x1, y0, y1, s1 + s2, front=front, left=side, right=side, back=(), door=dx)
     for z in (SILL + s1,):  # belt course between the storeys
         b.box(P["trim_x"], (x1 - x0 + 0.12, 0.08, 0.14), ((x0 + x1) / 2, y0 - 0.04, z), bevel=0 if lod() else 0.014)
     b.box(P["trim_x"], (x1 - x0 + 0.3, y1 - y0 + 0.3, 0.16), ((x0 + x1) / 2, (y0 + y1) / 2, eave + 0.05), bevel=0 if lod() else 0.02)
@@ -784,7 +788,7 @@ def paper_chain(b, craft, p0, p1, sag):
         m = (a + c) / 2
         d = (c - a).normalized()
         rot = d.to_track_quat("X", "Z").to_matrix().to_4x4() @ R("X", 90 * (i % 2))
-        b.ring(paper, 0.03, 0.045, 0.02, T(*m) @ rot @ R("Z", 90), segs=8, tint=lc(cols[i % 4]))
+        b.ring(paper, 0.048, 0.068, 0.028, T(*m) @ rot @ R("Z", 90), segs=10, tint=lc(cols[i % 4]))
 
 
 # --- shared ----------------------------------------------------------------------------------------------------------
