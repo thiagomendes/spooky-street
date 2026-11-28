@@ -58,7 +58,8 @@ namespace SpookyStreet.Core.Case
     /// <summary>
     /// Case 01's sticker memories (D32): one per tray sticker, the honest decoy included, so no sticker is singled out
     /// (D26 §2.7). The shots are the reveal's sticker framings (<see cref="C01Cutscenes.StickerShot"/>: where the child
-    /// found each clue), plus one for the foil streamer, which the reveal never shows. Pure.
+    /// found each clue), plus one for the foil streamer, which the reveal never shows, and a closer one for the small
+    /// silver cloth. Pure.
     /// </summary>
     public static class StickerMemories
     {
@@ -99,13 +100,52 @@ namespace SpookyStreet.Core.Case
             return sticker != null && sticker.InTray && sticker.Found(state) ? For(stickerId) : null;
         }
 
-        /// <summary>The foil streamer on Bea's bicycle, from the plaza side at a child's eye height.</summary>
+        /// <summary>
+        /// The foil streamer on Bea's bicycle, close and at a child's eye height: the foil moons and bats on their
+        /// strings under the handlebar in the middle of the picture, the bike around them and Bea beside it as context
+        /// (S004 polish: frame 92 had Bea filling the picture). The decoy is framed like the clues it sits among: never
+        /// tighter than the tightest clue memory, with no extra light, ring or move (D26 §2.7, tested).
+        /// </summary>
         public static CameraShot StreamerShot()
         {
-            var bike = ClueAttractions.Get(ClueAttractions.Streamer).At;
-            var aim = new StagePoint(bike.X, 0.85f, bike.Z);
-            return new CameraShot(new StagePoint(bike.X + 2.5f, 1.35f, bike.Z - 1.1f), aim, 34f)
-                .DriftTo(new StagePoint(bike.X + 2.25f, 1.3f, bike.Z - 0.95f), aim, 31f);
+            var bike = Bicycle();
+            // The bike's front (handlebar, basket) is its model -Z; the camera stands on its far side from Bea.
+            var aim = OnBike(bike, 0f, 0.6f, -0.25f);
+            return new CameraShot(OnBike(bike, -1.25f, 0.88f, 0.05f), aim, 34f)
+                .DriftTo(OnBike(bike, -1f, 0.78f, -0.02f), aim, 31f);
+        }
+
+        /// <summary>
+        /// The silver cloth's memory, tighter than the reveal's shot of the same place (S004 polish: frame 90 showed the
+        /// scrap small on a phone): from the ramp side, on the scrap hanging off the bridge-head post, with the post and
+        /// its rails around it. The scrap itself is the existing ClothSnag model.
+        /// </summary>
+        public static CameraShot ClothShot()
+        {
+            // The scrap hangs about 0.3 m below the snag point, on the post's west side (ClothSnag.fbx).
+            var scrap = new StagePoint(CaseRouteLayout.ClothX - 0.07f, CaseRouteLayout.ClothY - 0.13f, CaseRouteLayout.ClothZ - 0.02f);
+            var eye = new StagePoint(CaseRouteLayout.ClothX + 0.97f, CaseRouteLayout.ClothY + 0.14f, CaseRouteLayout.ClothZ - 1.65f);
+            var endEye = new StagePoint(CaseRouteLayout.ClothX + 0.78f, CaseRouteLayout.ClothY + 0.1f, CaseRouteLayout.ClothZ - 1.36f);
+            return new CameraShot(eye, scrap, 23f).DriftTo(endEye, scrap, 20f);
+        }
+
+        private static Placement Bicycle()
+        {
+            foreach (var placement in EnvironmentLayout.Witnesses)
+            {
+                if (placement.Model == EnvironmentLayout.BeaBicycle)
+                {
+                    return placement;
+                }
+            }
+
+            throw new InvalidOperationException("no bicycle in the witness layout");
+        }
+
+        private static StagePoint OnBike(Placement bike, float localX, float y, float localZ)
+        {
+            EnvironmentLayout.LocalToWorld(bike.X, bike.Z, bike.Yaw, localX, localZ, out float x, out float z);
+            return new StagePoint(x, y, z);
         }
 
         private static StickerMemory[] Build()
@@ -118,8 +158,8 @@ namespace SpookyStreet.Core.Case
                     continue;
                 }
 
-                var shot = sticker.Id == CaseNotebook.Streamer
-                    ? StreamerShot()
+                var shot = sticker.Id == CaseNotebook.Streamer ? StreamerShot()
+                    : sticker.Id == CaseNotebook.Cloth ? ClothShot()
                     : C01Cutscenes.StickerShot(sticker.Id, ShotTransition.Cut);
                 if (shot == null)
                 {

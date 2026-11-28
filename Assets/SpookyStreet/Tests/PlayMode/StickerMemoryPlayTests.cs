@@ -10,6 +10,7 @@ using SpookyStreet.Core.Flow;
 using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.Localization;
 using SpookyStreet.UI;
+using SpookyStreet.World;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -243,6 +244,77 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsFalse(notebook.MemoryOpen);
             Assert.IsFalse(notebook.InspectSticker(N.Cloth), "a clue not found yet has nothing to recall");
             Assert.AreEqual(facts, Director.State.Count);
+            notebook.Close();
+        }
+
+        /// <summary>Where a world point lands in the memory picture (960×320: 0..1 across and up; z is the depth).</summary>
+        private static Vector3 InPicture(Camera cam, Vector3 world)
+        {
+            var clip = Matrix4x4.Perspective(cam.fieldOfView, 3f, cam.nearClipPlane, cam.farClipPlane) *
+                       (cam.worldToCameraMatrix * new Vector4(world.x, world.y, world.z, 1f));
+            return new Vector3(clip.x / clip.w * 0.5f + 0.5f, clip.y / clip.w * 0.5f + 0.5f, clip.w);
+        }
+
+        /// <summary>The screen box of a model's renderers in the memory picture.</summary>
+        private static Rect BoxInPicture(Camera cam, GameObject model)
+        {
+            var b = ModelKit.RendererBounds(model);
+            float x0 = float.MaxValue, y0 = float.MaxValue, x1 = float.MinValue, y1 = float.MinValue;
+            for (int i = 0; i < 8; i++)
+            {
+                var corner = new Vector3((i & 1) == 0 ? b.min.x : b.max.x, (i & 2) == 0 ? b.min.y : b.max.y, (i & 4) == 0 ? b.min.z : b.max.z);
+                var p = InPicture(cam, corner);
+                Assert.Greater(p.z, 0f, model.name + " is in front of the memory camera");
+                x0 = Mathf.Min(x0, p.x);
+                y0 = Mathf.Min(y0, p.y);
+                x1 = Mathf.Max(x1, p.x);
+                y1 = Mathf.Max(y1, p.y);
+            }
+
+            return Rect.MinMaxRect(x0, y0, x1, y1);
+        }
+
+        [UnityTest]
+        [Timeout(120000)]
+        public IEnumerator TheClothAndTheStreamerMemoriesShowTheirThingClose()
+        {
+            // S004 polish (frames 90 and 92): the silver scrap was small, and Bea filled the streamer's picture. The
+            // settled pictures, through the memory camera, on the real models.
+            yield return StartGame();
+            yield return Do(A(CaseActionKind.HearKnocks), CaseAction.Talk(Speaker.Bea), CaseAction.Talk(Speaker.Vale),
+                A(CaseActionKind.SitOnBench), A(CaseActionKind.ExamineStreamer), A(CaseActionKind.ExamineCloth));
+            Director.OpenNotebook();
+            yield return null;
+            var notebook = Director.Notebook;
+            notebook.ShowPage(notebook.PageQuestions.IndexOf(N.Question(N.QuestionEntry)));
+            yield return Wait(0.6f);
+            var animate = notebook.CanAnimate;
+            notebook.CanAnimate = () => false; // the card's clock is set by hand, as in the capture
+            var cam = Director.Nonverbal.MemoryStage.Camera;
+            var game = GameBootstrap.Instance;
+
+            Assert.IsTrue(notebook.InspectSticker(N.Cloth));
+            notebook.MemoryCard.Playback.Advance(StickerMemories.ShotSeconds);
+            yield return Frames(4);
+            Assert.IsTrue(notebook.MemoryOpen);
+            var cloth = BoxInPicture(cam, Director.House.ClothSnag.gameObject);
+            Assert.GreaterOrEqual(cloth.height, 0.35f, "the scrap reads: a good part of the picture's height " + cloth);
+            Assert.That(cloth.center.x, Is.InRange(0.25f, 0.75f), "the scrap near the middle, clear of the sticker corner " + cloth);
+            notebook.CloseMemory();
+            yield return null;
+
+            Assert.IsTrue(notebook.InspectSticker(N.Streamer));
+            notebook.MemoryCard.Playback.Advance(StickerMemories.ShotSeconds);
+            yield return Frames(4);
+            Assert.IsTrue(notebook.MemoryOpen);
+            var bike = BoxInPicture(cam, game.Witnesses.Bicycle.gameObject);
+            var bea = BoxInPicture(cam, game.Witnesses.Bea.gameObject);
+            var handlebar = InPicture(cam, ModelKit.RendererBounds(game.Witnesses.Bicycle.gameObject).center);
+            Assert.GreaterOrEqual(bike.height, 0.5f, "the bike is close: its strings read " + bike);
+            Assert.That(handlebar.x, Is.InRange(0.15f, 0.85f), "the bike in the picture " + handlebar);
+            Assert.Greater(bea.center.x, 0.6f, "Bea stands to the side, as context " + bea);
+            notebook.CloseMemory();
+            notebook.CanAnimate = animate;
             notebook.Close();
         }
 

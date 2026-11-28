@@ -489,10 +489,13 @@ namespace SpookyStreet.Core.Cutscenes
                     .Music(0f, CutsceneAudio.MusicStreetTheme)
                     .Cue(CastCue.Place(0f, CastActor.Pip, PorchSpawn, 0f)),
 
-                // 2. On the hour: the booth's bell dings; Mr. Vale checks his watch and looks up as the owl bows.
+                // 2. On the hour: the booth's bell dings; Mr. Vale checks his watch and looks up as the owl bows. A low
+                // side shot from his right, so his face reads (he sits facing the owl house, so a front shot can never
+                // hold the owl too): Vale big on the left, looking into the frame at the owl house and the bowing roof
+                // owl on the right. It holds both from 19.5:9 to 16:9 (S004 polish).
                 new CutsceneBeat("hour", 3f,
-                        Shot(ShotTransition.Cut, P(10.6f, 1.5f, -2.4f), P(2.46f, 3.14f, 6.42f), 48f, P(10.5f, 1.52f, -2.25f),
-                            P(2.46f, 3.14f, 6.42f), 46f))
+                        Shot(ShotTransition.Cut, P(9.5f, 0.68f, 1.12f), P(7.26f, 1.68f, 1.15f), 58f, P(9.42f, 0.7f, 1.18f),
+                            P(7.2f, 1.7f, 1.22f), 58f))
                     .Caption(Keys.StreetHour)
                     .World(0.1f, CutsceneWorld.BoothBell)
                     .Cue(CastCue.Gesture(0.25f, CastActor.Vale, CharacterClips.CheckWatch, P(0f, 1.4f, 10.9f)))
@@ -523,10 +526,11 @@ namespace SpookyStreet.Core.Cutscenes
                     .Cue(CastCue.OneShot(0.3f, CastActor.June, CharacterClips.Wave))
                     .Babble(0.4f, CutsceneAudio.BabbleAsIn(CastActor.June, Lines.JuneRemembers)),
 
-                // 6. Kit at her open booth waves toward the porch (the reveal's reopening framing) ...
+                // 6. Kit at her open booth waves toward the porch, seen from east of the porch's middle post (x 1), so
+                // the post stands beside her and never across her (S004 polish), the front door on the left ...
                 new CutsceneBeat("kit", 2.3f,
-                        new CameraShot(P(0.35f, 1.45f, 6.3f), P(0f, 1.35f, 10.2f), 40f)
-                            .DriftTo(P(0.3f, 1.42f, 6.7f), P(0f, 1.35f, 10.2f), 38f))
+                        new CameraShot(P(2.1f, 1.4f, 6.4f), P(0.95f, 1.5f, 10.2f), 40f)
+                            .DriftTo(P(2.05f, 1.38f, 6.75f), P(0.95f, 1.5f, 10.2f), 38f))
                     .Cue(CastCue.OneShot(0.2f, CastActor.Kit, CharacterClips.Wave))
                     .Babble(0.3f, CutsceneAudio.BabbleAsIn(CastActor.Kit, Lines.KitThanks)),
 

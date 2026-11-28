@@ -1009,6 +1009,103 @@ namespace SpookyStreet.Tests.Core
             Assert.IsFalse(street.Beats.Any(b => Inside(b.Shot.Start.Eye)), "all on the street");
         }
 
+        /// <summary>Where the rooftop owl puppet sits (OwlHouse.fbx OwlPuppet: 6.7–7.7 m up, on the front gable).</summary>
+        private static readonly StagePoint RoofOwlPuppet = new StagePoint(0f, 7.2f, CaseRouteLayout.FrontZ - 0.1f);
+
+        /// <summary>
+        /// The owl house's porch posts in plan (tools/blender/env/owl_house.py: x ±1.0 and ±2.9, 3.9 m in front of the
+        /// house origin), each about 0.18 m across.
+        /// </summary>
+        private static readonly (float X, float Z)[] PorchPosts =
+        {
+            (-2.9f, EnvironmentLayout.HouseZ - 3.9f), (-1f, EnvironmentLayout.HouseZ - 3.9f),
+            (1f, EnvironmentLayout.HouseZ - 3.9f), (2.9f, EnvironmentLayout.HouseZ - 3.9f),
+        };
+
+        /// <summary>A point through a pose, as Unity draws it (vertical FOV): -1..1 across and up the screen.</summary>
+        private static (float X, float Y, float Depth) OnScreen(CamPose pose, StagePoint p, float aspect)
+        {
+            double fx = pose.Aim.X - pose.Eye.X, fy = pose.Aim.Y - pose.Eye.Y, fz = pose.Aim.Z - pose.Eye.Z;
+            double n = Math.Sqrt(fx * fx + fy * fy + fz * fz);
+            fx /= n;
+            fy /= n;
+            fz /= n;
+            double rn = Math.Sqrt(fz * fz + fx * fx);
+            double rx = fz / rn, rz = -fx / rn;
+            double ux = fy * rz, uy = fz * rx - fx * rz, uz = -fy * rx;
+            double dx = p.X - pose.Eye.X, dy = p.Y - pose.Eye.Y, dz = p.Z - pose.Eye.Z;
+            double depth = dx * fx + dy * fy + dz * fz;
+            double t = Math.Tan(pose.Fov * Math.PI / 360.0);
+            return ((float)((dx * rx + dz * rz) / (depth * t * aspect)), (float)((dx * ux + dy * uy + dz * uz) / (depth * t)), (float)depth);
+        }
+
+        private static float SegmentDistance(float ax, float az, float bx, float bz, float px, float pz)
+        {
+            float vx = bx - ax, vz = bz - az;
+            float k = Math.Max(0f, Math.Min(1f, ((px - ax) * vx + (pz - az) * vz) / (vx * vx + vz * vz)));
+            float cx = ax + k * vx - px, cz = az + k * vz - pz;
+            return (float)Math.Sqrt(cx * cx + cz * cz);
+        }
+
+        [Test]
+        public void OnTheHourMrValesFaceAndTheBowingRoofOwlShareTheFrame()
+        {
+            // S004 polish (frame 72): Mr. Vale was small and seen from behind. He sits facing the owl house, so the shot
+            // stands at his side, a little to the front: his face reads, and the roof owl stays in the same frame.
+            var vale = EnvironmentLayout.Witnesses.Single(w => w.Model == EnvironmentLayout.Vale);
+            double facing = (vale.Yaw + EnvironmentLayout.ModelFacingOffset) * Math.PI / 180.0;
+            float fx = (float)Math.Sin(facing), fz = (float)Math.Cos(facing);
+            var head = P(vale.X, 1.15f, vale.Z);
+            var shot = C01Cutscenes.StreetRemembers.Beats.Single(b => b.Id == "hour").Shot;
+            foreach (var pose in new[] { shot.Start, shot.End })
+            {
+                float cx = pose.Eye.X - vale.X, cz = pose.Eye.Z - vale.Z;
+                float n = (float)Math.Sqrt(cx * cx + cz * cz);
+                Assert.GreaterOrEqual((cx * fx + cz * fz) / n, -1e-3f, "the camera stands on his front side: his face, never his back");
+                Assert.Less(n, 3f, "close enough that he reads big");
+                Assert.Less(pose.Eye.Y, 1.2f, "at his seated eye height or lower, looking up with him");
+
+                // From the 19.5:9 phone to a 16:9 screen, both stay inside the picture and the letterbox.
+                foreach (float aspect in new[] { 19.5f / 9f, 16f / 9f })
+                {
+                    foreach (var (point, what) in new[] { (head, "Mr. Vale's head"), (RoofOwlPuppet, "the roof owl") })
+                    {
+                        var s = OnScreen(pose, point, aspect);
+                        Assert.Greater(s.Depth, 0f, what);
+                        Assert.Less(Math.Abs(s.X), 0.9f, what + " stays in frame at " + aspect);
+                        Assert.Less(Math.Abs(s.Y), 0.72f, what + " clears the letterbox at " + aspect);
+                    }
+                }
+
+                Assert.Less(OnScreen(pose, head, 2.1f).X, 0f, "Vale on one side ...");
+                Assert.Greater(OnScreen(pose, RoofOwlPuppet, 2.1f).X, 0f, "... looking across the frame at the owl");
+            }
+        }
+
+        [Test]
+        public void KitsWaveIsSeenPastThePorchPostNotThroughIt()
+        {
+            // S004 polish (r_street_kit): the middle porch post hid part of Aunt Kit. Every line from the camera to her
+            // (shoulder to shoulder) passes clear of every post, from the start of the beat to its end.
+            var kit = CaseStage.KitBooth.Position;
+            var shot = C01Cutscenes.StreetRemembers.Beats.Single(b => b.Id == "kit").Shot;
+            foreach (var pose in new[] { shot.Start, shot.End })
+            {
+                Assert.Greater(pose.Eye.X, 1f, "the camera stands east of the middle post");
+                for (float across = -0.25f; across <= 0.251f; across += 0.05f)
+                {
+                    foreach (var post in PorchPosts)
+                    {
+                        Assert.Greater(SegmentDistance(pose.Eye.X, pose.Eye.Z, kit.X + across, kit.Z, post.X, post.Z), 0.15f,
+                            "the post at x " + post.X + " stands beside Kit, never across her");
+                    }
+                }
+
+                var s = OnScreen(pose, P(kit.X, kit.Y + 1.2f, kit.Z), 19.5f / 9f);
+                Assert.Less(Math.Abs(s.X), 0.5f, "Kit near the middle of the picture");
+            }
+        }
+
         [Test]
         public void TheNewCutscenesExistOnlyOnceStampedAndPlayOnlyByTheirRules()
         {

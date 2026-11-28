@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using SpookyStreet.Core.Case;
+using SpookyStreet.Core.Cutscenes;
 using SpookyStreet.Core.Localization;
 using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.Core.World;
@@ -150,6 +151,33 @@ namespace SpookyStreet.Tests.Core
             Assert.AreEqual(MemoryLook.DoorShut, StickerMemories.For(N.ValeDoor).Look);
             Assert.AreEqual(MemoryLook.NookOpen, StickerMemories.For(N.LooseArm).Look);
             Assert.AreEqual(MemoryLook.None, StickerMemories.For(N.Cloth).Look);
+        }
+
+        [Test]
+        public void SmallThingsAreFramedCloseAndTheDecoyIsNeverFramedTighterThanAClue()
+        {
+            // S004 polish (frames 90 and 92): the silver scrap (about 0.3 m) and the foil moons on the streamer were too
+            // small to read on a phone. Span: how many metres of the place the settled picture shows, top to bottom.
+            float Span(StickerMemory m) => 2f * Distance(m.To.Eye, m.To.Aim) * (float)Math.Tan(m.To.Fov * Math.PI / 360.0);
+
+            var cloth = StickerMemories.For(N.Cloth);
+            var snag = new StagePoint(CaseRouteLayout.ClothX, CaseRouteLayout.ClothY, CaseRouteLayout.ClothZ);
+            Assert.Less(Distance(cloth.To.Aim, snag), 0.25f, "the cloth memory looks at the scrap on the post");
+            Assert.Less(Span(cloth), 0.7f, "the scrap fills about half the picture's height");
+            var reveal = C01Cutscenes.StickerShot(N.Cloth, ShotTransition.Cut);
+            Assert.Less(Span(cloth), 2f * Distance(reveal.End.Eye, reveal.End.Aim) * (float)Math.Tan(reveal.End.Fov * Math.PI / 360.0),
+                "closer than the reveal's shot of the same place");
+
+            var streamer = StickerMemories.For(N.Streamer);
+            Assert.Less(Span(streamer), 0.75f, "the strings under the handlebar read");
+            Assert.Less(streamer.To.Eye.Y, 1f, "at a child's eye height");
+            Assert.Less(streamer.To.Aim.Y, streamer.To.Eye.Y, "looking at the handlebar's strings, not at Bea");
+
+            // D26 §2.7: the decoy gets what a clue gets and no more, so its picture is never tighter than the tightest
+            // clue memory (and nothing else differs: same card, caption, look and timing).
+            float tightestClue = StickerMemories.All.Where(m => m.StickerId != N.Streamer).Min(m => Span(m));
+            Assert.GreaterOrEqual(Span(streamer), tightestClue - 1e-3f, "the decoy is never singled out by a closer framing");
+            Assert.AreEqual(MemoryLook.None, streamer.Look);
         }
 
         [Test]

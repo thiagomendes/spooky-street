@@ -106,6 +106,17 @@ namespace SpookyStreet.Tests.PlayMode
             yield return null;
         }
 
+        /// <summary>
+        /// Where a world point lands through <paramref name="cam"/> on the 19.5:9 phone the shots are made for, whatever
+        /// the test runner's screen is (0..1 across and up; z is the depth in front of the camera).
+        /// </summary>
+        private static Vector3 OnPhone(Camera cam, Vector3 world)
+        {
+            var clip = Matrix4x4.Perspective(cam.fieldOfView, 19.5f / 9f, cam.nearClipPlane, cam.farClipPlane) *
+                       (cam.worldToCameraMatrix * new Vector4(world.x, world.y, world.z, 1f));
+            return new Vector3(clip.x / clip.w * 0.5f + 0.5f, clip.y / clip.w * 0.5f + 0.5f, clip.w);
+        }
+
         private static float HudAlpha => Game.Ui.Hud.GetComponent<CanvasGroup>().alpha;
 
         private static void AssertOnThePorchInControl()
@@ -437,6 +448,8 @@ namespace SpookyStreet.Tests.PlayMode
             CollectionAssert.Contains(Cutscenes.Progress.Seen, C01Cutscenes.StreetRemembersId, "marked before it plays");
             int bells = Director.Street.BellDings;
             var lines = new HashSet<string>();
+            bool sawHour = false, sawKit = false;
+            string lastBeat = null;
             while (Player.Active)
             {
                 if (Player.Line.gameObject.activeInHierarchy)
@@ -444,9 +457,37 @@ namespace SpookyStreet.Tests.PlayMode
                     lines.Add(Player.Line.text);
                 }
 
+                // S004 polish: on the hour, Mr. Vale's face on one side and the bowing roof owl on the other, in the
+                // same picture; Kit's wave in the middle of hers (the models where they really stand, through the real
+                // camera, one frame into the beat so the camera has moved there).
+                var beat = Player.Playback?.Beat;
+                var cam = Game.CameraRig.OutputCamera;
+                if (beat != null && beat.Id == "hour" && lastBeat == "hour" && Player.Playback.BeatTime >= 0.3f && !sawHour)
+                {
+                    sawHour = true;
+                    var vale = ModelKit.RendererBounds(Game.Witnesses.Vale.gameObject);
+                    var head = OnPhone(cam, new Vector3(vale.center.x, vale.max.y - 0.15f, vale.center.z));
+                    var owl = OnPhone(cam, ModelKit.RendererBounds(Game.Environment.OwlPuppet.gameObject).center);
+                    Assert.Greater(head.z, 0f);
+                    Assert.Greater(owl.z, 0f);
+                    Assert.That(head.x, Is.InRange(0.03f, 0.45f), "Mr. Vale on the left: " + head);
+                    Assert.That(owl.x, Is.InRange(0.55f, 0.97f), "the roof owl on the right: " + owl);
+                    Assert.That(owl.y, Is.InRange(0.15f, 0.86f), "the owl clears the letterbox: " + owl);
+                }
+
+                if (beat != null && beat.Id == "kit" && lastBeat == "kit" && Player.Playback.BeatTime >= 0.3f && !sawKit)
+                {
+                    sawKit = true;
+                    var kit = OnPhone(cam, ModelKit.RendererBounds(Director.Cast.Kit.gameObject).center);
+                    Assert.Greater(kit.z, 0f);
+                    Assert.That(kit.x, Is.InRange(0.3f, 0.7f), "Kit in the middle of the picture: " + kit);
+                }
+
+                lastBeat = beat?.Id;
                 yield return null;
             }
 
+            Assert.IsTrue(sawHour && sawKit, "both reframed beats played");
             Assert.GreaterOrEqual(lines.Count, 4, "its captions play");
             Assert.AreEqual(bells + 1, Director.Street.BellDings, "the booth's bell dings on the hour");
             yield return Frames(3);
