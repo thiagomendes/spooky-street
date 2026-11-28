@@ -74,7 +74,17 @@ namespace SpookyStreet.UI
                 glow.raycastTarget = false;
                 StreetLantern = UiFactory.Rect(porch, "Lantern");
                 UiFactory.Place(StreetLantern, new Vector2(0.5f, 0.5f), new Vector2(-124f, 70f), new Vector2(64f, 64f));
-                LanternGlyph.Build(StreetLantern, lantern.Shape, 64f, Palette.Hex(LanternCraft.ColourRgb(lantern.Colour)));
+                var tile = Resources.Load<Sprite>(SpookyStreet.Core.World.LanternArt.ShapeTile(LanternCraft.ShapeId(lantern.Shape)));
+                if (tile != null)
+                {
+                    // The lantern art's picture, tinted with her paper colour (ink stays ink).
+                    UiFactory.Sprite(StreetLantern, "Tile", tile, Palette.Hex(LanternCraft.ColourRgb(lantern.Colour)),
+                        new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(80f, 80f)).preserveAspect = true;
+                }
+                else
+                {
+                    LanternGlyph.Build(StreetLantern, lantern.Shape, 64f, Palette.Hex(LanternCraft.ColourRgb(lantern.Colour)));
+                }
                 AccessibleName.Set(StreetLantern.gameObject, LanternCraft.ShapeKey(lantern.Shape));
             }
 

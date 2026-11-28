@@ -262,6 +262,7 @@ namespace SpookyStreet.LivingStreet
                 case CrowdEventKind.PorchRung:
                 {
                     PorchRings++;
+                    Set.PressBell();
                     var porch = new Vector3(LivingStreetLayout.PorchStandX, 1.2f, LivingStreetLayout.PorchStandZ);
                     if (Near(pip, porch))
                     {

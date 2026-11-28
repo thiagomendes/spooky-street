@@ -285,7 +285,7 @@ namespace SpookyStreet.Core.LivingStreet
 
         // --- The paper lantern table (the Green's first corner) -------------------------------------------------
 
-        /// <summary>The party table the lanterns are folded on (PartyTable model), turned toward the lane.</summary>
+        /// <summary>The lantern craft table (<see cref="LanternArt.Table"/>), its front (model -Z) turned toward the lane.</summary>
         public const float TableX = 41.6f;
         public const float TableZ = -6.4f;
         public const float TableYaw = 200f;
@@ -348,7 +348,7 @@ namespace SpookyStreet.Core.LivingStreet
             new Placement(EnvironmentLayout.Pumpkin, 37.7f, 0f, 5.8f, -40f, collider: PlacementCollider.Bounds, halfX: 0.2f, halfZ: 0.2f),
             new Placement(EnvironmentLayout.JackOLantern, 33.2f, 0f, -5.0f, 160f, collider: PlacementCollider.Bounds, halfX: 0.35f, halfZ: 0.35f),
             new Placement(EnvironmentLayout.Pumpkin, 35.7f, 0f, -5.1f, 200f, collider: PlacementCollider.Bounds, halfX: 0.2f, halfZ: 0.2f),
-            new Placement(EnvironmentLayout.PartyTable, TableX, 0f, TableZ, TableYaw, collider: PlacementCollider.Bounds, halfX: 0.9f, halfZ: 0.6f),
+            new Placement(LanternArt.Table, TableX, 0f, TableZ, TableYaw, collider: PlacementCollider.Bounds, halfX: 0.75f, halfZ: 0.5f),
             new Placement(EnvironmentLayout.Crate, 43.0f, 0f, -6.9f, 25f, collider: PlacementCollider.Bounds, halfX: 0.4f, halfZ: 0.4f),
         };
 

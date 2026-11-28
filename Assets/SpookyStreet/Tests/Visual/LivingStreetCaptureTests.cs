@@ -13,8 +13,9 @@ using UnityEngine.TestTools;
 namespace SpookyStreet.Tests.Visual
 {
     /// <summary>
-    /// The living street's test slice (docs/living-street-slice.md): 94 the east lane with walkers on their loops, 95 a
-    /// door answering Pip's ring (Mr. Fogg in his doorway), 96 Pip's lit porch lantern with a group at her bell. Review
+    /// The living street's test slice (docs/living-street-slice.md): 94 the east lane with walkers on their loops, 96 a
+    /// door answering Pip's ring (Mr. Fogg in his doorway), 97 Pip's lit porch lantern with a group at her button, 97b the
+    /// lantern craft table on the Green, 97c the lantern picker with its names (95 is the lantern art's own frames). Review
     /// frames: the lantern table's screen, the Green's corner, the heart with walkers passing south of the plaza, and a
     /// walker close up (placeholder bodies until the crowd kit lands).
     /// </summary>
@@ -169,14 +170,14 @@ namespace SpookyStreet.Tests.Visual
             yield return Wait(0.2f);
             yield return Shot("r_living_street_heart", Director.UiCanvas, ReviewWidth, ReviewHeight);
 
-            // 95: Pip rings Mr. Fogg's bell; he flings the door open and stands in the lit doorway.
+            // 96: Pip rings Mr. Fogg's bell; he flings the door open and stands in the lit doorway.
             var fogg = LivingStreetLayout.Door(LivingStreetLayout.Fogg);
             PlacePip(new Vector3(fogg.StandX, 0.1f, fogg.StandZ - 0.2f), new Vector3(fogg.DoorX, 1f, fogg.DoorZ));
             yield return Wait(0.6f);
             Assert.IsTrue(Stage.Ring(fogg));
             yield return Wait(fogg.Gag.OpenSeconds + 0.6f);
             Frame(new Vector3(fogg.StandX + 2.4f, 2.1f, fogg.StandZ - 3.4f), new Vector3(fogg.DoorX - 0.2f, 1.5f, fogg.DoorZ));
-            yield return Shot("95_living_street_door", Director.UiCanvas);
+            yield return Shot("96_living_street_door", Director.UiCanvas);
 
             // Review: the Abbotts answer together (two in the doorway).
             var abbotts = LivingStreetLayout.Door(LivingStreetLayout.Abbotts);
@@ -195,24 +196,29 @@ namespace SpookyStreet.Tests.Visual
             Frame(new Vector3(LivingStreetLayout.TableX - 2.2f, 2.3f, LivingStreetLayout.TableZ + 4.6f),
                 new Vector3(LivingStreetLayout.TableX + 0.4f, 1.1f, LivingStreetLayout.TableZ));
             yield return Wait(0.4f);
-            yield return Shot("r_living_street_green", Director.UiCanvas, ReviewWidth, ReviewHeight);
+            Director.Captions.Clear();
+            yield return null;
+            Assert.IsNotNull(Stage.Set.TableArt, "the lantern art's craft table");
+            yield return Shot("97b_living_street_table", Director.UiCanvas);
             Stage.OpenTable();
             yield return null;
             Stage.LanternScreen.ChooseShape(LanternShape.Bat);
             Stage.LanternScreen.ChooseColour(LanternColour.Orange);
             yield return Wait(0.3f);
-            yield return Shot("r_living_street_lantern_screen", Director.UiCanvas, ReviewWidth, ReviewHeight);
+            Director.Captions.Clear();
+            yield return null;
+            yield return Shot("97c_living_street_picker", Director.UiCanvas);
             Stage.LanternScreen.Fold();
             yield return Wait(0.3f);
             Assert.IsTrue(Stage.Set.PorchLanternLit);
 
-            // 96: Pip on her porch under her lit lantern; a group at her steps rings her bell.
+            // 97: Pip on her porch under her lit lantern; a group at her steps rings her bell.
             PlacePip(new Vector3(0.2f, 0.62f, -13.6f), new Vector3(0.3f, 0f, -10f));
             Frame(new Vector3(-3.6f, 2.0f, -9.0f), new Vector3(0.0f, 1.3f, -12.6f));
             yield return RunCrowdUntil(() => Stage.Crowd.Clock.WaitingAtPorch >= 0, 90f);
             Assert.GreaterOrEqual(Stage.Crowd.Clock.WaitingAtPorch, 0, "a group came to Pip's bell");
             yield return Wait(0.8f);
-            yield return Shot("96_living_street_porch", Director.UiCanvas);
+            yield return Shot("97_living_street_porch", Director.UiCanvas);
 
             // Review: a walker close up (placeholder body), and the treat handed over.
             Assert.IsTrue(Stage.GiveTreat());

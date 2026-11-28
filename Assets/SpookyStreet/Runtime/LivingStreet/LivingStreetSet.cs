@@ -37,6 +37,23 @@ namespace SpookyStreet.LivingStreet
         private MaterialLibrary _materials;
         private Transform _lanternShape;
         private ModelKit _env;
+        private ModelKit _lanterns;
+        private Transform _bellButton;
+        private Vector3 _bellRest;
+        private float _bellPress;
+        private Vector3 _bellDirection = Vector3.back;
+
+        /// <summary>The lantern craft table's model (null when it falls back to a box).</summary>
+        public Transform TableArt { get; private set; }
+
+        /// <summary>Pip's porch hook (the LanternHook model; null when it falls back to a plain post).</summary>
+        public Transform Hook { get; private set; }
+
+        /// <summary>The push button on the hook post that groups press to ring (never a bell shape, §3.4 rule 6).</summary>
+        public Transform BellButton => _bellButton;
+
+        /// <summary>How far the button is pressed in now (0 rest, 1 fully in).</summary>
+        public float BellPressed => _bellPress;
 
         /// <summary>
         /// The swap point for the slice's pieces that have no art yet (living-street §7, crowd-art doc "not done"): when the
@@ -47,8 +64,6 @@ namespace SpookyStreet.LivingStreet
             /// <summary>A front door leaf, pivot on its hinge edge at the sill, closed along +X, front toward -Z.</summary>
             public const string DoorLeaf = "LivingStreet_DoorLeaf";
 
-            /// <summary>Pip's paper lantern in a shape (D35: bat, cat, ghost, leaf), about 0.4 m, paper parts tinted.</summary>
-            public static string Lantern(LanternShape shape) => "LivingStreet_Lantern_" + LanternCraft.ShapeId(shape);
         }
         private readonly ICrowdBodyFactory _kitBodies = new CrowdKitBodyFactory();
         private readonly ICrowdBodyFactory _placeholders = new PlaceholderCrowdBodies();
@@ -84,6 +99,7 @@ namespace SpookyStreet.LivingStreet
         private void Build(MaterialLibrary materials, EnvironmentDressing environment)
         {
             _materials = materials;
+            _lanterns = materials != null ? PaperLanternArt.Kit(materials) : null;
             float correction = environment != null ? environment.ModelYawCorrection : 0f;
             bool models = environment != null && environment.UsesModels;
             bool streetSet = environment != null && environment.UsesStreetSet;
@@ -140,6 +156,11 @@ namespace SpookyStreet.LivingStreet
             {
                 foreach (var p in LivingStreetLayout.Props)
                 {
+                    if (p.Model == LanternArt.Table)
+                    {
+                        continue; // the lantern art's own kit and atlas (below)
+                    }
+
                     var prop = env.Spawn(p.Model, StaticRoot, new Vector3(p.X, p.Y, p.Z), p.Yaw + correction, p.Scale);
                     if (prop == null)
                     {
@@ -163,6 +184,22 @@ namespace SpookyStreet.LivingStreet
             {
                 Box(StaticRoot, "LanternTable", new Vector3(LivingStreetLayout.TableX, 0.5f, LivingStreetLayout.TableZ),
                     new Vector3(1.6f, 1f, 0.9f), Palette.Timber, true);
+            }
+
+            // The lantern craft table (docs/living-street-lantern-art.md): its own string of four lit samples.
+            var table = models && _lanterns != null
+                ? _lanterns.Spawn(LanternArt.Table, StaticRoot, new Vector3(LivingStreetLayout.TableX, 0f, LivingStreetLayout.TableZ),
+                    LivingStreetLayout.TableYaw + correction, 1f, solid: true)
+                : null;
+            if (table != null)
+            {
+                Spawned++;
+                TableArt = table.transform;
+            }
+            else if (models)
+            {
+                Box(StaticRoot, "LanternTable", new Vector3(LivingStreetLayout.TableX, 0.5f, LivingStreetLayout.TableZ),
+                    new Vector3(1.3f, 1f, 0.6f), Palette.Timber, true);
             }
 
             BuildGreenCorner();
@@ -201,37 +238,66 @@ namespace SpookyStreet.LivingStreet
                         k % 3 == 0 ? glowPlum : glowWarm);
                 }
             }
-
-            // Three folded lanterns waiting on the table: a moon, a star and a pumpkin, in paper colours.
-            var table = new Vector3(LivingStreetLayout.TableX, 1.12f, LivingStreetLayout.TableZ);
-            var shapes = new[] { LanternShape.Cat, LanternShape.Ghost, LanternShape.Leaf };
-            var colours = new[] { LanternColour.Yellow, LanternColour.Plum, LanternColour.Orange };
-            for (int i = 0; i < shapes.Length; i++)
-            {
-                var lantern = BuildLantern(StaticRoot, new PipLantern(shapes[i], colours[i]), 0.55f);
-                lantern.position = table + new Vector3((i - 1) * 0.45f, 0.08f, (i % 2) * 0.12f);
-            }
+        }
         }
 
-        /// <summary>A crook post on the west rail's front corner of Pip's porch, with a little bell under its arm.</summary>
+        /// <summary>
+        /// Pip's porch hook (docs/living-street-lantern-art.md): the LanternHook model clamped to the west rail's front
+        /// corner, its fretwork arm reaching over the lawn; her lantern hangs from its <c>LanternHang</c> child, and groups
+        /// press its <c>BellButton</c> (a push button, never a hanging bell: a bell is one of the Players' motifs). Outside
+        /// the batched root so the button can move. A plain post is the fallback when the art is missing.
+        /// </summary>
         private void BuildPorchPost()
         {
-            float x = LivingStreetLayout.LanternPostX;
-            float z = LivingStreetLayout.LanternPostZ;
-            float deck = 0.6f;
-            float y = LivingStreetLayout.LanternY;
-            Primitive(PrimitiveType.Cylinder, StaticRoot, "LanternPost", new Vector3(x, deck + (y + 0.45f - deck) * 0.5f, z),
-                new Vector3(0.07f, (y + 0.45f - deck) * 0.5f, 0.07f), Palette.Timber, null);
-            Primitive(PrimitiveType.Cube, StaticRoot, "LanternArm", new Vector3(x + 0.22f, y + 0.42f, z),
-                new Vector3(0.5f, 0.05f, 0.05f), Palette.Timber, null);
-            Primitive(PrimitiveType.Cylinder, StaticRoot, "PipBell", new Vector3(x + 0.08f, y - 0.35f, z),
-                new Vector3(0.1f, 0.05f, 0.1f), Palette.CandyCornYellow, null);
+            var at = new Vector3(LanternArt.PorchHookX, LanternArt.PorchHookY, LanternArt.PorchHookZ);
+            var hook = _lanterns != null ? _lanterns.Spawn(LanternArt.Hook, transform, at, LanternArt.PorchHookYaw) : null;
+            Vector3 hang;
+            if (hook != null)
+            {
+                Spawned++;
+                Hook = hook.transform;
+                foreach (var r in hook.GetComponentsInChildren<Renderer>(true))
+                {
+                    r.shadowCastingMode = ShadowCastingMode.Off;
+                }
+
+                hang = PaperLanternArt.HangPoint(hook) ?? at + new Vector3(-LanternArt.HangX, LanternArt.HangHeight, 0f);
+                _bellButton = ModelKit.FindDeep(hook.transform, LanternArt.BellButton);
+            }
+            else
+            {
+                float x = LivingStreetLayout.LanternPostX;
+                float z = LivingStreetLayout.LanternPostZ;
+                float deck = 0.6f;
+                float y = LivingStreetLayout.LanternY;
+                Primitive(PrimitiveType.Cylinder, StaticRoot, "LanternPost", new Vector3(x, deck + (y + 0.45f - deck) * 0.5f, z),
+                    new Vector3(0.07f, (y + 0.45f - deck) * 0.5f, 0.07f), Palette.Timber, null);
+                Primitive(PrimitiveType.Cube, StaticRoot, "LanternArm", new Vector3(x - 0.22f, y + 0.42f, z),
+                    new Vector3(0.5f, 0.05f, 0.05f), Palette.Timber, null);
+                var button = Primitive(PrimitiveType.Cylinder, transform, "BellButton", new Vector3(x, deck + LanternArt.BellHeight, z + 0.06f),
+                    new Vector3(0.08f, 0.01f, 0.08f), Palette.WarmPaper, null);
+                button.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                _bellButton = button.transform;
+                hang = new Vector3(x - 0.42f, y + 0.4f, z);
+            }
+
+            if (_bellButton != null)
+            {
+                // The button goes into the post: from its rest, toward the post's axis (horizontally).
+                _bellRest = _bellButton.position;
+                var into = at - _bellRest;
+                into.y = 0f;
+                _bellDirection = into.sqrMagnitude > 1e-6f ? into.normalized : Vector3.back;
+            }
 
             PorchLantern = new GameObject("PipLantern").transform;
             PorchLantern.SetParent(transform, false);
-            PorchLantern.position = new Vector3(x + 0.42f, y, z);
+            PorchLantern.position = hang;
             PorchLantern.gameObject.SetActive(false);
         }
+
+        /// <summary>A group (or Pip) presses the porch button: it goes in about 8 mm along the hook's front and springs back.</summary>
+        public void PressBell() => _bellPress = 1f;
 
         /// <summary>Hangs Pip's folded lantern, lit, on her porch (null takes it down: a New game).</summary>
         public void ShowLantern(PipLantern? lantern)
@@ -257,23 +323,33 @@ namespace SpookyStreet.LivingStreet
         /// <summary>A paper lantern of a shape and colour, about 0.4 m, glowing from inside (a string loop on top).</summary>
         public Transform BuildLantern(Transform parent, PipLantern lantern, float size)
         {
-            var root = new GameObject("Lantern_" + lantern).transform;
+            var outer = new GameObject("Lantern_" + lantern).transform;
+            var root = outer;
             root.SetParent(parent, false);
             var colour = Palette.Hex(LanternCraft.ColourRgb(lantern.Colour));
             var glow = _materials != null ? _materials.Glow(colour, GlowPipLantern) : null;
 
-            // Swap point: the lantern's own model when the art pass commits it (tinted with the chosen paper colour).
-            var art = _env != null ? _env.Spawn(ArtNames.Lantern(lantern.Shape), root, Vector3.zero, 0f, size) : null;
+            // The lantern art (docs/living-street-lantern-art.md): the figure lantern hangs from its ring at the origin, and
+            // only its PaperLantern_Glow child takes the chosen paper colour (ink, wire and tassel stay ink).
+            var art = _lanterns != null
+                ? PaperLanternArt.SpawnLantern(_lanterns, LanternCraft.ShapeId(lantern.Shape), LanternCraft.ColourId(lantern.Colour),
+                    root, Vector3.zero, 0f, size)
+                : null;
             if (art != null)
             {
                 foreach (var r in art.GetComponentsInChildren<Renderer>(true))
                 {
-                    r.sharedMaterial = glow != null ? glow : r.sharedMaterial;
                     r.shadowCastingMode = ShadowCastingMode.Off;
                 }
 
                 return root;
             }
+
+            // Fallback (no art committed): paper primitives, centred a little under the hang point.
+            var hangOffset = new GameObject("Hang").transform;
+            hangOffset.SetParent(root, false);
+            hangOffset.localPosition = new Vector3(0f, -0.25f * size, 0f);
+            root = hangOffset;
 
             var ink = Palette.InkBlack;
             float s = 0.38f * size;
@@ -329,7 +405,7 @@ namespace SpookyStreet.LivingStreet
 
             // A paper string to the hook.
             Primitive(PrimitiveType.Cylinder, root, "String", new Vector3(0f, s * 0.55f, 0f), new Vector3(0.012f, s * 0.22f, 0.012f), ink, null);
-            return root;
+            return outer;
         }
 
         /// <summary>Pip's lantern glows a little under the street lamps and far under the attic window (GlowLevels).</summary>
@@ -395,9 +471,15 @@ namespace SpookyStreet.LivingStreet
             return rig;
         }
 
-        /// <summary>Shows the doors as the Core routine says: the leaf's swing, the neighbour, the lamp.</summary>
+        /// <summary>Shows the doors as the Core routine says: the leaf's swing, the neighbour, the lamp; and the porch button.</summary>
         public void ApplyDoors(NeighbourDoors doors, float dt)
         {
+            if (_bellButton != null)
+            {
+                _bellPress = Mathf.MoveTowards(_bellPress, 0f, dt * 3f);
+                _bellButton.position = _bellRest + _bellDirection * (0.008f * _bellPress);
+            }
+
             foreach (var rig in _doors)
             {
                 string id = rig.Door.Id;

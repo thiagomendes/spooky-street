@@ -5,6 +5,7 @@ using NUnit.Framework;
 using SpookyStreet.App;
 using SpookyStreet.Case;
 using SpookyStreet.Core.Case;
+using SpookyStreet.Core.Flow;
 using SpookyStreet.Core.LivingStreet;
 using SpookyStreet.Core.Save;
 using SpookyStreet.Core.World;
@@ -256,6 +257,35 @@ namespace SpookyStreet.Tests.PlayMode
             var screen = Stage.LanternScreen;
             Assert.IsTrue(screen.IsOpen);
             Assert.IsTrue(Director.ModalOpen, "the screen holds the controls");
+            // Every shape has its name under the card, readable (the text fits its box).
+            foreach (var pair in screen.ShapeNames)
+            {
+                Assert.IsTrue(pair.Value.gameObject.activeInHierarchy, pair.Key + " name shown");
+                Assert.IsNotEmpty(pair.Value.text, pair.Key + " name");
+                Assert.LessOrEqual(pair.Value.preferredHeight, pair.Value.rectTransform.rect.height + 1f, pair.Key + " name fits");
+            }
+
+            // Gamepad and keyboard: the d-pad walks every shape and colour and presses them (touch is the same buttons).
+            var nav = screen.Navigation;
+            nav.FocusOn(LanternCraft.FocusShape(LanternShape.Bat));
+            foreach (var shape in LanternCraft.Shapes)
+            {
+                Assert.AreEqual(LanternCraft.FocusShape(shape), nav.Focus);
+                nav.Submit();
+                Assert.AreEqual(shape, screen.Shape, "Submit picks " + shape);
+                nav.Navigate(UiDirection.Right);
+            }
+
+            nav.FocusOn(LanternCraft.FocusColour(LanternColour.Orange));
+            foreach (var colour in LanternCraft.Colours)
+            {
+                Assert.AreEqual(LanternCraft.FocusColour(colour), nav.Focus);
+                nav.Submit();
+                Assert.AreEqual(colour, screen.Colour, "Submit picks " + colour);
+                nav.Navigate(UiDirection.Right);
+            }
+
+            // Touch: the bat in green, folded.
             screen.ShapeButton(LanternShape.Bat).onClick.Invoke();
             screen.ColourButton(LanternColour.Green).onClick.Invoke();
             screen.FoldButton.onClick.Invoke();
@@ -264,6 +294,8 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.IsTrue(Stage.State.LanternLit);
             Assert.AreEqual(new PipLantern(LanternShape.Bat, LanternColour.Green), Stage.State.Lantern.Value);
             Assert.IsTrue(Stage.Set.PorchLanternLit, "it hangs lit on her porch");
+            var paper = SpookyStreet.World.ModelKit.FindDeep(Stage.Set.PorchLantern, SpookyStreet.Core.World.LanternArt.PaperGlow);
+            Assert.IsNotNull(paper, "the porch lantern is the lantern art's bat (its paper child)");
             Assert.AreEqual(new PipLantern(LanternShape.Bat, LanternColour.Green), Stage.Set.ShownLantern.Value);
 
             // Pip waits on her porch; a group comes through the heart and rings her bell.
@@ -285,6 +317,9 @@ namespace SpookyStreet.Tests.PlayMode
             Time.timeScale = 1f;
             Assert.GreaterOrEqual(Stage.Crowd.Clock.WaitingAtPorch, 0, "a group waits at Pip's steps");
             Assert.Greater(Stage.PorchRings, 0, "the group rang her bell");
+            Assert.IsNotNull(Stage.Set.Hook, "the lantern art's porch hook");
+            Assert.IsNotNull(Stage.Set.BellButton, "the push button on the hook post (never a bell shape)");
+            Assert.IsNotNull(Stage.Set.TableArt, "the lantern art's craft table on the Green");
             yield return Wait(0.3f);
             Assert.IsTrue(Director.Targets.ExtraActive);
             Assert.AreEqual(Keys.VerbTreat, Director.Targets.VerbKey);

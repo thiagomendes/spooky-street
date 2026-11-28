@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using SpookyStreet.App;
 using SpookyStreet.Core.Art;
 using SpookyStreet.Core.LivingStreet;
+using SpookyStreet.Core.World;
 using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.Localization;
 using SpookyStreet.UI;
@@ -20,7 +21,11 @@ namespace SpookyStreet.LivingStreet
     /// </summary>
     public sealed class LanternView : MonoBehaviour
     {
-        public static readonly Vector2 CardSize = new Vector2(150f, 150f);
+        public static readonly Vector2 CardSize = new Vector2(160f, 184f);
+
+        /// <summary>The picture's size on a card; the bat's tile is drawn larger (its wings leave a small body).</summary>
+        public const float PictureSize = 118f;
+        public const float BatPictureScale = 1.3f;
         public const float SwatchSize = 96f;
 
         private readonly Dictionary<LanternShape, Image> _shapes = new Dictionary<LanternShape, Image>();
@@ -49,6 +54,9 @@ namespace SpookyStreet.LivingStreet
 
         public Button ShapeButton(LanternShape shape) => _shapeButtons[shape];
 
+        /// <summary>The name under each shape's card (tests: readable names).</summary>
+        public Dictionary<LanternShape, Text> ShapeNames { get; } = new Dictionary<LanternShape, Text>();
+
         public Button ColourButton(LanternColour colour) => _colourButtons[colour];
 
         public static LanternView Create(RectTransform canvasRoot)
@@ -66,7 +74,7 @@ namespace SpookyStreet.LivingStreet
             content.gameObject.AddComponent<SafeAreaFitter>();
             float width = (CardSize.x + 24f) * 4f + 60f;
             var board = UiFactory.PaperCard(content, "Board", new Vector2(0.5f, 0.5f), new Vector2(0f, 30f),
-                new Vector2(width, 520f), -0.6f);
+                new Vector2(width, 560f), -0.6f);
             var rows = board.transform;
 
             for (int i = 0; i < LanternCraft.Shapes.Count; i++)
@@ -77,11 +85,33 @@ namespace SpookyStreet.LivingStreet
                     new Vector2(x, -36f - CardSize.y * 0.5f), CardSize, i % 2 == 0 ? -1.5f : 1.2f);
                 card.raycastTarget = true;
                 var picture = UiFactory.Rect(card.transform, "Picture");
-                UiFactory.Place(picture, new Vector2(0.5f, 0.5f), new Vector2(0f, 14f), new Vector2(96f, 96f));
-                var art = LanternGlyph.Build(picture, shape, 96f, Color.white);
-                var name = UiFactory.Label(card.transform, "Name", LanternCraft.ShapeKey(shape), 24, TextAnchor.MiddleCenter,
+                UiFactory.Place(picture, new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(PictureSize, PictureSize));
+                // The lantern art's picture (neutral paper, ink face): tinted with the chosen colour, ink stays ink.
+                var tile = Resources.Load<Sprite>(LanternArt.ShapeTile(LanternCraft.ShapeId(shape)));
+                List<Image> art;
+                if (tile != null)
+                {
+                    var image = UiFactory.Sprite(picture, "Tile", tile, Color.white, new Vector2(0.5f, 0.5f), Vector2.zero,
+                        new Vector2(PictureSize, PictureSize));
+                    image.preserveAspect = true;
+                    art = new List<Image> { image };
+                }
+                else
+                {
+                    art = LanternGlyph.Build(picture, shape, PictureSize, Color.white);
+                }
+
+                if (shape == LanternShape.Bat)
+                {
+                    picture.localScale = Vector3.one * BatPictureScale;
+                }
+
+                // The name under the picture (Andika needs about 1.6 lines of height: CI run 204 lost a 36-unit label).
+                var name = UiFactory.Label(card.transform, "Name", LanternCraft.ShapeKey(shape), 26, TextAnchor.MiddleCenter,
                     UiFactory.Ink, UiFactory.BoldFont);
-                UiFactory.Place(name.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 22f), new Vector2(CardSize.x - 12f, 36f));
+                name.verticalOverflow = VerticalWrapMode.Overflow;
+                UiFactory.Place(name.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 26f), new Vector2(CardSize.x - 8f, 48f));
+                ShapeNames[shape] = name;
                 var button = card.gameObject.AddComponent<Button>();
                 button.targetGraphic = card;
                 button.transition = Selectable.Transition.None;
@@ -97,9 +127,12 @@ namespace SpookyStreet.LivingStreet
             {
                 var colour = LanternCraft.Colours[i];
                 float x = (i - 1.5f) * (CardSize.x + 24f);
-                var swatch = UiFactory.Sprite(rows, "Colour_" + LanternCraft.ColourId(colour), UiFactory.Circle,
-                    Palette.Hex(LanternCraft.ColourRgb(colour)), new Vector2(0.5f, 1f), new Vector2(x, -CardSize.y - 120f),
-                    new Vector2(SwatchSize, SwatchSize), raycast: true);
+                // The lantern art's colour picture (a lit square of that tissue), drawn as it is; a plain disc otherwise.
+                var colourTile = Resources.Load<Sprite>(LanternArt.ColourTile(LanternCraft.ColourId(colour)));
+                var swatch = UiFactory.Sprite(rows, "Colour_" + LanternCraft.ColourId(colour), colourTile != null ? colourTile : UiFactory.Circle,
+                    colourTile != null ? Color.white : Palette.Hex(LanternCraft.ColourRgb(colour)), new Vector2(0.5f, 1f),
+                    new Vector2(x, -CardSize.y - 112f), new Vector2(SwatchSize, SwatchSize), raycast: true);
+                swatch.preserveAspect = true;
                 UiFactory.InkShadow(swatch, new Vector2(3f, -4f), 0.5f);
                 var ring = UiFactory.Sprite(swatch.transform, "Chosen", UiFactory.Baked(UiSpriteCatalog.StitchRing),
                     Palette.InkBlack, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(SwatchSize + 22f, SwatchSize + 22f));

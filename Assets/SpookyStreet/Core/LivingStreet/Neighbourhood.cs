@@ -140,17 +140,8 @@ namespace SpookyStreet.Core.LivingStreet
             }
         }
 
-        /// <summary>The paper colour as 0xRRGGBB (palette v1.3: jack orange, plum, witch green, candy-corn yellow).</summary>
-        public static int ColourRgb(LanternColour colour)
-        {
-            switch (colour)
-            {
-                case LanternColour.Orange: return 0xEE7F2D;
-                case LanternColour.Plum: return 0x7A3E6E;
-                case LanternColour.Green: return 0x5E9A3A;
-                default: return 0xF6D365;
-            }
-        }
+        /// <summary>The paper colour as 0xRRGGBB: the lantern art's paper (<see cref="World.LanternArt.PaperRgb"/>).</summary>
+        public static int ColourRgb(LanternColour colour) => World.LanternArt.PaperRgb(ColourId(colour));
 
         // The screen's focus graph (S004 UI base): close on top, a row of shapes, a row of colours, the fold button.
         public const string FocusClose = "close";
