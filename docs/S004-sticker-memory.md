@@ -17,7 +17,8 @@ over a second, then fades by itself (3.95 s in all). Pressing the card closes it
   panel, the wooden owl, the loose arm). The streamer is treated exactly like the clues (D26 §2.7), so the memories
   never sort clues from non-clues. Bea's and Mr. Vale's stickers keep their eye for the full in-world replay.
 - **The pictures are the reveal's sticker shots.** `C01Cutscenes.StickerShot` already framed each sticker's place
-  for the reveal cutscene (proven in its CI frames); the memory reuses those poses and their drift, plus one new
+  for the reveal cutscene (proven in its CI frames); the memory reuses those poses and their drift (the small silver
+  cloth has its own closer shot since §6.1), plus one new
   shot for the streamer (from the plaza side of Bea's bicycle), which the reveal never shows.
 - **The world as the child saw it.** Each picture leaves Pip, June and Aunt Kit out (as the reveal does). Interior
   memories keep the house's rooms drawn while the card shows, and leave the sky dome out of their picture (it cuts
@@ -190,9 +191,27 @@ Self-assessment: 4/5.
 
 - The pictures make each sticker's place recognisable without reading, which was the owner's problem.
 - Open points:
-  - the streamer shot should be closer and lower on the bike;
-  - the Inspect glyph should move to a corner the card cannot cover, for example the outline's bottom-left;
-  - small things (the cloth) could use a tighter field of view than the reveal's.
+  - the streamer shot should be closer and lower on the bike (done, §6.1);
+  - the Inspect glyph should move to a corner the card cannot cover, for example the outline's bottom-left (done by
+    the living-street polish, frame 110);
+  - small things (the cloth) could use a tighter field of view than the reveal's (done, §6.1).
+
+### 6.1 Polish: the streamer and the cloth (branch `feature/case01-shot-polish`)
+
+Camera data only (`StickerMemories.StreamerShot`, new `StickerMemories.ClothShot`); no art, caption, look, timing,
+reduced-motion behaviour or case logic changed, and the reveal keeps its own cloth shot. Frames looked at:
+
+| Frame | Shows | Review |
+|---|---|---|
+| ![](evidence/s004/sticker_memory/90_sticker_memory_cloth_polish.jpg) 90 | The cloth's memory mid-drift: the silver scrap hanging off the bridge-head post fills the middle of the picture, the post and the rails around it. | The scrap now reads at phone size. Its own shot stands 1.6 m from it (field of view 20°, the rule's lower bound) instead of the reveal's 2 m at 27°. |
+| ![](evidence/s004/sticker_memory/92_sticker_memory_streamer_pad_polish.jpg) 92 | The streamer's memory: low, at a child's eye height, on the bike's handlebar and basket in the middle, the bike around them, Bea's legs and hand at the side. | The bike is the subject and Bea is context. The foil moons and bats on their strings under the handlebar are still dark in the night light: better than before, not yet sparkling. |
+
+The decoy rule (D26 §2.7) holds by test: `StickerMemoryTests.SmallThingsAreFramedCloseAndTheDecoyIsNeverFramedTighterThanAClue`
+measures how much of the place each settled picture shows top to bottom and checks that the streamer's (0.58 m) is
+never tighter than the tightest clue memory (the cloth, 0.56 m); the card, caption, lilac look and timing are the
+same for every sticker. `StickerMemoryPlayTests.TheClothAndTheStreamerMemoriesShowTheirThingClose` checks the settled
+memory camera on the spawned scrap, bike and Bea. Neither memory shows more than Pip saw there, and the reveal never
+shows the streamer.
 
 ## 7. Known gaps
 

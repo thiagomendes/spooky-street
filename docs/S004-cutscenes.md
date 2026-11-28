@@ -45,11 +45,11 @@ reloading plays it again, because the seen set clears with the replay. It can be
 | # | Beat | Shot | Cues | Caption | s |
 |---|---|---|---|---|---|
 | 1 | `lane` | the opening's crane down over Lantern Lane (same first pose) | `music_street_theme`; Pip placed on the porch | "Back on Lantern Lane." | 3.0 |
-| 2 | `hour` | over Mr. Vale's shoulder to the owl house | `world.booth_bell` 0.1 s, Vale `CheckWatch` 0.25 s, `vale.happy`, `world.owl_show` 0.9 s, Vale looks up at the owl 1.9 s | "[Ding! Mr. Vale checks his watch.]" | 3.0 |
+| 2 | `hour` | low, from Mr. Vale's right: his face on the left, the owl house and the bowing roof owl on the right (§4.1) | `world.booth_bell` 0.1 s, Vale `CheckWatch` 0.25 s, `vale.happy`, `world.owl_show` 0.9 s, Vale looks up at the owl 1.9 s | "[Ding! Mr. Vale checks his watch.]" | 3.0 |
 | 3 | `show` | the rooftop owl (the reveal's owl framing, `anchor.owl`) | `world.owl_show` 0.5 s (the wheel whirrs, three bows on three knocks) | "[Knock, knock… knock. The owl bows.]" | 3.5 |
 | 4 | `bea` | Bea by her bike, the owl sticker on the basket | `Wave` toward the rooftop owl, `bea.happy` | "[Bea waves at the owl.]" | 2.5 |
 | 5 | `june` | June at the foot of her treehouse way | `Wave`, `june.happy` | — | 2.5 |
-| 6a | `kit` | Kit at her open booth | `Wave`, `kit.happy` | — | 2.3 |
+| 6a | `kit` | Kit at her open booth, from east of the middle porch post (§4.1) | `Wave`, `kit.happy` | — | 2.3 |
 | 6b | `porch` | drift into the play camera behind Pip on the arrival porch | Pip placed | — | 1.2 |
 
 The owl starts bowing inside beat 2, so frame 72 can show Vale's watch and the bows together. The beat-2 show ends
@@ -127,11 +127,27 @@ Run 173 frames, looked at, in `docs/evidence/s004/cutscenes/`:
 - `r_seed_mount_run173.jpg` and `r_seed_booth_run173.jpg`: the crest on the photo mount and the booth crest match. Good.
 - `r_seed_pip_run173.jpg`: Pip on the arrival porch, back in control. Good.
 - `72_street_vale_owl_bows_run173.jpg`: the owl house and the bowing roof owl read, but Mr. Vale is small and seen from
-  behind at the bottom of the frame. The caption carries the beat. **Polish later**: a three-quarter front shot of
-  Vale with the roof owl behind him.
-- `r_street_kit_run173.jpg`: Kit waves, but a porch post hides part of her. **Polish later**: move the eye east of the
-  post.
+  behind at the bottom of the frame. The caption carries the beat. Polished below (§4.1).
+- `r_street_kit_run173.jpg`: Kit waves, but a porch post hides part of her. Polished below (§4.1).
 - `55_reveal_sticker_vale_run173.jpg`: the reveal still reads as in S002.5b.
+
+### 4.1 Polish (branch `feature/case01-shot-polish`)
+
+Camera data only; no art, strings, cues, timing or case logic changed. Frames looked at, in the same folder:
+
+- `72_street_vale_owl_bows_polish.jpg` (beat `hour`): a low side shot from Mr. Vale's right. He sits big on the left,
+  his face in profile turned a little toward us, checking his watch; across the frame the owl house and the bowing
+  roof owl with its wind wheel. A true three-quarter front shot with the owl *behind* him cannot exist: he sits on
+  his bench facing the owl house, so any camera that sees his face has the owl behind the camera. The side two-shot
+  is the closest framing that holds his face and the bows in one picture. It keeps both in frame from 19.5:9 to 16:9
+  (Core test); on a 4:3 iPad the edges crop (the cutscene camera has no aspect fitting yet, see §6).
+- `r_street_kit_polish.jpg` (beat `kit`): the camera stands east of the porch's middle post (x 2.1 instead of 0.35).
+  The post now stands left of Kit, never across her; the front door and the lit window frame her. Kit fills the
+  middle of the picture above the rail.
+- Tests: `CutsceneTests.OnTheHourMrValesFaceAndTheBowingRoofOwlShareTheFrame` (camera on his front side, his head and
+  the roof owl inside the frame at 19.5:9 and 16:9, on opposite sides) and
+  `KitsWaveIsSeenPastThePorchPostNotThroughIt` (every sight line to Kit clears every porch post by 0.15 m); the
+  PlayMode street-remembers test checks both through the real camera on the real models.
 
 ## 5. Narrative bible checklist (§6)
 
@@ -161,3 +177,6 @@ Run 173 frames, looked at, in `docs/evidence/s004/cutscenes/`:
 - The seed's first shot cuts into the hall instead of a page-turn, because a page-turn exists only between beats.
 - The knock spot is the S002.5b owl-booth spot at the porch's east side. It is not on the shutter itself, which Kit
   stands in front of after the case.
+- The cutscene camera keeps its vertical field of view on every screen, so a 4:3 iPad crops the sides of wide shots.
+  The `hour` two-shot needs about 16:9 or wider to keep Mr. Vale and the owl both in frame; an aspect-fitting cutscene
+  camera (widen the field of view below 16:9) would fix every shot at once.
