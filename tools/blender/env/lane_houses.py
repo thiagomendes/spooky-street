@@ -101,6 +101,7 @@ def paints(craft, body, roof, door, trim=None, accent=None, roof_tints=None):
         "shingle": craft.tinted(roof, 0.85, 0.25, 5.0),
         "roofdeck": craft.timber(shade(roof, 0.55), "X", wear=0.0),
         "stone": craft.tinted(E["stone"], 0.9, 0.3, 4.0),
+        "lit": craft.glow(GLOW_WINDOW, 1.0),
         "fieldstone": craft.tinted(H(0x8A7C8E), 0.9, 0.35, 5.0),
         "brick": craft.tinted(shade(E["plum"], 0.85), 0.9, 0.3, 9.0),
         "paper": craft.paper_white(), "paint": craft.paint(),
@@ -123,7 +124,7 @@ def window(b, craft, P, cx, z0, w=0.8, h=1.2, lit=False, shutters=True, room="wi
     """A sash window in a wall opening (cx - w/2 .. cx + w/2, z0 .. z0 + h). Lit: a warm painted room card over the
     glass (`RoomCard_Glow`, shared by both levels of detail), with paper cut-outs standing in it."""
     if lod():
-        st.far_window(b, P, cx, z0, w, h, False, shutters)
+        st.far_window(b, P, cx, z0, w, h, lit, shutters)  # a lit pane is glow: left out, the near mesh's room card shows
     else:
         pk.window(b, P, cx, z0, w, h, shutters)
     if lit and not lod():
@@ -136,6 +137,12 @@ def shingle_panel(b, P, width, length, pitch, M, keep=None, deck_outline=None, f
     """A roof plane: deck, fascia and shingles; origin at the eave centre, x along the eave, rising toward +Y.
     `keep(cx, y0, y1, hw)` trims tabs; `deck_outline` (x, y) shapes the deck (default the full rectangle)."""
     Mp = M @ R("X", pitch)
+    inner = keep
+
+    def keep(cx, y0, y1, hw):
+        # a course that starts at the panel's top edge has no height: porch_kit.shingles would divide by its span
+        # (about zero) and throw its tabs metres out of the roof (seen on the Abbotts' far mesh)
+        return y1 - y0 > 0.12 and (inner is None or inner(cx, y0, y1, hw))
     prev = getattr(b, "part", None)
     b.part = ROOF_PART  # roofs get fewer texels per metre than walls (seen from below and afar)
     with b.at(Mp):

@@ -569,7 +569,7 @@ class Builder:
         T_ = P.torso
         hem = z["knee"] + 0.1 * (z["hip"] - z["knee"])
         rows = [(z["chest"] + 0.045 * P.h, T_ * 1.24, 34), (z["chest"], T_ * 1.24, 36), (z["waist"] + 0.02 * P.h, T_ * 1.16, 40),
-                (z["waist"], T_ * 1.2, 74), (z["hip"], T_ * 1.48, 76), ((z["hip"] + hem) / 2, T_ * 1.6, 78), (hem, T_ * 1.7, 80)]
+                (z["waist"], T_ * 1.2, 56), (z["hip"], T_ * 1.48, 58), ((z["hip"] + hem) / 2, T_ * 1.6, 60), (hem, T_ * 1.7, 62)]
         cols = 14
         bm = bmesh.new()
         grid = []

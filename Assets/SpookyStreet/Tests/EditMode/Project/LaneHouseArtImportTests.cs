@@ -194,7 +194,7 @@ namespace SpookyStreet.Tests.Project
                 Assert.That(box.max.x, Is.InRange(LaneHouseArt.LeafWidth - 0.05f, LaneHouseArt.LeafWidth + 0.02f), id + ": closes along +X");
                 Assert.That(box.min.y, Is.InRange(-0.02f, 0.03f), id + ": from the sill");
                 Assert.That(box.max.y, Is.InRange(LaneHouseArt.LeafHeight - 0.05f, LaneHouseArt.LeafHeight + 0.02f), id);
-                Assert.That(box.min.z, Is.InRange(-0.08f, 0f), id + ": its face toward the street (-Z)");
+                Assert.That(box.min.z, Is.InRange(-0.14f, -0.02f), id + ": its face and knob toward the street (-Z)");
                 Assert.That(box.max.z, Is.InRange(0.02f, LaneHouseArt.HingeInset), id + ": stays in front of the wall");
                 long tris = 0;
                 foreach (var f in prefab.GetComponentsInChildren<MeshFilter>(true))

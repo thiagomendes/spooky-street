@@ -388,6 +388,15 @@ def main():
         front = to_world(h, (6.0, -21.0, 3.2))
         target = to_world(h, (0.0, 0.0, 3.2))
         tiles = []
+
+        def top(o):
+            while o.parent is not None:
+                o = o.parent
+            return o
+        others = [o for o in bpy.data.objects if top(o).name.startswith("House_") and top(o) is not frames[h]]
+        hidden = [o for o in others if not o.hide_render]
+        for o in hidden:  # the house alone, so no neighbour stands between it and the camera
+            o.hide_render = True
         for level in (0, 1):
             frames[h + "_lod0"].hide_render = level == 1
             frames[h + "_lod1"].hide_render = level == 0
@@ -396,11 +405,13 @@ def main():
             tiles.append(p)
         frames[h + "_lod0"].hide_render = False
         frames[h + "_lod1"].hide_render = True
-    if want("leaves"):
+        for o in hidden:
+            o.hide_render = False
+    if want("leaves"):  # the open leaf's face, from the hinge side
         for h in lh.HOUSES:
-            leaves[h].rotation_euler = (0, 0, math.radians(-GAG[h][0] * 0.55))
+            leaves[h].rotation_euler = (0, 0, math.radians(-GAG[h][0] * 0.6))
             dx, wy = lh.DOORS[h]
-            render(cam, to_world(h, (dx + 0.6, wy - 2.6, 1.45)), to_world(h, (dx - 0.1, wy - 0.4, 1.3)), int(420 * k), int(520 * k),
+            render(cam, to_world(h, (dx - 1.9, wy - 2.3, 1.45)), to_world(h, (dx - 0.3, wy - 0.6, 1.2)), int(420 * k), int(520 * k),
                    os.path.join(out, f"leaf_{h}.png"), lens=55)
             leaves[h].rotation_euler = (0, 0, 0)
     print("done", flush=True)

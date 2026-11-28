@@ -157,12 +157,12 @@ NEIGHBOUR_PARTS = {
     "Slippers_Plum": ("Shoes", "slippers", dict(colour="plum", cuff="white")),
     "Slippers_Berry": ("Shoes", "slippers", dict(colour="berry", cuff="white")),
     "Slippers_Green": ("Shoes", "slippers", dict(colour="green_dark", cuff="bone")),
-    "Head_Fogg": ("Head", "head", dict(tone="t1", iris="blue", paint="plain", beard=True, moustache="big", hair="white")),
+    "Head_Fogg": ("Head", "head", dict(tone="t1", iris="blue", paint="plain", beard=True, moustache="big", hair="brown")),
     "Head_Pearl": ("Head", "head", dict(tone="t4", iris="brown", paint="plain", glasses=True, hair="grey")),
     "Head_AbbottA": ("Head", "head", dict(tone="t6", iris="dark", paint="plain", beard=True, hair="black")),
     "Head_AbbottB": ("Head", "head", dict(tone="t2", iris="green", paint="plain", glasses=True, freckles=True,
                                           hair="auburn")),
-    "Hair_White": ("Hair", "hair", dict(style="crop", colour="white")),
+    "Hair_Brown": ("Hair", "hair", dict(style="crop", colour="brown")),
     "Hair_GreyBun": ("Hair", "hair", dict(style="bun", colour="grey")),
     "Hair_Short": ("Hair", "hair", dict(style="short", colour="black")),
     "Hair_Auburn": ("Hair", "hair", dict(style="short", colour="auburn")),
@@ -177,8 +177,8 @@ PARTS[NEIGHBOUR_BODY] = NEIGHBOUR_PARTS
 # id -> (body, [parts]); the ids are the slice's (LivingStreetLayout.NeighboursAt), the same table as
 # CrowdKit.Neighbours in Assets/SpookyStreet/Core/Crowd/CrowdKit.cs
 NEIGHBOURS = {
-    # booming and silly: a big cream cable jumper, an orange bobble beanie, a white beard, a tin of sweets
-    "Neighbour_Fogg": (NEIGHBOUR_BODY, ["Body_Fogg", "Hands_T1", "Slippers_Plum", "Head_Fogg", "Hair_White",
+    # booming and silly: a big cream cable jumper, an orange bobble beanie, a big brown beard and moustache, a tin of sweets
+    "Neighbour_Fogg": (NEIGHBOUR_BODY, ["Body_Fogg", "Hands_T1", "Slippers_Plum", "Head_Fogg", "Hair_Brown",
                                         "Beanie_Orange", "Tin_Treats"]),
     # slow and warm: a rose cardigan, her bone apron, glasses, a grey bun, a basket of sweets
     "Neighbour_Pearl": (NEIGHBOUR_BODY, ["Body_Pearl", "Hands_T4", "Slippers_Berry", "Head_Pearl", "Hair_GreyBun",

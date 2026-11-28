@@ -184,7 +184,7 @@ namespace SpookyStreet.Core.Crowd
             new CrowdPart(SlotShoes, "Slippers_Green"),
             new CrowdPart(SlotHead, "Head_Fogg"), new CrowdPart(SlotHead, "Head_Pearl"),
             new CrowdPart(SlotHead, "Head_AbbottA"), new CrowdPart(SlotHead, "Head_AbbottB"),
-            new CrowdPart(SlotHair, "Hair_White"), new CrowdPart(SlotHair, "Hair_GreyBun"),
+            new CrowdPart(SlotHair, "Hair_Brown"), new CrowdPart(SlotHair, "Hair_GreyBun"),
             new CrowdPart(SlotHair, "Hair_Short"), new CrowdPart(SlotHair, "Hair_Auburn"),
             new CrowdPart(SlotHeadPiece, "Beanie_Orange"),
             new CrowdPart(SlotCostume, "Apron_Bone"), new CrowdPart(SlotCostume, "Apron_Candy"),
@@ -193,14 +193,14 @@ namespace SpookyStreet.Core.Crowd
 
         /// <summary>
         /// The neighbours who answer the lane's doors, by the slice's ids (<c>LivingStreetLayout.NeighboursAt</c>): Mr. Fogg
-        /// (a cream cable jumper, an orange bobble beanie, a white beard, a tin of sweets), Nana Pearl (a rose cardigan, her
+        /// (a cream cable jumper, an orange bobble beanie, a big brown beard, a tin of sweets), Nana Pearl (a rose cardigan, her
         /// apron, glasses, a grey bun, a basket of sweets) and the two Abbotts in matching striped jumpers and slippers.
         /// House clothes only: no costume theme, so nothing a crowd rule reserves.
         /// </summary>
         public static readonly CrowdWalkerRecipe[] Neighbours =
         {
             new CrowdWalkerRecipe("Neighbour_Fogg", NeighbourModel, "Body_Fogg", "Hands_T1", "Slippers_Plum", "Head_Fogg",
-                "Hair_White", "Beanie_Orange", "Tin_Treats"),
+                "Hair_Brown", "Beanie_Orange", "Tin_Treats"),
             new CrowdWalkerRecipe("Neighbour_Pearl", NeighbourModel, "Body_Pearl", "Hands_T4", "Slippers_Berry", "Head_Pearl",
                 "Hair_GreyBun", "Apron_Bone", "Basket_Treats"),
             new CrowdWalkerRecipe("Neighbour_AbbottA", NeighbourModel, "Body_AbbottA", "Hands_T6", "Slippers_Green",
