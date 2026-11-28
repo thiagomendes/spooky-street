@@ -777,7 +777,11 @@ namespace SpookyStreet.Core.LivingStreet
             }
         }
 
-        private static float FigureAcross(Slot s, int i) => s.Figures.Length == 1 ? 0f : i == 0 ? -0.18f : 0.3f;
+        /// <summary>
+        /// Where each figure waits inside, across the door: the giver toward the latch edge (OpenDoorPeek reaches 0.30 m to its
+        /// left for the edge, which is 0.57 m from the door's centre on that side), the second Abbott beside the hinge.
+        /// </summary>
+        private static float FigureAcross(Slot s, int i) => i == 0 ? 0.27f : -0.12f;
 
         private void StartComingOut(Slot s, float pipX, float pipZ)
         {
