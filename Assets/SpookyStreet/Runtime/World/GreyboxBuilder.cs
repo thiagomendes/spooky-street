@@ -1,3 +1,4 @@
+using SpookyStreet.Core.LivingStreet;
 using SpookyStreet.Core.World;
 using SpookyStreet.Player;
 using UnityEngine;
@@ -229,7 +230,16 @@ namespace SpookyStreet.World
             BoundaryBox("Hedge_North", new Vector3(0f, 0.7f, 17.5f), new Vector3(44f, 1.4f, 1f));
             BoundaryBox("Hedge_South", new Vector3(0f, 0.7f, -17.5f), new Vector3(44f, 1.4f, 1f));
             BoundaryBox("Hedge_West", new Vector3(-21.5f, 0.7f, 0f), new Vector3(1f, 1.4f, 36f));
-            BoundaryBox("Hedge_East", new Vector3(21.5f, 0.7f, 0f), new Vector3(1f, 1.4f, 36f));
+            // Living street (D34): the east hedge opens where the lane runs through, and the east lane has its own edges.
+            float gapLow = EnvironmentLayout.EastGapMinZ;
+            float gapHigh = EnvironmentLayout.EastGapMaxZ;
+            BoundaryBox("Hedge_East", new Vector3(21.5f, 0.7f, (-18f + gapLow) * 0.5f), new Vector3(1f, 1.4f, gapLow + 18f));
+            BoundaryBox("Hedge_EastNorth", new Vector3(21.5f, 0.7f, (18f + gapHigh) * 0.5f), new Vector3(1f, 1.4f, 18f - gapHigh));
+            float east = LivingStreetLayout.EastEndX;
+            float south = LivingStreetLayout.EastSouthZ;
+            BoundaryBox("Hedge_LaneNorth", new Vector3((22f + east) * 0.5f, 0.7f, 17.5f), new Vector3(east - 22f, 1.4f, 1f));
+            BoundaryBox("Hedge_LaneSouth", new Vector3((22f + east) * 0.5f, 0.7f, south + 0.5f), new Vector3(east - 22f, 1.4f, 1f));
+            BoundaryBox("Hedge_LaneEast", new Vector3(east - 0.5f, 0.7f, (south + 18f) * 0.5f), new Vector3(1f, 1.4f, 18f - south));
             if (!UseEnvironmentModels)
             {
                 Box("Hedge_SideYard", new Vector3(-6f, 0.8f, 7f), new Vector3(6f, 1.6f, 1f), Palette.Hedge, safe: false);

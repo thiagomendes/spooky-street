@@ -43,22 +43,56 @@ namespace SpookyStreet.Case
 
         public string VerbKey => !HasTarget ? null
             : Current != null ? VerbFor?.Invoke(Current) ?? Current.VerbKey
-            : Extra.VerbKey;
+            : _selectedExtra.VerbKey;
+
+        private readonly List<ExtraUseTarget> _extras = new List<ExtraUseTarget>();
+        private ExtraUseTarget _extraPrimary;
 
         /// <summary>
         /// One Use target that is not a case point (S004: the dress-up trunk on Pip's porch). Offered only when no case
-        /// point is, so it never takes a clue's Use; null for none.
+        /// point is, so it never takes a clue's Use; null for none. Further free-world targets join with
+        /// <see cref="AddExtra"/> (living street: doorbells, the lantern table, treats at Pip's porch).
         /// </summary>
-        public ExtraUseTarget Extra { get; set; }
+        public ExtraUseTarget Extra
+        {
+            get => ExtraActive ? _selectedExtra : _extraPrimary;
+            set
+            {
+                if (_extraPrimary != null)
+                {
+                    _extras.Remove(_extraPrimary);
+                }
 
-        /// <summary>True while <see cref="Extra"/> is the selected target.</summary>
+                _extraPrimary = value;
+                if (value != null)
+                {
+                    _extras.Insert(0, value);
+                }
+            }
+        }
+
+        private ExtraUseTarget _selectedExtra;
+
+        /// <summary>Adds a free-world Use target (never offered while a case point is in range).</summary>
+        public void AddExtra(ExtraUseTarget target)
+        {
+            if (target != null && !_extras.Contains(target))
+            {
+                _extras.Add(target);
+            }
+        }
+
+        /// <summary>True while one of the extra targets is the selected target.</summary>
         public bool ExtraActive { get; private set; }
 
+        /// <summary>The selected extra target (null when a case point or nothing is selected).</summary>
+        public ExtraUseTarget SelectedExtra => ExtraActive ? _selectedExtra : null;
+
         /// <summary>Where the selected target's floating marker goes (null when none).</summary>
-        public Vector3? CurrentMarker => !HasTarget ? (Vector3?)null : Current != null ? MarkerOf(Current) : Extra.Marker;
+        public Vector3? CurrentMarker => !HasTarget ? (Vector3?)null : Current != null ? MarkerOf(Current) : _selectedExtra.Marker;
 
         /// <summary>The selected target's icon (null when none).</summary>
-        public string CurrentIcon => !HasTarget ? null : Current != null ? IconFor(Current) : Extra.IconName;
+        public string CurrentIcon => !HasTarget ? null : Current != null ? IconFor(Current) : _selectedExtra.IconName;
 
         /// <summary>A verb the world's state gives a point instead of its own (null: the point's; S004 the booth's knock).</summary>
         public Func<InteractionPoint, string> VerbFor { get; set; }
@@ -85,7 +119,7 @@ namespace SpookyStreet.Case
             }
             else
             {
-                Extra.Interact?.Invoke();
+                _selectedExtra.Interact?.Invoke();
             }
         }
 
@@ -108,7 +142,27 @@ namespace SpookyStreet.Case
             }
 
             Current = picked;
-            ExtraActive = picked == null && Extra != null && Extra.Offered != null && Extra.Offered(pip);
+            _selectedExtra = null;
+            if (picked == null)
+            {
+                float best = float.MaxValue;
+                foreach (var extra in _extras)
+                {
+                    if (extra.Offered == null || !extra.Offered(pip))
+                    {
+                        continue;
+                    }
+
+                    float d = (extra.Marker - pip).sqrMagnitude;
+                    if (d < best)
+                    {
+                        best = d;
+                        _selectedExtra = extra;
+                    }
+                }
+            }
+
+            ExtraActive = _selectedExtra != null;
         }
 
         /// <summary>Nothing solid between Pip's chest and the target's marker (ignores triggers and Pip).</summary>

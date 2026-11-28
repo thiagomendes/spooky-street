@@ -187,6 +187,23 @@ namespace SpookyStreet.Core.World
         public const float WallThickness = 1f;
         public const float WallBottom = -2f;
 
+        /// <summary>The east lane's inner faces (living-street §2.2): its east end and its south edge.</summary>
+        public const float WallInnerEastX = LivingStreet.LivingStreetLayout.EastEndX;
+        public const float WallInnerEastLaneSouthZ = LivingStreet.LivingStreetLayout.EastSouthZ;
+
+        /// <summary>
+        /// True when (x, z) lies inside the walls, at least <paramref name="margin"/> from every outer face: the heart
+        /// (44 × 36 m) or the east lane beyond its hedge gap.
+        /// </summary>
+        public static bool InsideWalls(float x, float z, float margin)
+        {
+            bool heart = x > -WallInnerHalfX + margin && x <= WallInnerHalfX && z > -WallInnerHalfZ + margin &&
+                         z < WallInnerHalfZ - margin;
+            bool lane = x >= WallInnerHalfX - margin && x < WallInnerEastX - margin && z > WallInnerEastLaneSouthZ + margin &&
+                        z < WallInnerHalfZ - margin;
+            return heart || lane;
+        }
+
         /// <summary>
         /// Wall top. Highest standable top in the block (the owl house chimney, 7.4 m) plus the best chain jump
         /// (2.8 m) plus Pip (1.1 m) is 11.3 m; a glide only descends, so 14 m needs no ceiling cap.
@@ -439,12 +456,18 @@ namespace SpookyStreet.Core.World
             float x = WallInnerHalfX;
             float z = WallInnerHalfZ;
             float t = WallThickness;
+            // Living street (D34): the east side opens into the east lane, which has its own south and east walls; a
+            // short stub closes the heart's south-east corner between the two south edges.
+            float east = WallInnerEastX;
+            float laneSouth = WallInnerEastLaneSouthZ;
             return new[]
             {
-                ColliderPart.Span("Wall_North", -x - t, WallBottom, z, x + t, WallTop, z + t),
+                ColliderPart.Span("Wall_North", -x - t, WallBottom, z, east + t, WallTop, z + t),
                 ColliderPart.Span("Wall_South", -x - t, WallBottom, -z - t, x + t, WallTop, -z),
                 ColliderPart.Span("Wall_West", -x - t, WallBottom, -z - t, -x, WallTop, z + t),
-                ColliderPart.Span("Wall_East", x, WallBottom, -z - t, x + t, WallTop, z + t),
+                ColliderPart.Span("Wall_EastCorner", x, WallBottom, -z - t, x + t, WallTop, laneSouth),
+                ColliderPart.Span("Wall_EastLaneSouth", x, WallBottom, laneSouth - t, east + t, WallTop, laneSouth),
+                ColliderPart.Span("Wall_East", east, WallBottom, laneSouth - t, east + t, WallTop, z + t),
             };
         }
 

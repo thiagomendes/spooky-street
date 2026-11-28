@@ -462,6 +462,9 @@ namespace SpookyStreet.Tests.PlayMode
             ("north", new Vector3(8f, 0.1f, 13.4f), Vector3.forward),
             ("south", new Vector3(8f, 0.1f, -13.4f), Vector3.back),
             ("east", new Vector3(17.4f, 0.1f, -6f), Vector3.right),
+            // Living street (D34): the east lane beyond the hedge gap has its own south edge and east end.
+            ("east lane end", new Vector3(40.5f, 0.1f, 0f), Vector3.right),
+            ("east lane south", new Vector3(26f, 0.1f, -9.5f), Vector3.back),
             ("west", new Vector3(-17.4f, 0.1f, -6f), Vector3.left),
             ("north corner", new Vector3(17.6f, 0.1f, 13.6f), new Vector3(1f, 0f, 1f)),
             ("owl house roof", new Vector3(0f, 6.7f, 16f), Vector3.forward),
@@ -476,8 +479,7 @@ namespace SpookyStreet.Tests.PlayMode
             var pip = game.Pip;
             var controller = pip.GetComponent<CharacterController>();
             int probeMask = Physics.DefaultRaycastLayers & ~(1 << pip.gameObject.layer);
-            float limitX = CollisionRules.WallInnerHalfX - controller.radius + 0.05f;
-            float limitZ = CollisionRules.WallInnerHalfZ - controller.radius + 0.05f;
+            float margin = controller.radius - 0.05f;
             var failures = new List<string>();
             foreach (var side in Sides)
             {
@@ -498,7 +500,7 @@ namespace SpookyStreet.Tests.PlayMode
                     Vector3 at = pip.transform.position;
                     glided |= pip.Gliding;
                     highest = Mathf.Max(highest, at.y);
-                    if (escape == null && (Mathf.Abs(at.x) > limitX || Mathf.Abs(at.z) > limitZ))
+                    if (escape == null && !CollisionRules.InsideWalls(at.x, at.z, margin))
                     {
                         escape = $"left the block at {at}";
                     }

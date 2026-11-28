@@ -240,6 +240,7 @@ namespace SpookyStreet.Case
             Keepsakes = PaperBatCollectibles.Create(transform, game);
             Keepsakes.CanCollect = () => _flow.State == GameState.Playing && !_modal && !(Cutscenes != null && Cutscenes.Playing);
             BuildKeepsakePlay(game);
+            BuildLivingStreet(game);
             Recap = ContinueRecapView.Create(_ui);
             LoadSave();
             Nonverbal = NonverbalLayer.Create(this, game);
@@ -298,6 +299,7 @@ namespace SpookyStreet.Case
 
         private void OnDestroy()
         {
+            OnDestroyLivingStreet();
             if (_flow != null)
             {
                 _flow.StateChanged -= OnStateChanged;
@@ -327,6 +329,7 @@ namespace SpookyStreet.Case
             // The street beside the case save (D29); a stamped save without a street file teaches it now.
             Street.Load(SaveDirectory, State);
             Keepsakes.Load(SaveDirectory);
+            Living?.Load(SaveDirectory);
             RefreshKeepsakes();
             // Spec §7: restore props from facts before enabling controls (the title is up; play has not started).
             ApplyWorld();
@@ -522,7 +525,7 @@ namespace SpookyStreet.Case
 
         private void OnNewGame()
         {
-            if (State.Count > 0 || !Keepsakes.State.IsEmpty)
+            if (State.Count > 0 || !Keepsakes.State.IsEmpty || (Living != null && !Living.State.IsEmpty))
             {
                 Notice.Show(null, UiKeys.NewGameConfirm, UiKeys.NewGameConfirmYes, StartNewGameConfirmed,
                     UiKeys.NewGameConfirmNo, null);
@@ -537,6 +540,7 @@ namespace SpookyStreet.Case
         {
             Street?.OnNewGame(CaseState.Empty);
             Keepsakes?.OnNewGame();
+            Living?.OnNewGame();
             _keepsakePages.Reset();
             RefreshKeepsakes();
             StartNewCase();
@@ -593,6 +597,7 @@ namespace SpookyStreet.Case
 
         private void ResetPresentation()
         {
+            Living?.ResetPresentation();
             Travel?.Cancel();
             Framing?.Release();
             CloseModals();
@@ -1201,6 +1206,7 @@ namespace SpookyStreet.Case
         {
             TryStore(() => _store.Replay());
             Keepsakes?.OnReplay();
+            Living?.OnReplay();
             RefreshKeepsakes();
             HasSave = true;
             ResetCase();
@@ -1273,6 +1279,7 @@ namespace SpookyStreet.Case
             Captions.Raised = false;
             Notebook.Cancel();
             DressUp?.Cancel();
+            Living?.LanternScreen.Cancel();
             Trunk?.Snap();
             Notice.Hide();
             Cutaway.End(false);
@@ -1413,6 +1420,8 @@ namespace SpookyStreet.Case
                                 !CaseRouteLayout.Inside(pip.x, pip.z) && (Cutscenes == null || !Cutscenes.Playing);
                 Street.Tick(dt, onStreet, Workshop, _game.Witnesses != null ? _game.Witnesses.Vale : null, _camera);
             }
+
+            TickLivingStreet(dt, crossing);
             if (TickRescue(pip, dt, crossing))
             {
                 pip = _pip.transform.position;
