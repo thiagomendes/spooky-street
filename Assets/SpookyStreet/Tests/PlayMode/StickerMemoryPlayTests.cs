@@ -274,6 +274,25 @@ namespace SpookyStreet.Tests.PlayMode
             return Rect.MinMaxRect(x0, y0, x1, y1);
         }
 
+        /// <summary>
+        /// As the capture does: the memory starts on the notebook's clock, then the clock is held and the card set to
+        /// its settled frame, which the picture keeps being drawn from; the memory camera then stands at that pose.
+        /// </summary>
+        private static IEnumerator Settle(NotebookView notebook, string stickerId, Camera cam)
+        {
+            notebook.CanAnimate = null;
+            yield return Frames(3);
+            notebook.CanAnimate = () => false;
+            var playback = notebook.MemoryCard.Playback;
+            playback.Advance(StickerMemories.ShotSeconds + 0.1f - playback.Elapsed);
+            yield return Frames(6);
+            Assert.IsTrue(notebook.MemoryOpen, stickerId);
+            var settled = StickerMemories.For(stickerId).To;
+            var eye = new Vector3(settled.Eye.X, settled.Eye.Y, settled.Eye.Z);
+            Assert.Less(Vector3.Distance(cam.transform.position, eye), 0.05f, stickerId + ": the memory camera stands at the settled pose");
+            Assert.AreEqual(settled.Fov, cam.fieldOfView, 0.05f, stickerId);
+        }
+
         [UnityTest]
         [Timeout(120000)]
         public IEnumerator TheClothAndTheStreamerMemoriesShowTheirThingClose()
@@ -289,30 +308,39 @@ namespace SpookyStreet.Tests.PlayMode
             notebook.ShowPage(notebook.PageQuestions.IndexOf(N.Question(N.QuestionEntry)));
             yield return Wait(0.6f);
             var animate = notebook.CanAnimate;
-            notebook.CanAnimate = () => false; // the card's clock is set by hand, as in the capture
             var cam = Director.Nonverbal.MemoryStage.Camera;
             var game = GameBootstrap.Instance;
 
             Assert.IsTrue(notebook.InspectSticker(N.Cloth));
-            notebook.MemoryCard.Playback.Advance(StickerMemories.ShotSeconds);
-            yield return Frames(4);
+            yield return Settle(notebook, N.Cloth, cam);
             Assert.IsTrue(notebook.MemoryOpen);
-            var cloth = BoxInPicture(cam, Director.House.ClothSnag.gameObject);
-            Assert.GreaterOrEqual(cloth.height, 0.35f, "the scrap reads: a good part of the picture's height " + cloth);
-            Assert.That(cloth.center.x, Is.InRange(0.25f, 0.75f), "the scrap near the middle, clear of the sticker corner " + cloth);
+            // The scrap hangs from the snag point to about 0.3 m below it (ClothSnag.fbx), on the spawned model.
+            var snag = Director.House.ClothSnag.position;
+            var top = InPicture(cam, snag);
+            var bottom = InPicture(cam, snag + Vector3.down * 0.3f);
+            Debug.Log($"[StickerMemoryPlayTests] cloth renderers {ModelKit.RendererBounds(Director.House.ClothSnag.gameObject)}, " +
+                      $"scrap top {top}, bottom {bottom}, camera {cam.transform.position}");
+            Assert.GreaterOrEqual(top.y - bottom.y, 0.35f, "the scrap reads: a good part of the picture's height");
+            Assert.That(top.x, Is.InRange(0.25f, 0.75f), "the scrap near the middle, clear of the sticker corner " + top);
+            Assert.That(top.y, Is.InRange(0.5f, 1f), "the snag in the upper half, the scrap below it " + top);
+            Assert.That(bottom.y, Is.InRange(0f, 0.5f), "... hanging down past the middle " + bottom);
             notebook.CloseMemory();
             yield return null;
 
             Assert.IsTrue(notebook.InspectSticker(N.Streamer));
-            notebook.MemoryCard.Playback.Advance(StickerMemories.ShotSeconds);
-            yield return Frames(4);
+            yield return Settle(notebook, N.Streamer, cam);
             Assert.IsTrue(notebook.MemoryOpen);
-            var bike = BoxInPicture(cam, game.Witnesses.Bicycle.gameObject);
-            var bea = BoxInPicture(cam, game.Witnesses.Bea.gameObject);
-            var handlebar = InPicture(cam, ModelKit.RendererBounds(game.Witnesses.Bicycle.gameObject).center);
-            Assert.GreaterOrEqual(bike.height, 0.5f, "the bike is close: its strings read " + bike);
-            Assert.That(handlebar.x, Is.InRange(0.15f, 0.85f), "the bike in the picture " + handlebar);
-            Assert.Greater(bea.center.x, 0.6f, "Bea stands to the side, as context " + bea);
+            // The handlebar's strings in the middle, the bike around them, Bea standing to the side.
+            var strings = StickerMemories.For(N.Streamer).To.Aim;
+            var onBar = InPicture(cam, new Vector3(strings.X, strings.Y, strings.Z));
+            var bike = InPicture(cam, game.Witnesses.Bicycle.position + Vector3.up * 0.6f);
+            var bea = InPicture(cam, game.Witnesses.Bea.transform.position + Vector3.up * 1f);
+            Debug.Log($"[StickerMemoryPlayTests] streamer: strings {onBar}, bike {bike}, Bea {bea}, " +
+                      $"bike renderers {ModelKit.RendererBounds(game.Witnesses.Bicycle.gameObject)}");
+            Assert.That(onBar.x, Is.InRange(0.4f, 0.6f), "the strings in the middle " + onBar);
+            Assert.That(bike.x, Is.InRange(0.1f, 0.6f), "the bike around them " + bike);
+            Assert.Greater(bea.x, 0.65f, "Bea to the side, as context " + bea);
+            Assert.Less(Vector3.Distance(cam.transform.position, game.Witnesses.Bicycle.position), 1.5f, "close to the bike");
             notebook.CloseMemory();
             notebook.CanAnimate = animate;
             notebook.Close();
