@@ -750,6 +750,120 @@ def glance_right(u):
     return _glance(u, -1.0)
 
 
+def keyed_still(keys, u):
+    """keyed() with a still start and end (zero tangent at the first and last key), so a one-shot eases out of the
+    rest pose and back into it instead of leaving it at speed."""
+    if u <= keys[0][0]:
+        return dict(keys[0][1])
+    if u >= keys[-1][0]:
+        return dict(keys[-1][1])
+    i = max(k for k in range(len(keys) - 1) if keys[k][0] <= u)
+    u0, p1 = keys[i]
+    u1, p2 = keys[i + 1]
+    p0 = keys[i - 1][1] if i > 0 else p2
+    p3 = keys[i + 2][1] if i + 2 < len(keys) else p1
+    t = (u - u0) / (u1 - u0)
+    t2, t3 = t * t, t * t * t
+    out = {}
+    for k in p1:
+        a, b, c, d = p0[k], p1[k], p2[k], p3[k]
+        out[k] = 0.5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3)
+    for k in ("ground", "head_world", "pail_world", "feet_world"):
+        out[k] = min(1.0, max(0.0, out[k]))
+    return out
+
+
+def reach_point(p, S, target, bone=None, twists=(-40, -20, 0, 20, 40, 60, 80)):
+    """reach() for the knuckles, or for any point a hand carries (bone = "Pail": the right hand's grip), trying a few
+    arm twists when the authored one cannot get there (a hand crossing the body needs one). Returns the miss (m)."""
+    target = Vector(target)
+
+    def solve_with(twist):
+        q = dict(p)
+        if twist is not None:
+            q[f"arm{S}_twist"] = twist
+        for _ in range(4 if bone else 1):
+            off = (bone_point(q, "Fingers_" + S) - bone_point(q, bone)) if bone else Vector()
+            reach(q, S, target + off)
+        got = bone_point(q, bone) if bone else bone_point(q, "Fingers_" + S)
+        return (got - target).length, q
+    best = solve_with(None)
+    if best[0] > 0.005:
+        for t in twists:
+            cand = solve_with(t)
+            if cand[0] < best[0] - 0.002:
+                best = cand
+    p.update(best[1])
+    return best[0]
+
+
+# HandTreat (living street §4.2: groups ring Pip's bell and she hands them a sweet). Timed by
+# Assets/SpookyStreet/Core/Crowd/CrowdClipTimings.cs: the free hand is in the pail at TREAT_PICK and lets the sweet go
+# at TREAT_RELEASE, its knuckles at TREAT_AT (character space). The children are her size: a reach forward, not a bend.
+HAND_TREAT_FRAMES = 48
+TREAT_PICK, TREAT_RELEASE = 0.25, 0.55
+TREAT_AT = Vector((0.03, -0.38, 0.62))
+# where her left knuckles dip into the jack-o'-lantern pail, from the grip: beside the handle (which runs front to
+# back over the mouth), just over the rim (0.103 m under the grip)
+PAIL_DIP = Vector((0.034, -0.012, -0.078))
+_TREAT_KEYS = {}
+
+
+def hand_treat(u):
+    """Pip hands a sweet to a child at her porch (HAND_TREAT_FRAMES). She lifts her pail (her treat bowl) in front of
+    her tummy, peeks in and dips her free hand in (TREAT_PICK), turns to the child with a smile, reaches forward and
+    puts the sweet into the child's pail at TREAT_AT (TREAT_RELEASE), opens her hand, a happy little bounce, and back
+    to Idle frame 0. The cape follows the lean a beat late."""
+    if u <= 0.0 or u >= 1.0:
+        return idle(0.0)
+    key = id(RIG)
+    if key not in _TREAT_KEYS:
+        _TREAT_KEYS[key] = _hand_treat_keys()
+    return keyed_still(_TREAT_KEYS[key], u)
+
+
+def _hand_treat_keys():
+    rest = idle(0.0)
+    pick = dict(rest)
+    pick.update(chest_yaw=-10, spine_yaw=-4, spine_pitch=5, chest_pitch=4, head_pitch=20, head_yaw=-10,
+                head_roll=-4, hip_roll=-1.5, handL_pitch=-40, fingersL=22, thumbL=8, hair_side=-2, hair_back=-2,
+                kneeL=6, kneeR=6, legL_fwd=4, legR_fwd=4, pail_x=0, pail_y=0)
+    cape(pick, [5, 6, 7], flare=[2, 3, 4], sway=-2)
+    reach_point(pick, "R", Vector((-0.06, -0.2, 0.71)), bone="Pail")
+    reach_point(pick, "L", bone_point(pick, "Pail") + PAIL_DIP)
+    lift = dict(rest)
+    lift.update(chest_yaw=-6, spine_yaw=-2, head_pitch=10, head_yaw=-6, head_roll=-2, fingersL=12, handL_pitch=-20,
+                pail_x=6, hair_back=1, kneeL=5, kneeR=5)
+    cape(lift, [4, 5, 6], flare=[2, 3, 4], sway=-1)
+    reach_point(lift, "R", Vector((-0.08, -0.17, 0.68)), bone="Pail")
+    for k in ("armL_fwd", "armL_out", "armL_twist", "elbowL"):
+        lift[k] = rest[k] + (pick[k] - rest[k]) * 0.55
+    up = dict(rest)  # the sweet comes out; she looks up at the child with a tilt of her head
+    up.update(chest_yaw=-2, spine_pitch=3, head_pitch=-4, head_yaw=2, head_roll=7, handL_pitch=-24, fingersL=46,
+              thumbL=16, hair_side=3, hair_back=-1, kneeL=4, kneeR=4, pail_x=-4)
+    cape(up, [4, 6, 8], flare=[2, 3, 4], sway=1)
+    reach_point(up, "R", Vector((-0.1, -0.15, 0.66)), bone="Pail")
+    reach_point(up, "L", Vector((0.06, -0.26, 0.8)))
+    put = dict(rest)  # the reach: a step of the weight forward, up on her toes a touch, the pail arm back for balance
+    put.update(hip_pitch=6, spine_pitch=7, chest_pitch=4, hy=-0.012, head_pitch=6, head_roll=5, head_yaw=1,
+               kneeL=8, kneeR=6, legL_fwd=7, legR_fwd=3, footL=5, footR=5, toeL=-5, toeR=-5,
+               handL_pitch=-30, fingersL=46, thumbL=16, shoulderL=6, armR_fwd=-6, armR_out=7, elbowR=34,
+               pail_x=-8, hair_back=-5, hair_side=1)
+    cape(put, [9, 12, 15], flare=[3, 5, 7], sway=0)
+    reach_point(put, "L", TREAT_AT)
+    let_go = dict(put)  # the hand opens and lifts a little: "there!"
+    let_go.update(fingersL=-8, thumbL=-6, handL_pitch=-12, head_pitch=0, head_roll=9, hair_back=-2, pail_x=4)
+    cape(let_go, [11, 14, 18], flare=[3, 5, 7], sway=1)
+    reach_point(let_go, "L", TREAT_AT + Vector((0.0, 0.04, 0.07)))
+    bounce = dict(rest)  # a happy little bounce, shoulders up
+    bounce.update(kneeL=12, kneeR=12, legL_fwd=7, legR_fwd=7, hip_pitch=3, head_pitch=-6, head_roll=-6, shoulderL=8,
+                  shoulderR=8, armL_fwd=14, armL_out=10, elbowL=46, fingersL=20, hair_back=3, hair_side=-3,
+                  pail_x=8)
+    cape(bounce, [6, 9, 12], flare=[3, 4, 6], sway=-2)
+    return [(0.0, rest), (0.13, lift), (TREAT_PICK, pick), (0.39, up), (TREAT_RELEASE, put), (0.66, let_go),
+            (0.82, bounce), (1.0, rest)]
+
+
 # name, pose function, frames at 30 fps, loops, intended ground speed (m/s), note
 CLIPS = [
     ("Idle", idle, 75, True, 0.0, "breathing, weight shift, cape sway"),
@@ -772,4 +886,7 @@ CLIPS = [
      "starts and ends on Idle frame 0"),
     ("GlanceRight", glance_right, GLANCE_FRAMES, False, 0.0,
      "hint glance: the same to her RIGHT; starts and ends on Idle frame 0"),
+    ("HandTreat", hand_treat, HAND_TREAT_FRAMES, False, 0.0,
+     "a sweet from her pail into a child's pail: left hand in the pail at 0.25, let go at 0.55 with the knuckles "
+     "0.38 m ahead and 0.62 m up; starts and ends on Idle frame 0"),
 ]

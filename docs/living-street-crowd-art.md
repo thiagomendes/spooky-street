@@ -250,3 +250,127 @@ dark, so the ribs carry on round the flanks and the limb bones down the outer si
   June's star-witch language. That conflict needs the main session's call before the lantern pieces are modelled.
 - **Paper standees** (§8, the impostors beyond 18 m) are listed under the slice's performance work, not the kit.
 - **The older-child body** and the rest of the 11 themes are the scale phase (§7 Targets).
+
+## Trick-or-treat clips (branch `feature/street-treat-clips`)
+
+The owner's TestFlight notes: a door flew open the instant the bell rang with the neighbour already there, the
+treat was thrown through the air, and in a crowd only one child got anything. "O movimento de colocar os docinhos tem
+que ser um movimento mesmo." The game code sequences the visit (rings, the neighbour coming to the door, one treat
+per child, queueing); these are the motions it plays, by these exact names.
+
+**The contract** is `Assets/SpookyStreet/Core/Crowd/CrowdClipTimings.cs` (engine-free): names, lengths, the marker
+times, where the hand and the pail are at those markers, and the walk transitions' root travel. `CrowdClipTimingsTests`
+(Core) and `TreatClipImportTests` (EditMode, on the imported FBX files) hold the clips and the numbers together.
+
+| Clip | Body (file) | Frames (30 fps) | Marker | What the child sees |
+|---|---|---|---|---|
+| `GiveTreat` | grown-up (`CrowdAdult.fbx`, `CrowdNeighbours.fbx`) | 48 (1.6 s) | hand in the bowl 0.25; **release 0.55** | the tin or basket comes up to the waist in the right hand, the free hand dips in front of the bail for a sweet, the grown-up bends forward and down over bent knees, the hand puts the sweet into the pail and opens, a friendly nod, and they straighten |
+| `OpenDoorPeek` | grown-up (both files) | 36 (1.2 s) | **hand on the door edge 0.25**; lets go 0.42 | a small lean into the doorway, the left hand reaches out to the leaf's edge and pushes it a little, then a warm look down at the children with a tilt of the head; never a knock |
+| `HoldPail` | child (`CrowdChild.fbx`) | 48 (1.6 s) | **the sweet lands 0.6** | both hands lift the pail forward by its bail and hold it out, the child looks up, rises a little on the toes, bobs and peeks in when the sweet drops, then brings it back |
+| `Cheer` | child | 27 (0.9 s) | top of the hop 0.45 | a crouch, a hop with the free fist high and the pail (bag, lantern) out to the side, a soft landing |
+| `WalkStart` | both bodies (all three files) | 12 (0.4 s) | ends on Walk at frame 20/24 (child), 35/41 (grown-up) | the weight goes over the right foot, its heel peels up while the ball stays put, the left foot lifts and swings into the stride |
+| `WalkStop` | both bodies | 12 (0.4 s) | starts on Walk frame 0 | the struck left foot rolls flat and stays, the right swings in beside it, the body settles into Idle |
+| `HandTreat` | Pip (`Pip.fbx`, `PipClips.HandTreat`) | 48 (1.6 s) | hand in the pail 0.25; **release 0.55** | Pip lifts her jack-o'-lantern pail in front of her, peeks in and dips her free hand beside the handle, comes up with the sweet and a tilt of her head, reaches forward (a reach, not a bend: the children are her size), puts it in the child's pail, opens her hand, a happy little bounce |
+
+All are one-shots, in place, and start and end on Idle frame 0 (the walk transitions on the Walk frame named above).
+The shipped clips (Idle, Walk, Wave, Talk; Pip's seventeen) are untouched.
+
+**Where things are** (character frame: metres ahead of the root, to its left, above the ground):
+
+| Point | Ahead | Left | Height |
+|---|---|---|---|
+| grown-up's left knuckles at the release (`GiveTreatRelease*`) | 0.45 | 0.04 | 0.62 |
+| Pip's left knuckles at the release (`HandTreatRelease*`) | 0.38 | 0.03 | 0.62 |
+| middle of the child's pail mouth while held out (`HoldPailMouth*`) | 0.26 | 0 | 0.56 |
+| grown-up's left knuckles on the door edge (`OpenDoorPeekDoor*`) | 0.32 | 0.30 | 1.00 |
+
+So a child receiving stands 0.71 m in front of a grown-up (0.64 m in front of Pip), facing it. Started together,
+`GiveTreat` lets the sweet go at 0.88 s and `HoldPail` bobs at 0.96 s, 6 cm lower: the sweet drops into the pail.
+The sweet rides the giver's `Fingers_L` (`CrowdClipTimings.TreatHandBone`) from the pick to the release. The door's
+latch edge is on the neighbour's left, the hinge on the right (`LivingStreetSet`: the leaf swings out to the street).
+
+**Walk transitions** keep the planted foot still when the root moves by `CrowdClipTimings.RootTravel(clip, model, u)`:
+WalkStart travels d·u^k, WalkStop d·(1 − (1 − u)^k), with k = Walk speed × 0.4 s / d, so the root leaves standing
+and reaches `CrowdKit.WalkSpeed` exactly when Walk takes over (and the reverse). d: child 0.171 m in, 0.159 m out;
+grown-up 0.339 m in, 0.272 m out. Start WalkStop when the Walk cycle wraps (the left heel has just struck).
+
+**Made how.** `tools/blender/crowd/crowd_anims.py` (the crowd's clips, in Pip's pose vocabulary: hands placed by the
+arm solver, legs by a three-axis leg solver for the planted and swinging feet) and `tools/blender/export/pip_anims.py`
+(`hand_treat`, `keyed_still`, `reach_point`). The new takes were keyed on a rebuilt skeleton and copied into the
+shipped files without touching anything else (graphics standards §1): `crowd_takes.py` and `pip_takes.py`
+(`--fresh DIR --into DIR [--base DIR]`), both through `export/fbx_add_takes.py`. `pip_fbx_diff.py`, the shipped files
+against the new ones (`docs/evidence/living-street/treat-clips/fbx_diff_*.txt`): every mesh, UV and skin weight
+identical, the skeleton identical, every old clip's curves identical (difference 0), the new takes added. The rebuilt
+skeletons alone match the shipped ones too (old clips within 1e-5). Textures and `.meta` files unchanged.
+
+**Measured on the exported files** (`tools/blender/crowd/crowd_treat_check.py`,
+`docs/evidence/living-street/treat-clips/treat_check.json`): first and last frames equal their rest poses to 0.0 mm;
+the release, pail and door points land within 3 mm of the table; the planted ball of the foot slides at most 1.3 mm
+forward or back. It pivots sideways by up to 3.6 cm on the grown-up's WalkStart (1.6 cm on the child's), because
+Walk sets the feet that much narrower than Idle and the ball has to get there; that is a pivot of the foot under the
+weight shift, not a skate.
+
+**Review** (`blender -b -t 2 --python tools/blender/crowd/crowd_treat_review.py -- <out> [--only …]`, from the
+committed FBX files and atlases), sheets in `docs/evidence/living-street/treat-clips/`:
+
+| Sheet | What it shows |
+|---|---|
+| `treat_<Clip>_<Walker>.jpg` | ten frames from the front three-quarter and in profile, five from behind, the gameplay camera (3.8 m behind Pip, about 5 m from the subject, 50°, phone frame) at three moments, the last frame beside Idle 0; the walk transitions in profile under a fixed camera with the root really travelling and a post at the planted foot, with the Walk frames before or after |
+| `treat_lineup_<Clip>.jpg` | every walker or neighbour of the body at the key frames (props and costumes against the motion) |
+| `treat_give_<Neighbour>_<Child>.jpg` | the hand-over: both clips started together, the child where the contract puts it, a sweet on the giver's knuckles that drops into the pail, then the child's Cheer; side, three-quarter and gameplay camera |
+| `treat_pip_give_RobotKid.jpg`, `treat_HandTreat_Pip.jpg` | Pip's HandTreat on its own (with close views of the dip and the reach) and handing a robot child a sweet |
+| `treat_door_Neighbour_Fogg.jpg` | OpenDoorPeek against a door leaf that starts to swing when the hand meets its edge |
+
+What the iterations changed, by looking at the sheets:
+
+1. The first GiveTreat and OpenDoorPeek flung the free arm out to the side on the way to the bowl or the door (the
+   spline passed through a reach solved with another arm twist). The in-between key now carries the target arm
+   halfway, so the hand travels straight to the bowl and the door edge.
+2. Every one-shot left Idle at speed (Catmull-Rom with clamped ends). Clips now ease out of Idle frame 0 and back
+   into it (`pip_anims.keyed_still`, zero tangents at the ends).
+3. The first Cheer put both hands overhead: the bag or pail hanging from the raised right hand passed through the
+   child's head, the body arched back, and the landing arms went level to the sides (which reads as pointing). Now
+   the free fist goes high, the prop hand goes out to the side at shoulder height, the arch is gone, and the arms
+   come down in front with bent elbows.
+4. The grown-up's bow hid the face under the hair or beanie and dropped the tin to the knee: the head now lifts
+   toward the child's face and the tin stays at the waist, pulled back from the child.
+5. The child looked so far up that the robot's box helmet tipped back: the look up is gentler (it also suits Pip,
+   who is the child's height).
+6. WalkStart first ended on a Walk phase with the left foot behind, so the foot drifted backward before stepping;
+   the walk transitions now meet Walk where the swinging foot goes forward, on whole Walk frames.
+7. The first leg solver held the planted foot forward-back and up-down only, and it drifted 4 cm sideways; it now
+   holds all three axes (the remaining sideways pivot is the stance-width difference, above).
+8. The door sheet's first camera stood on the street side, behind the leaf; it now looks from inside the house.
+
+**Known limits.**
+
+- The ghost's arms go through her sheet in HoldPail (from frame 9 to 40, up to 10 cm) and Cheer (frames 6 to 21,
+  up to 27 cm), as they already did in the shipped Wave and Talk (`clip_check_ghost.json`). The sheet follows the
+  arms only near the hem. WalkStart and WalkStop keep them under it (0 frames).
+- Nana Pearl and Abbott A carry a basket and a tin, Mr. Fogg a tin; Abbott B has no prop (his apron has a pocket),
+  so his GiveTreat dips into an empty hand. The game can give him a prop or let his partner give.
+- A child with a lantern (the queen) holds the lantern out like a pail; the lantern has no opening.
+- One GiveTreat serves tin and basket: the free hand dips in front of the bail at a height between the two props'
+  sweets, so it reads as "in the bowl" for both but touches neither exactly.
+- Child-to-giver spacing is exact only when the child stands where the contract says. The game's queue decides
+  that.
+- Sheets are rendered in the review light. The game's light is in the CI capture frames below.
+
+**In the game's light (CI run 46158963248, green, commit `df3b93c`).** EditMode 993/993, PlayMode 176/176, Visual
+31/31. The new and touched tests:
+
+- `TreatClipImportTests` 19/19: every clip is in its FBX, plays once, has the contract's length and starts and ends
+  on its rest pose; the hand and the pail are where the table says; the planted foot does not slide.
+- `CrowdClipTimingsTests` 6/6, `CrowdArtImportTests` 7/7, `ModelImportRulesTests` 21/21, `GestureClipTests` 5/5.
+- `CrowdArtCaptureTests` 2/2, with the new `CaptureTheTrickOrTreatClips`.
+
+The capture poses the clips where the contract places them (the visit's sequencing is the game code's):
+
+| Frame | What it shows |
+|---|---|
+| `treat-clips/ci_94_treats_street.jpg` | the gameplay camera behind Pip: Mr. Fogg bent over a skeleton child's held-out pail, two children hopping, Pip handing a robot child a sweet, Nana Pearl reaching for her door's edge; the attic window is still the brightest thing |
+| `treat-clips/ci_94b_treats_give.jpg` | close: Mr. Fogg bends over bent knees, the tin at his side, his hand over the pail the child holds out with both hands |
+| `treat-clips/ci_94c_treats_pip.jpg` | close: Pip reaches forward into the robot child's pail, her own pail at her side |
+
+The first run (46153182938, also green) had the hopping children standing in front of Mr. Fogg in 94b
+(`ci_94b_treats_give_blocked.jpg`). The capture now puts them behind the two hand-overs.

@@ -4,8 +4,10 @@ using NUnit.Framework;
 using SpookyStreet.App;
 using SpookyStreet.Case;
 using SpookyStreet.Characters;
+using SpookyStreet.Core.Animation;
 using SpookyStreet.Core.Crowd;
 using SpookyStreet.Core.World;
+using SpookyStreet.Player;
 using SpookyStreet.World;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -205,6 +207,162 @@ namespace SpookyStreet.Tests.Visual
             if (brain != null)
             {
                 brain.enabled = true;
+            }
+        }
+
+        /// <summary>A still copy of Pip's model (her own materials, as PipAvatar builds it) posed at a clip time.</summary>
+        private static GameObject PipFigure(Vector3 at, float yaw, string clip, float u)
+        {
+            var game = GameBootstrap.Instance;
+            var kit = new ModelKit(game.Materials, PipAvatar.ModelFolder);
+            var prefab = kit.Load(PipAvatar.ModelName);
+            Assert.IsNotNull(prefab, "Pip.fbx is not loadable");
+            var root = new GameObject("PipFigure");
+            root.transform.SetPositionAndRotation(at, Quaternion.Euler(0f, yaw, 0f));
+            var model = Object.Instantiate(prefab, root.transform, false);
+            model.transform.localRotation = Quaternion.Euler(0f, NpcAvatar.ModelYawOffset, 0f) * prefab.transform.localRotation;
+            Material skin = kit.MaterialFor(PipAvatar.ModelName);
+            Material face = null;
+            foreach (var name in PipAvatar.FaceTextureNames)
+            {
+                var texture = kit.Texture(name);
+                if (texture != null)
+                {
+                    face = game.Materials.Textured(texture, null);
+                    break;
+                }
+            }
+
+            foreach (var r in model.GetComponentsInChildren<Renderer>(true))
+            {
+                bool isFace = face != null && r.gameObject.name.IndexOf("Face", System.StringComparison.OrdinalIgnoreCase) >= 0;
+                MaterialLibrary.ApplyAll(r, isFace ? face : skin);
+                if (r is SkinnedMeshRenderer smr)
+                {
+                    smr.updateWhenOffscreen = true;
+                }
+            }
+
+            AnimationClip sample = null;
+            foreach (var c in Resources.LoadAll<AnimationClip>(PipAvatar.ModelPath))
+            {
+                if (PipClips.CleanClipName(c.name) == clip)
+                {
+                    sample = c;
+                }
+            }
+
+            Assert.IsNotNull(sample, "Pip.fbx has no " + clip);
+            sample.SampleAnimation(model, u * sample.length);
+            return root;
+        }
+
+        /// <summary>
+        /// The trick-or-treat clips in the game's light (docs/living-street-crowd-art.md "Trick-or-treat clips"), posed by
+        /// this test where the contract (CrowdClipTimings) places them; the living street's sequencing is the game
+        /// code's. Mr. Fogg bends to put a sweet in a skeleton child's held-out pail (GiveTreat at its release,
+        /// HoldPail held out), Nana Pearl reaches for her door's edge (OpenDoorPeek at the touch), two children hop
+        /// (Cheer at the top) and Pip hands a robot child a sweet from her pail (HandTreat at its release).
+        /// 94_treats_street is the gameplay camera behind Pip; 94b_treats_give and 94c_treats_pip are close views of
+        /// the two hand-overs.
+        /// </summary>
+        [UnityTest]
+        [Timeout(240000)]
+        public IEnumerator CaptureTheTrickOrTreatClips()
+        {
+            yield return SceneManager.LoadSceneAsync("LanternLane", LoadSceneMode.Single);
+            for (int i = 0; i < 10; i++)
+            {
+                yield return null;
+            }
+
+            var game = GameBootstrap.Instance;
+            if (!game.Environment.UsesModels || Resources.Load<GameObject>(CrowdKit.Folder + "/" + CrowdKit.NeighbourModel) == null)
+            {
+                Assert.Ignore("Environment or crowd models are not committed.");
+            }
+
+            game.Ui.NewGameButton.onClick.Invoke();
+            yield return Wait(0.3f);
+            if (game.Director.Cutscenes.Playing)
+            {
+                game.Director.Cutscenes.Player.SkipNow();
+                yield return Wait(0.2f);
+            }
+
+            game.Ui.FirstPrompt.SetActive(false);
+            var pipAt = new Vector3(0f, 0.15f, 0.6f);
+            game.Pip.Teleport(pipAt);
+            game.Pip.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
+            game.CameraRig.Orbit.RequestRecenter();
+            var spawned = new List<GameObject>();
+
+            void Put(string id, float x, float z, float yaw, string clip, float u)
+            {
+                var recipe = CrowdKit.Find(id);
+                Assert.IsNotNull(recipe, id);
+                spawned.Add(Walker(recipe, new Vector3(x, Ground(x, z), z), yaw, clip, u));
+            }
+
+            // Mr. Fogg faces the camera (-Z); the child faces him with its pail mouth under his release point
+            const float foggX = -1.0f, foggZ = 3.7f;
+            float childZ = foggZ - (CrowdClipTimings.GiveTreatReleaseForward + CrowdClipTimings.HoldPailMouthForward);
+            Put("Neighbour_Fogg", foggX, foggZ, 180f, CrowdClipTimings.GiveTreat, CrowdClipTimings.GiveTreatRelease);
+            Put("SkeletonKid", foggX, childZ, 0f, CrowdClipTimings.HoldPail, 0.5f);
+            Put("Neighbour_Pearl", 1.9f, 4.1f, 180f, CrowdClipTimings.OpenDoorPeek, CrowdClipTimings.OpenDoorPeekHandOnDoor);
+            // the cheering children stand between and beyond the two hand-overs, out of both close views
+            Put("CatKid", -0.3f, 4.0f, 160f, CrowdClipTimings.Cheer, CrowdClipTimings.CheerHop);
+            Put("CandyCornKid", 0.35f, 4.3f, 200f, CrowdClipTimings.Cheer, CrowdClipTimings.CheerHop - 0.12f);
+            // Pip's copy hands a robot child a sweet; the real Pip stays where the camera wants her, hidden
+            const float pipX = 1.0f, pipZ = 2.6f;
+            float robotZ = pipZ - (CrowdClipTimings.HandTreatReleaseForward + CrowdClipTimings.HoldPailMouthForward);
+            spawned.Add(PipFigure(new Vector3(pipX, Ground(pipX, pipZ), pipZ), 180f, CrowdClipTimings.HandTreat,
+                CrowdClipTimings.HandTreatRelease));
+            Put("RobotKid", pipX, robotZ, 0f, CrowdClipTimings.HoldPail, 0.5f);
+            var hidden = new List<Renderer>();
+            foreach (var r in game.Pip.GetComponentsInChildren<Renderer>())
+            {
+                if (r.enabled)
+                {
+                    r.enabled = false;
+                    hidden.Add(r);
+                }
+            }
+
+            yield return Wait(2.0f);
+            game.Director.Captions.Clear();
+            yield return Shot("94_treats_street");
+
+            var camera = game.CameraRig.OutputCamera;
+            var brain = camera.GetComponent("CinemachineBrain") as Behaviour;
+            if (brain != null)
+            {
+                brain.enabled = false;
+            }
+
+            float midZ = (foggZ + childZ) * 0.5f;
+            camera.transform.position = new Vector3(foggX - 2.6f, 1.15f, midZ - 0.6f);
+            camera.transform.LookAt(new Vector3(foggX, 0.8f, midZ));
+            yield return null;
+            yield return Shot("94b_treats_give");
+            midZ = (pipZ + robotZ) * 0.5f;
+            camera.transform.position = new Vector3(pipX + 2.2f, 0.95f, midZ - 0.9f);
+            camera.transform.LookAt(new Vector3(pipX, 0.6f, midZ));
+            yield return null;
+            yield return Shot("94c_treats_pip");
+            if (brain != null)
+            {
+                brain.enabled = true;
+            }
+
+            foreach (var r in hidden)
+            {
+                r.enabled = true;
+            }
+
+            foreach (var go in spawned)
+            {
+                Object.Destroy(go);
             }
         }
     }

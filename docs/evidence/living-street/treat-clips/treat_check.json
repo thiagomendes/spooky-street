@@ -1,0 +1,145 @@
+{
+ "CrowdChild:HoldPail": {
+  "frames": 48,
+  "first_vs_rest_mm": 0.0,
+  "last_vs_rest_mm": 0.0,
+  "marker": {
+   "bone": "Pail",
+   "ahead": 0.26,
+   "height": 0.56,
+   "want": [
+    0.26,
+    0.56
+   ]
+  }
+ },
+ "CrowdChild:Cheer": {
+  "frames": 27,
+  "first_vs_rest_mm": 0.0,
+  "last_vs_rest_mm": 0.0
+ },
+ "CrowdChild:WalkStart": {
+  "frames": 12,
+  "first_vs_rest_mm": 0.0,
+  "last_vs_rest_mm": 0.0,
+  "planted_frames": 13,
+  "slide_forward_mm": 0.18,
+  "drift_sideways_mm": 15.55,
+  "travel_m": 0.1713
+ },
+ "CrowdChild:WalkStop": {
+  "frames": 12,
+  "first_vs_rest_mm": 0.0,
+  "last_vs_rest_mm": 0.0,
+  "planted_frames": 8,
+  "slide_forward_mm": 1.26,
+  "drift_sideways_mm": 5.19,
+  "travel_m": 0.1592
+ },
+ "CrowdAdult:GiveTreat": {
+  "frames": 48,
+  "first_vs_rest_mm": 0.0,
+  "last_vs_rest_mm": 0.0,
+  "marker": {
+   "bone": "Fingers_L",
+   "ahead": 0.45,
+   "height": 0.62,
+   "want": [
+    0.45,
+    0.62
+   ]
+  }
+ },
+ "CrowdAdult:OpenDoorPeek": {
+  "frames": 36,
+  "first_vs_rest_mm": 0.0,
+  "last_vs_rest_mm": 0.0,
+  "marker": {
+   "bone": "Fingers_L",
+   "ahead": 0.32,
+   "height": 1.0,
+   "want": [
+    0.32,
+    1.0
+   ]
+  }
+ },
+ "CrowdAdult:WalkStart": {
+  "frames": 12,
+  "first_vs_rest_mm": 0.0,
+  "last_vs_rest_mm": 0.0,
+  "planted_frames": 13,
+  "slide_forward_mm": 0.49,
+  "drift_sideways_mm": 36.34,
+  "travel_m": 0.3386
+ },
+ "CrowdAdult:WalkStop": {
+  "frames": 12,
+  "first_vs_rest_mm": 0.0,
+  "last_vs_rest_mm": 0.0,
+  "planted_frames": 7,
+  "slide_forward_mm": 0.27,
+  "drift_sideways_mm": 7.35,
+  "travel_m": 0.2723
+ },
+ "CrowdNeighbours:GiveTreat": {
+  "frames": 48,
+  "first_vs_rest_mm": 0.0,
+  "last_vs_rest_mm": 0.0,
+  "marker": {
+   "bone": "Fingers_L",
+   "ahead": 0.45,
+   "height": 0.62,
+   "want": [
+    0.45,
+    0.62
+   ]
+  }
+ },
+ "CrowdNeighbours:OpenDoorPeek": {
+  "frames": 36,
+  "first_vs_rest_mm": 0.0,
+  "last_vs_rest_mm": 0.0,
+  "marker": {
+   "bone": "Fingers_L",
+   "ahead": 0.32,
+   "height": 1.0,
+   "want": [
+    0.32,
+    1.0
+   ]
+  }
+ },
+ "CrowdNeighbours:WalkStart": {
+  "frames": 12,
+  "first_vs_rest_mm": 0.0,
+  "last_vs_rest_mm": 0.0,
+  "planted_frames": 13,
+  "slide_forward_mm": 0.49,
+  "drift_sideways_mm": 36.34,
+  "travel_m": 0.3386
+ },
+ "CrowdNeighbours:WalkStop": {
+  "frames": 12,
+  "first_vs_rest_mm": 0.0,
+  "last_vs_rest_mm": 0.0,
+  "planted_frames": 7,
+  "slide_forward_mm": 0.27,
+  "drift_sideways_mm": 7.35,
+  "travel_m": 0.2723
+ },
+ "Pip:HandTreat": {
+  "frames": 48,
+  "first_vs_rest_mm": 0.0,
+  "last_vs_rest_mm": 0.0,
+  "marker": {
+   "bone": "Fingers_L",
+   "ahead": 0.377,
+   "height": 0.624,
+   "want": [
+    0.38,
+    0.62
+   ]
+  }
+ }
+}

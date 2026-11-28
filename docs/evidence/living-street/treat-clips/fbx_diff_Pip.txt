@@ -1,0 +1,25 @@
+[pip_fbx_diff] mesh Pip_Body: 8040 verts, 12653 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Pip_Cape: 2068 verts, 2763 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Pip_Face: 2357 verts, 3155 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Pip_Hair: 3071 verts, 3328 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Pip_Pail: 528 verts, 868 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] bones: 34 -> 34, the old ones identical
+[pip_fbx_diff] clip Fall: 20 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip GlanceLeft: 40 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip GlanceRight: 40 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip Glide: 30 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip HandTreat: new, 48 frames
+[pip_fbx_diff] clip Idle: 75 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip Interact: 30 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip JumpAir: 20 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip JumpStart: 8 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip Land: 10 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip LedgeClimb: 12 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip LedgeGrab: 6 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip LedgeHang: 48 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip Roll: 16 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip Run: 12 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip Walk: 20 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip WallKick: 10 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip WallSlide: 20 frames, max curve diff 0.00e+00
+[pip_fbx_diff] mesh, skin and skeleton unchanged

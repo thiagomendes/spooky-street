@@ -66,6 +66,7 @@ namespace SpookyStreet.Tests.Core
             var once = new[]
             {
                 "JumpStart", "Land", "Roll", "Interact", "WallKick", "LedgeGrab", "LedgeClimb", "GlanceLeft", "GlanceRight",
+                "HandTreat",
             };
             foreach (var name in loops)
             {
@@ -91,7 +92,10 @@ namespace SpookyStreet.Tests.Core
             // ... and the S003a hint glances after them.
             Assert.AreEqual("GlanceLeft", PipClips.All[15]);
             Assert.AreEqual("GlanceRight", PipClips.All[16]);
-            Assert.AreEqual(17, PipClips.All.Length);
+            // ... and the living street's HandTreat after those.
+            Assert.AreEqual("HandTreat", PipClips.All[17]);
+            Assert.AreEqual(18, PipClips.All.Length);
+            Assert.IsNull(PipClips.Fallback(PipClips.HandTreat), "a missing HandTreat is simply not played");
         }
 
         [Test]

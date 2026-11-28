@@ -81,8 +81,10 @@ namespace SpookyStreet.Core.Crowd
         /// <c>Blink</c> (child of Head) brings the lids out of the skull; <c>Tail_1</c>/<c>Tail_2</c> swing a tail.</summary>
         public static readonly string[] CostumeBones = { "Pail", "Blink", "Tail_1", "Tail_2" };
 
-        /// <summary>Clips in both FBX files (names from <c>CharacterClips</c>): Idle, Walk and Talk loop, Wave plays
-        /// once and starts and ends on Idle frame 0.</summary>
+        /// <summary>The shipped clips in every crowd FBX file (names from <c>CharacterClips</c>): Idle, Walk and Talk
+        /// loop, Wave plays once and starts and ends on Idle frame 0. The trick-or-treat clips each body adds (GiveTreat,
+        /// OpenDoorPeek, HoldPail, Cheer, WalkStart, WalkStop) are listed with their timing in
+        /// <see cref="CrowdClipTimings"/>.</summary>
         public static readonly string[] Clips = { "Idle", "Walk", "Wave", "Talk" };
 
         /// <summary>LOD budget per merged walker (living-street §8).</summary>
