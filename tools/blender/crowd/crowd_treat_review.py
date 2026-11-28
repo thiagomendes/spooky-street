@@ -389,7 +389,8 @@ def main():
             pose(m, "OpenDoorPeek", f)
             update()
             look = Vector((0.1, -0.2, 1.0))
-            tiles.append(S.shot(cr.orbit(look, 4.0, 30, 10), look, 60, 168, 300, f"{f}", 0.08))
+            # from inside the house, behind and to the right of the neighbour: the hand meets the leaf's back
+            tiles.append(S.shot(cr.orbit(look, 3.4, 215, 12), look, 60, 168, 300, f"{f}", 0.08))
         rows = [row(tiles[:10]), row(tiles[10:])]
         save(rows, os.path.join(out_dir, f"treat_door_{wid}.png"))
         bpy.data.objects.remove(leaf, do_unlink=True)
