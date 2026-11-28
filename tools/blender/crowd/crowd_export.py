@@ -171,6 +171,8 @@ def apply_rule(obj, rule, part, B, ctx):
         set_weights(obj, {"Head": 1 - w, "Neck": w})
     elif rule == "skirt":
         cloth_weights(obj, P, ctx)
+    elif rule == "sheet":
+        sheet_weights(obj, P, ctx)
     elif rule == "tail":
         tail_weights(obj, B.info["tail"])
     else:
@@ -178,6 +180,40 @@ def apply_rule(obj, rule, part, B, ctx):
 
 
 def cloth_weights(obj, P, ctx):
+    rows = cloth_rows(obj, P, ctx)
+    bones = sorted({n for r in rows for n in r})
+    set_weights(obj, {b: np.array([r.get(b, 0.0) for r in rows]) for b in bones})
+
+
+# The ghost's sheet follows the arms part of the way, as a sheet does over a child's swinging arms: the lower part
+# of the bell on each side takes some of that side's arm, nothing at the chest and the middle of the front and back,
+# up to `pull` at the hem's sides (`x0`/`x1` in shoulder widths: where the pull starts and where it is full), so the
+# walk's arm swing stays under the cloth. `lower` of it goes to the forearm at the hem.
+SHEET_ARM = dict(x0=0.3, x1=1.7, pull=0.5, lower=0.3)
+
+
+def sheet_weights(obj, P, ctx):
+    rows = cloth_rows(obj, P, ctx)
+    cfg = SHEET_ARM
+    z_top, z_low = P.z["chest"], P.z["wrist"]
+    for v, row in zip(obj.data.vertices, rows):
+        p = v.co
+        side = smooth((abs(p.x) / P.shoulder_x - cfg["x0"]) / (cfg["x1"] - cfg["x0"]))
+        down = smooth((z_top - p.z) / (z_top - z_low))
+        w = cfg["pull"] * side * down
+        if w <= 1e-4:
+            continue
+        S = "L" if p.x > 0 else "R"
+        lower = cfg["lower"] * down
+        for n in list(row):
+            row[n] *= 1 - w
+        row["UpperArm_" + S] = row.get("UpperArm_" + S, 0.0) + w * (1 - lower)
+        row["LowerArm_" + S] = row.get("LowerArm_" + S, 0.0) + w * lower
+    bones = sorted({n for r in rows for n in r})
+    set_weights(obj, {b: np.array([r.get(b, 0.0) for r in rows]) for b in bones})
+
+
+def cloth_rows(obj, P, ctx):
     """Head above the neck (the ghost's hood), the trunk's nearest weights down to the hips, then the hips
     easing a little onto the leg on the same side, so the hem follows the stride without tearing."""
     src = ctx["trunk"]
@@ -202,8 +238,7 @@ def cloth_weights(obj, P, ctx):
             out = {n: x * (1 - up) for n, x in out.items()}
             out["Head"] = out.get("Head", 0) + up
         rows.append(out)
-    bones = sorted({n for r in rows for n in r})
-    set_weights(obj, {b: np.array([r.get(b, 0.0) for r in rows]) for b in bones})
+    return rows
 
 
 def tail_weights(obj, pts):

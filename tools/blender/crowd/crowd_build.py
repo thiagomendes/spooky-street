@@ -6,7 +6,8 @@ game resolution, weights them to the body's skeleton, unwraps them into the shar
 
 Weight rules: "body" (bone heat on the body skin), ("bone", name), "hand", "shoe", "head", "lid" (the Blink
 bone), "hood" (head, easing onto the neck at its lower edge), "trunk" (nearest body weights of the trunk),
-"skirt" (trunk above the hips, hips easing a little onto each leg below), "tail" (Tail_1 / Tail_2 by length).
+"skirt" (trunk above the hips, hips easing a little onto each leg below), "sheet" (skirt, with the lower sides
+following the arms part of the way: the ghost), "tail" (Tail_1 / Tail_2 by length).
 
 Conventions: metres, Z up, characters face -Y, +X is the character's left (as the cast).
 """
@@ -34,6 +35,10 @@ from crowd_kit import PAL, SKIN, HAIR  # noqa: E402
 FACE = {True: dict(eye_x=0.37, eye_z=-0.1, eye_rx=0.165, eye_rz=0.2),
         False: dict(eye_x=0.34, eye_z=0.0, eye_rx=0.135, eye_rz=0.165)}
 LID_DEPTH = 0.1
+
+
+# the hood's shell (costume.cap, in head radii); crowd_paint finds the skull dome and the collar band from it
+HOOD = dict(radii=(1.16, 1.18, 1.14), offset=(0, 0.05, 0.05), fringe_z=0.52, length_z=-1.05, face_half=62)
 
 
 def GHOST_HEM(P):
@@ -81,7 +86,7 @@ class Builder:
         return self.craft.smooth(SKIN[tone][0], 0.55, subsurface=0.2)
 
     # --- body -------------------------------------------------------------------------------------------
-    def body_part(self, name, top, legs, print=None):
+    def body_part(self, name, top, legs, print=None, cuff=None):
         P = self.P
         z = P.z
         reach = P.hip_x * 2.5
@@ -91,7 +96,7 @@ class Builder:
         obj = an.body(name, P, [self.felt(top), self.felt(legs)], region)
         cuffs = []
         for side in (1, -1):
-            cuffs.append(pm.torus(name + "Cuff", self.felt(top), P.wrist(side) + Vector((0, 0, 0.002)),
+            cuffs.append(pm.torus(name + "Cuff", self.felt(cuff or top), P.wrist(side) + Vector((0, 0, 0.002)),
                                   P.limb * 0.56, P.limb * 0.19, rotation=(0, -side * P.arm_out, 0), segments=16,
                                   sides=8))
         return [(obj, "body", 1700 if P.child else 2000)] + [(c, "cuff", 64) for c in cuffs]
@@ -229,13 +234,18 @@ class Builder:
         return [(obj, "head", 340)]
 
     # --- head pieces ------------------------------------------------------------------------------------
-    def hood(self, name, colour, ears=False):
+    def hood(self, name, colour, ears=False, collar=None, skull=False):
+        """A felt hood. `skull`: the skeleton's (crowd_paint prints a bone skull dome on it); `collar`: a felt
+        ribbon round its lower edge (painted) tied in a bow at the nape (modelled), so the cat reads from behind."""
         P = self.P
         r = P.head_r
         mat = self.felt(colour)
-        obj, on = co.cap(name, mat, P, radii=(1.16, 1.18, 1.14), offset=(0, 0.05, 0.05), fringe_z=0.52,
-                         length_z=-1.05, face_half=62, thickness=0.08, fall=0.92, segments=32)
+        obj, on = co.cap(name, mat, P, radii=HOOD["radii"], offset=HOOD["offset"], fringe_z=HOOD["fringe_z"],
+                         length_z=HOOD["length_z"], face_half=HOOD["face_half"], thickness=0.08, fall=0.92,
+                         segments=32)
         out = [(obj, "hood", 560)]
+        if collar:
+            out += self.bow(name + "Bow", self.felt(collar), on)
         if ears:
             inner = self.felt("plum")
             for s in (1, -1):
@@ -251,6 +261,23 @@ class Builder:
                     ear.modifiers.new("Bevel", "BEVEL").width = 0.025 * r
                     out.append((ear, "head", 60))
         return out
+
+    def bow(self, name, mat, on, k=1.7):
+        """A big felt ribbon bow at the nape of a hood: two loops, a knot and two short tails (no bell)."""
+        r = self.P.head_r * k
+        c = on(math.pi, -1.0, 1.06)  # the knot sits on the collar band at the back of the neck
+        out = []
+        for s in (1, -1):
+            loop = pm.ellipsoid(name + "Loop", mat, c + Vector((s * 0.27 * r, 0.03 * r, 0.06 * r)),
+                                (0.26 * r, 0.075 * r, 0.16 * r), rotation=(0, s * 0.35, 0), segments=12, rings=8,
+                                subsurf=0)
+            tail = pm.ellipsoid(name + "Tail", mat, c + Vector((s * 0.12 * r, 0.02 * r, -0.22 * r)),
+                                (0.07 * r, 0.04 * r, 0.19 * r), rotation=(0, -s * 0.35, 0), segments=8, rings=6,
+                                subsurf=0)
+            out += [(loop, "hood", 70), (tail, "hood", 36)]
+        knot = pm.ellipsoid(name + "Knot", mat, c + Vector((0, 0.06 * r, 0.03 * r)), (0.1 * r, 0.07 * r, 0.1 * r),
+                            segments=10, rings=6, subsurf=0)
+        return out + [(knot, "hood", 40)]
 
     def ears_band(self, name, colour):
         """A headband with felt cat ears (grown-up): over the hair, ear to ear."""
@@ -329,7 +356,7 @@ class Builder:
         obj = co.ell_lathe(name, self.craft.felt(PAL["white"]), prof, segments=40, thickness=0.006,
                            hem=lambda t: 0.018 * math.cos(2 * math.pi * 8 * t) - 0.008, folds=8, fold_depth=0.06)
         obj.modifiers["Smooth"].levels = 1
-        return [(obj, "skirt", 1500)]
+        return [(obj, "sheet", 1500)]
 
     def robot_box(self, name):
         P = self.P
@@ -441,14 +468,15 @@ class Builder:
                 Vector((0.04 * k, y0 + 0.2 * k, z0 - 0.1 * k)), Vector((0.07 * k, y0 + 0.27 * k, z0 + 0.01 * k)),
                 Vector((0.08 * k, y0 + 0.28 * k, z0 + 0.1 * k))]
 
-    def tail(self, name, colour, tip):
+    def tail(self, name, colour, tip, tip_scale=1.0):
         P = self.P
         k = P.h / 1.05 if P.child else 1.2
         pts = self.tail_points()
         tube = pm.curve_tube(name, self.felt(colour), pts, 0.021 * k, taper=(1.0, 0.85), resolution=8)
         tube.data.bevel_resolution = 2
-        tipo = pm.ellipsoid(name + "Tip", self.felt(tip), pts[-1] + Vector((0, 0, 0.012 * k)),
-                            (0.024 * k, 0.024 * k, 0.034 * k), segments=10, rings=8, subsurf=0)
+        t = tip_scale  # a bigger bone tip on the dark child's tail: it is what shows from behind at night
+        tipo = pm.ellipsoid(name + "Tip", self.felt(tip), pts[-1] + Vector((0, 0, 0.012 * k * t)),
+                            (0.024 * k * t, 0.024 * k * t, 0.034 * k * t), segments=10, rings=8, subsurf=0)
         self.info["tail"] = [p.copy() for p in pts]
         return [(tube, "tail", 300), (tipo, "tail", 80)]
 

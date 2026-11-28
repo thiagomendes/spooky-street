@@ -13,7 +13,7 @@ import bpy
 import numpy as np
 
 import char_export as ce
-from crowd_build import FACE, GHOST_HEM
+from crowd_build import FACE, GHOST_HEM, HOOD
 from crowd_kit import PAL, SKIN, HAIR, IRIS
 
 INK = np.array(PAL["ink"])
@@ -202,8 +202,29 @@ def paint_skeleton(cv, P):
     for s in (1, -1):
         pel, _ = ellipse(X, (zz - z["pelvis"]) / P.h, s * 0.5, 0.005, 0.42, 0.045, 0.15)
         cv.lay(pel * front, bone)
+    # the back is printed too (a skeleton suit seen from behind must not melt into the night street): the spine,
+    # two shoulder blades, three ribs a side curving down from the spine, the hip bones and the sacrum
     vert = (np.mod((zz - z["hip"]) / (0.04 * P.h), 1.0) < 0.62)
-    cv.lay(sstep((0.12 - np.abs(X)) / 0.03 + 0.5) * vert * back, bone)
+    cv.lay(sstep((0.15 - np.abs(X)) / 0.03 + 0.5) * vert * back, bone)
+    for s in (1, -1):
+        blade, _ = ellipse(X, Zr, s * 0.5, 0.8, 0.27, 0.2, 0.12)
+        tip, _ = ellipse(X, Zr, s * 0.46, 0.6, 0.12, 0.14, 0.15)
+        cv.lay(np.maximum(blade, tip) * back, bone)
+    for i in range(3):
+        zc = 0.1 + 0.18 * i - 0.2 * X ** 2
+        rib = sstep((0.05 - np.abs(Zr - zc)) / 0.02 + 0.5) * sstep((np.abs(X) - 0.22) / 0.05) * \
+            sstep((0.86 - 0.08 * i - np.abs(X)) / 0.05)
+        cv.lay(rib * back, bone)
+    for s in (1, -1):
+        wing, _ = ellipse(X, (zz - z["pelvis"]) / P.h, s * 0.44, 0.008, 0.36, 0.04, 0.15)
+        cv.lay(wing * back, bone)
+    sacrum, _ = ellipse(X, (zz - z["pelvis"]) / P.h, 0.0, -0.004, 0.17, 0.045, 0.15)
+    cv.lay(sacrum * back, bone)
+    # the ribs carry on round the flanks, so a walker crossing in profile still shows its rib cage
+    flank = torso * (1 - sstep((np.abs(y) - 0.25 * T) / (0.2 * T))) * sstep((np.abs(X) - 0.55) / 0.1)
+    for i in range(3):
+        zc = -0.05 + 0.19 * i
+        cv.lay(sstep((0.05 - np.abs(Zr - zc)) / 0.02 + 0.5) * flank, bone)
     L = P.limb
     for s in (1, -1):
         sh = (s * P.shoulder_x, 0.0, z["shoulder"])
@@ -216,7 +237,9 @@ def paint_skeleton(cv, P):
             t, off = _segment(p, a, b)
             dist = np.linalg.norm(off, axis=1)
             near = dist < L * 1.6
-            facing = sstep((-off[:, 1] / np.maximum(dist, 1e-6) - 0.2) / 0.2)
+            # front and back of the limb (the print goes all the way round the suit, as the walkers are seen from
+            # behind on the street as often as from the front)
+            facing = sstep((np.abs(off[:, 1]) / np.maximum(dist, 1e-6) - 0.2) / 0.2)
             ax = np.asarray(b) - np.asarray(a)
             ax = ax / np.linalg.norm(ax)
             lat = np.abs(off[:, 0] * ax[2] - off[:, 2] * ax[0])
@@ -224,6 +247,46 @@ def paint_skeleton(cv, P):
             half = L * thick * (0.26 + 0.2 * knob)
             shaft = sstep((half - lat) / (0.08 * L) + 0.5) * (t > 0.03) * (t < 0.97)
             cv.lay(shaft * near * facing, bone)
+            # and down the outer side, for the profile: there the stripe's width is measured front to back
+            outer = sstep((s * off[:, 0] / np.maximum(dist, 1e-6) - 0.55) / 0.2)
+            side = sstep((half * 0.8 - np.abs(off[:, 1])) / (0.08 * L) + 0.5) * (t > 0.03) * (t < 0.97)
+            cv.lay(side * near * outer, bone)
+
+
+def _hood_frame(cv, P):
+    """Longitude (degrees, 0 = front) and height (head radii from the head centre, as costume.cap's) of each
+    texel of a hood shell."""
+    r, hc = P.head_r, np.array(P.head_c)
+    radii, off = np.array(HOOD["radii"]), np.array(HOOD["offset"])
+    U = (cv.p - hc - off * r) / r / radii
+    lon = np.degrees(np.arctan2(U[:, 0], -U[:, 1]))
+    rel_z = U[:, 2] * radii[2] + off[2]
+    return U, lon, rel_z
+
+
+def paint_skull_hood(cv, P):
+    """The skeleton's hood is a skull from behind: a bone dome with two soft suture lines, an ink rim framing the
+    face paint, and the ink drape over the neck, so the costume reads at night from every side."""
+    U, lon, rel_z = _hood_frame(cv, P)
+    rim = sstep((HOOD["face_half"] + 24 - np.abs(lon)) / 8 + 0.5) * sstep((HOOD["fringe_z"] + 0.26 - rel_z) / 0.06 + 0.5)
+    dome = sstep((rel_z + 0.42) / 0.08 + 0.5) * (1 - rim)
+    cv.lay(dome, PAL["bone"])
+    seam = np.array(PAL["ink"]) * 0.6 + np.array(PAL["bone"]) * 0.4
+    sag = sstep((0.022 - np.abs(U[:, 0] - 0.025 * np.sin(U[:, 1] * 26))) / 0.008 + 0.5) * (U[:, 1] > -0.15) * \
+        (U[:, 2] > 0.25)
+    lam = sstep((0.022 - np.abs(U[:, 2] - (0.3 - 0.55 * np.abs(U[:, 0]) + 0.02 * np.sin(U[:, 0] * 30)))) / 0.008 + 0.5) * \
+        (U[:, 1] > 0.45)
+    cv.lay(np.maximum(sag, lam) * dome * 0.85, seam)
+
+
+def paint_hood_collar(cv, P, colour):
+    """A felt ribbon collar round the hood's lower edge (the bow at the nape is modelled), with a bone stitch."""
+    _U, lon, rel_z = _hood_frame(cv, P)
+    low = HOOD["length_z"]
+    band = sstep((low + 0.3 - rel_z) / 0.02 + 0.5)
+    cv.lay(band, PAL[colour])
+    stitch = (np.abs(rel_z - (low + 0.15)) < 0.02) & (np.mod(lon / 7.0, 1.0) < 0.55)
+    cv.lay(stitch.astype(float), PAL["bone"])
 
 
 def paint_cat_belly(cv, P):
@@ -421,6 +484,10 @@ def finish(images, pieces, parts, builders, out, tex, atlas="Crowd"):
             paint_apron(cv, P, part.opts)
         elif part.kind in ("tin", "basket") and src.endswith("Sweets"):
             paint_sweets(cv)
+        elif part.kind == "hood" and src.endswith(part.name) and part.opts.get("skull"):
+            paint_skull_hood(cv, P)
+        elif part.kind == "hood" and src.endswith(part.name) and part.opts.get("collar"):
+            paint_hood_collar(cv, P, part.opts["collar"])
         elif part.kind == "ghost_sheet":
             paint_ghost(cv, P)
         elif part.kind == "candy_corn":

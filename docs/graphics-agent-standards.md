@@ -66,6 +66,10 @@ agent links here.
 - Hands or props passing through the body, face or costume, in any frame of a clip.
 - A new collectible that looks like the decorative glowing bats: keepsakes must read as different at a glance.
 - Detail that only reads close up: judge from the gameplay camera first.
+- Dark costumes that read only from the front: walkers are seen from behind as often; print or trim the back (bone,
+  candy) and check the back in a night light matched to the capture frames (`crowd_fix_review.py`).
+- Loose cloth over swinging arms (a sheet, a cape): measure the clips on the exported file
+  (`crowd_clip_check.py`), not only by eye.
 - Characters framed from behind or cut by a post or the letterbox in cutscene shots.
 - Generic "default" looks: no flat grey placeholders left in the game, no off-palette colours, no stock-looking
   gradients; stay in the felt-and-paper style of the art bible.
