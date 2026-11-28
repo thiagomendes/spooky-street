@@ -92,10 +92,10 @@ namespace SpookyStreet.Tests.Core
             // ... and the S003a hint glances after them.
             Assert.AreEqual("GlanceLeft", PipClips.All[15]);
             Assert.AreEqual("GlanceRight", PipClips.All[16]);
-            // ... and the living street's hand-out (a missing one is skipped; the street plays Interact instead).
+            // ... and the living street's HandTreat after those.
             Assert.AreEqual("HandTreat", PipClips.All[17]);
-            Assert.IsNull(PipClips.Fallback(PipClips.HandTreat));
             Assert.AreEqual(18, PipClips.All.Length);
+            Assert.IsNull(PipClips.Fallback(PipClips.HandTreat), "a missing HandTreat is simply not played");
         }
 
         [Test]

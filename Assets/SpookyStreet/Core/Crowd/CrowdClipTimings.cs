@@ -43,7 +43,11 @@ namespace SpookyStreet.Core.Crowd
     /// <item>Pip: <see cref="HandTreat"/> (on her own rig, in Pip.fbx).</item>
     /// </list>
     /// GiveTreat, OpenDoorPeek, HoldPail, Cheer and HandTreat start and end on Idle frame 0. WalkStart starts on Idle
-    /// frame 0 and ends on Walk frame 0 (left foot strike); WalkStop starts on Walk frame 0 and ends on Idle frame 0.
+    /// frame 0 and ends on the Walk cycle at <see cref="WalkStartEndPhase(string)"/> (continue Walk from that normalised time);
+    /// WalkStop starts on Walk frame 0 (the left heel strike: start it when the Walk cycle wraps) and ends on Idle
+    /// frame 0. Both are in place: move the root by <see cref="RootTravel"/> and the planted foot stays put.
+    /// Points are in the character's own frame: metres ahead of the root ("forward"), to its left ("side") and above the
+    /// ground ("height").
     /// </summary>
     public static class CrowdClipTimings
     {
@@ -88,16 +92,26 @@ namespace SpookyStreet.Core.Crowd
         /// <summary>The top of the hop.</summary>
         public const float CheerHop = 0.45f;
 
-        /// <summary>Both bodies: from Idle frame 0 into Walk frame 0. Move the root by <see cref="RootTravel"/>.</summary>
+        /// <summary>Both bodies: from Idle frame 0 into the Walk cycle at <see cref="WalkStartEndPhase(string)"/>: the weight goes
+        /// over the right foot, the left foot lifts and swings into the cycle. Move the root by <see cref="RootTravel"/>.</summary>
         public const string WalkStart = "WalkStart";
 
         public const int WalkStartFrames = 12;
 
-        /// <summary>Both bodies: from Walk frame 0 (start it when the Walk cycle wraps) to Idle frame 0. Move the root by
+        /// <summary>Both bodies: from Walk frame 0 (start it when the Walk cycle wraps, the left heel just struck) to Idle
+        /// frame 0: the left foot rolls flat and stays, the right swings in beside it. Move the root by
         /// <see cref="RootTravel"/>.</summary>
         public const string WalkStop = "WalkStop";
 
         public const int WalkStopFrames = 12;
+
+        /// <summary>The Walk cycle's normalised time WalkStart ends on: carry on with Walk from here. A whole Walk frame
+        /// (the child's frame 20 of 24, the grown-up's 35 of 41), so the two meet exactly.</summary>
+        public static float WalkStartEndPhase(string model) =>
+            model == CrowdKit.AdultModel || model == CrowdKit.NeighbourModel ? AdultWalkStartEndPhase : ChildWalkStartEndPhase;
+
+        public const float ChildWalkStartEndPhase = 20f / 24f;
+        public const float AdultWalkStartEndPhase = 35f / 41f;
 
         /// <summary>Pip: she lifts her pail (her treat bowl) in front of her, reaches in with her free hand and places a
         /// sweet forward in a child's pail at child height; release at <see cref="HandTreatRelease"/>.
@@ -119,10 +133,26 @@ namespace SpookyStreet.Core.Crowd
 
         public const float GiveTreatReleaseHeight = 0.62f;
 
+        /// <summary>The release is this far to the giver's left of its centre line (its left hand gives).</summary>
+        public const float GiveTreatReleaseSide = 0.04f;
+
+        /// <summary>Where the grown-up's left knuckles meet the door leaf's edge at <see cref="OpenDoorPeekHandOnDoor"/>
+        /// (side, forward, height); the hand pushes the edge about 0.12 m further out and lets go at
+        /// <see cref="OpenDoorPeekLetGo"/>. The leaf's latch edge is on the neighbour's left (hinge on the right).</summary>
+        public const float OpenDoorPeekDoorSide = 0.30f;
+
+        public const float OpenDoorPeekDoorForward = 0.32f;
+
+        public const float OpenDoorPeekDoorHeight = 1.0f;
+
+        public const float OpenDoorPeekLetGo = 0.42f;
+
         /// <summary>Where Pip's knuckles are at the release (a forward reach at child height).</summary>
         public const float HandTreatReleaseForward = 0.38f;
 
         public const float HandTreatReleaseHeight = 0.62f;
+
+        public const float HandTreatReleaseSide = 0.03f;
 
         /// <summary>Where the middle of the child's pail mouth is while it is held out (from the drop until
         /// it is brought back), in the child's own frame. A child receiving from a giver stands
@@ -204,10 +234,13 @@ namespace SpookyStreet.Core.Crowd
             return 0f;
         }
 
-        public const float ChildWalkStartDistance = 0.2f;
-        public const float ChildWalkStopDistance = 0.2f;
-        public const float AdultWalkStartDistance = 0.3f;
-        public const float AdultWalkStopDistance = 0.3f;
+        // measured by tools/blender/crowd/crowd_takes.py (crowd_anims.step_distance): WalkStart keeps the right ball
+        // of the foot where Idle put it until Walk at WalkStartEndPhase has it; WalkStop keeps the left heel where Walk
+        // frame 0 struck it until it is under the hips in Idle
+        public const float ChildWalkStartDistance = 0.1713f;
+        public const float ChildWalkStopDistance = 0.1592f;
+        public const float AdultWalkStartDistance = 0.3386f;
+        public const float AdultWalkStopDistance = 0.2723f;
 
         /// <summary>
         /// Metres the root has travelled forward at normalised time <paramref name="u"/> of WalkStart or WalkStop
@@ -230,13 +263,8 @@ namespace SpookyStreet.Core.Crowd
             return clip == WalkStart ? d * Ease(u, k) : d * (1f - Ease(1f - u, k));
         }
 
-        /// <summary>g(0) = 0, g(1) = 1, g'(0) = 0, g'(1) = k: a cubic that starts at rest and ends at speed k.
-        /// Monotonic for 0 &lt; k &lt;= 3.</summary>
-        public static float Ease(float u, float k)
-        {
-            float a = 3f - k;
-            float b = k - 2f;
-            return a * u * u + b * u * u * u;
-        }
+        /// <summary>u^k: 0 at 0 and 1 at 1, slope k at the end (the Walk speed for WalkStart), slope 0 at the start when
+        /// k &gt; 1 (standing still).</summary>
+        public static float Ease(float u, float k) => (float)Math.Pow(u, k);
     }
 }

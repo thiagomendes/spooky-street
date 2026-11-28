@@ -1,0 +1,84 @@
+[pip_fbx_diff] mesh Bag_Paper: 102 verts, 114 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Bag_Paper_Lo: 44 verts, 40 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Body_Cat: 918 verts, 1417 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Body_Cat_Lo: 314 verts, 560 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Body_Indigo: 918 verts, 1417 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Body_Indigo_Lo: 314 verts, 560 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Body_Night: 918 verts, 1417 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Body_Night_Lo: 314 verts, 560 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Body_Plum: 918 verts, 1417 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Body_Plum_Lo: 314 verts, 560 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Body_Purple: 918 verts, 1417 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Body_Purple_Lo: 314 verts, 560 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Body_Skeleton: 918 verts, 1417 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Body_Skeleton_Lo: 314 verts, 560 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh CandyCorn_Tunic: 550 verts, 884 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh CandyCorn_Tunic_Lo: 198 verts, 370 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Cat_Hood: 530 verts, 887 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Cat_Hood_Lo: 203 verts, 348 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Cat_Tail: 210 verts, 255 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Cat_Tail_Lo: 86 verts, 113 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Crown_Paper: 130 verts, 228 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Crown_Paper_Lo: 46 verts, 82 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Ghost_Sheet: 750 verts, 1146 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Ghost_Sheet_Lo: 270 verts, 452 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Hair_Long: 262 verts, 495 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Hair_Long_Lo: 95 verts, 182 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Hair_Puffs: 326 verts, 530 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Hair_Puffs_Lo: 121 verts, 224 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Hands_Bone: 380 verts, 697 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Hands_Bone_Lo: 105 verts, 154 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Hands_Ink: 380 verts, 697 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Hands_Ink_Lo: 105 verts, 154 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Hands_T1: 380 verts, 698 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Hands_T1_Lo: 105 verts, 154 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Hands_T2: 380 verts, 697 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Hands_T2_Lo: 105 verts, 154 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Hands_T3: 380 verts, 697 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Hands_T3_Lo: 105 verts, 154 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Hands_T5: 380 verts, 697 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Hands_T5_Lo: 105 verts, 154 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Head_Cat: 484 verts, 680 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Head_Cat_Lo: 163 verts, 266 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Head_Corn: 484 verts, 680 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Head_Corn_Lo: 163 verts, 266 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Head_Queen: 484 verts, 680 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Head_Queen_Lo: 163 verts, 266 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Head_Robot: 484 verts, 680 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Head_Robot_Lo: 163 verts, 266 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Head_Skull: 484 verts, 680 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Head_Skull_Lo: 163 verts, 266 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Lantern_Paper: 271 verts, 514 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Lantern_Paper_Lo: 104 verts, 185 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Pail_Indigo: 272 verts, 449 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Pail_Indigo_Lo: 104 verts, 176 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Pail_Plum: 272 verts, 449 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Pail_Plum_Lo: 104 verts, 176 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Queen_Dress: 550 verts, 822 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Queen_Dress_Lo: 198 verts, 339 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Robot_Box: 186 verts, 219 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Robot_Box_Lo: 70 verts, 97 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Robot_Helmet: 230 verts, 344 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Robot_Helmet_Lo: 90 verts, 126 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Shoes_Candy: 367 verts, 532 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Shoes_Candy_Lo: 130 verts, 159 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Shoes_Green: 368 verts, 535 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Shoes_Green_Lo: 131 verts, 159 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Shoes_Ink: 368 verts, 536 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Shoes_Ink_Lo: 131 verts, 160 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Shoes_Orange: 368 verts, 534 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Shoes_Orange_Lo: 131 verts, 160 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Shoes_Plum: 368 verts, 533 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Shoes_Plum_Lo: 131 verts, 159 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Skeleton_Hood: 282 verts, 551 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] mesh Skeleton_Hood_Lo: 102 verts, 198 faces, max vertex diff 0.00e+00, max uv diff 0.00e+00, weights identical
+[pip_fbx_diff] bones: 26 -> 26, the old ones identical
+[pip_fbx_diff] clip Cheer: new, 27 frames
+[pip_fbx_diff] clip HoldPail: new, 48 frames
+[pip_fbx_diff] clip Idle: 90 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip Talk: 72 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip Walk: 24 frames, max curve diff 0.00e+00
+[pip_fbx_diff] clip WalkStart: new, 12 frames
+[pip_fbx_diff] clip WalkStop: new, 12 frames
+[pip_fbx_diff] clip Wave: 45 frames, max curve diff 0.00e+00
+[pip_fbx_diff] mesh, skin and skeleton unchanged

@@ -210,7 +210,7 @@ namespace SpookyStreet.LivingStreet
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             var clips = Resources.LoadAll<AnimationClip>(CrowdKit.Folder + "/" + recipe.Model);
             var life = root.gameObject.AddComponent<CrowdWalkerLife>();
-            return new KitBody(root, lod0, lod1, animator, clips, CrowdKit.WalkSpeed(recipe.Model), life);
+            return new KitBody(root, lod0, lod1, animator, clips, CrowdKit.WalkSpeed(recipe.Model), life, recipe.Model);
         }
 
         /// <summary>One merged skinned mesh of the recipe's parts at a level of detail (null when a part is missing).</summary>
@@ -382,11 +382,13 @@ namespace SpookyStreet.LivingStreet
             private int _target = -1;
             private float _fastBlend;
             private readonly string[] _names;
+            private readonly string _model;
             private readonly float[] _lengths;
 
             public KitBody(Transform root, SkinnedMeshRenderer lod0, SkinnedMeshRenderer lod1, Animator animator,
-                AnimationClip[] clips, float walkSpeed, CrowdWalkerLife life) : base(root)
+                AnimationClip[] clips, float walkSpeed, CrowdWalkerLife life, string model) : base(root)
             {
+                _model = model;
                 _lod0 = lod0;
                 _lod1 = lod1;
                 _walkSpeed = walkSpeed;
@@ -496,10 +498,10 @@ namespace SpookyStreet.LivingStreet
                 bool fromStart = _target >= 0 && _names[_target] == CrowdClipTimings.WalkStart;
                 if (target != _target)
                 {
-                    // WalkStart ends on Walk frame 0 (art contract): the walk picks up there with a quick hand-over.
+                    // WalkStart ends on the Walk cycle at the art contract's phase: the walk picks up exactly there.
                     if (fromStart && want == "Walk")
                     {
-                        _clips[target].SetTime(0.0);
+                        _clips[target].SetTime(CrowdClipTimings.WalkStartEndPhase(_model) * _lengths[target]);
                         _fastBlend = 0.08f;
                     }
                     else if (want == "Wave" || Driven(want))
