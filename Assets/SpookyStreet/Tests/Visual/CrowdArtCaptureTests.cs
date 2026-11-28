@@ -310,8 +310,9 @@ namespace SpookyStreet.Tests.Visual
             Put("Neighbour_Fogg", foggX, foggZ, 180f, CrowdClipTimings.GiveTreat, CrowdClipTimings.GiveTreatRelease);
             Put("SkeletonKid", foggX, childZ, 0f, CrowdClipTimings.HoldPail, 0.5f);
             Put("Neighbour_Pearl", 1.9f, 4.1f, 180f, CrowdClipTimings.OpenDoorPeek, CrowdClipTimings.OpenDoorPeekHandOnDoor);
-            Put("CatKid", -2.6f, 3.0f, 160f, CrowdClipTimings.Cheer, CrowdClipTimings.CheerHop);
-            Put("CandyCornKid", -2.0f, 2.6f, 200f, CrowdClipTimings.Cheer, CrowdClipTimings.CheerHop - 0.12f);
+            // the cheering children stand between and beyond the two hand-overs, out of both close views
+            Put("CatKid", -0.3f, 4.0f, 160f, CrowdClipTimings.Cheer, CrowdClipTimings.CheerHop);
+            Put("CandyCornKid", 0.35f, 4.3f, 200f, CrowdClipTimings.Cheer, CrowdClipTimings.CheerHop - 0.12f);
             // Pip's copy hands a robot child a sweet; the real Pip stays where the camera wants her, hidden
             const float pipX = 1.0f, pipZ = 2.6f;
             float robotZ = pipZ - (CrowdClipTimings.HandTreatReleaseForward + CrowdClipTimings.HoldPailMouthForward);
