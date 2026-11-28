@@ -125,9 +125,23 @@ What the iterations fixed, by looking:
 8. The same frames showed the sixteen lanterns a little brighter than the crowd child's lantern beside them (more lit
    paper, more saturated): every light colour is 18 % lower (linear), so they now sit at the crowd's level.
 
-## In the game's light
+## In the game's light (CI run 46086407368, green, commit `bc0d3ac`)
 
-Filled in after the CI run.
+`LanternArtCaptureTests` (Visual) places the pieces through `PaperLanternArt`, as the slice will, and captures four
+frames: `ci_95_lantern_table_porch.jpg` (the gameplay camera behind Pip on the path, turned to her porch: the hook with
+her orange cat lantern lit at the porch's front corner, and the table standing beside the path),
+`ci_95b_lantern_table.jpg` (Pip at the table, the gameplay camera behind her), `ci_95c_lantern_colours.jpg` (the four
+shapes in the four colours hanging in front of the owl house, with a crowd child and her paper lantern at the right)
+and `ci_95d_lantern_arrival.jpg` (the arrival camera on Pip's porch). In the same run `LanternArtTests` (6) and
+`LanternArtImportTests` (6) passed, with the rest of the EditMode (909) and PlayMode (171) suites.
+
+What the frames show: from the gameplay camera the table reads as a craft stall by its string of four lit lanterns over
+Pip's head, before any detail on the table counts; the porch lantern reads as a cat, warm and small at the porch's
+corner, and from the arrival camera it sits at the left edge of the opening's composition, clear of the owl house's
+negative space. The lit attic window stays clearly the brightest thing in every frame; the sixteen lanterns glow at the
+crowd child's lantern's level, softer than the jack-o'-lanterns and the street lamp, with the face, rim and bail in ink.
+Nothing is magenta. In the game's light the plum is a soft berry, and the paper's pleats are too small to read at the
+gameplay camera (they show in the close sheets).
 
 ## Known limits
 
