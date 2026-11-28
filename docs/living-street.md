@@ -448,6 +448,13 @@ family playtest) finds the crowd lively without pulling attention from the myste
 Total for D33: about **58 agent-days**, roughly a month of calendar time with two agents. That is about the size of
 S004 and case 02 together, so the owner should weigh it against the season's order (decision 4).
 
+### Known gap: Pip's own house
+
+Pip's arrival porch stands alone: the house behind it was never built (a greybox remnant from S000, later dressed
+with moving boxes, the candy bowl and the lantern hook). The owner noticed it on 2026-11-28. Queued for an
+`artista-3d` agent: the family's newly moved-in house in the street's style, warm light inside and boxes in a window,
+with no round window or lit attic (the owl house keeps those, §3.4).
+
 ### Risks
 
 | Risk | Likelihood | Effect | Soft net |
