@@ -64,4 +64,32 @@ flat doorway card, as before.
 
 ## Evidence
 
-Pending the CI run.
+**CI run 46113563689, commit `7ffe3be`: green** (static checks; EditMode 954/954 with `LanePorchLightTests` 5/5,
+PlayMode 175/175 with `LivingStreetPlayTests` 4/4, Visual 30/30). Job time 1 h 6 min 45 s (cap 90); the Visual step ran
+06:38:09 to 06:59:35 (21 min 26 s), as long as before the swap.
+
+Mr. Fogg's wave, measured in the run: wrist peak 2.42 m over the ground, 0.51 m out from the wall; his hand was hidden
+by the door head or the hood in 0 of 96 frames from the gameplay camera.
+
+Frames (copies in `docs/evidence/living-street/houses/`):
+
+| Frame | What it shows |
+|---|---|
+| `ci_102_lane_houses_ingame.jpg` | the lane from the hedge gap: Mr. Fogg's green house with its orange door and bunting, a warm glow under his hood, Nana Pearl's rose cottage beyond with her porch lit, the Abbotts' plum and mustard gables right, walkers on the lane |
+| `ci_103_lane_houses_back_ingame.jpg` | from the Green's corner looking west: the Abbotts' twin gables left, Pearl's porch with pumpkins and Fogg's tower right; the corner's hedge fills the bottom third (the same camera as the art pass's 98b) |
+| `ci_104_fogg_door_ingame.jpg` | Mr. Fogg's door flung open, him in his cream jumper and orange beanie in the lit hall, his porch light warm under the hood, a group ringing with Pip |
+| `ci_105_pearl_door_ingame.jpg` | Nana Pearl's yellow door eased open, her lamp warm, her apron, the porch and its lit windows |
+| `ci_106_abbotts_door_ingame.jpg` | the round plum door open, both Abbotts in matching striped jumpers in the arched hall, the awning and the paper ghosts |
+| `ci_107_fogg_wave_ingame.jpg` | a group rang: Mr. Fogg waves, his hand high and fully seen in front of the door casing |
+
+What the frames show: no placeholder house, card or bell disc is left in the lane; each door shows its own leaf, lamp
+and neighbour. The porch lights lift Mr. Fogg's door and landing and Nana Pearl's porch a step; their walls stay in
+the night's blue. Mr. Fogg's light makes a warm spot on the underside of his hood, below glow levels (no bloom ring),
+and nothing on the lane is brighter than the lamps.
+
+## Still weak
+
+- No device frame time for the lane yet (the slice's §8 measurement on the phone is still to do); the two porch lights
+  are an estimate of a small cost, not a measurement.
+- Frame 103's camera sits behind the Green's corner hedge, which hides the lower third.
+- The back of each house is plain clapboard (art doc, Known limits).
