@@ -119,6 +119,11 @@ What the iterations fixed, by looking:
    larger, the poles taller and the bat hangs further in. The table is wider.
 5. The lit plum read as hot pink: its light is a deeper berry.
 6. The bell plate was modelled lying flat; it now faces the plaza.
+7. CI run 46078993710 (the first capture, and the one failed import test) showed the bail and ring missing: they were
+   built in the body's frame, inside the paper. They now hang from the origin, so a lantern really hangs from its hook
+   (`LanternArtImportTests` caught it: the bat's top was 1.4 cm under its origin).
+8. The same frames showed the sixteen lanterns a little brighter than the crowd child's lantern beside them (more lit
+   paper, more saturated): every light colour is 18 % lower (linear), so they now sit at the crowd's level.
 
 ## In the game's light
 

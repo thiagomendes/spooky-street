@@ -90,10 +90,10 @@ namespace SpookyStreet.Core.World
         {
             switch (CheckColour(colourId))
             {
-                case Orange: return 0xF08A3A;
-                case Plum: return 0xA04C88;
-                case Green: return 0x9CC24C;
-                default: return 0xF2CC62;
+                case Orange: return 0xDC7E34;
+                case Plum: return 0x92457C;
+                case Green: return 0x8FB145;
+                default: return 0xDEBB59;
             }
         }
 

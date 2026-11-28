@@ -48,10 +48,10 @@ HANG, BELL = "LanternHang", "BellButton"
 # multiplies the neutral paper's base colour by, the light what it multiplies the emission by (a candle warms the
 # colour, so the light is a little lighter and warmer than the paper).
 COLOURS = {
-    "orange": (H(0xEE7F2D), H(0xF08A3A)),
-    "plum": (H(0x7A3E6E), H(0xA04C88)),
-    "green": (H(0x5E9A3A), H(0x9CC24C)),
-    "yellow": (H(0xF6D365), H(0xF2CC62)),
+    "orange": (H(0xEE7F2D), H(0xDC7E34)),
+    "plum": (H(0x7A3E6E), H(0x92457C)),
+    "green": (H(0x5E9A3A), H(0x8FB145)),
+    "yellow": (H(0xF6D365), H(0xDEBB59)),
 }
 PAPER = H(0xFFF7E6)  # the neutral tissue the game tints
 INK = E["ink"]
@@ -446,13 +446,13 @@ def _features(face, shape, detail):
             face.strip([base, end], 0.0062 if tip[1] > 0 else 0.0048, INK)
 
 
-def _bail(b, craft, top_pt, depth):
-    """Wire bail from the body's top to the ring at the origin."""
+def _bail(b, craft, top_pt, depth, origin_z):
+    """Wire bail from the body's top to the ring whose top is the lantern's origin (`origin_z` in the body's frame)."""
     wire = craft.paint()
     ring_r = 0.011
     for side in (-1, 1):
-        b.rod(wire, (top_pt[0], side * depth * 0.32, top_pt[1] - 0.004), (0.0, 0.0, -2 * ring_r + 0.002), 0.0022, 5, lc(INK))
-    b.ring(wire, ring_r - 0.0028, ring_r, 0.0045, T(0, -0.00225, -ring_r), segs=12, tint=lc(INK), chamfer=0.0)
+        b.rod(wire, (top_pt[0], side * depth * 0.32, top_pt[1] - 0.004), (0.0, 0.0, origin_z - 2 * ring_r + 0.002), 0.0022, 5, lc(INK))
+    b.ring(wire, ring_r - 0.0028, ring_r, 0.0045, T(0, -0.00225, origin_z - ring_r), segs=12, tint=lc(INK), chamfer=0.0)
 
 
 def _tassel(b, craft, at, depth, scale=1.0, detail=1.0):
@@ -536,7 +536,7 @@ def paper_lantern(b, craft, shape, M=None, rgb=None, detail=1.0):
         face = Face(b, craft, pts, c, half)
         face.coarse = detail < 1
         _features(face, shape, detail)
-        _bail(b, craft, (0.0, top_z), DEPTH * (0.8 if shape == "bat" else 1.0))
+        _bail(b, craft, (0.0, top_z), DEPTH * (0.8 if shape == "bat" else 1.0), drop)
         bottom = min(p[1] for p in pts)
         if shape == "bat":
             for side in (-1, 1):

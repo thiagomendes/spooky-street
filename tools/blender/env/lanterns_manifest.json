@@ -12,7 +12,7 @@
    }
   },
   "atlas": "Lanterns",
-  "px_per_m": 479
+  "px_per_m": 482
  },
  "PaperLanternCat": {
   "triangles": 1692,
@@ -27,7 +27,7 @@
    }
   },
   "atlas": "Lanterns",
-  "px_per_m": 479
+  "px_per_m": 482
  },
  "PaperLanternGhost": {
   "triangles": 1528,
@@ -42,7 +42,7 @@
    }
   },
   "atlas": "Lanterns",
-  "px_per_m": 479
+  "px_per_m": 482
  },
  "PaperLanternLeaf": {
   "triangles": 1844,
@@ -57,7 +57,7 @@
    }
   },
   "atlas": "Lanterns",
-  "px_per_m": 479
+  "px_per_m": 482
  },
  "LanternTable": {
   "triangles": 4913,
@@ -72,7 +72,7 @@
    }
   },
   "atlas": "Lanterns",
-  "px_per_m": 218
+  "px_per_m": 219
  },
  "LanternHook": {
   "triangles": 1168,
@@ -95,6 +95,6 @@
    }
   },
   "atlas": "Lanterns",
-  "px_per_m": 240
+  "px_per_m": 241
  }
 }
