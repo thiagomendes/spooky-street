@@ -64,6 +64,14 @@ namespace SpookyStreet.Core.World
         public const float KeepsakeLantern = 0.9f;
 
         /// <summary>
+        /// The living street's paper lanterns (parts named <c>PaperLantern*_Glow</c>: the lantern Pip folds, its paper
+        /// tinted to her colour, and the lantern table's lit samples): the crowd kit's paper lanterns' level, a soft
+        /// inner glow under the bloom threshold, so the attic window stays the brightest point and a lantern never reads
+        /// as a clue (docs/living-street-lantern-art.md).
+        /// </summary>
+        public const float PaperLantern = 0.9f;
+
+        /// <summary>
         /// The painted face of the booth's owl crest sign (<c>CrestSign_Glow</c>, S004): it hangs under the eave with
         /// the lit porch behind it, so its paint carries a little of its own colour, as if the porch lamp caught it.
         /// Far under the bloom threshold: a sign, never a lamp, and never a "this matters" mark.
@@ -127,6 +135,11 @@ namespace SpookyStreet.Core.World
             if (objectName.StartsWith("Keepsake", StringComparison.Ordinal))
             {
                 return KeepsakeLantern;
+            }
+
+            if (objectName.StartsWith("PaperLantern", StringComparison.Ordinal))
+            {
+                return PaperLantern;
             }
 
             if (objectName.StartsWith("PaperBat", StringComparison.Ordinal))

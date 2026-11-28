@@ -1,0 +1,100 @@
+{
+ "PaperLanternBat": {
+  "triangles": 1404,
+  "children": {
+   "PaperLantern_Glow": {
+    "triangles": 688,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Lanterns",
+  "px_per_m": 482
+ },
+ "PaperLanternCat": {
+  "triangles": 1692,
+  "children": {
+   "PaperLantern_Glow": {
+    "triangles": 896,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Lanterns",
+  "px_per_m": 482
+ },
+ "PaperLanternGhost": {
+  "triangles": 1528,
+  "children": {
+   "PaperLantern_Glow": {
+    "triangles": 896,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Lanterns",
+  "px_per_m": 482
+ },
+ "PaperLanternLeaf": {
+  "triangles": 1844,
+  "children": {
+   "PaperLantern_Glow": {
+    "triangles": 1204,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Lanterns",
+  "px_per_m": 482
+ },
+ "LanternTable": {
+  "triangles": 4913,
+  "children": {
+   "PaperLanternSamples_Glow": {
+    "triangles": 1410,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "Lanterns",
+  "px_per_m": 219
+ },
+ "LanternHook": {
+  "triangles": 1168,
+  "children": {
+   "BellButton": {
+    "triangles": 122,
+    "pivot": [
+     -0.09,
+     -0.0735,
+     0.98
+    ]
+   },
+   "LanternHang": {
+    "triangles": 116,
+    "pivot": [
+     0.35,
+     -0.02,
+     1.99
+    ]
+   }
+  },
+  "atlas": "Lanterns",
+  "px_per_m": 241
+ }
+}
