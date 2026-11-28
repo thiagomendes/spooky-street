@@ -150,8 +150,49 @@ What the looks fixed:
 
 ## In the game's light
 
-CI_SECTION
+**CI run 46106193714 (run 210), commit `23b5f7c`: green** (static checks; EditMode 949/949, PlayMode 174/174,
+Visual 30/30). In the same run `LaneHouseArtTests` (5), `LaneHouseArtImportTests` (7) and
+`LaneHouseArtCaptureTests` (1) passed. Run 209 before it failed two import tests, rightly: the Abbotts' far eave
+reached 4 cm past the 7.8 m footprint and Nana Pearl's first lantern reached through the wall; both were fixed (and
+Mr. Fogg's green made a step lighter after his front read dark in that run's frames).
+
+`LaneHouseArtCaptureTests` swaps the art in where the slice's placeholders stand (as "The swap" says) and rings each
+bell with the gameplay camera behind Pip. Frames (copies in `docs/evidence/living-street/houses/`):
+
+| Frame | What it shows |
+|---|---|
+| `ci_98_lane_houses.jpg` | the lane from the hedge gap: Mr. Fogg's green tower house left with its bunting and lit windows, Nana Pearl's rose cottage beyond, the Abbotts' plum and mustard gables right, the slice's lamps and walkers |
+| `ci_98b_lane_houses_back.jpg` | from the Green's corner looking west: the Abbotts' twin gables, Pearl's porch with the rocking chair and pumpkins, Fogg's tower beyond |
+| `ci_99_fogg_door.jpg` | Mr. Fogg's orange door flung open (115 degrees), him in his cream jumper and orange beanie in the lit doorway, the stacked jack-o'-lanterns; a trick-or-treat group rings with Pip |
+| `ci_100_pearl_door.jpg` | Nana Pearl's yellow door eased open (70 degrees), her lamp warm, her apron and basket, the porch, rails and lit windows |
+| `ci_101_abbotts_door.jpg` | the round plum door open, the two Abbotts in matching striped jumpers in the arched lit hall, the striped awning and the paper ghosts in the bay |
+
+What the game's light shows: the three families read apart at a glance (green tower, rose cottage, mustard and plum
+twin gables); the lit windows, the lamps and the halls are warm and far under the attic window (the owl house is
+off frame and stays the brightest point in its own frames); nothing is magenta. Mr. Fogg's and Nana Pearl's fronts
+face away from the moon and sit a step darker than in the Blender sheets (see Known limits); their trim, doors and
+windows still read. The neighbours come from `CrowdNeighbours.fbx` through `CrowdKit.Find`, merged and animated by
+the slice's own factory.
+
+Visual step timing (for the 90-minute job cap): run 209 03:36:17 to 03:57:37 (21 min 20 s); in run 210 it
+ran 04:56:53 to 05:17:37 (20 min 44 s); `LaneHouseArtCaptureTests` took about 62 s (05:07:11 to 05:08:13,
+five frames), and no gap between two frames in the whole Visual step was longer than 20 s.
 
 ## Known limits
 
-LIMITS_SECTION
+- **Not wired yet.** The slice still spawns its placeholders until the game agent makes the swap above; the captures
+  stage it in the running game. Only the neighbours already use their art (through `CrowdKit.Find`).
+- **No real porch light.** The lane has no point lights, so Mr. Fogg's and Nana Pearl's fronts (they face away from
+  the moon) are lit by the night ambient only: they read by their bone trim, lit windows, lamp and doorway, a step
+  darker than the owl house's porch. A small warm point light per porch would lift them, at a phone cost the slice
+  has not measured; that is the game agent's call.
+- The far meshes leave out the paper cut-outs in the lit windows and the small dressing (bunting, spider, flower
+  boxes, chair); the switch is at about 24 m, where they do not read.
+- Each house has its own atlas (three 2048 colour maps instead of one shared): one shared atlas halved the texels.
+- The houses are not readable meshes, so the lane's static batching leaves them out (as it does the lane's props):
+  two draw calls each (the house and its lit parts).
+- The neighbours use the kit's clips (Idle, Talk, Wave); the Abbotts' hop is the slice's root bounce. No door-specific
+  clip was made. Mr. Fogg's wave lifts his hand above the door head and it hides behind the frame for a few frames.
+- Close up, the painted beard on Mr. Fogg's chin crosses a UV seam (a faint line); from behind, a sliver of the
+  aprons' sides shows at the hips (the aprons were narrowed so they never read as a cape).
+- The backs of the houses are plain clapboard: only the lane's back strips see them.
