@@ -12,6 +12,7 @@
   delete refs (403); read runs and logs with the GitHub MCP tools.
 - Actions budget matters: add `[skip ci]` to intermediate commits and push without it only when the branch is
   ready for validation. Never re-trigger CI just to check something a previous run already proved.
+  GitHub reads the skip token anywhere in the message: never quote it in the body of a commit that must run CI.
 - Never claim a Unity, Xcode, TestFlight or device pass without that run's evidence. Unity checks run only
   in GitHub Actions (`ci.yml`), not in the cloud container (Unity hosts are blocked there).
 - Before pushing run `./tools/check-local.sh` (needs `pip install -r tools/requirements-ci.txt` and .NET 8:
