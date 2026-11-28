@@ -2,8 +2,12 @@ using System.Collections;
 using NUnit.Framework;
 using SpookyStreet.App;
 using SpookyStreet.Case;
+using SpookyStreet.Controls;
+using SpookyStreet.Core.Localization;
 using SpookyStreet.Core.LivingStreet;
+using SpookyStreet.Core.Nonverbal;
 using SpookyStreet.LivingStreet;
+using SpookyStreet.Localization;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
@@ -15,7 +19,9 @@ namespace SpookyStreet.Tests.Visual
     /// <summary>
     /// The living street's test slice (docs/living-street-slice.md): 94 the east lane with walkers on their loops, 96 a
     /// door answering Pip's ring (Mr. Fogg in his doorway), 97 Pip's lit porch lantern with a group at her button, 97b the
-    /// lantern craft table on the Green, 97c the lantern picker with its names (95 is the lantern art's own frames). Review
+    /// lantern craft table on the Green, 97c the lantern picker with its names (95 is the lantern art's own frames), 108 the
+    /// picker by touch with every name whole and the resting cards at full contrast, 109 the picker in Portuguese on a
+    /// 4:3 screen (the longest name, Fantasminha, on a resting card). Review
     /// frames: the lantern table's screen, the Green's corner, the heart with walkers passing south of the plaza, and a
     /// walker close up (placeholder bodies until the crowd kit lands).
     /// </summary>
@@ -42,6 +48,8 @@ namespace SpookyStreet.Tests.Visual
         public override void TearDown()
         {
             Time.timeScale = 1f;
+            ControlSchemeTracker.Override = null;
+            Localizer.Catalog.ResetToFallback();
             base.TearDown();
         }
 
@@ -208,6 +216,32 @@ namespace SpookyStreet.Tests.Visual
             Director.Captions.Clear();
             yield return null;
             yield return Shot("97c_living_street_picker", Director.UiCanvas);
+
+            // 108: the same picker by touch (no focus outline): every name whole with paper around it, the resting cards
+            // at full paper and colour, the chosen bat on its plum mat.
+            ControlSchemeTracker.Override = ControlScheme.Touch;
+            yield return Wait(0.2f);
+            Director.Captions.Clear();
+            yield return null;
+            yield return Shot("108_lantern_picker_names_en", Director.UiCanvas);
+
+            // 109: Brazilian Portuguese on a 4:3 screen (the narrowest): "Fantasminha", the longest name, fits on its
+            // resting card; the cat in candy-corn yellow is chosen; the board clears the close disc.
+            var pt = Resources.Load<TextAsset>("Localization/pt-BR");
+            Assert.IsNotNull(pt, "pt-BR ships in the app");
+            Localizer.Catalog.SetActive(StringTable.Parse(pt.text));
+            Stage.LanternScreen.ChooseShape(LanternShape.Cat);
+            Stage.LanternScreen.ChooseColour(LanternColour.Yellow);
+            yield return Wait(0.2f);
+            Director.Captions.Clear();
+            yield return null;
+            Assert.AreEqual("Fantasminha", Stage.LanternScreen.ShapeNames[LanternShape.Ghost].text);
+            yield return Shot("109_lantern_picker_names_ptbr_4x3", Director.UiCanvas, 1024, 768);
+            Localizer.Catalog.ResetToFallback();
+            ControlSchemeTracker.Override = null;
+            Stage.LanternScreen.ChooseShape(LanternShape.Bat);
+            Stage.LanternScreen.ChooseColour(LanternColour.Orange);
+            yield return null;
             Stage.LanternScreen.Fold();
             yield return Wait(0.3f);
             Assert.IsTrue(Stage.Set.PorchLanternLit);

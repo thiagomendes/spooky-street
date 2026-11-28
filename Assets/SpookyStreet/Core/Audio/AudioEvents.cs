@@ -36,6 +36,12 @@ namespace SpookyStreet.Core.Audio
         public const string MusicMotifWood = "music_motif_wood";
 
         /// <summary>
+        /// The living street's doorbell: a two-tone "ding-dong" (docs/living-street.md §3.4 rule 5: bells, never knocks).
+        /// Synthesised like the rest (D20); it ships before the owner's listening review and can be replaced after it.
+        /// </summary>
+        public const string StreetDoorbell = "street_doorbell";
+
+        /// <summary>
         /// Knock onsets inside every take of <see cref="ClueKnocksDistant"/>: short, short, pause, last (spec §6). The
         /// arrival beat's attic-light pulses and the paper bat (<c>KnockBeat</c>) run on these times, and the clip
         /// starts on the beat's first frame, so light and sound land together.
@@ -68,6 +74,8 @@ namespace SpookyStreet.Core.Audio
             c.Add(new AudioEventDef(NoteStickerWobble, AudioBus.Sfx, 3, minIntervalSeconds: 0.2f));
             c.Add(new AudioEventDef(NoteCorrectGlow, AudioBus.Sfx, 3, minIntervalSeconds: 0.5f));
             c.Add(new AudioEventDef(UiTap, AudioBus.Sfx, 5, pitchJitterSemitones: 0.3f, minIntervalSeconds: 0.03f));
+            // Two rings in the same moment (a group and Pip) play once: a doorbell never stacks into a jangle.
+            c.Add(new AudioEventDef(StreetDoorbell, AudioBus.Sfx, 4, minIntervalSeconds: 0.8f));
             c.Add(new AudioEventDef(VoicePip, AudioBus.Voice, 3));
             c.Add(new AudioEventDef(VoiceBea, AudioBus.Voice, 3));
             c.Add(new AudioEventDef(VoiceVale, AudioBus.Voice, 3));

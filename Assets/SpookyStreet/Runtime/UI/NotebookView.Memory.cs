@@ -14,7 +14,7 @@ namespace SpookyStreet.UI
     /// sending it home. A drag never opens it and closes an open one, so the slots are in view for the drop.</item>
     /// <item>Gamepad and keyboard: Submit picks as before (and opens the memory, like a tap); Inspect (West, F or I)
     /// opens the memory of the sticker under the outline, in the tray or in a slot, without picking it up. Its glyph
-    /// rides the outline's top-left corner.</item>
+    /// rides a corner of the outline the open memory card cannot cover (Core <see cref="GlyphPlacement"/>).</item>
     /// </list>
     /// Opening a memory never places a sticker, never counts a try and never records anything (Core
     /// <see cref="StickerMemories.Open"/> only reads). The card covers the question and the slots, never the tray; it
@@ -118,7 +118,7 @@ namespace SpookyStreet.UI
             }
         }
 
-        /// <summary>The Inspect glyph rides the outline's top-left corner while the outline rings a sticker.</summary>
+        /// <summary>The Inspect glyph rides the outline while it rings a sticker, on a corner the memory card leaves clear.</summary>
         private void TickInspectPrompt()
         {
             var scheme = ControlSchemeTracker.Current;
@@ -150,7 +150,49 @@ namespace SpookyStreet.UI
             _inspectPrompt.transform.SetAsLastSibling();
             var corners = new Vector3[4];
             ((RectTransform)_focusRing.transform).GetWorldCorners(corners);
-            _inspectPrompt.transform.position = corners[1]; // top-left
+            var outline = Box(corners);
+            UiBox? cover = null;
+            if (MemoryOpen)
+            {
+                ((RectTransform)_memoryCard.transform).GetWorldCorners(corners);
+                cover = Box(corners);
+            }
+
+            ((RectTransform)_inspectPrompt.transform).GetWorldCorners(corners);
+            float size = Mathf.Max(corners[2].x - corners[0].x, corners[2].y - corners[0].y);
+            var at = GlyphPlacement.Inspect(outline, cover, size);
+            var position = _inspectPrompt.transform.position;
+            _inspectPrompt.transform.position = new Vector3(at.X, at.Y, position.z);
+        }
+
+        /// <summary>The glyph's box where it now stands (tests: the memory card never covers it).</summary>
+        public UiBox InspectPromptBox()
+        {
+            var corners = new Vector3[4];
+            ((RectTransform)_inspectPrompt.transform).GetWorldCorners(corners);
+            return Box(corners);
+        }
+
+        /// <summary>The open memory card's box (tests).</summary>
+        public UiBox MemoryCardBox()
+        {
+            var corners = new Vector3[4];
+            ((RectTransform)_memoryCard.transform).GetWorldCorners(corners);
+            return Box(corners);
+        }
+
+        private static UiBox Box(Vector3[] corners)
+        {
+            float xMin = float.MaxValue, yMin = float.MaxValue, xMax = float.MinValue, yMax = float.MinValue;
+            foreach (var c in corners)
+            {
+                xMin = Mathf.Min(xMin, c.x);
+                yMin = Mathf.Min(yMin, c.y);
+                xMax = Mathf.Max(xMax, c.x);
+                yMax = Mathf.Max(yMax, c.y);
+            }
+
+            return new UiBox(xMin, yMin, xMax, yMax);
         }
     }
 }

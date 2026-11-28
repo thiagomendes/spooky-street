@@ -13,6 +13,9 @@ namespace SpookyStreet.Core.Audio
         Voice,
         Ambience,
         Music,
+
+        /// <summary>The living street's own sounds (the doorbell), mastered at the notebook's level.</summary>
+        Street,
     }
 
     /// <summary>How a clip loads at runtime.</summary>
@@ -82,6 +85,7 @@ namespace SpookyStreet.Core.Audio
             AudioEvents.MoveJump, AudioEvents.MoveLand, AudioEvents.MoveGlideOpen, AudioEvents.MoveGlideLoop,
             AudioEvents.UiPageTurn, AudioEvents.NoteStickerPick, AudioEvents.NoteStickerDrop,
             AudioEvents.NoteStickerWobble, AudioEvents.NoteCorrectGlow, AudioEvents.UiTap, AudioEvents.AmbNight,
+            AudioEvents.StreetDoorbell, // ships before the owner's ear (D20.1 review pending); replaceable
         };
 
         /// <summary>An approved effect, or one of the approved v2 voices and music (D20.2).</summary>
@@ -108,6 +112,7 @@ namespace SpookyStreet.Core.Audio
             if (id.StartsWith("voice_", StringComparison.Ordinal)) return AudioCategory.Voice;
             if (id.StartsWith("amb_", StringComparison.Ordinal)) return AudioCategory.Ambience;
             if (id.StartsWith("music_", StringComparison.Ordinal)) return AudioCategory.Music;
+            if (id.StartsWith("street_", StringComparison.Ordinal)) return AudioCategory.Street;
             throw new ArgumentException("no category for audio id " + id, nameof(id));
         }
 
@@ -123,6 +128,7 @@ namespace SpookyStreet.Core.Audio
                 case AudioCategory.Notebook: return 0.7f;
                 case AudioCategory.Voice: return 0.7f;
                 case AudioCategory.Music: return 0.7f;
+                case AudioCategory.Street: return 0.7f; // a bell's long clean ring shows Vorbis artefacts first
                 case AudioCategory.Movement: return 0.6f;
                 case AudioCategory.Ui: return 0.6f;
                 case AudioCategory.Ambience: return 0.5f;

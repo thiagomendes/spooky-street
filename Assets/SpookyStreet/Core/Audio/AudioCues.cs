@@ -108,6 +108,9 @@ namespace SpookyStreet.Core.Audio
         /// <summary>A tap on a control that is not a uGUI Button (buttons get their tap automatically).</summary>
         public static void UiTap() => Raise(AudioEvents.UiTap);
 
+        /// <summary>A doorbell on the living street rings (a neighbour's door or Pip's own button): "ding-dong".</summary>
+        public static void Doorbell() => Raise(AudioEvents.StreetDoorbell);
+
         /// <summary>Any catalog event by id (for hooks not listed above).</summary>
         public static void Play(string eventId) => Raise(eventId);
 

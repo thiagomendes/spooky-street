@@ -21,7 +21,8 @@ namespace SpookyStreet.LivingStreet
     /// </summary>
     public sealed class LanternView : MonoBehaviour
     {
-        public static readonly Vector2 CardSize = new Vector2(160f, 184f);
+        /// <summary>A shape card (Core <see cref="LanternPickerLayout"/>: wide enough for the longest name in every language).</summary>
+        public static readonly Vector2 CardSize = new Vector2(LanternPickerLayout.CardWidth, LanternPickerLayout.CardHeight);
 
         /// <summary>The picture's size on a card; the bat's tile is drawn larger (its wings leave a small body).</summary>
         public const float PictureSize = 118f;
@@ -29,6 +30,9 @@ namespace SpookyStreet.LivingStreet
         public const float SwatchSize = 96f;
 
         private readonly Dictionary<LanternShape, Image> _shapes = new Dictionary<LanternShape, Image>();
+        private readonly Dictionary<LanternShape, Image> _mats = new Dictionary<LanternShape, Image>();
+        private readonly Dictionary<LanternShape, RectTransform> _slots = new Dictionary<LanternShape, RectTransform>();
+        private readonly Dictionary<LanternShape, Image> _stitches = new Dictionary<LanternShape, Image>();
         private readonly Dictionary<LanternShape, List<Image>> _shapeArt = new Dictionary<LanternShape, List<Image>>();
         private readonly Dictionary<LanternColour, Image> _swatches = new Dictionary<LanternColour, Image>();
         private readonly Dictionary<LanternShape, Button> _shapeButtons = new Dictionary<LanternShape, Button>();
@@ -57,6 +61,21 @@ namespace SpookyStreet.LivingStreet
         /// <summary>The name under each shape's card (tests: readable names).</summary>
         public Dictionary<LanternShape, Text> ShapeNames { get; } = new Dictionary<LanternShape, Text>();
 
+        /// <summary>The card of a shape (tests: its tint and scale).</summary>
+        public Image ShapeCard(LanternShape shape) => _shapes[shape];
+
+        /// <summary>The plum mat under a shape's card, shown only while it is the chosen one (tests).</summary>
+        public Image ChosenMat(LanternShape shape) => _mats[shape];
+
+        /// <summary>The slot holding a shape's card and mat; its scale is the chosen card's size (tests).</summary>
+        public RectTransform ShapeSlot(LanternShape shape) => _slots[shape];
+
+        /// <summary>The pictures on a shape's card (tests: never faded).</summary>
+        public IReadOnlyList<Image> ShapeArt(LanternShape shape) => _shapeArt[shape];
+
+        /// <summary>The paper board behind the rows (tests: it fits the screen and clears the close disc).</summary>
+        public RectTransform Board { get; private set; }
+
         public Button ColourButton(LanternColour colour) => _colourButtons[colour];
 
         public static LanternView Create(RectTransform canvasRoot)
@@ -72,18 +91,35 @@ namespace SpookyStreet.LivingStreet
         {
             var content = UiFactory.Stretch(UiFactory.Rect(root, "Content"));
             content.gameObject.AddComponent<SafeAreaFitter>();
-            float width = (CardSize.x + 24f) * 4f + 60f;
-            var board = UiFactory.PaperCard(content, "Board", new Vector2(0.5f, 0.5f), new Vector2(0f, 30f),
-                new Vector2(width, 560f), -0.6f);
+            var board = UiFactory.PaperCard(content, "Board", new Vector2(0.5f, 0.5f),
+                new Vector2(0f, LanternPickerLayout.BoardOffsetY),
+                new Vector2(LanternPickerLayout.BoardWidth, LanternPickerLayout.BoardHeight), -0.6f);
+            Board = board.rectTransform;
             var rows = board.transform;
 
+            var matTint = Palette.Hex(LanternPickerLayout.ChosenMatRgb);
             for (int i = 0; i < LanternCraft.Shapes.Count; i++)
             {
                 var shape = LanternCraft.Shapes[i];
-                float x = (i - 1.5f) * (CardSize.x + 24f);
-                var card = UiFactory.PaperCard(rows, "Shape_" + LanternCraft.ShapeId(shape), new Vector2(0.5f, 1f),
-                    new Vector2(x, -36f - CardSize.y * 0.5f), CardSize, i % 2 == 0 ? -1.5f : 1.2f);
+                float tilt = i % 2 == 0 ? -1.5f : 1.2f;
+                // Each card sits in a slot that carries the chosen card's size (the card's own PressScale owns the
+                // card's scale), with the plum mat behind the card.
+                var slot = UiFactory.Place(UiFactory.Rect(rows, "Slot_" + LanternCraft.ShapeId(shape)), new Vector2(0.5f, 1f),
+                    new Vector2(LanternPickerLayout.ColumnX(i), -36f - CardSize.y * 0.5f), CardSize);
+                _slots[shape] = slot;
+                var mat = UiFactory.Sprite(slot, "Chosen", null, Color.white, new Vector2(0.5f, 0.5f), Vector2.zero,
+                    CardSize + Vector2.one * (2f * LanternPickerLayout.ChosenMatPad));
+                UiFactory.ApplySurface(mat, UiSpriteCatalog.PaperTag, Palette.WarmPaper, matTint);
+                mat.rectTransform.localRotation = Quaternion.Euler(0f, 0f, tilt);
+                mat.raycastTarget = false;
+                UiFactory.InkShadow(mat, new Vector2(4f, -6f), 0.6f);
+                mat.gameObject.SetActive(false);
+                _mats[shape] = mat;
+                var card = UiFactory.PaperCard(slot, "Shape_" + LanternCraft.ShapeId(shape), new Vector2(0.5f, 0.5f),
+                    Vector2.zero, CardSize, tilt);
                 card.raycastTarget = true;
+                var stitch = card.transform.Find("Stitch");
+                _stitches[shape] = stitch != null ? stitch.GetComponent<Image>() : null;
                 var picture = UiFactory.Rect(card.transform, "Picture");
                 UiFactory.Place(picture, new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(PictureSize, PictureSize));
                 // The lantern art's picture (neutral paper, ink face): tinted with the chosen colour, ink stays ink.
@@ -107,10 +143,13 @@ namespace SpookyStreet.LivingStreet
                 }
 
                 // The name under the picture (Andika needs about 1.6 lines of height: CI run 204 lost a 36-unit label).
-                var name = UiFactory.Label(card.transform, "Name", LanternCraft.ShapeKey(shape), 26, TextAnchor.MiddleCenter,
-                    UiFactory.Ink, UiFactory.BoldFont);
+                // The card is wide enough for the longest name in every language at full size, with margin
+                // (LanternPickerLayout); the text is never shortened for it.
+                var name = UiFactory.Label(card.transform, "Name", LanternCraft.ShapeKey(shape),
+                    LanternPickerLayout.LabelFontSize, TextAnchor.MiddleCenter, UiFactory.Ink, UiFactory.BoldFont);
                 name.verticalOverflow = VerticalWrapMode.Overflow;
-                UiFactory.Place(name.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 26f), new Vector2(CardSize.x - 8f, 48f));
+                UiFactory.Place(name.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 26f),
+                    new Vector2(LanternPickerLayout.LabelWidth, 48f));
                 ShapeNames[shape] = name;
                 var button = card.gameObject.AddComponent<Button>();
                 button.targetGraphic = card;
@@ -126,7 +165,7 @@ namespace SpookyStreet.LivingStreet
             for (int i = 0; i < LanternCraft.Colours.Count; i++)
             {
                 var colour = LanternCraft.Colours[i];
-                float x = (i - 1.5f) * (CardSize.x + 24f);
+                float x = LanternPickerLayout.ColumnX(i);
                 // The lantern art's colour picture (a lit square of that tissue), drawn as it is; a plain disc otherwise.
                 var colourTile = Resources.Load<Sprite>(LanternArt.ColourTile(LanternCraft.ColourId(colour)));
                 var swatch = UiFactory.Sprite(rows, "Colour_" + LanternCraft.ColourId(colour), colourTile != null ? colourTile : UiFactory.Circle,
@@ -199,18 +238,30 @@ namespace SpookyStreet.LivingStreet
             Refresh();
         }
 
-        /// <summary>The chosen card stands up straight and its picture takes the chosen paper colour.</summary>
+        /// <summary>
+        /// Every card keeps full paper and a full-strength picture in the chosen paper colour, so a resting card reads as
+        /// well as the chosen one (it used to be dimmed and faded). The chosen card stands out by more than colour: it
+        /// sits on a plum mat, grows a little and its stitch turns orange (Core <see cref="LanternPickerLayout"/>).
+        /// </summary>
         private void Refresh()
         {
             var tint = Palette.Hex(LanternCraft.ColourRgb(Colour));
+            var resting = Palette.Hex(LanternPickerLayout.RestingCardTintRgb);
             foreach (var pair in _shapes)
             {
                 bool chosen = pair.Key == Shape;
-                pair.Value.color = chosen ? Color.white : new Color(0.86f, 0.84f, 0.8f, 1f);
-                pair.Value.rectTransform.localScale = Vector3.one * (chosen ? 1.08f : 1f);
+                pair.Value.color = chosen ? Color.white : resting;
+                _slots[pair.Key].localScale = Vector3.one * (chosen ? LanternPickerLayout.ChosenScale : 1f);
+                _mats[pair.Key].gameObject.SetActive(chosen);
+                var stitch = _stitches[pair.Key];
+                if (stitch != null)
+                {
+                    stitch.color = Palette.Hex(chosen ? LanternPickerLayout.ChosenStitchRgb : LanternPickerLayout.RestingStitchRgb);
+                }
+
                 foreach (var part in _shapeArt[pair.Key])
                 {
-                    part.color = chosen ? tint : new Color(tint.r, tint.g, tint.b, 0.55f);
+                    part.color = new Color(tint.r, tint.g, tint.b, chosen ? 1f : LanternPickerLayout.RestingArtAlpha);
                 }
             }
 

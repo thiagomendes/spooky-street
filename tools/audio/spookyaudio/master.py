@@ -44,6 +44,9 @@ CATEGORIES = {
     "ambience": Category("ambience", -28.0, 90.0, 15000.0, ratio=1.5, threshold=-8.0),
     # Music motif.
     "music": Category("music", -20.0, 90.0, 16000.0, ratio=1.8),
+    # The living street's own sounds (doorbells): at the notebook's level, under the clues, so a bell by a door never
+    # competes with the case's knocks.
+    "street": Category("street", -21.0, 140.0, 15000.0),
 }
 
 

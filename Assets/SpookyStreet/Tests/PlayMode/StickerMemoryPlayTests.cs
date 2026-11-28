@@ -308,6 +308,10 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(first, notebook.MemorySticker, "West shows the memory of the ringed sticker");
             Assert.IsNull(notebook.HeldSticker, "Inspect never picks up");
             Assert.IsTrue(board.IsEmpty);
+            yield return null;
+            Assert.IsTrue(notebook.InspectPrompt.gameObject.activeSelf, "the glyph stays while the memory is open");
+            Assert.IsFalse(notebook.InspectPromptBox().Overlaps(notebook.MemoryCardBox()),
+                $"the memory card never covers the Inspect glyph: {notebook.InspectPromptBox()} vs {notebook.MemoryCardBox()}");
             yield return Tap(_gamepad.buttonWest);
             Assert.IsFalse(notebook.MemoryOpen, "West again puts it away");
 
@@ -332,6 +336,10 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Tap(_gamepad.buttonWest);
             Assert.AreEqual(first, notebook.MemorySticker, "a sticker in a slot inspects too");
             Assert.AreEqual(first, board.Slots[0]);
+            yield return null;
+            Assert.IsTrue(notebook.InspectPrompt.gameObject.activeSelf);
+            Assert.IsFalse(notebook.InspectPromptBox().Overlaps(notebook.MemoryCardBox()),
+                "a slot's memory covers the outline, so the glyph waits just under the card");
             Assert.AreEqual(0, board.Tries);
 
             // The keyboard: F inspects, its key cap rides the outline.
