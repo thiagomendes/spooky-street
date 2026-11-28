@@ -20,8 +20,8 @@ namespace SpookyStreet.Tests.Visual
     /// (<c>CrowdKit.Neighbours</c>). 102_lane_houses_ingame: the gameplay camera behind Pip at the hedge gap, looking
     /// down the lane. 103_lane_houses_back_ingame: from the Green's corner looking back west. 104_fogg_door_ingame,
     /// 105_pearl_door_ingame, 106_abbotts_door_ingame: Pip rings each bell with the gameplay camera behind her and the
-    /// door answers with its gag. 107_fogg_wave_ingame: a group rings Mr. Fogg's bell and he waves; the frame is taken
-    /// near the wave's highest point, and the log says whether his hand cleared the door head and the hood.
+    /// door answers with its gag (rung three times; the door opens on the third). 107 (Mr. Fogg waving at a group) is
+    /// retired: a group now gets a treat for each child; HandHidden stays for a later wave check.
     /// (Frames 98 to 101 were the art pass's staged swap of the same houses.)
     /// </summary>
     [Category("Visual")]
@@ -182,73 +182,39 @@ namespace SpookyStreet.Tests.Visual
             {
                 var door = LivingStreetLayout.Door(ids[i]);
                 yield return FaceDoor(door);
-                Assert.IsTrue(stage.Ring(door), door.Id + " answers");
-                // Mr. Fogg's fling peaks early; Nana Pearl's door eases open; the Abbotts hop in the doorway
-                yield return Wait(door.Gag.OpenSeconds + 0.5f);
+                float free = Time.time + 30f;
+                while (!stage.Doors.CanRing(door.Id, Ringer.Pip) && Time.time < free)
+                {
+                    yield return null; // a family may be visiting
+                }
+
+                // Three rings (the door opens on the third), then the neighbour reaches the door and it eases open.
+                for (int r = 0; r < NeighbourDoors.RingsToOpen; r++)
+                {
+                    Assert.IsTrue(stage.Ring(door), door.Id + " ring " + (r + 1));
+                    yield return Wait(r < NeighbourDoors.RingsToOpen - 1 ? NeighbourDoors.RingBeat + 0.1f : 0.1f);
+                }
+
+                float until = Time.time + 6f;
+                while (stage.Doors.Phase(door.Id) != DoorPhase.ComingOut && stage.Doors.Phase(door.Id) != DoorPhase.Giving && Time.time < until)
+                {
+                    yield return null;
+                }
+
                 Debug.Log($"[LaneHouseArtCaptureTests] {door.Id}: swing {stage.Doors.SwingDegrees(door.Id):F0} deg, " +
                           $"neighbour shown {stage.Doors.NeighbourShown(door.Id)}");
                 yield return Shot(names[i], keepCaptions: true);
-                yield return Wait(NeighbourDoors.HoldSeconds + NeighbourDoors.CloseSeconds + 0.3f);
+                until = Time.time + 20f;
+                while (stage.Doors.Phase(door.Id) != DoorPhase.Closed && Time.time < until)
+                {
+                    yield return null; // he comes down with Pip's treat and goes back in
+                }
+
                 Director.Captions.Clear();
             }
 
-            // 107: a group rings Mr. Fogg's bell and he waves (the Wave clip, left hand high). Measure one wave's highest
-            // point and whether the camera sees the hand, then shoot near that point on the next swing.
-            var fogg = LivingStreetLayout.Door(LivingStreetLayout.Fogg);
-            var foggRig = stage.Set.Doors[0];
-            Assert.AreEqual(fogg.Id, foggRig.Door.Id);
-            yield return FaceDoor(fogg);
-            float until = Time.time + 8f;
-            while (stage.Doors.Busy(fogg.Id) && Time.time < until)
-            {
-                yield return null; // a walking group may be at his door
-            }
-
-            Assert.IsNotNull(stage.Doors.Ring(fogg.Id, Ringer.Group), "a group rings Mr. Fogg's bell");
-            until = Time.time + 1.5f;
-            while (!stage.Doors.NeighbourShown(fogg.Id) && Time.time < until)
-            {
-                yield return null;
-            }
-
-            var frame = foggRig.Hinge.parent;
-            var hand = ModelKit.FindDeep(foggRig.Figures[0].Root, "Hand_L");
-            var eye = game.CameraRig.OutputCamera.transform;
-            if (hand == null)
-            {
-                Debug.LogWarning("[LaneHouseArtCaptureTests] Mr. Fogg has no Hand_L bone; the wave is not measured");
-                yield return Wait(0.6f);
-            }
-            else
-            {
-                float peak = float.MinValue, peakOut = 0f;
-                int frames = 0, hidden = 0;
-                until = Time.time + 1.6f;
-                while (Time.time < until && stage.Doors.NeighbourShown(fogg.Id))
-                {
-                    yield return null;
-                    Vector3 local = frame.InverseTransformPoint(hand.position);
-                    frames++;
-                    hidden += HandHidden(frame, fogg, hand.position, eye.position) ? 1 : 0;
-                    if (local.y > peak)
-                    {
-                        peak = local.y;
-                        peakOut = fogg.WallLocalZ - local.z;
-                    }
-                }
-
-                Debug.Log($"[LaneHouseArtCaptureTests] fogg wave: wrist peak {peak:F2} m over the ground, {peakOut:F2} m out from " +
-                          $"the wall (stands {LivingStreetLayout.NeighbourOut(fogg):F2} m out); hand hidden by the door head or hood " +
-                          $"in {hidden} of {frames} frames; camera at {frame.InverseTransformPoint(eye.position)}");
-                until = Time.time + 1.6f;
-                while (Time.time < until && frame.InverseTransformPoint(hand.position).y < peak - 0.03f)
-                {
-                    yield return null;
-                }
-            }
-
-            yield return Shot("107_fogg_wave_ingame", keepCaptions: true);
-            yield return Wait(NeighbourDoors.HoldSeconds + NeighbourDoors.CloseSeconds + 0.3f);
+            // Frame 107 (Mr. Fogg waving at a group's ring) is retired: a group's ring now brings him out with a treat for
+            // each child (docs/living-street-slice.md §6.2; TrickOrTreatCaptureTests frames 111 to 116).
         }
     }
 }

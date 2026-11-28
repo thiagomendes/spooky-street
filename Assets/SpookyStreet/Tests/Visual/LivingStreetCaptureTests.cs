@@ -155,6 +155,28 @@ namespace SpookyStreet.Tests.Visual
             return n;
         }
 
+        /// <summary>Pip rings three times (the door opens on the third) and waits for the neighbour to step out.</summary>
+        private static IEnumerator RingToOpen(NeighbourDoor door)
+        {
+            float free = Time.realtimeSinceStartup + 30f;
+            while (!Stage.Doors.CanRing(door.Id, Ringer.Pip) && Time.realtimeSinceStartup < free)
+            {
+                yield return null;
+            }
+
+            for (int r = 0; r < NeighbourDoors.RingsToOpen; r++)
+            {
+                Assert.IsTrue(Stage.Ring(door), door.Id + " ring " + (r + 1));
+                yield return Wait(r < NeighbourDoors.RingsToOpen - 1 ? NeighbourDoors.RingBeat + 0.1f : 0.1f);
+            }
+
+            float until = Time.realtimeSinceStartup + 6f;
+            while (Stage.Doors.Phase(door.Id) != DoorPhase.Giving && Time.realtimeSinceStartup < until)
+            {
+                yield return null;
+            }
+        }
+
         [UnityTest]
         [Timeout(420000)]
         public IEnumerator CapturesTheLivingStreetSlice()
@@ -182,8 +204,7 @@ namespace SpookyStreet.Tests.Visual
             var fogg = LivingStreetLayout.Door(LivingStreetLayout.Fogg);
             PlacePip(new Vector3(fogg.StandX, 0.1f, fogg.StandZ - 0.2f), new Vector3(fogg.DoorX, 1f, fogg.DoorZ));
             yield return Wait(0.6f);
-            Assert.IsTrue(Stage.Ring(fogg));
-            yield return Wait(fogg.Gag.OpenSeconds + 0.6f);
+            yield return RingToOpen(fogg);
             Frame(new Vector3(fogg.StandX + 2.4f, 2.1f, fogg.StandZ - 3.4f), new Vector3(fogg.DoorX - 0.2f, 1.5f, fogg.DoorZ));
             yield return Shot("96_living_street_door", Director.UiCanvas);
 
@@ -191,9 +212,9 @@ namespace SpookyStreet.Tests.Visual
             var abbotts = LivingStreetLayout.Door(LivingStreetLayout.Abbotts);
             PlacePip(new Vector3(abbotts.StandX, 0.1f, abbotts.StandZ + 0.2f), new Vector3(abbotts.DoorX, 1f, abbotts.DoorZ));
             yield return Wait(0.4f);
-            if (Stage.Ring(abbotts))
+            if (Stage.Doors.CanRing(abbotts.Id, Ringer.Pip))
             {
-                yield return Wait(abbotts.Gag.OpenSeconds + 0.5f);
+                yield return RingToOpen(abbotts);
                 Frame(new Vector3(abbotts.StandX - 2.2f, 2.0f, abbotts.StandZ + 3.2f), new Vector3(abbotts.DoorX, 1.5f, abbotts.DoorZ));
                 yield return Shot("r_living_street_abbotts", Director.UiCanvas, ReviewWidth, ReviewHeight);
             }
@@ -254,15 +275,15 @@ namespace SpookyStreet.Tests.Visual
             yield return Wait(0.8f);
             yield return Shot("97_living_street_porch", Director.UiCanvas);
 
-            // Review: a walker close up (placeholder body), and the treat handed over.
+            // Review: a walker close up, and the treats handed over (one to each child in turn).
             Assert.IsTrue(Stage.GiveTreat());
-            yield return Wait(0.25f);
+            yield return Wait(1.2f);
             var walker = Stage.Crowd.Bodies[0].Root;
             Frame(walker.position + walker.forward * 2.2f + new Vector3(0.6f, 1.3f, 0f), walker.position + Vector3.up * 0.6f);
             yield return Shot("r_living_street_walker", Director.UiCanvas, ReviewWidth, ReviewHeight);
 
             // Review: the notebook's street page (Pip's porch with her lantern, the neighbours she has met).
-            yield return Wait(CrowdClock.CheerSeconds);
+            yield return Wait(CrowdClock.CheerSeconds + 6f);
             Director.OpenNotebook();
             yield return null;
             var notebook = Director.Notebook;

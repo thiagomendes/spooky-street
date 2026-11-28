@@ -36,7 +36,27 @@ namespace SpookyStreet.LivingStreet
             public readonly List<CrowdBody> Figures = new List<CrowdBody>();
             public readonly List<Vector3> FigureRest = new List<Vector3>();
             public float Clock;
+
+            /// <summary>The warm light that comes on in front of the door at the first ring (someone is coming).</summary>
+            public Light HallLight;
+
+            /// <summary>Dark glass over the lit window beside the door while the hall light is off.</summary>
+            public Renderer WindowCover;
+
+            /// <summary>The neighbour's shadow crossing that window after the second ring.</summary>
+            public Renderer Silhouette;
+
+            public Mesh SilhouetteMesh;
+            public Vector3[] SilhouetteVerts;
         }
+
+        /// <summary>The hall light's level once on, its reach and where it hangs (in front of the door, under the hood).</summary>
+        public const float HallLightIntensity = 0.75f;
+        public const float HallLightRange = 3.2f;
+
+        /// <summary>The shadow and the dark glass sit in the window, between the lit room card and the paper cut-outs.</summary>
+        public const float WindowCoverDepth = -0.0109f;
+        public const float SilhouetteDepth = -0.0116f;
 
         private readonly List<DoorRig> _doors = new List<DoorRig>();
         private readonly List<Renderer> _static = new List<Renderer>();
@@ -519,6 +539,8 @@ namespace SpookyStreet.LivingStreet
                 rig.PorchLight = light;
             }
 
+            BuildHallSigns(rig, frame);
+
             // The neighbour(s) in the doorway, facing the street: the crowd kit's neighbours in house clothes
             // (CrowdKit.Neighbours), the placeholder if the kit is missing.
             var ids = LivingStreetLayout.NeighboursAt(door);
@@ -539,7 +561,67 @@ namespace SpookyStreet.LivingStreet
             return rig;
         }
 
-        /// <summary>Shows the doors as the Core routine says: the leaf's swing, the neighbour, the lamp; and the porch button.</summary>
+        /// <summary>
+        /// The signs between rings (owner, 2026-11-28: a six-year-old must know to ring again): a warm hall light in front of
+        /// the door that comes on at the first ring, the lit window beside the door dark until then (the light switching
+        /// on in there), and the neighbour's shadow crossing that window after the second ring. The shadow is a few flat
+        /// bands clipped to the window (<see cref="DoorStoops.SilhouetteBand"/>), rebuilt only while it crosses.
+        /// </summary>
+        private void BuildHallSigns(DoorRig rig, Transform frame)
+        {
+            var door = rig.Door;
+            DoorStoops.HallWindow(door, out float centre, out float bottom, out float top, out float width, out float wall, out _);
+            var cover = Primitive(PrimitiveType.Quad, frame, "HallWindowDark", new Vector3(centre, (bottom + top) * 0.5f, wall + WindowCoverDepth),
+                new Vector3(width, top - bottom, 1f), Palette.Hex(0x1E1A30), null);
+            rig.WindowCover = cover;
+
+            var go = new GameObject("HallShadow");
+            go.transform.SetParent(frame, false);
+            var mesh = new Mesh { name = "HallShadow_" + door.Id };
+            mesh.MarkDynamic();
+            int bands = DoorStoops.SilhouetteBands;
+            rig.SilhouetteVerts = new Vector3[bands * 4];
+            var tris = new int[bands * 6];
+            for (int b = 0; b < bands; b++)
+            {
+                int v = b * 4;
+                // Clockwise seen from the street (-Z): bottom-left, top-left, top-right; bottom-left, top-right, bottom-right.
+                tris[b * 6] = v;
+                tris[b * 6 + 1] = v + 3;
+                tris[b * 6 + 2] = v + 2;
+                tris[b * 6 + 3] = v;
+                tris[b * 6 + 4] = v + 2;
+                tris[b * 6 + 5] = v + 1;
+            }
+
+            mesh.vertices = rig.SilhouetteVerts;
+            mesh.triangles = tris;
+            mesh.bounds = new Bounds(new Vector3(centre, (bottom + top) * 0.5f, wall), new Vector3(width + 0.2f, top - bottom + 0.2f, 0.2f));
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var renderer = go.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = _materials != null ? _materials.Glow(Palette.Hex(0x3A2340), 0.45f) : null;
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.enabled = false;
+            rig.Silhouette = renderer;
+            rig.SilhouetteMesh = mesh;
+
+            var light = new GameObject("HallLight").AddComponent<Light>();
+            light.transform.SetParent(frame, false);
+            light.transform.localPosition = new Vector3((door.DoorLocalX + centre) * 0.5f, DoorStoops.Sill + 1.9f, door.WallLocalZ - 0.7f);
+            light.type = LightType.Point;
+            light.color = Palette.CandyCornYellow;
+            light.intensity = 0f;
+            light.range = HallLightRange;
+            light.shadows = LightShadows.None;
+            light.enabled = false;
+            rig.HallLight = light;
+        }
+
+        /// <summary>
+        /// Shows the doors as the Core routine says: the leaf on its hinge curve, the hall light, the dark window lighting
+        /// up and the shadow crossing it, the neighbours on their poses with their clips (OpenDoorPeek at the door, the walk
+        /// out and down the step, GiveTreat), the lamp; and the porch button.
+        /// </summary>
         public void ApplyDoors(NeighbourDoors doors, float dt)
         {
             if (_bellButton != null)
@@ -557,15 +639,31 @@ namespace SpookyStreet.LivingStreet
                 for (int i = 0; i < rig.Figures.Count; i++)
                 {
                     var body = rig.Figures[i];
-                    body.SetDetail(shown ? WalkerDetail.Full : WalkerDetail.Hidden);
-                    if (!shown)
+                    bool visible = doors.Figure(id, i, out float x, out float z, out float y, out float yaw, out float speed,
+                        out var clip, out float clipTime, out bool turning);
+                    body.SetDetail(visible ? WalkerDetail.Full : WalkerDetail.Hidden);
+                    if (!visible)
                     {
                         continue;
                     }
 
-                    float hop = rig.Door.Gag.Hop ? Mathf.Abs(Mathf.Sin((rig.Clock + i * 0.25f) * 6f)) * 0.12f : 0f;
-                    body.Root.localPosition = rig.FigureRest[i] + Vector3.up * hop;
-                    body.Animate(rig.Clock, 0f, doors.LastRinger(id) == Ringer.Group ? WalkerGesture.Cheer : WalkerGesture.Look, dt);
+                    // The second Abbott hops with glee in the doorway while the other hands out the treats (their gag).
+                    float hop = rig.Door.Gag.Hop && i > 0 && doors.Phase(id) == DoorPhase.Giving
+                        ? Mathf.Abs(Mathf.Sin(rig.Clock * 5.5f)) * 0.09f
+                        : 0f;
+                    body.Root.SetPositionAndRotation(new Vector3(x, y + hop, z), Quaternion.Euler(0f, yaw, 0f));
+                    var pose = new WalkerPose
+                    {
+                        X = x, Z = z, Y = y, Yaw = yaw, Speed = speed, Clip = clip, ClipTime = clipTime, Turning = turning,
+                    };
+                    // A neighbour waiting at the treat spot chats (Talk) instead of standing stiff.
+                    if (clip == WalkerClip.Locomotion && speed < 0.05f && !turning && doors.Phase(id) == DoorPhase.Giving)
+                    {
+                        pose.Clip = i > 0 ? WalkerClip.Talk : WalkerClip.Locomotion;
+                        pose.ClipTime = rig.Clock;
+                    }
+
+                    body.Animate(rig.Clock, pose, dt);
                 }
 
                 if (rig.Lamp != null && rig.LampBright != null)
@@ -577,7 +675,57 @@ namespace SpookyStreet.LivingStreet
                 {
                     rig.PorchLight.intensity = LivingStreetLayout.PorchLight(rig.Door, shown);
                 }
+
+                float hall = doors.HallLight(id);
+                if (rig.HallLight != null)
+                {
+                    rig.HallLight.enabled = hall > 0.001f;
+                    rig.HallLight.intensity = HallLightIntensity * hall;
+                }
+
+                if (rig.WindowCover != null)
+                {
+                    rig.WindowCover.enabled = hall < 0.02f;
+                }
+
+                ApplySilhouette(rig, doors.Silhouette(id));
             }
+        }
+
+        private static void ApplySilhouette(DoorRig rig, float progress)
+        {
+            if (rig.Silhouette == null)
+            {
+                return;
+            }
+
+            bool any = false;
+            DoorStoops.HallWindow(rig.Door, out _, out _, out _, out _, out float wall, out _);
+            float z = wall + SilhouetteDepth;
+            var v = rig.SilhouetteVerts;
+            for (int b = 0; b < DoorStoops.SilhouetteBands; b++)
+            {
+                int k = b * 4;
+                if (progress >= 0f && DoorStoops.SilhouetteBand(rig.Door, progress, b, out float l, out float r, out float lo, out float hi))
+                {
+                    v[k] = new Vector3(l, lo, z);
+                    v[k + 1] = new Vector3(r, lo, z);
+                    v[k + 2] = new Vector3(r, hi, z);
+                    v[k + 3] = new Vector3(l, hi, z);
+                    any = true;
+                }
+                else
+                {
+                    v[k] = v[k + 1] = v[k + 2] = v[k + 3] = new Vector3(0f, 0f, z);
+                }
+            }
+
+            if (any || rig.Silhouette.enabled)
+            {
+                rig.SilhouetteMesh.vertices = v;
+            }
+
+            rig.Silhouette.enabled = any;
         }
 
         /// <summary>World position of a door's centre at head height (the caption's direction and the treat's start).</summary>

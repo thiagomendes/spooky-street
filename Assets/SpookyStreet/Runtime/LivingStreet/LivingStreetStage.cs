@@ -2,11 +2,14 @@ using System;
 using System.Collections.Generic;
 using SpookyStreet.App;
 using SpookyStreet.Case;
+using SpookyStreet.Core.Animation;
 using SpookyStreet.Core.Art;
 using SpookyStreet.Core.Audio;
 using SpookyStreet.Core.Case;
+using SpookyStreet.Core.Crowd;
 using SpookyStreet.Core.LivingStreet;
 using SpookyStreet.Core.World;
+using SpookyStreet.Player;
 using SpookyStreet.Save;
 using SpookyStreet.UI;
 using SpookyStreet.World;
@@ -17,48 +20,74 @@ namespace SpookyStreet.LivingStreet
 {
     /// <summary>
     /// The living street's test slice in play (docs/living-street.md §9 phase 1, D33/D34; docs/living-street-slice.md):
-    /// the east lane, the crowd on its loops, the three doors that answer a ring, the paper lantern table, Pip's lantern
-    /// on her porch with groups ringing her bell once it is lit, the neighbourhood file and the frame-time readout. The
-    /// case director ticks it and owns the modal state; every rule lives in Core (<see cref="CrowdClock"/>,
-    /// <see cref="NeighbourDoors"/>, <see cref="NeighbourhoodStore"/>, <see cref="LivingStreetRules"/>).
+    /// the east lane, the crowd on its routes, the three doors, the paper lantern table, Pip's lantern on her porch with
+    /// groups ringing her bell once it is lit, the neighbourhood file and the frame-time readout. The case director ticks
+    /// it and owns the modal state; every rule lives in Core (<see cref="CrowdClock"/>, <see cref="NeighbourDoors"/>,
+    /// <see cref="GiveWay"/>, <see cref="NeighbourhoodStore"/>, <see cref="LivingStreetRules"/>).
+    /// <para>Trick-or-treating (owner, 2026-11-28): each press of Use at a door rings the bell, and the door opens on the
+    /// third ring; the house shows someone is coming in between (the hall light, the shadow across the window, a "Coming!"
+    /// caption). The neighbour reaches for the door, it eases open, they come down the step and put a treat into Pip's
+    /// pail (or each child's in turn). At Pip's porch she hands one to each child of the group. No treat flies: it rides
+    /// the giver's hand and drops into the pail at the clip's release.</para>
     /// </summary>
     public sealed class LivingStreetStage : MonoBehaviour
     {
         /// <summary>Crowd sounds and calls are heard (and captioned) only this close to Pip.</summary>
         public const float HearingDistance = DoorCalls.HearingDistance;
 
-        /// <summary>A treat flies from hand to hand in this long.</summary>
-        public const float TreatFlightSeconds = 0.45f;
+        /// <summary>A sweet takes this long to drop from the hand into the pail at the release, and rests there this long.</summary>
+        public const float DropSeconds = 0.14f;
 
-        private sealed class Flight
+        public const float RestSeconds = 0.45f;
+
+        /// <summary>Pip turns to face a door or a child at this rate (degrees per second): a quick, smooth turn.</summary>
+        public const float PipTurnRate = 420f;
+
+        /// <summary>Pip counts as walking above this ground speed (walkers then part to let her through).</summary>
+        public const float PipWalking = 0.5f;
+
+        /// <summary>A sweet's journey: in the giver's hand, dropping into a pail, resting in it, then gone.</summary>
+        private sealed class Sweet
         {
             public Transform Candy;
-            public Vector3 From;
-            public Vector3 To;
+            public Func<Vector3> Hand;
+            public Func<Vector3> Pail;
             public float Time;
+            public int Stage; // 0 in hand, 1 dropping, 2 in the pail
+            public Vector3 From;
+            public string Key;
         }
 
         private readonly List<CrowdEvent> _events = new List<CrowdEvent>();
-        private readonly List<Flight> _flights = new List<Flight>();
+        private readonly List<DoorEvent> _doorEvents = new List<DoorEvent>();
+        private readonly List<Sweet> _sweets = new List<Sweet>();
         private readonly List<Transform> _candyPool = new List<Transform>();
+        private readonly Dictionary<string, bool> _visitHeard = new Dictionary<string, bool>();
+        private readonly Dictionary<string, string> _pipLine = new Dictionary<string, string>();
+        private readonly HashSet<int> _thanked = new HashSet<int>();
         private NeighbourhoodStore _store;
         private MaterialLibrary _materials;
         private Transform _pip;
+        private PipAvatar _avatar;
         private CaptionStrip _captions;
+        private Vector3 _lastPip;
+        private bool _hasLastPip;
+        private float _faceYaw = float.NaN;
 
         public LivingStreetSet Set { get; private set; }
 
         public CrowdView Crowd { get; private set; }
 
-        public NeighbourDoors Doors { get; } = new NeighbourDoors();
+        /// <summary>The three doors (the crowd's clock rings them too, so it owns them).</summary>
+        public NeighbourDoors Doors => Crowd.Doors;
 
-        /// <summary>Which neighbours' doors have called while Pip stays near (a door calls once per stay).</summary>
+        /// <summary>Which neighbours' doors have called while Pip stays near (a door's visit is heard once per stay).</summary>
         public DoorCalls Calls { get; } = new DoorCalls();
 
-        /// <summary>Group calls at neighbours' doors that played (bell and caption; tests).</summary>
+        /// <summary>Group visits at neighbours' doors that were heard (bell and caption; tests).</summary>
         public int GroupCallsHeard { get; private set; }
 
-        /// <summary>Group rings at neighbours' doors, heard or not (tests).</summary>
+        /// <summary>Group visits at neighbours' doors, heard or not (tests).</summary>
         public int GroupDoorRings { get; private set; }
 
         public LanternView LanternScreen { get; private set; }
@@ -69,7 +98,7 @@ namespace SpookyStreet.LivingStreet
         /// <summary>What the free world remembers (empty until loaded).</summary>
         public NeighbourhoodState State => _store != null ? _store.State : NeighbourhoodState.Empty;
 
-        /// <summary>The Use targets this stage adds to the case's (doors, the table, a treat at Pip's porch).</summary>
+        /// <summary>The Use targets this stage adds to the case's (doors, the table, treats at Pip's porch).</summary>
         public List<ExtraUseTarget> Targets { get; } = new List<ExtraUseTarget>();
 
         /// <summary>Whether Pip may use a free-world target now (playing, no modal, no cutscene).</summary>
@@ -81,14 +110,23 @@ namespace SpookyStreet.LivingStreet
         /// <summary>Rings, answers and treats (tests and the log).</summary>
         public event Action<string> Happened;
 
-        /// <summary>Doors Pip rang that answered (tests).</summary>
+        /// <summary>Doors that opened for Pip (her third ring; tests).</summary>
         public int PipRings { get; private set; }
+
+        /// <summary>Every ring of Pip's that the bell took (tests).</summary>
+        public int PipBellPresses { get; private set; }
 
         /// <summary>Times a group rang Pip's bell (tests).</summary>
         public int PorchRings { get; private set; }
 
         /// <summary>Treats Pip handed out this session (tests; never shown).</summary>
         public int TreatsGiven { get; private set; }
+
+        /// <summary>Treats that dropped into Pip's own pail this session (tests; never shown).</summary>
+        public int TreatsReceived { get; private set; }
+
+        /// <summary>Sweets on their way now (in a hand or a pail; tests and frames).</summary>
+        public int SweetsShown => _sweets.Count;
 
         /// <summary>The crowd's frame time measured last frame, and the tier it budgets for.</summary>
         public CrowdTier Tier { get; private set; }
@@ -109,6 +147,7 @@ namespace SpookyStreet.LivingStreet
         {
             _materials = game.Materials;
             _pip = game.Pip != null ? game.Pip.transform : null;
+            _avatar = _pip != null ? _pip.GetComponent<PipAvatar>() : null;
             _captions = captions;
             Set = LivingStreetSet.Create(transform, game.Materials, game.Environment);
             Tier = CrowdBudget.TierForQualityLevel(QualitySettings.GetQualityLevel());
@@ -127,7 +166,9 @@ namespace SpookyStreet.LivingStreet
                     VerbKey = Keys.VerbRing,
                     IconName = UiSpriteCatalog.IconExamine,
                     Marker = new Vector3(door.StandX + (door.DoorX - door.StandX) * 0.55f, 1.9f, door.StandZ + (door.DoorZ - door.StandZ) * 0.55f),
-                    Offered = feet => Allowed() && !Doors.Busy(door.Id) && Reach(feet, door.StandX, door.StandZ, LivingStreetLayout.BellReach),
+                    // Offered whenever the bell would take a ring: between rings the prompt comes back once the bell has
+                    // sounded, which itself says "ring again".
+                    Offered = feet => Allowed() && Doors.CanRing(door.Id, Ringer.Pip) && Reach(feet, door.StandX, door.StandZ, LivingStreetLayout.BellReach),
                     Interact = () => Ring(door),
                 });
             }
@@ -195,14 +236,16 @@ namespace SpookyStreet.LivingStreet
         public void ResetPresentation()
         {
             LanternScreen.Cancel();
-            Doors.Reset();
             Calls.Reset();
-            foreach (var flight in _flights)
+            _visitHeard.Clear();
+            _pipLine.Clear();
+            foreach (var sweet in _sweets)
             {
-                flight.Candy.gameObject.SetActive(false);
+                sweet.Candy.gameObject.SetActive(false);
             }
 
-            _flights.Clear();
+            _sweets.Clear();
+            _faceYaw = float.NaN;
         }
 
         private static void Try(Action action)
@@ -227,29 +270,53 @@ namespace SpookyStreet.LivingStreet
         public void Tick(float dt, bool frozen, CaseState caseState)
         {
             Vector3 pip = _pip != null ? _pip.position : Vector3.zero;
+            Vector3 moved = _hasLastPip && dt > 0f ? (pip - _lastPip) / dt : Vector3.zero;
+            moved.y = 0f;
+            _lastPip = pip;
+            _hasLastPip = true;
             string hintArea = HintAreas.For(CaseHints.ObjectiveFor(caseState ?? CaseState.Empty))?.Id;
             PorchOpen = LivingStreetRules.PorchOpen(State.LanternLit, hintArea);
+            bool walking = moved.magnitude > PipWalking && moved.magnitude < 12f;
             var inputs = new CrowdInputs
             {
                 PipX = pip.x,
                 PipZ = pip.z,
                 PipOutside = !CaseRouteLayout.Inside(pip.x, pip.z),
+                PipHeadingX = walking ? moved.x : 0f,
+                PipHeadingZ = walking ? moved.z : 0f,
+                PipWalking = walking,
                 CaseOpen = LivingStreetRules.CaseOpen(caseState),
                 PorchOpen = PorchOpen,
                 Frozen = frozen,
             };
             _events.Clear();
+            _doorEvents.Clear();
             Calls.Update(pip.x, pip.z);
             Crowd.HideHeart = frozen;
-            Crowd.Tick(dt, inputs, _events);
+            Crowd.Tick(dt, inputs, _events, _doorEvents);
             foreach (var e in _events)
             {
                 OnCrowdEvent(e, pip);
             }
 
-            Doors.Advance(dt);
+            foreach (var e in _doorEvents)
+            {
+                OnDoorEvent(e, pip);
+            }
+
+            // A door Pip rang once or twice settles when she walks away (nothing timed, nothing lost).
+            foreach (var door in LivingStreetLayout.Doors)
+            {
+                if (Doors.HeldByPip(door.Id) && Doors.Phase(door.Id) == DoorPhase.Called &&
+                    !Reach(pip, door.StandX, door.StandZ, NeighbourDoors.AbandonDistance))
+                {
+                    Doors.Abandon(door.Id);
+                }
+            }
+
             Set.ApplyDoors(Doors, dt);
-            TickFlights(dt);
+            TickSweets(dt);
+            TurnPip(dt, moved.magnitude);
             Frames.Record(Time.unscaledDeltaTime * 1000f, Crowd.LastMs);
         }
 
@@ -260,17 +327,26 @@ namespace SpookyStreet.LivingStreet
                 case CrowdEventKind.DoorRung:
                 {
                     var door = LivingStreetLayout.Door(e.DoorId);
-                    var answer = Doors.Ring(e.DoorId, Ringer.Group);
-                    GroupDoorRings++;
-                    // A door calls once while Pip stays near it (a long stay by one door no longer repeats the call).
-                    if (answer != null && door != null && Calls.Ring(door.Id, door.DoorX, door.DoorZ, pip.x, pip.z))
+                    if (door == null)
                     {
-                        GroupCallsHeard++;
-                        Bell();
-                        Say(Keys.CrowdTrickOrTreat, LivingStreetSet.DoorPoint(door));
+                        break;
                     }
 
-                    Happened?.Invoke("group rang " + e.DoorId);
+                    if (e.Ring == 1)
+                    {
+                        // A visit is heard (its bells, its "Trick or treat!") once while Pip stays near the door.
+                        GroupDoorRings++;
+                        bool heard = Calls.Ring(door.Id, door.DoorX, door.DoorZ, pip.x, pip.z);
+                        _visitHeard[door.Id] = heard;
+                        GroupCallsHeard += heard ? 1 : 0;
+                        Happened?.Invoke("group rang " + e.DoorId);
+                    }
+
+                    if (_visitHeard.TryGetValue(door.Id, out bool hear) && hear)
+                    {
+                        Bell();
+                    }
+
                     break;
                 }
                 case CrowdEventKind.PorchRung:
@@ -284,7 +360,112 @@ namespace SpookyStreet.LivingStreet
                         Say(Keys.CrowdTrickOrTreat, porch);
                     }
 
+                    _thanked.Remove(e.Group);
                     Happened?.Invoke("group rang Pip's bell");
+                    break;
+                }
+                case CrowdEventKind.PipHandTreat:
+                {
+                    // A child stands in front of Pip holding out its pail: she turns to it and hands a sweet over.
+                    var child = Crowd.Bodies[e.Walker];
+                    FacePip(child.Root.position);
+                    bool clip = PlayPip(PipClips.HandTreat) || PlayPip(PipClips.Interact);
+                    var sweet = Spawn(PipHand, () => child.PailMouth(), "pip>" + e.Walker);
+                    sweet.Time = -WalkerClips.HandTreatSeconds * CrowdClipTimings.HandTreatPickUp; // in her hand from the pick-up
+                    if (!_thanked.Contains(e.Group))
+                    {
+                        AudioCues.Babble(Speaker.Pip, BabbleEmotion.Happy);
+                        Say(Keys.PipHappyHalloween, child.Root.position + Vector3.up);
+                    }
+
+                    Happened?.Invoke("Pip hands a treat to walker " + e.Walker + (clip ? "" : " (no clip)"));
+                    break;
+                }
+                case CrowdEventKind.PipTreatReleased:
+                {
+                    Release("pip>" + e.Walker);
+                    TreatsGiven++;
+                    if (_thanked.Add(e.Group))
+                    {
+                        Say(Keys.CrowdThanks, Crowd.Bodies[e.Walker].Root.position + Vector3.up);
+                    }
+
+                    Happened?.Invoke("treat for walker " + e.Walker);
+                    break;
+                }
+            }
+        }
+
+        private void OnDoorEvent(DoorEvent e, Vector3 pip)
+        {
+            var door = LivingStreetLayout.Door(e.DoorId);
+            if (door == null)
+            {
+                return;
+            }
+
+            bool pips = e.Ringer == Ringer.Pip;
+            bool heard = pips || (_visitHeard.TryGetValue(door.Id, out bool h) && h);
+            var point = LivingStreetSet.DoorPoint(door);
+            switch (e.Kind)
+            {
+                case DoorEventKind.Coming:
+                    if (heard)
+                    {
+                        Say(LivingStreetLayout.ComingLine(door), point);
+                    }
+
+                    break;
+                case DoorEventKind.Opened:
+                    if (pips)
+                    {
+                        AudioCues.Babble(Speaker.Pip, BabbleEmotion.Happy);
+                        Say(Keys.PipTrickOrTreat, point);
+                    }
+                    else if (heard)
+                    {
+                        Say(Keys.CrowdTrickOrTreat, point);
+                    }
+
+                    Happened?.Invoke("door opens " + door.Id);
+                    break;
+                case DoorEventKind.Arrived:
+                    if (pips && _pipLine.TryGetValue(door.Id, out string line) && line != null)
+                    {
+                        Say(line, point);
+                        FacePip(point);
+                    }
+
+                    break;
+                case DoorEventKind.Released:
+                {
+                    var giver = Giver(door);
+                    if (giver == null)
+                    {
+                        break;
+                    }
+
+                    string key = "door>" + door.Id;
+                    if (pips)
+                    {
+                        PlayPip(PipClips.Interact);
+                        EnsureInHand(key, giver, PipPail);
+                        Release(key);
+                        TreatsReceived++;
+                        Happened?.Invoke("treat for Pip at " + door.Id);
+                    }
+                    else
+                    {
+                        int walker = Crowd.Clock.ChildWalker(e.Group, e.Recipient);
+                        if (walker >= 0)
+                        {
+                            var child = Crowd.Bodies[walker];
+                            EnsureInHand(key, giver, () => child.PailMouth());
+                            Release(key);
+                            Happened?.Invoke("treat for walker " + walker + " at " + door.Id);
+                        }
+                    }
+
                     break;
                 }
             }
@@ -297,7 +478,7 @@ namespace SpookyStreet.LivingStreet
 
         private void Say(string key, Vector3 from)
         {
-            if (_captions != null)
+            if (_captions != null && key != null)
             {
                 _captions.ShowKey(key, () => from);
             }
@@ -305,7 +486,10 @@ namespace SpookyStreet.LivingStreet
 
         // -------------------------------------------------------------------------------------- interactions
 
-        /// <summary>Pip rings <paramref name="door"/> (the Use button at its steps; tests call it directly).</summary>
+        /// <summary>
+        /// Pip rings <paramref name="door"/> (the Use button at its steps; tests call it directly): one ring of three. The
+        /// third opens the door, and that is the visit the street remembers.
+        /// </summary>
         public bool Ring(NeighbourDoor door)
         {
             if (door == null || _store == null)
@@ -314,22 +498,30 @@ namespace SpookyStreet.LivingStreet
             }
 
             int before = _store.State.Visits(door.Id);
-            var answer = Doors.Ring(door.Id, Ringer.Pip, before);
+            // Its "Coming!" is said right here (below), so the ring raises no events of its own.
+            var answer = Doors.Ring(door.Id, Ringer.Pip, before, 1, -1, null);
             if (answer == null)
             {
                 return false;
             }
 
-            PipRings++;
+            PipBellPresses++;
             Bell();
+            PlayPip(PipClips.Interact);
             FacePip(LivingStreetSet.DoorPoint(door));
-            AudioCues.Babble(Speaker.Pip, BabbleEmotion.Happy);
-            Say(Keys.PipTrickOrTreat, LivingStreetSet.DoorPoint(door));
-            Say(answer.LineKey, LivingStreetSet.DoorPoint(door));
-            Try(() => _store.Visit(door.Id));
-            // The treat comes once the door is open (a hand-to-hand flight into Pip's pail; never a number).
-            Fly(LivingStreetSet.DoorPoint(door) + Vector3.down * 0.4f, PipHand(), door.Gag.OpenSeconds + 0.5f);
-            Happened?.Invoke("Pip rang " + door.Id);
+            if (answer.Ring == 2)
+            {
+                Say(LivingStreetLayout.ComingLine(door), LivingStreetSet.DoorPoint(door));
+            }
+
+            if (answer.Opens)
+            {
+                PipRings++;
+                _pipLine[door.Id] = answer.LineKey;
+                Try(() => _store.Visit(door.Id));
+            }
+
+            Happened?.Invoke("Pip rang " + door.Id + " (" + answer.Ring + ")");
             return true;
         }
 
@@ -368,7 +560,10 @@ namespace SpookyStreet.LivingStreet
             Happened?.Invoke("lantern " + lantern);
         }
 
-        /// <summary>Pip hands the waiting group a sweet from her bowl (the Use button on her porch; tests call it).</summary>
+        /// <summary>
+        /// Pip hands out treats to the group waiting at her steps (the Use button on her porch; tests call it): each child
+        /// in turn steps up to her and she puts one sweet in its pail.
+        /// </summary>
         public bool GiveTreat()
         {
             int group = Crowd.Clock.WaitingAtPorch;
@@ -377,19 +572,31 @@ namespace SpookyStreet.LivingStreet
                 return false;
             }
 
-            TreatsGiven++;
-            var porch = new Vector3(LivingStreetLayout.PorchStandX, 0.9f, LivingStreetLayout.PorchStandZ);
-            FacePip(porch);
-            AudioCues.Babble(Speaker.Pip, BabbleEmotion.Happy);
-            Say(Keys.PipHappyHalloween, porch);
-            Say(Keys.CrowdThanks, porch);
-            Fly(PipHand(), porch, 0f);
-            Happened?.Invoke("treat for group " + group);
+            FacePip(new Vector3(LivingStreetLayout.PorchStandX, 0.9f, LivingStreetLayout.PorchStandZ));
+            Happened?.Invoke("treats for group " + group);
             return true;
         }
 
-        private Vector3 PipHand() => _pip != null ? _pip.position + Vector3.up * 0.75f : Vector3.zero;
+        private bool PlayPip(string clip) => _avatar != null && _avatar.Animator != null && _avatar.Animator.PlayOneShot(clip);
 
+        private Transform PipBone(string name) => _pip != null ? ModelKit.FindDeep(_pip, name) : null;
+
+        /// <summary>Pip's free hand (the art's knuckle bone, else her left hand).</summary>
+        private Vector3 PipHand()
+        {
+            var hand = PipBone(CrowdClipTimings.TreatHandBone) ?? PipBone("Hand_L");
+            return hand != null ? hand.position
+                : _pip.position + _pip.forward * CrowdClipTimings.HandTreatReleaseForward + Vector3.up * CrowdClipTimings.HandTreatReleaseHeight;
+        }
+
+        /// <summary>The mouth of Pip's pumpkin pail (her <c>Pail</c> bone; the pail hangs from it).</summary>
+        private Vector3 PipPail()
+        {
+            var pail = PipBone("Pail");
+            return pail != null ? pail.position + Vector3.down * 0.06f : _pip.position + _pip.forward * 0.2f + Vector3.up * 0.5f;
+        }
+
+        /// <summary>Turns Pip smoothly to face <paramref name="target"/> (never a snap; her own walking takes over).</summary>
         private void FacePip(Vector3 target)
         {
             if (_pip == null)
@@ -401,13 +608,60 @@ namespace SpookyStreet.LivingStreet
             to.y = 0f;
             if (to.sqrMagnitude > 1e-4f)
             {
-                _pip.rotation = Quaternion.LookRotation(to, Vector3.up);
+                _faceYaw = Quaternion.LookRotation(to, Vector3.up).eulerAngles.y;
             }
         }
 
-        // ----------------------------------------------------------------------------------------- treat flights
+        private void TurnPip(float dt, float speed)
+        {
+            if (_pip == null || float.IsNaN(_faceYaw) || dt <= 0f)
+            {
+                return;
+            }
 
-        private void Fly(Vector3 from, Vector3 to, float delay)
+            if (speed > PipWalking)
+            {
+                _faceYaw = float.NaN; // she walks off: her own facing wins
+                return;
+            }
+
+            var want = Quaternion.Euler(0f, _faceYaw, 0f);
+            _pip.rotation = Quaternion.RotateTowards(_pip.rotation, want, PipTurnRate * dt);
+            if (Quaternion.Angle(_pip.rotation, want) < 0.5f)
+            {
+                _faceYaw = float.NaN;
+            }
+        }
+
+        // ------------------------------------------------------------------------------------ sweets handed over
+
+        private CrowdBody Giver(NeighbourDoor door)
+        {
+            foreach (var rig in Set.Doors)
+            {
+                if (rig.Door.Id == door.Id && rig.Figures.Count > 0)
+                {
+                    return rig.Figures[0];
+                }
+            }
+
+            return null;
+        }
+
+        private Sweet Find(string key)
+        {
+            foreach (var s in _sweets)
+            {
+                if (s.Key == key && s.Stage == 0)
+                {
+                    return s;
+                }
+            }
+
+            return null;
+        }
+
+        private Sweet Spawn(Func<Vector3> hand, Func<Vector3> pail, string key)
         {
             Transform candy = null;
             foreach (var c in _candyPool)
@@ -425,7 +679,6 @@ namespace SpookyStreet.LivingStreet
                 go.name = "Treat";
                 Destroy(go.GetComponent<Collider>());
                 go.transform.SetParent(transform, false);
-                go.transform.localScale = Vector3.one * 0.11f;
                 var renderer = go.GetComponent<Renderer>();
                 renderer.sharedMaterial = _materials != null ? _materials.Glow(Palette.CandyCornYellow, 1.2f) : renderer.sharedMaterial;
                 renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -433,29 +686,107 @@ namespace SpookyStreet.LivingStreet
                 _candyPool.Add(candy);
             }
 
-            candy.position = from;
-            candy.gameObject.SetActive(delay <= 0f);
-            _flights.Add(new Flight { Candy = candy, From = from, To = to, Time = -delay });
+            candy.localScale = new Vector3(0.075f, 0.06f, 0.06f);
+            candy.position = hand();
+            candy.gameObject.SetActive(false);
+            var sweet = new Sweet { Candy = candy, Hand = hand, Pail = pail, Key = key };
+            _sweets.Add(sweet);
+            return sweet;
         }
 
-        private void TickFlights(float dt)
+        /// <summary>The neighbour's sweet is in their hand (from the pick-up to the release of GiveTreat).</summary>
+        private void EnsureInHand(string key, CrowdBody giver, Func<Vector3> pail)
         {
-            for (int i = _flights.Count - 1; i >= 0; i--)
+            if (Find(key) == null)
             {
-                var f = _flights[i];
-                f.Time += dt;
-                if (f.Time < 0f)
+                Spawn(giver.TreatHand, pail, key);
+            }
+        }
+
+        /// <summary>The hand lets go over the pail: the sweet drops the last few centimetres into it.</summary>
+        private void Release(string key)
+        {
+            var s = Find(key);
+            if (s == null)
+            {
+                return;
+            }
+
+            s.Candy.gameObject.SetActive(true);
+            s.From = s.Hand();
+            s.Stage = 1;
+            s.Time = 0f;
+        }
+
+        private void TickSweets(float dt)
+        {
+            // A neighbour handing out has the sweet in their hand from the clip's pick-up (polled from the door's pose).
+            foreach (var rig in Set.Doors)
+            {
+                if (rig.Figures.Count == 0 ||
+                    !Doors.Figure(rig.Door.Id, 0, out _, out _, out _, out _, out _, out var clip, out float clipTime, out _) ||
+                    clip != WalkerClip.GiveTreat ||
+                    clipTime < WalkerClips.Seconds(WalkerClip.GiveTreat) * CrowdClipTimings.GiveTreatPickUp ||
+                    clipTime >= WalkerClips.GiveRelease)
                 {
                     continue;
                 }
 
-                f.Candy.gameObject.SetActive(true);
-                float t = Mathf.Clamp01(f.Time / TreatFlightSeconds);
-                f.Candy.position = Vector3.Lerp(f.From, f.To, t) + Vector3.up * Mathf.Sin(t * Mathf.PI) * 0.6f;
-                if (t >= 1f)
+                var giver = rig.Figures[0];
+                string key = "door>" + rig.Door.Id;
+                if (Find(key) == null)
                 {
-                    f.Candy.gameObject.SetActive(false);
-                    _flights.RemoveAt(i);
+                    var door = rig.Door;
+                    bool pips = Doors.HeldByPip(door.Id);
+                    int walker = pips ? -1 : Crowd.Clock.ChildWalker(Doors.Holder(door.Id), Doors.Turn(door.Id));
+                    if (pips)
+                    {
+                        Spawn(giver.TreatHand, PipPail, key);
+                    }
+                    else if (walker >= 0)
+                    {
+                        var child = Crowd.Bodies[walker];
+                        Spawn(giver.TreatHand, () => child.PailMouth(), key);
+                    }
+                }
+            }
+
+            for (int i = _sweets.Count - 1; i >= 0; i--)
+            {
+                var s = _sweets[i];
+                s.Time += dt;
+                switch (s.Stage)
+                {
+                    case 0:
+                        s.Candy.gameObject.SetActive(s.Time >= 0f);
+                        s.Candy.position = s.Hand();
+                        break;
+                    case 1:
+                    {
+                        // Let go over the pail: it drops the last few centimetres straight in (never thrown).
+                        float u = Mathf.Clamp01(s.Time / DropSeconds);
+                        s.Candy.position = Vector3.Lerp(s.From, s.Pail(), u * u);
+                        if (u >= 1f)
+                        {
+                            s.Stage = 2;
+                            s.Time = 0f;
+                        }
+
+                        break;
+                    }
+                    default:
+                    {
+                        // It rests in the pail a moment and sinks out of sight.
+                        float u = Mathf.Clamp01(s.Time / RestSeconds);
+                        s.Candy.position = s.Pail() + Vector3.down * (0.07f * u * u);
+                        if (u >= 1f)
+                        {
+                            s.Candy.gameObject.SetActive(false);
+                            _sweets.RemoveAt(i);
+                        }
+
+                        break;
+                    }
                 }
             }
         }

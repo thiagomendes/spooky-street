@@ -189,20 +189,21 @@ namespace SpookyStreet.Core.LivingStreet
         /// </summary>
         public static readonly IReadOnlyList<NeighbourDoor> Doors = new[]
         {
-            // Mr. Fogg: the tower house, north side. Booming and silly: he flings the door wide with a bounce.
+            // Mr. Fogg: the tower house, north side. Booming and silly: he swings the door wide with a springy bounce
+            // (0.8 s on a smooth hinge curve; never a snap).
             new NeighbourDoor(Fogg, EnvironmentLayout.NeighbourHouseA, 28.6f, 9.6f, 0f, 0.5f, -3.0f, -4.6f,
-                Localization.LocalizationKeys.LivingStreet.SpeakerFogg, new DoorGag(115f, 0.35f, 0.18f, 1, false, 0f),
+                Localization.LocalizationKeys.LivingStreet.SpeakerFogg, new DoorGag(115f, 0.8f, 0.16f, 1, false, 0f),
                 Localization.LocalizationKeys.LivingStreet.FoggFirst, Localization.LocalizationKeys.LivingStreet.FoggAgain,
                 Localization.LocalizationKeys.LivingStreet.FoggThird),
             // Nana Pearl: the gambrel house with the long porch, north side. Slow and warm: the door eases open and
             // her porch lamp glows brighter.
             new NeighbourDoor(Pearl, EnvironmentLayout.NeighbourHouseB, 39.2f, 10.6f, 0f, 0f, -1.9f, -5.3f,
-                Localization.LocalizationKeys.LivingStreet.SpeakerPearl, new DoorGag(70f, 1.4f, 0f, 1, false, 0.8f),
+                Localization.LocalizationKeys.LivingStreet.SpeakerPearl, new DoorGag(70f, 1.7f, 0f, 1, false, 0.8f),
                 Localization.LocalizationKeys.LivingStreet.PearlFirst, Localization.LocalizationKeys.LivingStreet.PearlAgain,
                 Localization.LocalizationKeys.LivingStreet.PearlThird),
             // The Abbotts: the crooked house, south side, facing the lane. Two dads pop into the doorway together.
             new NeighbourDoor(Abbotts, EnvironmentLayout.NeighbourHouseC, 32.6f, -8.6f, 180f, -1.85f, -3.0f, -4.6f,
-                Localization.LocalizationKeys.LivingStreet.SpeakerAbbotts, new DoorGag(95f, 0.6f, 0.06f, 2, true, 0f),
+                Localization.LocalizationKeys.LivingStreet.SpeakerAbbotts, new DoorGag(95f, 1.0f, 0.05f, 2, true, 0f),
                 Localization.LocalizationKeys.LivingStreet.AbbottsFirst, Localization.LocalizationKeys.LivingStreet.AbbottsAgain,
                 Localization.LocalizationKeys.LivingStreet.AbbottsThird),
         };
@@ -218,6 +219,18 @@ namespace SpookyStreet.Core.LivingStreet
             }
 
             return null;
+        }
+
+        /// <summary>The neighbour's call through the shut door after the second ring ("Coming!"), so the child rings again.</summary>
+        public static string ComingLine(NeighbourDoor door)
+        {
+            switch (door?.Id)
+            {
+                case Fogg: return Localization.LocalizationKeys.LivingStreet.FoggComing;
+                case Pearl: return Localization.LocalizationKeys.LivingStreet.PearlComing;
+                case Abbotts: return Localization.LocalizationKeys.LivingStreet.AbbottsComing;
+                default: return null;
+            }
         }
 
         /// <summary>The door whose stand Pip (feet at x, z) is within <see cref="BellReach"/> of, or null.</summary>

@@ -198,7 +198,7 @@ namespace SpookyStreet.Tests.Core
             foreach (var route in CrowdRoutes.All.Where(r => r.PorchExcursion != null))
             {
                 CollectionAssert.AreEquivalent(LivingStreetLayout.Doors.Select(d => d.Id),
-                    route.Plain.Where(n => n.Kind == RouteNodeKind.Door).Select(n => n.DoorId));
+                    route.Lap(false).Where(n => n.Kind == RouteNodeKind.Door).Select(n => n.DoorId));
                 Assert.AreEqual(1, route.Lap(true).Count(n => n.Kind == RouteNodeKind.PipPorch));
             }
         }
@@ -450,12 +450,18 @@ namespace SpookyStreet.Tests.Core
 
             Assert.IsTrue(served, "a group came to Pip's bell");
             Assert.IsTrue(events.Any(e => e.Kind == CrowdEventKind.PorchRung));
-            for (int i = 0; i < 60 * 4; i++)
+            // Each child in turn steps up to Pip, gets one treat in its pail, cheers and steps back.
+            for (int i = 0; i < 60 * 15 && !events.Any(e => e.Kind == CrowdEventKind.PorchLeft); i++)
             {
                 crowd.Advance(1f / 60f, Inputs(0.2f, -13.6f, porch: true), events);
             }
 
             Assert.IsTrue(events.Any(e => e.Kind == CrowdEventKind.PorchLeft), "the group cheers and moves on");
+            var treats = events.Where(e => e.Kind == CrowdEventKind.PipTreatReleased).Select(e => e.Walker).ToList();
+            int group = events.First(e => e.Kind == CrowdEventKind.PorchLeft).Group;
+            Assert.AreEqual(crowd.ChildrenOf(group), treats.Count, "one treat for each child");
+            CollectionAssert.AllItemsAreUnique(treats);
+            Assert.IsFalse(treats.Any(crowd.IsGrownUp), "the grown-up gets none");
             Assert.AreEqual(-1, crowd.WaitingAtPorch);
         }
 
@@ -488,8 +494,15 @@ namespace SpookyStreet.Tests.Core
         [Test]
         public void WalkersStepAsideForPipAndNeverStopForGood()
         {
-            var crowd = new CrowdClock();
-            // Let group A walk to the middle of a long east-lane leg, then stand Pip a metre in front of its first child.
+            // Group A's family on a long, plain walk along the lane (no door on the way), so the test sees one long leg.
+            var a = CrowdRoutes.All[0];
+            var lane = new[]
+            {
+                new RouteNode(26f, 0.2f), new RouteNode(43f, 0.2f), new RouteNode(43f, -0.9f), new RouteNode(26f, -0.9f),
+                new RouteNode(26f, 0.2f),
+            };
+            var crowd = new CrowdClock(new[] { new CrowdRoute("lane", a.Speed, lane, null, a.Members, 2f) });
+            // Let it walk to the middle of the leg, then stand Pip a metre in front of its first child.
             for (int i = 0; i < 60 * 3; i++)
             {
                 crowd.Advance(1f / 60f, Inputs());
@@ -518,34 +531,52 @@ namespace SpookyStreet.Tests.Core
         // ------------------------------------------------------------------------------------------------- doors
 
         [Test]
-        public void ADoorAnswersOnceWithItsGagThenShuts()
+        public void ADoorOpensOnTheThirdRingWithItsGagThenShuts()
         {
             var doors = new NeighbourDoors();
-            var answer = doors.Ring(LivingStreetLayout.Fogg, Ringer.Pip, 0);
-            Assert.IsNotNull(answer);
-            Assert.AreEqual(LocalizationKeys.LivingStreet.FoggFirst, answer.LineKey);
-            Assert.IsTrue(answer.TreatForPip);
-            Assert.IsNull(doors.Ring(LivingStreetLayout.Fogg, Ringer.Group), "a busy door ignores another ring");
-            Assert.AreEqual(DoorPhase.Opening, doors.Phase(LivingStreetLayout.Fogg));
-
-            float peak = 0f;
-            float t = 0f;
-            while (doors.Busy(LivingStreetLayout.Fogg) && t < 20f)
+            var fogg = LivingStreetLayout.Door(LivingStreetLayout.Fogg);
+            var first = doors.Ring(fogg.Id, Ringer.Pip, 0);
+            Assert.IsNotNull(first);
+            Assert.AreEqual(1, first.Ring);
+            Assert.IsFalse(first.Opens);
+            Assert.IsNull(doors.Ring(fogg.Id, Ringer.Group), "a door Pip rang ignores another visitor");
+            Assert.IsNull(doors.Ring(fogg.Id, Ringer.Pip, 0), "the next ring waits until the bell has sounded");
+            Assert.AreEqual(DoorPhase.Called, doors.Phase(fogg.Id));
+            for (int i = 0; i < 60 * 2; i++)
             {
                 doors.Advance(1f / 60f);
-                t += 1f / 60f;
-                peak = Math.Max(peak, doors.SwingDegrees(LivingStreetLayout.Fogg));
-                if (doors.Phase(LivingStreetLayout.Fogg) == DoorPhase.Open)
-                {
-                    Assert.IsTrue(doors.NeighbourShown(LivingStreetLayout.Fogg));
-                }
             }
 
-            var fogg = LivingStreetLayout.Door(LivingStreetLayout.Fogg);
-            Assert.Greater(peak, fogg.Gag.OpenDegrees, "Mr. Fogg flings the door past wide open");
-            float expected = fogg.Gag.OpenSeconds + NeighbourDoors.HoldSeconds + NeighbourDoors.CloseSeconds;
-            Assert.AreEqual(expected, t, 0.05f);
-            Assert.AreEqual(0f, doors.SwingDegrees(LivingStreetLayout.Fogg));
+            Assert.AreEqual(0f, doors.SwingDegrees(fogg.Id), "still shut after two seconds and one ring: no timer opens it");
+            Assert.AreEqual(2, doors.Ring(fogg.Id, Ringer.Pip, 0).Ring, "the second ring: someone is coming");
+            for (int i = 0; i < 60 * 2; i++)
+            {
+                doors.Advance(1f / 60f);
+            }
+
+            var third = doors.Ring(fogg.Id, Ringer.Pip, 0);
+            Assert.IsTrue(third.Opens);
+            Assert.AreEqual(LocalizationKeys.LivingStreet.FoggFirst, third.LineKey);
+            Assert.IsTrue(third.TreatForPip);
+
+            // Pip waits at his steps: he comes out, gives her one treat, goes back in and the door shuts.
+            float peak = 0f;
+            float t = 0f;
+            int released = 0;
+            var events = new List<DoorEvent>();
+            while (doors.Busy(fogg.Id) && t < 30f)
+            {
+                events.Clear();
+                doors.Advance(1f / 60f, fogg.StandX, fogg.StandZ, events);
+                t += 1f / 60f;
+                peak = Math.Max(peak, doors.SwingDegrees(fogg.Id));
+                released += events.Count(e => e.Kind == DoorEventKind.Released && e.Recipient == -1);
+            }
+
+            Assert.Greater(peak, fogg.Gag.OpenDegrees, "Mr. Fogg swings the door past wide open (his springy gag)");
+            Assert.AreEqual(1, released, "one treat for Pip");
+            Assert.AreEqual(DoorPhase.Closed, doors.Phase(fogg.Id));
+            Assert.AreEqual(0f, doors.SwingDegrees(fogg.Id));
 
             // Pearl's door eases open without overshoot; the Abbotts are two in the doorway.
             var pearl = LivingStreetLayout.Door(LivingStreetLayout.Pearl);
@@ -566,7 +597,7 @@ namespace SpookyStreet.Tests.Core
                 Assert.AreEqual(door.ThirdLine, door.LineFor(9));
                 Assert.AreEqual(3, new[] { door.FirstLine, door.AgainLine, door.ThirdLine }.Distinct().Count());
                 var doors = new NeighbourDoors();
-                Assert.IsNull(doors.Ring(door.Id, Ringer.Group).LineKey, "groups get the bell and the cheer, no subtitle");
+                Assert.IsNull(doors.Ring(door.Id, Ringer.Group, 0, 2, 0).LineKey, "groups get the bell and the cheer, no subtitle");
             }
 
             var state = NeighbourhoodState.Empty;

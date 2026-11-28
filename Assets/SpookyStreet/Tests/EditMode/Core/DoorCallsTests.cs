@@ -91,7 +91,8 @@ namespace SpookyStreet.Tests.Core
                 events.Clear();
                 calls.Update(inputs.PipX, inputs.PipZ);
                 crowd.Advance(1f / 60f, inputs, events);
-                foreach (var e in events.Where(e => e.Kind == CrowdEventKind.DoorRung && e.DoorId == door.Id))
+                // A visit is three rings; its call (bell and caption) is decided at the first.
+                foreach (var e in events.Where(e => e.Kind == CrowdEventKind.DoorRung && e.DoorId == door.Id && e.Ring == 1))
                 {
                     rings++;
                     heard += calls.Ring(e.DoorId, door.DoorX, door.DoorZ, inputs.PipX, inputs.PipZ) ? 1 : 0;

@@ -11,7 +11,7 @@ namespace SpookyStreet.LivingStreet
     /// pose, and applies the tier's budget every frame (off-screen walkers are hidden and not animated; beyond 12 m they
     /// animate at 15 Hz; beyond 18 m or past the animated cap they are standees). Its own CPU time per frame is measured
     /// with a stopwatch for the device readout. Bodies come from <see cref="ICrowdBodyFactory"/> (the kit when its prefabs
-    /// are committed, placeholders otherwise).
+    /// are committed, placeholders otherwise); each carries one soft, solid capsule (<see cref="CrowdBody.AddCapsule"/>).
     /// </summary>
     public sealed class CrowdView : MonoBehaviour
     {
@@ -52,6 +52,9 @@ namespace SpookyStreet.LivingStreet
             return view;
         }
 
+        /// <summary>The doors the crowd rings (the clock's; the street shows them).</summary>
+        public NeighbourDoors Doors => Clock.Doors;
+
         private void Build(MaterialLibrary materials, ICrowdBodyFactory[] factories)
         {
             Clock = new CrowdClock();
@@ -71,6 +74,7 @@ namespace SpookyStreet.LivingStreet
                     }
 
                     body ??= fallback.Create(member.Look, transform, materials);
+                    body.AddCapsule(member.Look.Body == CrowdBodyKind.GrownUp);
                     _bodies.Add(body);
                     _distances.Add(0f);
                     _inView.Add(true);
@@ -88,11 +92,11 @@ namespace SpookyStreet.LivingStreet
             Place(0f, true);
         }
 
-        /// <summary>Advances the crowd and poses it. Called by the stage once per frame (dt 0 while paused).</summary>
-        public void Tick(float dt, CrowdInputs inputs, List<CrowdEvent> events)
+        /// <summary>Advances the crowd (and its doors) and poses it. Called by the stage once per frame (dt 0 while paused).</summary>
+        public void Tick(float dt, CrowdInputs inputs, List<CrowdEvent> events, List<DoorEvent> doorEvents = null)
         {
             _watch.Restart();
-            Clock.Advance(dt, inputs, events);
+            Clock.Advance(dt, inputs, events, doorEvents);
             Place(dt, false);
             _watch.Stop();
             LastMs = (float)_watch.Elapsed.TotalMilliseconds;
@@ -111,7 +115,7 @@ namespace SpookyStreet.LivingStreet
             {
                 var pose = poses[i];
                 var root = _bodies[i].Root;
-                root.SetPositionAndRotation(new Vector3(pose.X, 0f, pose.Z), Quaternion.Euler(0f, pose.Yaw, 0f));
+                root.SetPositionAndRotation(new Vector3(pose.X, pose.Y, pose.Z), Quaternion.Euler(0f, pose.Yaw, 0f));
                 var centre = root.position + Vector3.up * 0.8f;
                 _distances[i] = View != null ? Vector3.Distance(eye, centre) : 0f;
                 bool visible = View == null || GeometryUtility.TestPlanesAABB(_planes, new Bounds(centre, new Vector3(1.2f, 1.9f, 1.2f)));
@@ -136,19 +140,19 @@ namespace SpookyStreet.LivingStreet
                 switch (_detail[i])
                 {
                     case WalkerDetail.Full:
-                        body.Animate(_clock[i], poses[i].Speed, poses[i].Gesture, dt);
+                        body.Animate(_clock[i], poses[i], dt);
                         break;
                     case WalkerDetail.Reduced:
                         if (all || CrowdBudget.ReducedTick(_time, previous, i))
                         {
-                            body.Animate(_clock[i], poses[i].Speed, poses[i].Gesture, 1f / CrowdBudget.ReducedRateHz);
+                            body.Animate(_clock[i], poses[i], 1f / CrowdBudget.ReducedRateHz);
                         }
 
                         break;
                     default:
                         if (all)
                         {
-                            body.Animate(_clock[i], poses[i].Speed, poses[i].Gesture, dt);
+                            body.Animate(_clock[i], poses[i], dt);
                         }
 
                         break;

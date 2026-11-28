@@ -49,10 +49,73 @@ namespace SpookyStreet.LivingStreet
         }
 
         /// <summary>
-        /// Poses the body: <paramref name="time"/> is the walker's own clock, <paramref name="speed"/> its ground speed
-        /// now, <paramref name="dt"/> the animation step (the view passes 1/15 s for walkers animated at 15 Hz).
+        /// Poses the body from the Core's pose: <paramref name="time"/> is the walker's own clock, the pose's clip and clip
+        /// time say which one-shot plays and where (Locomotion: walk or stand by its speed), <paramref name="dt"/> the
+        /// animation step (the view passes 1/15 s for walkers animated at 15 Hz). Every change of clip crossfades.
         /// </summary>
-        public abstract void Animate(float time, float speed, WalkerGesture gesture, float dt);
+        public abstract void Animate(float time, in WalkerPose pose, float dt);
+
+        /// <summary>True when the body's model carries <paramref name="clip"/> (the art's new clips swap in by themselves).</summary>
+        public virtual bool HasClip(string clip) => false;
+
+        /// <summary>A bone of the body by name (null for a placeholder or a missing bone).</summary>
+        public virtual Transform Bone(string name) => null;
+
+        /// <summary>
+        /// Where a sweet lands in this child's pail: the art contract's pail mouth in front of the child while it holds the
+        /// pail out (HoldPail), or the prop's own bone when the clip is not in the model yet (the pail then hangs at its side).
+        /// </summary>
+        public Vector3 PailMouth()
+        {
+            if (!HasClip(CrowdClipTimings.HoldPail))
+            {
+                var pail = Bone("Pail");
+                if (pail != null)
+                {
+                    return pail.position + Vector3.down * 0.05f;
+                }
+            }
+
+            return Root.position + Root.forward * CrowdClipTimings.HoldPailMouthForward + Vector3.up * CrowdClipTimings.HoldPailMouthHeight;
+        }
+
+        /// <summary>The knuckles a sweet rides on while it is handed over (the art's bone, else the hand, else in front).</summary>
+        public Vector3 TreatHand()
+        {
+            var hand = Bone(CrowdClipTimings.TreatHandBone) ?? Bone("Hand_L") ?? Bone("Hand_R");
+            return hand != null ? hand.position
+                : Root.position + Root.forward * CrowdClipTimings.GiveTreatReleaseForward + Vector3.up * CrowdClipTimings.GiveTreatReleaseHeight;
+        }
+
+        /// <summary>The walker's soft, solid body: one capsule Pip bumps into and slides round (null for door neighbours).</summary>
+        public CapsuleCollider Capsule { get; private set; }
+
+        /// <summary>The capsule's height: taller than any jump, so Pip never lands on a walker's head.</summary>
+        public const float CapsuleHeight = 3.5f;
+
+        /// <summary>
+        /// Gives the walker its capsule (living street, owner 2026-11-28: walkers are solid, never ghosts) on the Ignore
+        /// Raycast layer, like the street's invisible walls: it stops Pip's CharacterController and lets her slide round,
+        /// but the camera boom, the ground and ledge probes and the Use sight lines ignore it. A kinematic body, so moving
+        /// it every frame stays cheap. The Core makes walkers give way before Pip has to push (<c>GiveWay</c>).
+        /// </summary>
+        public void AddCapsule(bool grownUp)
+        {
+            var go = new GameObject("Body");
+            go.transform.SetParent(Root, false);
+            int layer = LayerMask.NameToLayer("Ignore Raycast");
+            go.layer = layer >= 0 ? layer : 0;
+            var capsule = go.AddComponent<CapsuleCollider>();
+            capsule.radius = GiveWay.BodyRadius(grownUp);
+            capsule.height = CapsuleHeight;
+            capsule.center = new Vector3(0f, CapsuleHeight * 0.5f, 0f);
+            capsule.direction = 1;
+            var body = go.AddComponent<Rigidbody>();
+            body.isKinematic = true;
+            body.useGravity = false;
+            body.interpolation = RigidbodyInterpolation.None;
+            Capsule = capsule;
+        }
 
         protected abstract void ApplyDetail(WalkerDetail detail);
     }
@@ -71,9 +134,13 @@ namespace SpookyStreet.LivingStreet
     /// is instantiated once per walker, the recipe's parts are merged at spawn into one skinned mesh per level of detail
     /// (every part shares the skeleton's bind pose, so the merge is a concatenation remapped onto one bone array: one draw
     /// call), the unused parts are destroyed, and the shared Crowd atlas is applied (its glow variant at 0.9 for lantern
-    /// carriers, under the attic window). The kit's clips (Idle, Walk, Wave, Talk) run on a small Playables graph that
-    /// the view evaluates by hand, so culled walkers cost no animation at all and far walkers animate at 15 Hz. Walk plays
-    /// at the walker's speed over the clip's own ground speed, so feet never slide. Merged meshes are cached per recipe.
+    /// carriers, under the attic window). The kit's clips run on a small Playables graph that the view evaluates by hand,
+    /// so culled walkers cost no animation at all and far walkers animate at 15 Hz. The Core says which clip plays and at
+    /// what time (<see cref="WalkerPose.Clip"/>): the trick-or-treat clips of the art contract (<c>CrowdClipTimings</c>:
+    /// WalkStart, WalkStop, HoldPail, Cheer, GiveTreat, OpenDoorPeek) play as soon as they are in the FBX, and until then
+    /// the shipped Idle, Walk, Wave and Talk stand in (<see cref="WalkerClips.Fallback"/>). Every change crossfades. Walk
+    /// plays at the walker's speed over the clip's own ground speed, so feet never slide. Merged meshes are cached per
+    /// recipe.
     /// </summary>
     public sealed class CrowdKitBodyFactory : ICrowdBodyFactory
     {
@@ -302,7 +369,8 @@ namespace SpookyStreet.LivingStreet
 
         private sealed class KitBody : CrowdBody
         {
-            private const float BlendRate = 5f;
+            /// <summary>Weight change per second of a crossfade (about 0.18 s).</summary>
+            private const float BlendRate = 5.5f;
             private readonly SkinnedMeshRenderer _lod0;
             private readonly SkinnedMeshRenderer _lod1;
             private readonly AnimationClipPlayable[] _clips;
@@ -312,6 +380,9 @@ namespace SpookyStreet.LivingStreet
             private readonly CrowdWalkerLife _life;
             private AnimationMixerPlayable _mixer;
             private int _target = -1;
+            private float _fastBlend;
+            private readonly string[] _names;
+            private readonly float[] _lengths;
 
             public KitBody(Transform root, SkinnedMeshRenderer lod0, SkinnedMeshRenderer lod1, Animator animator,
                 AnimationClip[] clips, float walkSpeed, CrowdWalkerLife life) : base(root)
@@ -328,16 +399,30 @@ namespace SpookyStreet.LivingStreet
                 output.SetSourcePlayable(_mixer);
                 _clips = new AnimationClipPlayable[clips.Length];
                 _weights = new float[clips.Length];
+                _names = new string[clips.Length];
+                _lengths = new float[clips.Length];
                 for (int i = 0; i < clips.Length; i++)
                 {
                     _clips[i] = AnimationClipPlayable.Create(graph, clips[i]);
                     graph.Connect(_clips[i], 0, _mixer, i);
                     _mixer.SetInputWeight(i, 0f);
-                    _slot[clips[i].name] = i;
+                    _names[i] = SpookyStreet.Core.Animation.PipClips.CleanClipName(clips[i].name);
+                    _lengths[i] = clips[i].length;
+                    if (!clips[i].name.StartsWith("__preview__", System.StringComparison.Ordinal))
+                    {
+                        _slot[_names[i]] = i;
+                    }
                 }
 
                 graph.Play();
-                Play("Idle", true);
+                int idle = Slot("Idle");
+                if (idle >= 0)
+                {
+                    _target = idle;
+                    _weights[idle] = 1f;
+                    _mixer.SetInputWeight(idle, 1f);
+                }
+
                 graph.Evaluate(0f);
                 ApplyDetail(WalkerDetail.Full);
             }
@@ -352,62 +437,110 @@ namespace SpookyStreet.LivingStreet
                 return r != null && r.sharedMesh != null ? (int)(r.sharedMesh.GetIndexCount(0) / 3) : 0;
             }
 
-            private void Play(string clip, bool snap)
+            public override bool HasClip(string clip) => clip != null && _slot.ContainsKey(clip);
+
+            public override Transform Bone(string name)
             {
-                if (!_slot.TryGetValue(clip, out int slot) && !_slot.TryGetValue("Idle", out slot))
+                if (!_bones.TryGetValue(name, out var bone))
                 {
-                    return;
+                    bone = ModelKit.FindDeep(Root, name);
+                    _bones[name] = bone;
                 }
 
-                if (slot == _target)
-                {
-                    return;
-                }
-
-                _target = slot;
-                if (clip == "Wave")
-                {
-                    _clips[slot].SetTime(0.0);
-                }
-
-                if (snap)
-                {
-                    for (int i = 0; i < _weights.Length; i++)
-                    {
-                        _weights[i] = i == slot ? 1f : 0f;
-                        _mixer.SetInputWeight(i, _weights[i]);
-                    }
-                }
+                return bone;
             }
 
-            public override void Animate(float time, float speed, WalkerGesture gesture, float dt)
+            private readonly Dictionary<string, Transform> _bones = new Dictionary<string, Transform>();
+
+            /// <summary>Clips that play once and are set to the Core's time each frame (they never advance on their own).</summary>
+            private static bool Driven(string clip) =>
+                clip == CrowdClipTimings.WalkStart || clip == CrowdClipTimings.WalkStop || clip == CrowdClipTimings.HoldPail ||
+                clip == CrowdClipTimings.Cheer || clip == CrowdClipTimings.GiveTreat || clip == CrowdClipTimings.OpenDoorPeek ||
+                clip == "Wave";
+
+            private int Slot(string clip) => clip != null && _slot.TryGetValue(clip, out int slot) ? slot : -1;
+
+            public override void Animate(float time, in WalkerPose pose, float dt)
             {
                 if (!_life.Graph.IsValid())
                 {
                     return;
                 }
 
-                // The kit's clips only: Walk when moving, Wave for a cheer, Talk for a grown-up's chat at a porch, else Idle.
-                string clip = speed > 0.05f ? "Walk"
-                    : gesture == WalkerGesture.Cheer ? "Wave"
-                    : gesture == WalkerGesture.Look ? "Talk"
-                    : "Idle";
-                Play(clip, false);
-                if (_slot.TryGetValue("Walk", out int walk))
+                // The Core's clip, or the shipped stand-in while the art's one is not in the model (WalkerClips.Fallback).
+                string want = WalkerClips.Name(pose.Clip);
+                float clipTime = pose.ClipTime;
+                if (want != null && !HasClip(want))
                 {
-                    _clips[walk].SetSpeed(speed > 0.05f ? Mathf.Clamp(speed / _walkSpeed, 0.2f, 1.5f) : 1f);
+                    want = WalkerClips.Fallback(pose.Clip);
                 }
 
-                if (clip == "Wave" && _clips[_target].GetTime() >= _clips[_target].GetAnimationClip().length)
+                float speed = pose.Speed;
+                if (want == null || want == "Walk")
                 {
-                    _clips[_target].SetTime(0.0); // the cheer repeats while it lasts
+                    want = speed > 0.05f || pose.Turning ? "Walk" : "Idle";
                 }
 
+                int target = Slot(want);
+                if (target < 0)
+                {
+                    target = Slot("Idle");
+                    want = "Idle";
+                }
+
+                if (target < 0)
+                {
+                    return;
+                }
+
+                bool fromStart = _target >= 0 && _names[_target] == CrowdClipTimings.WalkStart;
+                if (target != _target)
+                {
+                    // WalkStart ends on Walk frame 0 (art contract): the walk picks up there with a quick hand-over.
+                    if (fromStart && want == "Walk")
+                    {
+                        _clips[target].SetTime(0.0);
+                        _fastBlend = 0.08f;
+                    }
+                    else if (want == "Wave" || Driven(want))
+                    {
+                        _fastBlend = 0f;
+                    }
+
+                    _target = target;
+                }
+
+                for (int i = 0; i < _clips.Length; i++)
+                {
+                    string name = _names[i];
+                    if (Driven(name))
+                    {
+                        // One-shots are a pure function of the Core's clock (deterministic at any frame rate).
+                        _clips[i].SetSpeed(0.0);
+                        if (i == target)
+                        {
+                            _clips[i].SetTime(Mathf.Clamp(clipTime, 0f, _lengths[i]));
+                        }
+                    }
+                    else if (name == "Walk")
+                    {
+                        float pace = pose.Turning && speed < 0.05f ? 0.35f : speed;
+                        _clips[i].SetSpeed(pace > 0.05f ? Mathf.Clamp(pace / _walkSpeed, 0.2f, 1.5f) : 1f);
+                    }
+                }
+
+                // Crossfade every change (no pops): about a fifth of a second, a quick hand-over out of WalkStart.
+                float rate = _fastBlend > 0f ? 1f / _fastBlend : BlendRate;
                 for (int i = 0; i < _weights.Length; i++)
                 {
                     float goal = i == _target ? 1f : 0f;
-                    _weights[i] = Mathf.MoveTowards(_weights[i], goal, BlendRate * dt);
+                    _weights[i] = Mathf.MoveTowards(_weights[i], goal, rate * dt);
                     _mixer.SetInputWeight(i, _weights[i]);
+                }
+
+                if (_weights[_target] >= 0.999f)
+                {
+                    _fastBlend = 0f;
                 }
 
                 _life.Graph.Evaluate(dt);
@@ -496,9 +629,9 @@ namespace SpookyStreet.LivingStreet
                 _all.Add(renderer);
             }
 
-            public override void Animate(float time, float speed, WalkerGesture gesture, float dt)
+            public override void Animate(float time, in WalkerPose pose, float dt)
             {
-                float stride = speed > 0.05f ? Mathf.Sin(time * Mathf.PI * 2f * 1.8f) * 28f : 0f;
+                float stride = pose.Speed > 0.05f || pose.Turning ? Mathf.Sin(time * Mathf.PI * 2f * 1.8f) * 28f : 0f;
                 _legL.localRotation = Quaternion.Euler(stride, 0f, 0f);
                 _legR.localRotation = Quaternion.Euler(-stride, 0f, 0f);
             }

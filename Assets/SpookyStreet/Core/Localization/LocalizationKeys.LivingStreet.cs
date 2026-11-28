@@ -24,6 +24,11 @@ namespace SpookyStreet.Core.Localization
             public const string AbbottsAgain = "line.abbotts.again";
             public const string AbbottsThird = "line.abbotts.third";
 
+            /// <summary>Called through the shut door after the second ring: someone is coming (ring once more).</summary>
+            public const string FoggComing = "line.fogg.coming";
+            public const string PearlComing = "line.pearl.coming";
+            public const string AbbottsComing = "line.abbotts.coming";
+
             /// <summary>Pip at a neighbour's door, before the neighbour answers.</summary>
             public const string PipTrickOrTreat = "line.pip.trick_or_treat";
 
@@ -67,7 +72,7 @@ namespace SpookyStreet.Core.Localization
             public static readonly string[] All =
             {
                 SpeakerFogg, SpeakerPearl, SpeakerAbbotts, FoggFirst, FoggAgain, FoggThird, PearlFirst, PearlAgain, PearlThird,
-                AbbottsFirst, AbbottsAgain, AbbottsThird, PipTrickOrTreat, PipHappyHalloween, PipMyLantern, CrowdTrickOrTreat,
+                AbbottsFirst, AbbottsAgain, AbbottsThird, FoggComing, PearlComing, AbbottsComing, PipTrickOrTreat, PipHappyHalloween, PipMyLantern, CrowdTrickOrTreat,
                 CrowdThanks, VerbRing, VerbMake, VerbTreat, ShapeBat, ShapeCat, ShapeGhost, ShapeLeaf, ColourOrange,
                 ColourPlum, ColourGreen, ColourYellow, Fold, Close, StreetPage, FrameHeading, FrameLine, FrameCrowd,
                 FrameWaiting, NeighboursMet,

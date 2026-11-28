@@ -38,6 +38,13 @@ namespace SpookyStreet.Core.Animation
         /// <summary>The hint glance to Pip's right (S003a); see <see cref="GlanceLeft"/>.</summary>
         public const string GlanceRight = "GlanceRight";
 
+        /// <summary>
+        /// Pip hands a sweet from her pail to a trick-or-treater at her porch (living street; the art contract
+        /// <c>CrowdClipTimings.HandTreat</c>: 48 frames, release at 0.55). Optional: without it the street plays
+        /// <see cref="Interact"/> in its place.
+        /// </summary>
+        public const string HandTreat = "HandTreat";
+
         /// <summary>How far her face turns from straight ahead in a glance clip, degrees (pip_anims.GLANCE_TURN).</summary>
         public const float GlanceTurn = 89f;
 
@@ -48,7 +55,7 @@ namespace SpookyStreet.Core.Animation
         public static readonly string[] All =
         {
             Idle, Walk, Run, JumpStart, JumpAir, Fall, Land, Glide, WallSlide, LedgeHang, Roll, Interact,
-            WallKick, LedgeGrab, LedgeClimb, GlanceLeft, GlanceRight,
+            WallKick, LedgeGrab, LedgeClimb, GlanceLeft, GlanceRight, HandTreat,
         };
 
         /// <summary>True for the two hint glance clips (exporter take prefixes are ignored).</summary>

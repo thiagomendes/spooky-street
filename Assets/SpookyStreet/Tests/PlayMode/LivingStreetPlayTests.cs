@@ -110,8 +110,13 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.That(crowd.Bodies.Count, Is.InRange(6, 8));
             PlacePip(new Vector3(-12f, 0.1f, -8f), new Vector3(0f, 0f, 0f)); // out of the walkers' way
 
-            var lastMetres = new float[crowd.Clock.GroupCount];
+            var startLaps = new int[crowd.Clock.GroupCount];
             var laps = new int[crowd.Clock.GroupCount];
+            for (int g = 0; g < startLaps.Length; g++)
+            {
+                startLaps[g] = crowd.Clock.Laps(g);
+            }
+
             var start = new List<Vector3>();
             var farthest = new float[crowd.Bodies.Count];
             foreach (var body in crowd.Bodies)
@@ -125,8 +130,9 @@ namespace SpookyStreet.Tests.PlayMode
             double crowdMs = 0.0;
             int frames = 0;
             float maxMs = 0f;
+            // A lap now holds three door visits (three rings and a treat for each child), so the run is longer.
             Time.timeScale = 5f;
-            float until = Time.realtimeSinceStartup + 36f;
+            float until = Time.realtimeSinceStartup + 70f;
             while (Time.realtimeSinceStartup < until)
             {
                 yield return null;
@@ -155,13 +161,7 @@ namespace SpookyStreet.Tests.PlayMode
                 Assert.LessOrEqual(inHeart, CrowdClock.CaseHeartCap, "the heart holds at most three walkers during case 01 (D34)");
                 for (int g = 0; g < laps.Length; g++)
                 {
-                    float m = crowd.Clock.LapMetres(g);
-                    if (m + 5f < lastMetres[g])
-                    {
-                        laps[g]++;
-                    }
-
-                    lastMetres[g] = m;
+                    laps[g] = crowd.Clock.Laps(g) - startLaps[g];
                 }
 
                 crowdMs += crowd.LastMs;
@@ -190,10 +190,18 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.Greater(Stage.Frames.Count, 100, "the frame readout records while playing");
             Assert.Less(crowdMs / Mathf.Max(1, frames), 2.0, "the crowd stays a small part of a frame even in the editor");
 
-            // Walkers never block Pip: they carry no colliders. Each is the crowd kit's merged body: one draw call.
+            // Walkers are solid but soft (owner, 2026-11-28): one capsule each, on the Ignore Raycast layer (Pip's controller
+            // bumps it; the camera, the ground and ledge probes and the Use sight lines ignore it), kinematic. Each is the
+            // crowd kit's merged body: one draw call.
+            int ignoreRaycast = LayerMask.NameToLayer("Ignore Raycast");
             foreach (var body in crowd.Bodies)
             {
-                Assert.IsEmpty(body.Root.GetComponentsInChildren<Collider>(), body.Root.name + " must not collide");
+                var colliders = body.Root.GetComponentsInChildren<Collider>();
+                Assert.AreEqual(1, colliders.Length, body.Root.name + ": one capsule");
+                Assert.IsInstanceOf<CapsuleCollider>(colliders[0]);
+                Assert.IsFalse(colliders[0].isTrigger, body.Root.name + ": solid");
+                Assert.AreEqual(ignoreRaycast, colliders[0].gameObject.layer, body.Root.name + ": out of the camera's and probes' way");
+                Assert.IsTrue(colliders[0].attachedRigidbody != null && colliders[0].attachedRigidbody.isKinematic, body.Root.name + ": kinematic");
                 Assert.IsTrue(body.IsKit, body.Root.name + " uses the crowd kit, not a placeholder");
                 Assert.AreEqual(1, body.DrawCalls, body.Root.name + ": one merged skinned mesh");
                 int drawn = 0;
@@ -211,47 +219,128 @@ namespace SpookyStreet.Tests.PlayMode
             }
         }
 
+        /// <summary>Waits (game time) until <paramref name="done"/>, skipping dialogue; false when it timed out.</summary>
+        private static IEnumerator Until(System.Func<bool> done, float seconds, bool[] result)
+        {
+            float until = Time.realtimeSinceStartup + seconds;
+            while (!done() && Time.realtimeSinceStartup < until)
+            {
+                if (Director.Dialogue.IsOpen)
+                {
+                    Director.Dialogue.Skip();
+                }
+
+                yield return null;
+            }
+
+            result[0] = done();
+        }
+
+        /// <summary>Pip at a door's stand, waiting until no group holds it (a family may be visiting).</summary>
+        private static IEnumerator AtFreeDoor(NeighbourDoor door)
+        {
+            PlacePip(new Vector3(door.StandX, 0.1f, door.StandZ - 0.3f), new Vector3(door.DoorX, 1f, door.DoorZ));
+            var ok = new bool[1];
+            Time.timeScale = 4f;
+            yield return Until(() => Stage.Doors.CanRing(door.Id, Ringer.Pip), 40f, ok);
+            Time.timeScale = 1f;
+            Assert.IsTrue(ok[0], door.Id + " is free to ring");
+        }
+
         [UnityTest]
-        [Timeout(120000)]
-        public IEnumerator ADoorAnswersPipsRingWithItsGagAndRemembersHer()
+        [Timeout(150000)]
+        public IEnumerator ADoorOpensOnTheThirdRingWithSignsBetweenAndHandsPipHerTreat()
         {
             yield return StartGame();
             var fogg = LivingStreetLayout.Door(LivingStreetLayout.Fogg);
-            PlacePip(new Vector3(fogg.StandX, 0.1f, fogg.StandZ - 0.3f), new Vector3(fogg.DoorX, 1f, fogg.DoorZ));
-            yield return Wait(0.6f);
+            yield return AtFreeDoor(fogg);
+            yield return Wait(0.3f);
             Assert.IsTrue(Director.Targets.ExtraActive, "the bell is the Use target at the foot of the steps");
             Assert.AreEqual(Keys.VerbRing, Director.Targets.VerbKey);
 
-            var rig = Stage.Set.Doors[0];
-            Assert.AreEqual(fogg.Id, rig.Door.Id);
+            LivingStreetSet.DoorRig rig = null;
+            foreach (var r in Stage.Set.Doors)
+            {
+                rig = r.Door.Id == fogg.Id ? r : rig;
+            }
+
             Assert.IsFalse(rig.Figures[0].Drawn, "Mr. Fogg waits inside until the door opens");
+            Assert.IsFalse(rig.HallLight.enabled, "the hall is dark before anyone rings");
+            Assert.IsTrue(rig.WindowCover.enabled, "the window beside the door is dark");
             var heard = new List<string>();
             System.Action<string> listen = heard.Add;
             AudioCues.Requested += listen;
+
+            // Ring 1: the bell, the hall light comes on; the door stays shut and the prompt waits for the bell to sound.
             Director.Targets.Interact();
-            AudioCues.Requested -= listen;
             CollectionAssert.Contains(heard, AudioEvents.StreetDoorbell, "the ring is the doorbell's ding-dong");
             CollectionAssert.DoesNotContain(heard, AudioEvents.NoteCorrectGlow, "never the notebook's chime");
+            Assert.AreEqual(1, Stage.PipBellPresses);
+            Assert.AreEqual(0, Stage.PipRings, "one ring does not open the door");
+            yield return Wait(0.5f);
+            Assert.IsTrue(rig.HallLight.enabled && rig.HallLight.intensity > 0.5f, "the hall light comes on");
+            Assert.IsFalse(rig.WindowCover.enabled, "the window beside the door lights up");
+            Assert.IsFalse(Director.Targets.ExtraActive && Director.Targets.VerbKey == Keys.VerbRing, "the bell is still sounding");
+            Assert.AreEqual(0f, Stage.Doors.SwingDegrees(fogg.Id));
+            yield return Wait(NeighbourDoors.RingBeat);
+            Assert.AreEqual(Keys.VerbRing, Director.Targets.VerbKey, "ring again");
+
+            // Ring 2: the neighbour's shadow crosses the lit window ("Coming!").
+            Director.Targets.Interact();
+            Assert.AreEqual(2, Stage.PipBellPresses);
+            bool shadow = false;
+            float until = Time.realtimeSinceStartup + NeighbourDoors.SilhouetteDelay + NeighbourDoors.SilhouetteSeconds;
+            while (Time.realtimeSinceStartup < until)
+            {
+                shadow |= rig.Silhouette.enabled;
+                yield return null;
+            }
+
+            Assert.IsTrue(shadow, "the shadow crosses the window between rings");
+            Assert.AreEqual(0f, Stage.Doors.SwingDegrees(fogg.Id), "still shut after two rings");
+            yield return Wait(0.2f);
+
+            // Ring 3: the door eases open on its hinge (never a snap), Mr. Fogg steps out with the treat.
+            Director.Targets.Interact();
+            AudioCues.Requested -= listen;
+            Assert.AreEqual(1, Stage.PipRings);
+            Assert.AreEqual(1, Stage.State.Visits(fogg.Id), "the visit counts once the door opens");
             Assert.IsNotNull(Resources.Load<AudioClip>(AudioEvents.CreateCatalog().Get(AudioEvents.StreetDoorbell).ResourcePath(1)),
                 "the doorbell's takes ship in the build");
-            Assert.AreEqual(1, Stage.PipRings);
-            Assert.AreEqual(1, Stage.State.Visits(fogg.Id));
-            yield return Wait(fogg.Gag.OpenSeconds + 0.4f);
-            float swing = rig.Hinge.localEulerAngles.y;
-            Assert.Greater(swing, 60f, "the door swings open");
-            Assert.IsTrue(rig.Figures[0].Drawn, "Mr. Fogg stands in the doorway");
+            float last = 0f, largest = 0f, peak = 0f;
+            until = Time.realtimeSinceStartup + 6f;
+            while (Time.realtimeSinceStartup < until && Stage.TreatsReceived == 0)
+            {
+                float swing = rig.Hinge.localEulerAngles.y;
+                swing = swing > 180f ? swing - 360f : swing;
+                largest = Mathf.Max(largest, Mathf.Abs(swing - last) / Mathf.Max(Time.deltaTime, 1e-3f));
+                peak = Mathf.Max(peak, swing);
+                last = swing;
+                yield return null;
+            }
+
+            Debug.Log($"[LivingStreetPlayTests] Mr. Fogg's door: peak {peak:F0} deg, fastest {largest:F0} deg/s");
+            Assert.Greater(peak, 60f, "the door swings open");
+            Assert.Less(largest, 600f, "on a smooth hinge curve, never a snap");
+            Assert.IsTrue(rig.Figures[0].Drawn, "Mr. Fogg came out");
+            Assert.AreEqual(1, Stage.TreatsReceived, "one treat, into Pip's pail");
             Assert.IsFalse(Director.Targets.ExtraActive && Director.Targets.VerbKey == Keys.VerbRing, "an answering door is not rung again");
 
-            yield return Wait(NeighbourDoors.HoldSeconds + NeighbourDoors.CloseSeconds + 0.5f);
-            Assert.AreEqual(DoorPhase.Closed, Stage.Doors.Phase(fogg.Id));
+            var ok = new bool[1];
+            yield return Until(() => Stage.Doors.Phase(fogg.Id) == DoorPhase.Closed, 15f, ok);
+            Assert.IsTrue(ok[0], "he goes back in and the door shuts");
             Assert.AreEqual(0f, Stage.Doors.SwingDegrees(fogg.Id));
-            Assert.IsFalse(rig.Figures[0].Drawn);
 
-            // The visit is in its own file beside the case save, and a second ring greets Pip by name.
+            // The visit is in its own file beside the case save, and the next visit greets Pip by name.
             string file = NeighbourhoodStore.PathsFor(_directory).Latest;
             Assert.IsTrue(File.Exists(file), "neighbourhood.json is written");
             StringAssert.Contains("street.free.door.fogg", File.ReadAllText(file));
-            Assert.IsTrue(Stage.Ring(fogg));
+            for (int r = 0; r < NeighbourDoors.RingsToOpen; r++)
+            {
+                Assert.IsTrue(Stage.Ring(fogg), "ring " + (r + 1));
+                yield return Wait(r < NeighbourDoors.RingsToOpen - 1 ? NeighbourDoors.RingBeat + 0.1f : 0.1f);
+            }
+
             Assert.AreEqual(2, Stage.State.Visits(fogg.Id));
 
             // The notebook's street page shows Mr. Fogg's face, and only his (no slot for neighbours not yet met).
@@ -262,6 +351,57 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.AreEqual(1, notebook.StreetFaces.Count);
             Assert.IsNull(notebook.StreetLantern, "no lantern drawn before she folds one");
             notebook.Close();
+        }
+
+        [UnityTest]
+        [Timeout(180000)]
+        public IEnumerator AFamilyWaitsItsTurnAFewMetresBackWhileTheDoorIsBusy()
+        {
+            yield return StartGame();
+            var fogg = LivingStreetLayout.Door(LivingStreetLayout.Fogg);
+            yield return AtFreeDoor(fogg);
+            // Pip rings once and stays: the door is hers, so the next family waits its turn on the sidewalk.
+            Assert.IsTrue(Stage.Ring(fogg));
+            int queued = -1;
+            var ok = new bool[1];
+            Time.timeScale = 6f;
+            yield return Until(() =>
+            {
+                for (int g = 0; g < Stage.Crowd.Clock.GroupCount; g++)
+                {
+                    if (Stage.Crowd.Clock.IsQueued(g) && Stage.Crowd.Clock.DoorOf(g) == fogg.Id)
+                    {
+                        queued = g;
+                    }
+                }
+
+                return queued >= 0;
+            }, 120f, ok);
+            Time.timeScale = 1f;
+            Assert.IsTrue(ok[0], "a family came and waited its turn");
+            yield return Wait(1.2f);
+            CrowdRoutes.Gathering(fogg, out float gx, out float gz);
+            int first = Stage.Crowd.Clock.FirstWalker(queued);
+            for (int m = 0; m < Stage.Crowd.Clock.RouteOf(queued).Size; m++)
+            {
+                var p = Stage.Crowd.Bodies[first + m].Root.position;
+                float back = Vector2.Distance(new Vector2(p.x, p.z), new Vector2(gx, gz));
+                Debug.Log($"[LivingStreetPlayTests] queued walker {m} waits {back:F1} m from the door's gathering spot");
+                Assert.Greater(back, 2.5f, "it waits a few metres back, not at the door");
+            }
+
+            // Pip finishes her visit; then the waiting family takes its turn.
+            for (int r = 1; r < NeighbourDoors.RingsToOpen; r++)
+            {
+                yield return Wait(NeighbourDoors.RingBeat + 0.1f);
+                Assert.IsTrue(Stage.Ring(fogg), "ring " + (r + 1));
+            }
+
+            Time.timeScale = 3f;
+            yield return Until(() => Stage.Crowd.Clock.DoorOf(queued) == fogg.Id && !Stage.Crowd.Clock.IsQueued(queued), 40f, ok);
+            Time.timeScale = 1f;
+            Assert.IsTrue(ok[0], "the family's turn came");
+            Assert.AreEqual(1, Stage.TreatsReceived, "Pip got hers first");
         }
 
         [UnityTest]
@@ -303,7 +443,9 @@ namespace SpookyStreet.Tests.PlayMode
             Assert.GreaterOrEqual(foggRings, 3, "groups rang Mr. Fogg's door lap after lap");
             Assert.IsTrue(Stage.Calls.Holding(fogg.Id), "his door called once and holds while Pip stays");
             Assert.LessOrEqual(Stage.GroupCallsHeard, LivingStreetLayout.Doors.Count, "each door near her called at most once");
-            Assert.AreEqual(Stage.GroupCallsHeard, bells.Count, "a held call rings no bell either");
+            // A heard visit rings its three bells; a held one rings none (the last visit may still be ringing).
+            Assert.LessOrEqual(bells.Count, Stage.GroupCallsHeard * NeighbourDoors.RingsToOpen, "a held call rings no bell either");
+            Assert.GreaterOrEqual(bells.Count, Stage.GroupCallsHeard, "each heard visit rang");
 
             // She walks away to her own porch and back: his door may call again.
             PlacePip(new Vector3(0f, 0.62f, -13.4f), Vector3.zero);
@@ -391,23 +533,152 @@ namespace SpookyStreet.Tests.PlayMode
                 pearlRig = rig.Door.Id == pearl.Id ? rig : pearlRig;
             }
 
-            PlacePip(new Vector3(pearl.StandX, 0.1f, pearl.StandZ - 0.3f), new Vector3(pearl.DoorX, 1f, pearl.DoorZ));
-            yield return Wait(0.3f);
-            float free = Time.realtimeSinceStartup + 8f;
-            while (Stage.Doors.Busy(pearl.Id) && Time.realtimeSinceStartup < free)
+            yield return AtFreeDoor(pearl);
+            for (int r = 0; r < NeighbourDoors.RingsToOpen; r++)
             {
-                yield return Wait(0.1f); // a walking group may be at her door
+                Assert.IsTrue(Stage.Ring(pearl), "ring " + (r + 1));
+                yield return Wait(r < NeighbourDoors.RingsToOpen - 1 ? NeighbourDoors.RingBeat + 0.1f : 0.1f);
             }
 
-            Assert.IsTrue(Stage.Ring(pearl));
-            yield return Wait(pearl.Gag.OpenSeconds + 0.3f);
+            var shownOk = new bool[1];
+            yield return Until(() => Stage.Doors.Phase(pearl.Id) == DoorPhase.ComingOut || Stage.Doors.Phase(pearl.Id) == DoorPhase.Giving, 8f, shownOk);
             Assert.IsTrue(Stage.Doors.NeighbourShown(pearl.Id));
             Assert.AreSame(pearlRig.LampBright, pearlRig.Lamp.sharedMaterial, "her lamp warms");
             Assert.AreEqual(LivingStreetLayout.PorchLight(pearl, true), pearlRig.PorchLight.intensity, 1e-4f, "her porch light warms");
-            yield return Wait(NeighbourDoors.HoldSeconds + NeighbourDoors.CloseSeconds + 0.5f);
+            var shutOk = new bool[1];
+            yield return Until(() => Stage.Doors.Phase(pearl.Id) == DoorPhase.Closed, 20f, shutOk);
+            yield return null;
             Assert.AreEqual(DoorPhase.Closed, Stage.Doors.Phase(pearl.Id));
             Assert.AreSame(pearlRig.LampRest, pearlRig.Lamp.sharedMaterial);
             Assert.AreEqual(LivingStreetLayout.PorchLight(pearl, false), pearlRig.PorchLight.intensity, 1e-4f);
+        }
+
+        [UnityTest]
+        [Timeout(120000)]
+        public IEnumerator PipBumpsIntoAWalkerAndSlidesRoundItNeverThrough()
+        {
+            yield return StartGame();
+            var crowd = Stage.Crowd;
+            var controller = GameBootstrap.Instance.Pip.GetComponent<CharacterController>();
+            Assert.IsNotNull(controller);
+
+            // A walker out on the open lane (2 m of clear ground to its west), then the world held still (game time
+            // stopped) while Pip's controller is pushed straight into its capsule.
+            PlacePip(new Vector3(-12f, 0.1f, -8f), Vector3.zero);
+            int pick = -1;
+            var found = new bool[1];
+            Time.timeScale = 4f;
+            yield return Until(() =>
+            {
+                // A family's leading child walking the lane's open middle (nobody else stands in front of it).
+                for (int g = 0; g < crowd.Clock.GroupCount; g++)
+                {
+                    int i = crowd.Clock.FirstWalker(g);
+                    var p = crowd.Bodies[i].Root.position;
+                    if (!crowd.Clock.IsStopped(g) && p.x > 28f && p.x < 40f && Mathf.Abs(p.z) < 2f)
+                    {
+                        pick = i;
+                        return true;
+                    }
+                }
+
+                return false;
+            }, 60f, found);
+            Assert.IsTrue(found[0], "a walker on the lane");
+            Time.timeScale = 0f;
+            yield return null;
+            var body = crowd.Bodies[pick];
+            var capsule = body.Capsule;
+            Assert.IsNotNull(capsule, "every walker has a soft, solid body");
+            Vector3 walker = body.Root.position;
+            Vector3 ahead = body.Root.forward;
+            ahead.y = 0f;
+            ahead.Normalize();
+            Vector3 side = new Vector3(ahead.z, 0f, -ahead.x);
+            Vector3 start = walker + ahead * 2f + side * 0.05f + Vector3.up * 0.1f;
+            Vector3 push = -ahead * 0.05f;
+            GameBootstrap.Instance.Pip.Teleport(start);
+            yield return null;
+            float contact = controller.radius + capsule.radius;
+            float closest = float.MaxValue;
+            float deepest = float.MaxValue;
+            for (int i = 0; i < 80; i++)
+            {
+                Physics.SyncTransforms();
+                controller.Move(push);
+                var p = controller.transform.position;
+                closest = Mathf.Min(closest, Vector2.Distance(new Vector2(p.x, p.z), new Vector2(walker.x, walker.z)));
+                foreach (var other in crowd.Bodies)
+                {
+                    var q = other.Root.position;
+                    deepest = Mathf.Min(deepest,
+                        Vector2.Distance(new Vector2(p.x, p.z), new Vector2(q.x, q.z)) - controller.radius - other.Capsule.radius);
+                }
+            }
+
+            var end = controller.transform.position;
+            Debug.Log($"[LivingStreetPlayTests] pushed into a walker: closest {closest:F2} m (bodies touch at {contact:F2}), " +
+                      $"from ({start.x:F2}, {start.z:F2}) to ({end.x:F2}, {end.z:F2}); deepest into any walker {-deepest:F3} m");
+            Assert.GreaterOrEqual(closest, contact - 0.03f, "Pip stays outside the walker's capsule");
+            Assert.Greater(deepest, -0.03f, "and outside every other walker's");
+            Assert.Greater(Vector3.Dot(end - start, -ahead), 1f, "she walks up to it (and round it where she can), never stopped short");
+            Time.timeScale = 1f;
+        }
+
+        [UnityTest]
+        [Timeout(150000)]
+        public IEnumerator PipGetsPastAFamilyWithinAFewSeconds()
+        {
+            yield return StartGame();
+            var crowd = Stage.Crowd;
+            var controller = GameBootstrap.Instance.Pip.GetComponent<CharacterController>();
+            PlacePip(new Vector3(-12f, 0.1f, -8f), Vector3.zero);
+            // Wait for a family walking the lane (not in the heart), then walk Pip straight through it.
+            var ok = new bool[1];
+            Time.timeScale = 4f;
+            yield return Until(() =>
+            {
+                var p = crowd.Bodies[0].Root.position;
+                return !crowd.Clock.IsStopped(0) && p.x > 27f && p.x < 40f;
+            }, 60f, ok);
+            Time.timeScale = 1f;
+            Assert.IsTrue(ok[0], "a family walks the lane");
+            var lead = crowd.Bodies[0].Root;
+            Vector3 dir = lead.forward;
+            dir.y = 0f;
+            dir.Normalize();
+            Vector3 from = lead.position + dir * 3.5f;
+            Vector3 to = lead.position - dir * 3.5f;
+            GameBootstrap.Instance.Pip.Teleport(new Vector3(from.x, 0.1f, from.z));
+            yield return null;
+            float t = 0f, worst = float.MaxValue;
+            while (t < 8f)
+            {
+                var p = controller.transform.position;
+                Vector3 go = to - p;
+                go.y = 0f;
+                if (go.magnitude < 0.4f)
+                {
+                    break;
+                }
+
+                Physics.SyncTransforms();
+                controller.Move(go.normalized * 2.2f * Time.deltaTime + Vector3.down * 0.02f);
+                for (int i = 0; i < 3; i++)
+                {
+                    var w = crowd.Bodies[i];
+                    var q = w.Root.position;
+                    float d = Vector2.Distance(new Vector2(p.x, p.z), new Vector2(q.x, q.z)) - controller.radius - w.Capsule.radius;
+                    worst = Mathf.Min(worst, d);
+                }
+
+                t += Time.deltaTime;
+                yield return null;
+            }
+
+            Debug.Log($"[LivingStreetPlayTests] through the family in {t:F1} s; deepest overlap {-worst:F2} m");
+            Assert.Less(t, 6f, "the family parts and Pip gets past within a few seconds");
+            Assert.Greater(worst, -0.05f, "never through a walker");
         }
 
         [UnityTest]
@@ -548,10 +819,15 @@ namespace SpookyStreet.Tests.PlayMode
             yield return Wait(0.3f);
             Assert.IsTrue(Director.Targets.ExtraActive);
             Assert.AreEqual(Keys.VerbTreat, Director.Targets.VerbKey);
+            int group = Stage.Crowd.Clock.WaitingAtPorch;
+            int children = Stage.Crowd.Clock.ChildrenOf(group);
             Director.Targets.Interact();
-            Assert.AreEqual(1, Stage.TreatsGiven);
-            yield return Wait(CrowdClock.CheerSeconds + 0.5f);
-            Assert.AreEqual(-1, Stage.Crowd.Clock.WaitingAtPorch, "the group cheers and walks on");
+            Assert.AreEqual(-1, Stage.Crowd.Clock.WaitingAtPorch, "she is handing out");
+            var given = new bool[1];
+            yield return Until(() => Stage.TreatsGiven >= children, 20f, given);
+            Assert.AreEqual(children, Stage.TreatsGiven, "one treat for each child, handed into its pail");
+            yield return Wait(CrowdClock.CheerSeconds + 2f);
+            Assert.AreEqual(children, Stage.TreatsGiven, "and no more");
 
             // Replay case keeps the lantern (D31); the file holds it beside the case save.
             Director.Replay();
