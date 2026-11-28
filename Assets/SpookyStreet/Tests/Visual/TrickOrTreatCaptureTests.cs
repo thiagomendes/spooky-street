@@ -173,7 +173,8 @@ namespace SpookyStreet.Tests.Visual
             Assert.IsTrue(Stage.Ring(fogg), "ring 1");
             yield return Wait(NeighbourDoors.RingBeat + 0.1f);
             Assert.IsTrue(Stage.Ring(fogg), "ring 2");
-            yield return Until(() => Stage.Doors.Silhouette(fogg.Id) >= 0.45f, 4f);
+            // Taken while the shadow is in the window's right half, clear of the paper ghost in the middle.
+            yield return Until(() => Stage.Doors.Silhouette(fogg.Id) >= 0.72f, 4f);
             DoorStoops.HallWindow(fogg, out float window, out _, out _, out _, out _, out _);
             var windowAt = rig.Hinge.parent.TransformPoint(new Vector3((window + fogg.DoorLocalX) * 0.5f, 1.6f, fogg.WallLocalZ));
             Frame(World(fogg, 5.6f, -2.4f, 2.0f), windowAt);
@@ -183,7 +184,7 @@ namespace SpookyStreet.Tests.Visual
             yield return Shot("111_doorbell_hall_light_shadow");
 
             // 112: the third ring: his hand on the door's edge, the leaf mid-way on its hinge curve.
-            yield return Wait(0.4f);
+            yield return Until(() => Stage.Doors.CanRing(fogg.Id, Ringer.Pip), 4f);
             Assert.IsTrue(Stage.Ring(fogg), "ring 3 opens the door");
             yield return Until(() => Stage.Doors.SwingDegrees(fogg.Id) >= fogg.Gag.OpenDegrees * 0.45f, 4f);
             Frame(World(fogg, 3.6f, 2.2f, 1.8f), World(fogg, 0.2f, -0.1f, 1.3f));

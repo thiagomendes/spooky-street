@@ -168,6 +168,29 @@ missing backing, fixed in run 216. Frames (looked at; copies in `docs/evidence/l
 Still weak: the Inspect glyph's disc overlaps the edge of the tray sticker below the outline; the doorbell awaits the
 owner's ear; with a group calling once per stay, a child who stays put hears the lane go quiet (the doors still open).
 
+### 6.2 Trick-or-treating that looks alive (2026-11-28, `feature/street-doorbell-treats`)
+
+Owner after TestFlight (pt-BR, summarised): the door flew open at the first press with the neighbour already in it, the
+treat was thrown, one child of a big crowd got everything, walkers bumped into hedges like a robot vacuum, and Pip
+walked through walkers like ghosts.
+
+| Item | What the child sees now | Where | Proof |
+|---|---|---|---|
+| Three rings | Each press of Use rings the bell; the door opens on the third. After the first ring the dark window beside the door lights up and a warm light comes on in front of it; after the second the neighbour's shadow crosses that window and a "Coming!" caption shows. The Ring prompt comes back once the bell has sounded, which itself says "ring again". Nothing is timed: one ring waits for ever; walking away (9 m) lets the house settle. | Core `NeighbourDoors`, `DoorStoops.HallWindow`/`SilhouetteBand`; `LivingStreetSet.BuildHallSigns` | Core `TrickOrTreatTests` (signs between rings, nothing timed, walking away); PlayMode `ADoorOpensOnTheThirdRingWithSignsBetweenAndHandsPipHerTreat`; frame 111 |
+| The door opens | The neighbour's steps reach the door, they reach for its edge (OpenDoorPeek, hand at 0.25) and the leaf eases open on a smootherstep hinge curve (Fogg 0.8 s with a springy settle, Pearl 1.7 s and her lamp warms, the Abbotts 1.0 s). Their gag line plays once they are in the doorway. | `NeighbourDoors.HingeOpen` | Core: largest step 4.4 deg per frame at 60 fps (a snap is tens); PlayMode swing speed; frame 112 |
+| Treats handed | The neighbour walks out and down the step (feet on deck, tread, ground) to the treat spot; each child in turn steps up, holds out its pail (HoldPail), the sweet rides the giver's hand and drops into the pail at GiveTreat's release (0.55), the child cheers and steps back; the next one steps up. Pip gets hers the same way (the neighbour comes toward her). No flight anywhere. | `CrowdClock` door visits, `LivingStreetStage` sweets | Core: one treat per child, in turn, hand-to-pail distance error 0.000 m, facing the giver; frame 113 |
+| Pip's porch | One Use hands a sweet to each child of the group in turn: the child steps up, Pip turns to it and plays HandTreat (Interact until the clip lands), the sweet drops into its pail. Her pumpkin pail receives hers at doors (the `Pail` bone). | `CrowdClock` porch treats | Core and PlayMode: one treat for each child, none for the grown-up; frame 115 |
+| No mobs | A door holds one visiting family; one more waits its turn about 4 m back on the sidewalk; any other walks on to the next door. Children wait in an arc facing the door (32 degrees apart, never closer than 0.55 m). | `NeighbourDoors.TryHold`/`TryQueue`, `DoorStoops.WaitSlot` | Core with four families: never two at a door, at most one waiting, at most 3 walkers by a door; PlayMode queue test; frame 114 |
+| Purposeful walkers | Every leg leads to a goal: the next door, Pip's porch, or a decoration to admire (Mr. Fogg's jack-o'-lanterns, the Abbotts', the lantern table). Bends are curves; door trips curve in and out in the way the family is going; families start and stop with WalkStart/WalkStop (root moved by the clips' travel), turn while walking, stay within 2.1 m of each other. | `CrowdRoutes`, `CrowdPath`, `Stride` | Core: every leg ends at a goal (longest walk 46.6 m), no path within 0.3 m of a hedge, wall, post or house (closest 0.32 m), sharpest turn under 8 degrees per 5 cm, stride travel exactly the clips'; frames 116a to 116d |
+| Solid bodies | Each walker has a capsule (Ignore Raycast layer, kinematic): Pip bumps and slides round it; standing walkers keep 1 m from her and a family parts when she walks into it; no step aside goes toward a hedge; nobody overlaps. | `GiveWay`, `CrowdBody.AddCapsule` | Core: a boxed-in Pip gets a way out in 0.4 to 0.5 s; PlayMode bump and walk-through tests |
+| Transitions | Every clip change crossfades (about 0.18 s); the art's new clips play by name as soon as the FBX carries them, the shipped Idle, Walk, Wave and Talk stand in until then. Pip turns smoothly toward a door or child instead of snapping. | `CrowdBodies.KitBody.Animate`, `WalkerClips.Fallback` | Core `EveryNewClipHasAShippedStandIn` |
+
+Decisions: no footstep sound behind the door (indoor steps through a shut door sound like knocking, and §3.4 rule 5
+keeps knocks for the case); the "Coming!" caption and the light and shadow carry the sign instead. The window beside
+each door is dark until the first ring (the light switching on). Pip rings only one ring at her own porch (she is
+outside, nobody needs to come). Frame 107 (Mr. Fogg waving at a group's ring) is retired: a group's ring now brings
+him out with treats.
+
 ## 7. Decisions taken (reversible)
 
 - The slice ends at x = 46 (sky dome), the Green is its first corner only.

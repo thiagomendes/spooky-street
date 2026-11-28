@@ -599,7 +599,7 @@ namespace SpookyStreet.LivingStreet
             mesh.bounds = new Bounds(new Vector3(centre, (bottom + top) * 0.5f, wall), new Vector3(width + 0.2f, top - bottom + 0.2f, 0.2f));
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             var renderer = go.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = _materials != null ? _materials.Glow(Palette.Hex(0x3A2340), 0.45f) : null;
+            renderer.sharedMaterial = _materials != null ? _materials.Glow(Palette.Hex(0x5A3C52), 0.55f) : null;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.enabled = false;
             rig.Silhouette = renderer;
