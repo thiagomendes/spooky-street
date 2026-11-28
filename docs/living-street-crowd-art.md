@@ -356,3 +356,21 @@ What the iterations changed, by looking at the sheets:
   that.
 - Sheets are rendered in the review light. The game's light is in the CI capture frames below.
 
+**In the game's light (CI run 46158963248, green, commit `df3b93c`).** EditMode 993/993, PlayMode 176/176, Visual
+31/31. The new and touched tests:
+
+- `TreatClipImportTests` 19/19: every clip is in its FBX, plays once, has the contract's length and starts and ends
+  on its rest pose; the hand and the pail are where the table says; the planted foot does not slide.
+- `CrowdClipTimingsTests` 6/6, `CrowdArtImportTests` 7/7, `ModelImportRulesTests` 21/21, `GestureClipTests` 5/5.
+- `CrowdArtCaptureTests` 2/2, with the new `CaptureTheTrickOrTreatClips`.
+
+The capture poses the clips where the contract places them (the visit's sequencing is the game code's):
+
+| Frame | What it shows |
+|---|---|
+| `treat-clips/ci_94_treats_street.jpg` | the gameplay camera behind Pip: Mr. Fogg bent over a skeleton child's held-out pail, two children hopping, Pip handing a robot child a sweet, Nana Pearl reaching for her door's edge; the attic window is still the brightest thing |
+| `treat-clips/ci_94b_treats_give.jpg` | close: Mr. Fogg bends over bent knees, the tin at his side, his hand over the pail the child holds out with both hands |
+| `treat-clips/ci_94c_treats_pip.jpg` | close: Pip reaches forward into the robot child's pail, her own pail at her side |
+
+The first run (46153182938, also green) had the hopping children standing in front of Mr. Fogg in 94b
+(`ci_94b_treats_give_blocked.jpg`). The capture now puts them behind the two hand-overs.
