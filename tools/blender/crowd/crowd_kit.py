@@ -25,6 +25,8 @@ PAL = {
     "green": H(0x8DBF3F), "bone": H(0xF4E6C8), "ink": H(0x1E1A26), "indigo": H(0x394461),
     "kraft": H(0xB98A5A), "kraft_dark": H(0x8E6440), "berry": H(0xA83A5C), "rose": H(0xE89AA6),
     "white": H(0xFBF4E6), "sole": H(0xEDE3D0),
+    # the black cat's felt: a soft charcoal plum, a step lighter than ink so the cat keeps its shape at night
+    "soot": H(0x3D3644),
 }
 SKIN = {  # tone: (skin, blush)
     "t1": (H(0xF8D9C0), H(0xF2959A)), "t2": (H(0xF0C29E), H(0xE88A80)), "t3": (H(0xD9A27A), H(0xD9776A)),
@@ -45,7 +47,7 @@ CHILD_PARTS = {
     # bodies: top (torso and sleeves) and legs; `print` paints a pattern over them
     "Body_Indigo": ("Body", "body", dict(top="indigo", legs="night")),
     "Body_Skeleton": ("Body", "body", dict(top="ink", legs="ink", print="skeleton")),
-    "Body_Cat": ("Body", "body", dict(top="ink", legs="ink", print="cat_belly")),
+    "Body_Cat": ("Body", "body", dict(top="soot", legs="soot", print="cat_belly", cuff="bone")),
     "Body_Purple": ("Body", "body", dict(top="purple", legs="ink")),
     "Body_Night": ("Body", "body", dict(top="night", legs="bone_stripe")),
     "Body_Plum": ("Body", "body", dict(top="plum", legs="purple")),
@@ -68,9 +70,9 @@ CHILD_PARTS = {
     "Hair_Puffs": ("Hair", "hair", dict(style="puffs", colour="black")),
     "Hair_Long": ("Hair", "hair", dict(style="long", colour="auburn")),
     "Ghost_Sheet": ("Costume", "ghost_sheet", {}),
-    "Skeleton_Hood": ("HeadPiece", "hood", dict(colour="ink", ears=False)),
-    "Cat_Hood": ("HeadPiece", "hood", dict(colour="ink", ears=True)),
-    "Cat_Tail": ("Tail", "tail", dict(colour="ink", tip="bone")),
+    "Skeleton_Hood": ("HeadPiece", "hood", dict(colour="ink", ears=False, skull=True)),
+    "Cat_Hood": ("HeadPiece", "hood", dict(colour="soot", ears=True, collar="candy")),
+    "Cat_Tail": ("Tail", "tail", dict(colour="soot", tip="bone", tip_scale=1.4)),
     "Robot_Box": ("Costume", "robot_box", {}),
     "Robot_Helmet": ("HeadPiece", "robot_helmet", {}),
     "CandyCorn_Tunic": ("Costume", "candy_corn", {}),
