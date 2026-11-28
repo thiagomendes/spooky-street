@@ -224,6 +224,15 @@ in 93b and 93c, a weak moon and a warm porch light beyond the walkers)
 The regular sheets (`crowd_lineup.jpg`, `walk_<Walker>.jpg`) are re-rendered from the new files; the walkers that
 did not change look as before.
 
+**In the game's light (CI run 46125791867, green, commit `8353bc8`).** `CrowdArtImportTests` 7/7, `CrowdKitTests`
+6/6 and `CrowdArtCaptureTests` 1/1 passed; frames 93, 93b and 93c are re-shot (`ci_93*.jpg` above; the shipped
+93 and 93c are kept as `crowd-fixes/ci_93_before.jpg` and `ci_93c_before.jpg`). From behind in 93c the skeleton
+child now shows her skull dome, spine, ribs, shoulder blades and limb bones, and the skeleton dad his whole back,
+where both were black shapes before; the cat child, black against the hedge before, is a dark cat with a yellow
+bow at the nape and a pale tail tip (in the game's light the charcoal felt reads as a dark plum). In 93, crossing
+in profile, the skeleton dad's flank ribs and side limb bones read. Nothing glows that did not: the lanterns and
+the attic window are as before, and the window is still the brightest thing.
+
 What the iterations changed, by looking: the first ghost weights (pull near the arm only) left the free hand
 through the front of the sheet, because the sheet is a wide bell and the hand meets its front panel only when it
 swings; the pull now follows the sides of the bell. A first night light was far too dark against the capture
