@@ -308,7 +308,7 @@ def cutout(kind, h):
 
 # --- Mr. Fogg: the tower house with the mansard ------------------------------------------------------------------
 
-FOGG_GREEN = H(0x3F7255)
+FOGG_GREEN = H(0x4A8062)
 FOGG_ROOF = H(0x3B3462)
 FOGG_DOOR = H(0xD9642A)
 
@@ -700,7 +700,7 @@ def build_abbotts(craft):
         window(b, craft, PL, 0.0, 0.55, 0.6, 0.85, lit=False, shutters=False)
     with b.at(T(lc_x, y1, leave) @ R("Z", 180)):
         b.prism(PL["back"], [(-lhalf, 0.0), (lhalf, 0.0), (0.0, lrise)], 0.1, T(0, 0.02, 0), tint=0.8)
-    over = 0.3
+    over = 0.24  # the eaves and their far tabs stay inside the slice's 7.8 m footprint
     llen = (lhalf + over) / math.cos(math.radians(pitch))
     tanp = math.tan(math.radians(pitch))
     shingle_panel(b, PL, (y1 - y0) + 2 * over, llen, pitch, T(lx0 - over, (y0 + y1) / 2, leave - over * tanp) @ R("Z", -90))
@@ -969,11 +969,11 @@ def build_lamp(craft, house):
     wall_y = -LAMP_AT[2]
     prev = getattr(b, "glow_tag", None)
     if house == "Pearl":  # a six-sided carriage lantern
-        sides, rr, hh = 6, 0.13 * k, 0.3 * k
+        sides, rr, hh = 6, 0.1, 0.3 * k  # taller, not deeper: the glass stays 12 cm out from the wall
     elif house == "Abbotts":  # a round tin lantern with a candy cap
         sides, rr, hh = 10, 0.1, 0.26
     else:  # a square iron lantern
-        sides, rr, hh = 4, 0.11, 0.28
+        sides, rr, hh = 4, 0.1, 0.28
     turn = 45.0 if sides == 4 else 0.0
     b.glow_tag = "Lamp"
     b.lathe(glass, [(0.0, -hh / 2), (rr * 0.9, -hh / 2), (rr, -hh * 0.2), (rr, hh * 0.35), (rr * 0.85, hh / 2), (0.0, hh / 2)], sides,

@@ -82,7 +82,7 @@
   "px_per_m_lod1": 12
  },
  "LaneHouseAbbotts": {
-  "triangles": 22760,
+  "triangles": 22397,
   "children": {
    "Face_Glow": {
     "triangles": 58,
@@ -101,7 +101,7 @@
     ]
    },
    "LaneHouseAbbotts_LOD0": {
-    "triangles": 18681,
+    "triangles": 18342,
     "pivot": [
      0.0,
      0.0,
@@ -109,7 +109,7 @@
     ]
    },
    "LaneHouseAbbotts_LOD1": {
-    "triangles": 3851,
+    "triangles": 3827,
     "pivot": [
      0.0,
      0.0,
@@ -118,8 +118,8 @@
    }
   },
   "atlas": "LaneHouseAbbotts",
-  "px_per_m": 81,
-  "px_per_m_roof": 45,
+  "px_per_m": 79,
+  "px_per_m_roof": 44,
   "px_per_m_lod1": 13
  },
  "LaneDoorFogg": {
@@ -129,7 +129,7 @@
   "px_per_m": 138
  },
  "LanePorchLampFogg": {
-  "triangles": 324,
+  "triangles": 326,
   "children": {
    "Lamp_Glow": {
     "triangles": 32,
@@ -150,7 +150,7 @@
   "px_per_m": 137
  },
  "LanePorchLampPearl": {
-  "triangles": 392,
+  "triangles": 394,
   "children": {
    "Lamp_Glow": {
     "triangles": 48,
@@ -162,13 +162,13 @@
    }
   },
   "atlas": "LaneHousePearl",
-  "px_per_m": 144
+  "px_per_m": 145
  },
  "LaneDoorAbbotts": {
   "triangles": 854,
   "children": {},
   "atlas": "LaneHouseAbbotts",
-  "px_per_m": 154
+  "px_per_m": 150
  },
  "LanePorchLampAbbotts": {
   "triangles": 458,
@@ -183,6 +183,6 @@
    }
   },
   "atlas": "LaneHouseAbbotts",
-  "px_per_m": 163
+  "px_per_m": 158
  }
 }
