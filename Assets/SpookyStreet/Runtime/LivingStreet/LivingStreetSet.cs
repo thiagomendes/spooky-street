@@ -239,7 +239,6 @@ namespace SpookyStreet.LivingStreet
                 }
             }
         }
-        }
 
         /// <summary>
         /// Pip's porch hook (docs/living-street-lantern-art.md): the LanternHook model clamped to the west rail's front
