@@ -370,6 +370,12 @@ roof, corner), varied by roof pitch, rail rhythm, paint and decor (spec §6). Ea
 ≤ 18 ms and 99th ≤ 33.3 ms, against the 16.7 ms ideal; Android reference 30 fps. **No device frame time has been
 recorded yet**, so the slice's first job is to measure the current game and the slice on the phone (§9).
 
+**First device reading (owner, 2026-11-28, iPhone 14 Plus, build 57, about 10 minutes on the street):** median
+16.7 ms, 95th 17.5 ms, 99th 19.0 ms; crowd 0.14 ms with 8 walkers alive and 3 in view. Both targets are met with
+the frame locked at 60 fps, so the phase 2 performance gate is passed for this phone; headroom above 60 fps is not
+visible through the lock, and the reading was not the worst case (3 walkers in view of 8), so the device pass in
+Scale B still measures a full crowd.
+
 | Item | High tier | Medium | Low |
 |---|---|---|---|
 | Fully animated walkers in view (LOD0 up to 8 m, LOD1 8–18 m) | 8 | 6 | 4 |
