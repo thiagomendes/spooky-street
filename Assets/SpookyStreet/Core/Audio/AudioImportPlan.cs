@@ -85,7 +85,7 @@ namespace SpookyStreet.Core.Audio
             AudioEvents.MoveJump, AudioEvents.MoveLand, AudioEvents.MoveGlideOpen, AudioEvents.MoveGlideLoop,
             AudioEvents.UiPageTurn, AudioEvents.NoteStickerPick, AudioEvents.NoteStickerDrop,
             AudioEvents.NoteStickerWobble, AudioEvents.NoteCorrectGlow, AudioEvents.UiTap, AudioEvents.AmbNight,
-            AudioEvents.StreetDoorbell, // ships before the owner's ear (D20.1 review pending); replaceable
+            AudioEvents.StreetDoorbell, // owner approved by ear on 2026-11-28 (D20.1)
         };
 
         /// <summary>An approved effect, or one of the approved v2 voices and music (D20.2).</summary>
