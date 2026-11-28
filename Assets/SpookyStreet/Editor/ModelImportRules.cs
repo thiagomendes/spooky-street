@@ -45,6 +45,70 @@ namespace SpookyStreet.EditorTools
             return System.Array.IndexOf(EnvironmentLayout.StreetSetModels, BaseName(path)) >= 0;
         }
 
+        /// <summary>The east lane's porch houses (<see cref="LaneHouseArt.House"/>): a near and a far mesh in one LOD group.</summary>
+        public static bool IsLaneHousePath(string path)
+        {
+            if (!IsGameModelPath(path) || !path.Contains("/Environment/"))
+            {
+                return false;
+            }
+
+            foreach (string id in LaneHouseArt.Houses)
+            {
+                if (BaseName(path) == LaneHouseArt.House(id))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// A lane house's LOD group: its <c>_LOD0</c> child until it is smaller than <see cref="LaneHouseArt.Lod0ScreenHeight"/>
+        /// of the screen, then its <c>_LOD1</c>. The lit parts (windows, the hall, the jack-o'-lanterns) are shared by both
+        /// levels and stay outside the group. Built here so the switch distance is reviewed code, not an importer default.
+        /// </summary>
+        private void OnPostprocessModel(GameObject root)
+        {
+            if (!IsLaneHousePath(assetPath))
+            {
+                return;
+            }
+
+            Renderer near = null;
+            Renderer far = null;
+            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r.name.EndsWith(LaneHouseArt.Lod0Suffix, System.StringComparison.Ordinal))
+                {
+                    near = r;
+                }
+                else if (r.name.EndsWith(LaneHouseArt.Lod1Suffix, System.StringComparison.Ordinal))
+                {
+                    far = r;
+                }
+            }
+
+            if (near == null || far == null)
+            {
+                return;
+            }
+
+            var group = root.GetComponent<LODGroup>();
+            if (group == null)
+            {
+                group = root.AddComponent<LODGroup>();
+            }
+
+            group.SetLODs(new[]
+            {
+                new LOD(LaneHouseArt.Lod0ScreenHeight, new[] { near }),
+                new LOD(LaneHouseArt.Lod1ScreenHeight, new[] { far }),
+            });
+            group.RecalculateBounds();
+        }
+
         /// <summary>Texture role from the baked file name: "_Normal" maps, linear masks, or colour.</summary>
         public static TextureImporterType TextureTypeFor(string path) =>
             BaseName(path).EndsWith("_Normal", System.StringComparison.OrdinalIgnoreCase)

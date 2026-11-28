@@ -37,6 +37,7 @@ W = 1688
 GAME_DISTANCE, GAME_FOV, GAME_PITCH = 3.8, 50.0, 4.0
 PHONE = (844, 390)
 SPACING = 0.74
+RECIPES = {}  # the walkers, or the door neighbours with --neighbours
 
 
 def game_lens(aspect):
@@ -44,11 +45,11 @@ def game_lens(aspect):
     return 18.0 / math.tan(half_w)
 
 
-def crowd_material(folder):
-    base = bpy.data.images.load(os.path.join(folder, "Crowd_BaseColor.png"))
-    normal = bpy.data.images.load(os.path.join(folder, "Crowd_Normal.png"))
+def crowd_material(folder, atlas="Crowd"):
+    base = bpy.data.images.load(os.path.join(folder, atlas + "_BaseColor.png"))
+    normal = bpy.data.images.load(os.path.join(folder, atlas + "_Normal.png"))
     normal.colorspace_settings.name = "Non-Color"
-    emission = bpy.data.images.load(os.path.join(folder, "Crowd_Emission.png"))
+    emission = bpy.data.images.load(os.path.join(folder, atlas + "_Emission.png"))
     mat = bpy.data.materials.new("Review_Crowd")
     mat.use_nodes = True
     mat.use_backface_culling = True  # as URP Lit
@@ -71,7 +72,7 @@ def crowd_material(folder):
 
 
 def walker(folder, wid, mat, lod1=False):
-    body, names = kit.WALKERS[wid]
+    body, names = RECIPES[wid]
     m = wr.import_model(folder, body, leaf_bones=True)
     want = {n + (kit.LOD1_SUFFIX if lod1 else "") for n in names}
     keep = []
@@ -152,7 +153,9 @@ def main():
     def opt(name, default):
         return argv[argv.index(name) + 1] if name in argv else default
     folder = opt("--crowd", os.path.join(wr.MODELS, "Characters", "Crowd"))
-    only = [w for w in opt("--only", ",".join(kit.WALKERS)).split(",") if w]
+    neighbours = "--neighbours" in argv
+    RECIPES.update(kit.NEIGHBOURS if neighbours else kit.WALKERS)
+    only = [w for w in opt("--only", ",".join(RECIPES)).split(",") if w]
     os.makedirs(out_dir, exist_ok=True)
     bpy.ops.wm.read_factory_settings(use_empty=True)
     cam = co.stage(lineup=True)
@@ -173,7 +176,7 @@ def main():
             bpy.data.objects.remove(lab, do_unlink=True)
         return px
 
-    mat = crowd_material(folder)
+    mat = crowd_material(folder, kit.NEIGHBOUR_BODY if neighbours else "Crowd")
     pip = wr.import_model(os.path.join(wr.MODELS, "Characters", "Pip"), "Pip", leaf_bones=True)
     models = {w: walker(folder, w, mat) for w in only}
     lods = {}
@@ -225,7 +228,7 @@ def main():
         info = "  ".join(f"{m['id']} {m['tris']}/{lods[m['id']]['tris']}" for m in order)
         print("[crowd_review] triangles LOD0/LOD1:", info)
         sheet = [row([front, back]), row([grey, far]), close_f, close_b]
-        out = os.path.join(out_dir, "crowd_lineup.png")
+        out = os.path.join(out_dir, "neighbour_lineup.png" if neighbours else "crowd_lineup.png")
         co.save_sheet(np.concatenate(sheet[::-1], axis=0), out)
         print("[crowd_review] sheet ->", out)
         for m in lods.values():
@@ -236,7 +239,7 @@ def main():
         for wid, m in models.items():
             place(m, 0)
             show([m])
-            adult = kit.WALKERS[wid][0] == "CrowdAdult"
+            adult = RECIPES[wid][0] != "CrowdChild"
             look = Vector((0, 0, 0.95 if adult else 0.58))
             dist = 5.0 if adult else 3.4
             rows = []
@@ -282,7 +285,7 @@ def main():
             set_pose(m, "Idle", 0)
             tiles.append(shot(orbit(look, dist, 200, 6), look, 85, 211, 330, "Idle 0 back", 0.07))
             rows.append(row(tiles))
-            out = os.path.join(out_dir, f"walk_{wid}.png")
+            out = os.path.join(out_dir, (f"neighbour_{wid}.png" if neighbours else f"walk_{wid}.png"))
             co.save_sheet(np.concatenate(rows[::-1], axis=0), out)
             print("[crowd_review] sheet ->", out, "tris", m["tris"])
 

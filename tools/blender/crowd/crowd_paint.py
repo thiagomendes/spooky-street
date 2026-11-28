@@ -66,7 +66,7 @@ def paint_face(cv, P, opts, lid=False):
     F = FACE[P.child]
     tone = opts.get("tone", "t2")
     paint = opts.get("paint", "plain")
-    hair = np.array(HAIR["dark"])
+    hair = np.array(HAIR[opts.get("hair", "dark")])
     if lid:  # a closed eye: skin (or the skull's white paint) with one curved lash line and two little lashes
         if paint == "skull":
             cv.lay(np.ones_like(u), PAL["white"])
@@ -91,9 +91,16 @@ def paint_face(cv, P, opts, lid=False):
     if opts.get("beard"):
         beard, _ = ellipse(u, v, 0.0, -0.62, 0.78, 0.42, 0.15)
         cv.lay(beard * front * (v < -0.42), hair)
-        for s in (1, -1):
-            mo, _ = ellipse(u, v, s * 0.12, -0.44, 0.15, 0.055, 0.25)
+        big = opts.get("moustache") == "big"
+        for s in (1, -1):  # a big curled moustache for a booming neighbour, a trim one otherwise
+            mo, _ = ellipse(u, v, s * (0.2 if big else 0.12), -0.43, 0.25 if big else 0.15, 0.08 if big else 0.055, 0.25)
             cv.lay(mo * front, hair)
+            if big:
+                tip, _ = ellipse(u, v, s * 0.44, -0.37, 0.08, 0.06, 0.3)
+                cv.lay(tip * front, hair)
+        if big:  # the beard's shadow line, so a cream beard still reads against light skin
+            edge = sstep((0.03 - np.abs(np.hypot(u / 0.78, (v + 0.62) / 0.42) - 1.0)) / 0.015 + 0.5)
+            cv.lay(edge * front * (v < -0.42) * 0.5, hair * 0.6)
     blush = np.array(SKIN[tone][1])
     if paint not in ("skull",):
         for s in (1, -1):
@@ -134,6 +141,14 @@ def paint_face(cv, P, opts, lid=False):
             brow_v = ez + rz * 1.55 - 0.1 * du ** 2
             brow = sstep((0.034 - np.abs(v - brow_v)) / 0.012 + 0.5) * (np.abs(du) < 0.8)
             cv.lay(brow * front, hair * 0.8)
+    if opts.get("glasses"):  # round reading glasses: an ink rim around each eye and a bridge
+        for s in (1, -1):
+            ex, ez, rx, rz = s * F["eye_x"], F["eye_z"], F["eye_rx"], F["eye_rz"]
+            _a, d = ellipse(u, v, ex, ez - 0.02, rx * 1.42, rz * 1.3, 0.1)
+            cv.lay(sstep((0.07 - np.abs(d - 1.0)) / 0.03 + 0.5) * front, INK)
+            cv.lay(line(u, v, (ex + s * rx * 1.4, ez + 0.02), (ex + s * rx * 2.1, ez + 0.06), 0.02) * front, INK)
+        cv.lay(line(u, v, (-F["eye_x"] + F["eye_rx"] * 1.38, F["eye_z"] + 0.02), (F["eye_x"] - F["eye_rx"] * 1.38, F["eye_z"] + 0.02), 0.022) * front,
+               INK)
     # mouth
     my = -0.5 if P.child else -0.55
     w = 0.2 if opts.get("mouth") == "grin" else 0.14
@@ -219,6 +234,46 @@ def paint_cat_belly(cv, P):
     patch, _ = ellipse(p[:, 0], p[:, 2], 0.0, z["waist"] + 0.2 * (z["chest"] - z["waist"]), 0.55 * T,
                        0.55 * (z["chest"] - z["hip"]), 0.08)
     cv.lay(patch * front, PAL["bone"])
+
+
+def paint_cardigan(cv, P):
+    """An open cardigan over a blouse: a bone placket down the front, five candy buttons, a little V at the neck."""
+    p = cv.p
+    z = P.z
+    T = P.torso
+    front = sstep((-p[:, 1] - 0.3 * T) / (0.2 * T)) * (np.abs(p[:, 0]) < P.shoulder_x * 0.9)
+    torso = (p[:, 2] > z["hip"] - 0.01 * P.h) & (p[:, 2] < z["neck"] + 0.01 * P.h)
+    x = p[:, 0]
+    top = z["neck"] - 0.005 * P.h
+    vee = (top - p[:, 2]) * 0.55
+    blouse = (np.abs(x) < np.clip(vee, 0, 0.05)) & (p[:, 2] > z["chest"])
+    cv.lay(blouse * front * torso, PAL["white"])
+    placket = (np.abs(np.abs(x) - np.clip(vee, 0, 0.05) - 0.008) < 0.008) & (p[:, 2] < top)
+    cv.lay(placket * front * torso, PAL["bone"])
+    for k in range(5):
+        bz = z["chest"] + 0.03 * P.h - k * (z["chest"] - z["hip"] + 0.03 * P.h) / 5
+        b, _ = ellipse(x, p[:, 2], 0.012, bz, 0.009, 0.009, 0.3)
+        cv.lay(b * front * torso, PAL["candy"])
+    for s in (1, -1):  # two patch pockets with a stitch
+        pk_, d = ellipse(x, p[:, 2], s * 0.075, z["hip"] + 0.035 * P.h, 0.04, 0.03, 0.08)
+        cv.shade(pk_ * front, 0.85)
+
+
+def paint_apron(cv, P, opts):
+    """The apron's big front pocket with a running stitch, and a stitch above the hem band."""
+    p = cv.p
+    z = P.z
+    hem = z["knee"] + 0.1 * (z["hip"] - z["knee"])
+    front = sstep((-p[:, 1] - 0.02) / 0.03)
+    pz = z["hip"] - 0.2 * (z["hip"] - z["knee"])
+    pocket = (np.abs(p[:, 0]) < 0.1) & (np.abs(p[:, 2] - pz) < 0.05)
+    cv.lay(pocket * front, PAL[opts["pocket"]])
+    rim = pocket & ((np.abs(np.abs(p[:, 0]) - 0.088) < 0.004) | (np.abs(p[:, 2] - pz - 0.038) < 0.004)) & \
+        (np.mod((p[:, 0] + p[:, 2]) / 0.012, 1.0) < 0.55)
+    cv.lay(rim * front, PAL["bone"] if opts["pocket"] != "bone" else PAL["plum"])
+    band = 0.03 * P.h
+    on = (np.abs(p[:, 2] - (hem + band + 0.01)) < 0.0035) & (np.mod(p[:, 0] / 0.012, 1.0) < 0.55)
+    cv.lay(on * front, PAL[opts["trim"]])
 
 
 def _hem_stitch(cv, hem_z, colour, above=0.03, height=0.007, per_turn=110):
@@ -338,7 +393,7 @@ def _down(px, f):
     return px.reshape(h // f, f, w // f, f, c).mean(axis=(1, 3))
 
 
-def finish(images, pieces, parts, builders, out, tex):
+def finish(images, pieces, parts, builders, out, tex, atlas="Crowd"):
     colour = ce.pixels(images["colour"]).copy()
     rgb = colour[:, :, :3].reshape(-1, 3)
     pos = (ce.pixels(images["rest"])[:, :, :3].reshape(-1, 3) - 0.5) / 0.25
@@ -360,6 +415,12 @@ def finish(images, pieces, parts, builders, out, tex):
             paint_skeleton(cv, P)
         elif part.slot == "Body" and src.endswith(part.name) and part.opts.get("print") == "cat_belly":
             paint_cat_belly(cv, P)
+        elif part.slot == "Body" and src.endswith(part.name) and part.opts.get("print") == "cardigan":
+            paint_cardigan(cv, P)
+        elif part.kind == "apron" and src.endswith(part.name):
+            paint_apron(cv, P, part.opts)
+        elif part.kind in ("tin", "basket") and src.endswith("Sweets"):
+            paint_sweets(cv)
         elif part.kind == "ghost_sheet":
             paint_ghost(cv, P)
         elif part.kind == "candy_corn":
@@ -389,19 +450,19 @@ def finish(images, pieces, parts, builders, out, tex):
     colour[:, :, :3] = np.clip(rgb.reshape(colour.shape[0], colour.shape[1], 3), 0, 1)
     colour[:, :, 3] = 1.0
     os.makedirs(out, exist_ok=True)
-    paths = {"base": ce.save_png(images["colour"], colour, os.path.join(out, "Crowd_BaseColor.png"))}
+    paths = {"base": ce.save_png(images["colour"], colour, os.path.join(out, atlas + "_BaseColor.png"))}
     normal = _down(ce.pixels(images["normal"]), 2)
     v = normal[:, :, :3] * 2 - 1
     v /= np.maximum(np.linalg.norm(v, axis=2, keepdims=True), 1e-6)
     normal[:, :, :3] = v * 0.5 + 0.5
     normal[:, :, 3] = 1.0
-    nimg = bpy.data.images.new("Crowd_Normal", tex // 2, tex // 2, alpha=False, is_data=True)
-    paths["normal"] = ce.save_png(nimg, normal, os.path.join(out, "Crowd_Normal.png"))
+    nimg = bpy.data.images.new(atlas + "_Normal", tex // 2, tex // 2, alpha=False, is_data=True)
+    paths["normal"] = ce.save_png(nimg, normal, os.path.join(out, atlas + "_Normal.png"))
     emit[:, :, :3] = erg.reshape(emit.shape[0], emit.shape[1], 3)
     small = _down(emit, 4)
     small[:, :, 3] = 1.0
-    eimg = bpy.data.images.new("Crowd_Emission", tex // 4, tex // 4, alpha=False)
-    paths["emission"] = ce.save_png(eimg, small, os.path.join(out, "Crowd_Emission.png"))
+    eimg = bpy.data.images.new(atlas + "_Emission", tex // 4, tex // 4, alpha=False)
+    paths["emission"] = ce.save_png(eimg, small, os.path.join(out, atlas + "_Emission.png"))
     return paths
 
 

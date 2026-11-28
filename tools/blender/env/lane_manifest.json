@@ -1,0 +1,188 @@
+{
+ "LaneHouseFogg": {
+  "triangles": 17631,
+  "children": {
+   "Face_Glow": {
+    "triangles": 97,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "RoomCard_Glow": {
+    "triangles": 132,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "LaneHouseFogg_LOD0": {
+    "triangles": 14077,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "LaneHouseFogg_LOD1": {
+    "triangles": 3325,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "LaneHouseFogg",
+  "px_per_m": 73,
+  "px_per_m_roof": 40,
+  "px_per_m_lod1": 12
+ },
+ "LaneHousePearl": {
+  "triangles": 22103,
+  "children": {
+   "Face_Glow": {
+    "triangles": 68,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "RoomCard_Glow": {
+    "triangles": 132,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "LaneHousePearl_LOD0": {
+    "triangles": 17944,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "LaneHousePearl_LOD1": {
+    "triangles": 3959,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "LaneHousePearl",
+  "px_per_m": 72,
+  "px_per_m_roof": 40,
+  "px_per_m_lod1": 12
+ },
+ "LaneHouseAbbotts": {
+  "triangles": 22397,
+  "children": {
+   "Face_Glow": {
+    "triangles": 58,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "RoomCard_Glow": {
+    "triangles": 170,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "LaneHouseAbbotts_LOD0": {
+    "triangles": 18342,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "LaneHouseAbbotts_LOD1": {
+    "triangles": 3827,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "LaneHouseAbbotts",
+  "px_per_m": 79,
+  "px_per_m_roof": 44,
+  "px_per_m_lod1": 13
+ },
+ "LaneDoorFogg": {
+  "triangles": 1092,
+  "children": {},
+  "atlas": "LaneHouseFogg",
+  "px_per_m": 138
+ },
+ "LanePorchLampFogg": {
+  "triangles": 326,
+  "children": {
+   "Lamp_Glow": {
+    "triangles": 32,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "LaneHouseFogg",
+  "px_per_m": 145
+ },
+ "LaneDoorPearl": {
+  "triangles": 1350,
+  "children": {},
+  "atlas": "LaneHousePearl",
+  "px_per_m": 137
+ },
+ "LanePorchLampPearl": {
+  "triangles": 394,
+  "children": {
+   "Lamp_Glow": {
+    "triangles": 48,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "LaneHousePearl",
+  "px_per_m": 145
+ },
+ "LaneDoorAbbotts": {
+  "triangles": 854,
+  "children": {},
+  "atlas": "LaneHouseAbbotts",
+  "px_per_m": 150
+ },
+ "LanePorchLampAbbotts": {
+  "triangles": 458,
+  "children": {
+   "Lamp_Glow": {
+    "triangles": 80,
+    "pivot": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "atlas": "LaneHouseAbbotts",
+  "px_per_m": 158
+ }
+}

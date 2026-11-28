@@ -133,3 +133,59 @@ WALKERS = {
 CLIPS = ("Idle", "Walk", "Wave", "Talk")
 LOD1_SUFFIX = "_Lo"
 BUDGET = {"lod0": 7000, "lod1": 2500, "atlas": 2048}
+ATLAS = {"CrowdChild": "Crowd", "CrowdAdult": "Crowd"}
+
+# --- The door neighbours of the east lane (docs/living-street-houses-art.md; living-street §4.1) -----------------
+# Mr. Fogg, Nana Pearl and the two Abbotts answer their doors in house clothes. They are the grown-up body (same
+# proportions, skeleton, bind pose and clips as CrowdAdult) exported as its own FBX with its own atlas,
+# `CrowdNeighbours_*`, so the shipped walkers' file and atlas stay as they are; a neighbour merges into one skinned
+# mesh and animates exactly like a walker. No reserved look: no silver (the grey hair is a warm cream grey), no
+# costume theme at all, no owl, fox, moth, moon, star or bell motif.
+NEIGHBOUR_BODY = "CrowdNeighbours"
+ATLAS[NEIGHBOUR_BODY] = NEIGHBOUR_BODY
+HAIR.update({"grey": H(0xCFC3B0), "white": H(0xE6DCCB)})
+PAL.update({"green_dark": H(0x3D6B40), "rose": H(0xB86E8E)})
+NEIGHBOUR_PARTS = {
+    "Body_Fogg": ("Body", "body", dict(top="bone_cable", legs="indigo")),
+    "Body_Pearl": ("Body", "body", dict(top="rose_knit", legs="night", print="cardigan")),
+    "Body_AbbottA": ("Body", "body", dict(top="orange_stripe", legs="ink")),
+    "Body_AbbottB": ("Body", "body", dict(top="plum_stripe", legs="kraft_dark")),
+    "Hands_T1": ("Hands", "hands", dict(tone="t1")),
+    "Hands_T2": ("Hands", "hands", dict(tone="t2")),
+    "Hands_T4": ("Hands", "hands", dict(tone="t4")),
+    "Hands_T6": ("Hands", "hands", dict(tone="t6")),
+    "Slippers_Plum": ("Shoes", "slippers", dict(colour="plum", cuff="white")),
+    "Slippers_Berry": ("Shoes", "slippers", dict(colour="berry", cuff="white")),
+    "Slippers_Green": ("Shoes", "slippers", dict(colour="green_dark", cuff="bone")),
+    "Head_Fogg": ("Head", "head", dict(tone="t1", iris="blue", paint="plain", beard=True, moustache="big", hair="brown")),
+    "Head_Pearl": ("Head", "head", dict(tone="t4", iris="brown", paint="plain", glasses=True, hair="grey")),
+    "Head_AbbottA": ("Head", "head", dict(tone="t6", iris="dark", paint="plain", beard=True, hair="black")),
+    "Head_AbbottB": ("Head", "head", dict(tone="t2", iris="green", paint="plain", glasses=True, freckles=True,
+                                          hair="auburn")),
+    "Hair_Brown": ("Hair", "hair", dict(style="crop", colour="brown")),
+    "Hair_GreyBun": ("Hair", "hair", dict(style="bun", colour="grey")),
+    "Hair_Short": ("Hair", "hair", dict(style="short", colour="black")),
+    "Hair_Auburn": ("Hair", "hair", dict(style="short", colour="auburn")),
+    "Beanie_Orange": ("HeadPiece", "beanie", dict(colour="orange", band="plum")),
+    "Apron_Bone": ("Costume", "apron", dict(colour="bone", trim="berry", pocket="berry")),
+    "Apron_Candy": ("Costume", "apron", dict(colour="candy", trim="plum", pocket="orange")),
+    "Tin_Treats": ("Prop", "tin", dict(colour="plum", band="bone")),
+    "Basket_Treats": ("Prop", "basket", {}),
+}
+PARTS[NEIGHBOUR_BODY] = NEIGHBOUR_PARTS
+
+# id -> (body, [parts]); the ids are the slice's (LivingStreetLayout.NeighboursAt), the same table as
+# CrowdKit.Neighbours in Assets/SpookyStreet/Core/Crowd/CrowdKit.cs
+NEIGHBOURS = {
+    # booming and silly: a big cream cable jumper, an orange bobble beanie, a big brown beard and moustache, a tin of sweets
+    "Neighbour_Fogg": (NEIGHBOUR_BODY, ["Body_Fogg", "Hands_T1", "Slippers_Plum", "Head_Fogg", "Hair_Brown",
+                                        "Beanie_Orange", "Tin_Treats"]),
+    # slow and warm: a rose cardigan, her bone apron, glasses, a grey bun, a basket of sweets
+    "Neighbour_Pearl": (NEIGHBOUR_BODY, ["Body_Pearl", "Hands_T4", "Slippers_Berry", "Head_Pearl", "Hair_GreyBun",
+                                         "Apron_Bone", "Basket_Treats"]),
+    # the two dads in matching striped jumpers (orange with plum, plum with orange) and matching slippers
+    "Neighbour_AbbottA": (NEIGHBOUR_BODY, ["Body_AbbottA", "Hands_T6", "Slippers_Green", "Head_AbbottA", "Hair_Short",
+                                           "Tin_Treats"]),
+    "Neighbour_AbbottB": (NEIGHBOUR_BODY, ["Body_AbbottB", "Hands_T2", "Slippers_Green", "Head_AbbottB", "Hair_Auburn",
+                                           "Apron_Candy"]),
+}
