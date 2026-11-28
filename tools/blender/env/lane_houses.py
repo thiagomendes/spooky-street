@@ -542,7 +542,7 @@ def build_pearl(craft):
         b.prism(P["clap"], [(-dorm_w / 2, 0.0), (dorm_w / 2, 0.0), (0.0, dr * 0.9)], 0.08, T(0, -0.02, dh), tint=0.95)
         b.prism(P["shingle"], [(-dorm_w / 2 - 0.22, -0.06), (dorm_w / 2 + 0.22, -0.06), (0.0, dr)], 2.2, T(0, -0.2, dh + 0.04), tint=(1.05, 1.0, 1.1))
         b.prism(P["trim_x"], [(-dorm_w / 2 - 0.28, -0.1), (dorm_w / 2 + 0.28, -0.1), (0.0, dr + 0.06)], 0.06, T(0, -0.27, dh + 0.02))
-    chimney(b, P, x1 + 0.34, ridge_y + 0.6, 0.0, ridge + 1.1, size=0.85, lean=1.0, pots=1, stone=True)
+    chimney(b, P, x1 + 0.2, ridge_y + 0.6, 0.0, ridge + 1.1, size=0.85, lean=0.0, pots=1, stone=True)
     # the porch: deck, posts with brackets, picket rails either side of the steps
     pz = SILL
     py = y0 - porch_d
@@ -676,12 +676,12 @@ def build_abbotts(craft):
         P["brick"] = craft.tinted(shade(E["plum"], 0.8), 0.9, 0.3, 9.0)
     dx, wy = DOORS["Abbotts"]
     y0, y1 = wy, 2.9
-    lx0, lx1, rx0, rx1 = -3.7, -0.1, -0.1, 3.7
+    lx0, lx1, rx0, rx1 = -3.55, -0.1, -0.1, 3.55
     lh, rh = 2.7, 5.2  # wall heights: one storey on the left, two on the right
     pitch = 52.0
     # left gable: the door under it, a lit window beside it, the ghost cut-outs
     block(b, craft, PL, lx0, lx1, y0, y1, lh, door=dx, corners="flbl",
-          front=[dict(x=-3.05 - (lx0 + lx1) / 2, z=0.75, w=0.62, h=1.1, shutters=False, lit=True,
+          front=[dict(x=-2.98 - (lx0 + lx1) / 2, z=0.75, w=0.56, h=1.1, shutters=False, lit=True,
                       cutouts=((cutout("ghost", 0.42), E["bone"]),))],
           left=[dict(x=0.6, z=0.75, w=0.8, h=1.2)])
     lhalf = (lx1 - lx0) / 2
@@ -693,7 +693,7 @@ def build_abbotts(craft):
         window(b, craft, PL, 0.0, 0.55, 0.6, 0.85, lit=False, shutters=False)
     with b.at(T(lc_x, y1, leave) @ R("Z", 180)):
         b.prism(PL["back"], [(-lhalf, 0.0), (lhalf, 0.0), (0.0, lrise)], 0.1, T(0, 0.02, 0), tint=0.8)
-    over = 0.35
+    over = 0.3
     llen = (lhalf + over) / math.cos(math.radians(pitch))
     tanp = math.tan(math.radians(pitch))
     shingle_panel(b, PL, (y1 - y0) + 2 * over, llen, pitch, T(lx0 - over, (y0 + y1) / 2, leave - over * tanp) @ R("Z", -90))
@@ -752,7 +752,7 @@ def build_abbotts(craft):
         paper_chain(b, craft, (lx0 + 0.1, y0 - 0.12, leave - 0.15), (lx1 - 0.15, y0 - 0.12, leave - 0.15), 0.28)
         paper_chain(b, craft, (rx0 + 0.15, y0 - 0.12, SILL + 2.55), (rx1 - 0.1, y0 - 0.12, SILL + 2.55), 0.22)
     jack(b, craft, dx + 1.35, wy - 0.7, 0.0, 0.32, 0, -12)
-    jack(b, craft, dx - 1.45, wy - 1.1, 0.0, 0.32, 0, 12)
+    jack(b, craft, dx - 1.45, wy - 0.78, 0.0, 0.32, 0, 12)
     jack(b, craft, rc_x + 1.2, wy - 0.45, 0.0, 0.22, None, 30, H(0xF59A23))
     finish(b, "Abbotts")
 

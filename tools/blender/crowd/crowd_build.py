@@ -67,8 +67,14 @@ class Builder:
             return co.striped(c.felt(PAL["night"]), PAL["bone"], 0.07 if self.P.child else 0.09)
         if key == "purple_knit":
             return c.knit(PAL["purple"])
-        if key == "bone":
+        if key in ("bone", "bone_cable"):
             return c.knit(PAL["bone"])
+        if key == "rose_knit":
+            return c.knit(PAL["rose"])
+        if key == "orange_stripe":  # the Abbotts' matching jumpers: orange with plum bands, plum with orange
+            return co.striped(c.knit(PAL["orange"]), PAL["plum"], 0.16)
+        if key == "plum_stripe":
+            return co.striped(c.knit(PAL["plum"]), PAL["orange"], 0.16)
         return c.felt(PAL[key])
 
     def skin(self, tone):
@@ -424,15 +430,21 @@ class Builder:
             poly.material_index = idx
         return [(obj, "skirt", 1100 if P.child else 1300)]
 
-    def tail(self, name, colour, tip):
+    def tail_points(self):
+        """The tail's curve (also where the Tail_1 / Tail_2 bones go on a body that has no tail part)."""
         P = self.P
         z = P.z
         k = P.h / 1.05 if P.child else 1.2  # a grown-up's tail is a little longer, not scaled up
         y0 = P.torso * 0.78
         z0 = z["pelvis"] - 0.035 * P.h
-        pts = [Vector((0, y0 - 0.01, z0)), Vector((0.01 * k, y0 + 0.09 * k, z0 - 0.1 * k)),
-               Vector((0.04 * k, y0 + 0.2 * k, z0 - 0.1 * k)), Vector((0.07 * k, y0 + 0.27 * k, z0 + 0.01 * k)),
-               Vector((0.08 * k, y0 + 0.28 * k, z0 + 0.1 * k))]
+        return [Vector((0, y0 - 0.01, z0)), Vector((0.01 * k, y0 + 0.09 * k, z0 - 0.1 * k)),
+                Vector((0.04 * k, y0 + 0.2 * k, z0 - 0.1 * k)), Vector((0.07 * k, y0 + 0.27 * k, z0 + 0.01 * k)),
+                Vector((0.08 * k, y0 + 0.28 * k, z0 + 0.1 * k))]
+
+    def tail(self, name, colour, tip):
+        P = self.P
+        k = P.h / 1.05 if P.child else 1.2
+        pts = self.tail_points()
         tube = pm.curve_tube(name, self.felt(colour), pts, 0.021 * k, taper=(1.0, 0.85), resolution=8)
         tube.data.bevel_resolution = 2
         tipo = pm.ellipsoid(name + "Tip", self.felt(tip), pts[-1] + Vector((0, 0, 0.012 * k)),
@@ -514,6 +526,129 @@ class Builder:
         bail.data.bevel_resolution = 1
         return [(paper, ("bone", "Pail"), 360)] + [(cp, ("bone", "Pail"), 60) for cp in caps] + \
                [(bail, ("bone", "Pail"), 40)]
+
+    # --- the door neighbours' house clothes (crowd_kit.NEIGHBOUR_PARTS) -----------------------------------------
+    def slippers(self, name, colour, cuff):
+        """Felt bootee slippers: the sneaker's last without laces, tongue, toe cap or heel counter, a soft dark sole
+        and a fluffy cuff round the ankle."""
+        P = self.P
+        out = []
+        targets = {"Sole": 70, "Upper": 100, "Collar": 48}
+        for side in (1, -1):
+            S = "L" if side > 0 else "R"
+            before = set(bpy.data.objects)
+            an.sneaker(f"{name}_Shoe{S}", P, side, self.felt(colour), self.craft.felt(PAL["ink"]), self.felt(cuff),
+                       self.felt(cuff))
+            for o in set(bpy.data.objects) - before:
+                kind = o.name[len(name) + 6:].split(".")[0]
+                if kind in targets:
+                    out.append((o, "shoe", targets[kind]))
+                else:
+                    bpy.data.objects.remove(o, do_unlink=True)
+        return out
+
+    def beanie(self, name, colour, band):
+        """A knitted bobble beanie with a turned-up band, over the hair."""
+        P = self.P
+        r, hc = P.head_r, P.head_c
+        knit = self.craft.knit(PAL[colour])
+        obj, _on = co.cap(name, knit, P, radii=(1.13, 1.15, 1.22), offset=(0, 0.04, 0.08), fringe_z=0.34, length_z=0.34,
+                          face_half=0.0, thickness=0.07, segments=32)
+        edge = 0.26 / 1.22  # unit height of the cap's lower edge
+        rim = math.sqrt(1 - edge * edge)
+        brim = pm.torus(name + "Band", self.craft.knit(PAL[band]), hc + Vector((0, 0.04 * r, 0.36 * r)), 1.13 * rim * r,
+                        0.14 * r, segments=32, sides=10, squash=1.25)
+        bobble = pm.ellipsoid(name + "Bobble", self.craft.felt(PAL[band]), hc + Vector((0, 0.04 * r, 1.48 * r)),
+                              (0.3 * r, 0.3 * r, 0.27 * r), segments=14, rings=10, subsurf=0)
+        return [(obj, "head", 420), (brim, "head", 200), (bobble, "head", 120)]
+
+    def apron(self, name, colour, trim, pocket):
+        """A cloth apron: a bib on the chest, a wide skirt to the knee, a neck strap; the pocket is painted."""
+        P = self.P
+        z = P.z
+        T_ = P.torso
+        hem = z["knee"] + 0.1 * (z["hip"] - z["knee"])
+        rows = [(z["chest"] + 0.045 * P.h, T_ * 1.24, 34), (z["chest"], T_ * 1.24, 36), (z["waist"] + 0.02 * P.h, T_ * 1.16, 40),
+                (z["waist"], T_ * 1.2, 74), (z["hip"], T_ * 1.48, 76), ((z["hip"] + hem) / 2, T_ * 1.6, 78), (hem, T_ * 1.7, 80)]
+        cols = 14
+        bm = bmesh.new()
+        grid = []
+        for zz, rad, half in rows:
+            ring = []
+            for i in range(cols + 1):
+                a = math.radians(-half + 2 * half * i / cols)
+                ring.append(bm.verts.new((rad * 1.03 * math.sin(a), -rad * 0.8 * 1.03 * math.cos(a) - 0.004, zz)))
+            grid.append(ring)
+        for ra, rb in zip(grid, grid[1:]):
+            for i in range(cols):
+                bm.faces.new((ra[i], ra[i + 1], rb[i + 1], rb[i]))
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+        bm.normal_update()
+        front = min(bm.faces, key=lambda f: f.calc_center_median().y)
+        if front.normal.y > 0:  # outward is toward the street (-Y)
+            bmesh.ops.reverse_faces(bm, faces=bm.faces[:])
+        obj = pm.new_mesh_object(name, bm, self.felt(colour))
+        obj.data.materials.append(self.felt(trim))
+        band = 0.03 * P.h
+        for poly in obj.data.polygons:
+            poly.material_index = 1 if poly.center.z < hem + band else 0
+        obj.modifiers.new("Thick", "SOLIDIFY").thickness = 0.005
+        top = rows[0]
+        strap = []
+        for s in (1, -1):
+            a = math.radians(top[2] * 0.85)
+            corner = Vector((s * top[1] * 1.03 * math.sin(a), -top[1] * 0.8 * 1.03 * math.cos(a), top[0]))
+            neck = Vector((s * P.limb * 0.75, P.torso * 0.15, z["neck"] + 0.006 * P.h))
+            strap.append(pm.curve_tube(name + "Strap", self.felt(trim), [corner, corner.lerp(neck, 0.5) + Vector((0, -0.01, 0.01)), neck],
+                                       0.006, taper=(1, 1), resolution=4))
+        for t in strap:
+            t.data.bevel_resolution = 1
+        return [(obj, "skirt", 700)] + [(t, "skirt", 40) for t in strap]
+
+    def tin(self, name, colour, band):
+        """A round sweet tin with its lid off, on a wire bail through the hand: sweets heaped on top."""
+        P = self.P
+        g = self._grip()
+        rim = g + Vector((0, 0, -0.1))
+        bot = rim.z - 0.085
+        R = 0.1
+        prof = [(0.001, bot, 1.0), (R * 0.96, bot, 1.0), (R, bot + 0.008, 1.0), (R, rim.z - 0.004, 1.0), (R * 1.02, rim.z, 1.0)]
+        body = co.ell_lathe(name, self.felt(colour), prof, segments=24, thickness=0.004)
+        body.modifiers["Smooth"].levels = 1
+        body.location = (rim.x, rim.y, 0)
+        stripe = pm.torus(name + "Band", self.felt(band), Vector((rim.x, rim.y, rim.z - 0.045)), R * 1.01, 0.012,
+                          segments=24, sides=6, squash=2.0)
+        sweets = pm.ellipsoid(name + "Sweets", self.craft.smooth(PAL["candy"], 0.35), Vector((rim.x, rim.y, rim.z + 0.006)),
+                              (R * 0.92, R * 0.92, 0.035), segments=16, rings=8, subsurf=0)
+        handle = pm.curve_tube(name + "Handle", self.craft.smooth(PAL["ink"], 0.4),
+                               [rim + Vector((-R, 0, 0)), rim + Vector((-R * 0.8, 0, 0.07)), g, rim + Vector((R * 0.8, 0, 0.07)),
+                                rim + Vector((R, 0, 0))], 0.0035, taper=(1, 1), resolution=6)
+        handle.data.bevel_resolution = 1
+        return [(body, ("bone", "Pail"), 220), (stripe, ("bone", "Pail"), 96), (sweets, ("bone", "Pail"), 120),
+                (handle, ("bone", "Pail"), 80)]
+
+    def basket(self, name):
+        """A woven basket of sweets with a hoop handle through the hand."""
+        P = self.P
+        g = self._grip()
+        rim = g + Vector((0, 0, -0.13))
+        bot = rim.z - 0.1
+        R = 0.12
+        wicker = self.craft.cardboard(PAL["kraft"])
+        prof = [(0.001, bot, 1.0), (R * 0.72, bot, 1.0), (R * 0.8, bot + 0.01, 1.0), (R, rim.z, 1.0)]
+        body = co.ell_lathe(name, wicker, prof, segments=24, thickness=0.005, folds=12, fold_depth=0.04)
+        body.modifiers["Smooth"].levels = 1
+        body.location = (rim.x, rim.y, 0)
+        lip = pm.torus(name + "Rim", self.craft.cardboard(PAL["kraft_dark"]), Vector((rim.x, rim.y, rim.z)), R, 0.012,
+                       segments=24, sides=6, squash=0.8)
+        sweets = pm.ellipsoid(name + "Sweets", self.craft.smooth(PAL["candy"], 0.35), Vector((rim.x, rim.y, rim.z + 0.004)),
+                              (R * 0.9, R * 0.9, 0.04), segments=16, rings=8, subsurf=0)
+        hoop = pm.curve_tube(name + "Hoop", self.craft.cardboard(PAL["kraft_dark"]),
+                             [rim + Vector((-R, 0, 0)), rim + Vector((-R * 0.85, 0, 0.09)), g + Vector((0, 0, 0.01)),
+                              rim + Vector((R * 0.85, 0, 0.09)), rim + Vector((R, 0, 0))], 0.008, taper=(1, 1), resolution=6)
+        hoop.data.bevel_resolution = 1
+        return [(body, ("bone", "Pail"), 300), (lip, ("bone", "Pail"), 96), (sweets, ("bone", "Pail"), 120),
+                (hoop, ("bone", "Pail"), 90)]
 
     # --- dispatch --------------------------------------------------------------------------------------------
     def build(self, name, kind, opts):

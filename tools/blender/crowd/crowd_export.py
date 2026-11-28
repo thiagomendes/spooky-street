@@ -71,9 +71,9 @@ class Part:
         return f"{self.body}:{self.name}"
 
 
-def build_all(craft):
+def build_all(craft, bodies=kit.BODIES):
     builders, parts = {}, []
-    for body in kit.BODIES:
+    for body in bodies:
         B = cb.Builder(craft, body)
         builders[body] = B
         for name, (slot, kind, opts) in kit.PARTS[body].items():
@@ -105,7 +105,7 @@ def bone_table(B):
     r, hc = P.head_r, P.head_c
     table = ce.human_bones(P, info, cb.hand_size(P))
     g = info["grip"]
-    tail = info.get("tail")
+    tail = info.get("tail") or B.tail_points()
     table += [("Pail", "Hand_R", g.copy(), g + Vector((0, 0, -0.15 * P.h / 1.2)), False),
               ("Blink", "Head", hc + Vector((0, -0.5 * r, 0)), hc + Vector((0, -0.5 * r, 0.3 * r)), False),
               ("Tail_1", "Hips", tail[0].copy(), tail[2].copy(), False),
@@ -453,10 +453,14 @@ def main():
     report_path = opt("--report", "")
     bpy.ops.wm.read_factory_settings(use_empty=True)
     craft = craft_lib.Craft(1.0)
-    builders, parts = build_all(craft)
+    bodies = opt("--bodies", ",".join(kit.BODIES)).split(",")
+    atlas = kit.ATLAS[bodies[0]]
+    assert all(kit.ATLAS[b] == atlas for b in bodies), "one atlas per export"
+    recipes = {w: r for w, r in {**kit.WALKERS, **kit.NEIGHBOURS}.items() if r[0] in bodies}
+    builders, parts = build_all(craft, bodies)
     counts = {p.key: sum(tri_count(o) for o, _r in p.pieces) for p in parts}
     log("triangles per part", json.dumps(counts, indent=0))
-    for wid, (body, names) in kit.WALKERS.items():
+    for wid, (body, names) in recipes.items():
         log(wid, sum(counts[f"{body}:{n}"] for n in names))
     if "--count" in argv:
         return
@@ -466,7 +470,7 @@ def main():
     images = bake_maps(parts, tex, opt("--samples", 4, int), opt("--ao-samples", 16, int))
     import crowd_paint
     os.makedirs(out, exist_ok=True)
-    paths = crowd_paint.finish(images, pieces, parts, builders, out, tex)
+    paths = crowd_paint.finish(images, pieces, parts, builders, out, tex, atlas)
     make_lod1(parts)
     final_material([p.obj for p in parts] + [p.lo for p in parts], *crowd_paint.final_images(paths))
     report = {"textures": paths, "bodies": {}, "parts": {}, "walkers": {}}
@@ -474,7 +478,7 @@ def main():
         report["bodies"][body] = export_body(body, builders[body], rig, table, parts, out)
     for p in parts:
         report["parts"][p.key] = {"slot": p.slot, "lod0": tri_count(p.obj), "lod1": tri_count(p.lo)}
-    for wid, (body, names) in kit.WALKERS.items():
+    for wid, (body, names) in recipes.items():
         report["walkers"][wid] = {
             "body": body, "parts": names,
             "lod0": sum(report["parts"][f"{body}:{n}"]["lod0"] for n in names),

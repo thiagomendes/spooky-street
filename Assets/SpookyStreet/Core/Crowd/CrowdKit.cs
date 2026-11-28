@@ -35,7 +35,9 @@ namespace SpookyStreet.Core.Crowd
         /// <summary>LOD0 mesh names in the model; LOD1 adds <see cref="CrowdKit.Lod1Suffix"/>.</summary>
         public IReadOnlyList<string> Parts { get; }
 
-        public bool IsGrownUp => Model == CrowdKit.AdultModel;
+        /// <summary>The grown-up body: the walkers' <see cref="CrowdKit.AdultModel"/> or the door neighbours'
+        /// <see cref="CrowdKit.NeighbourModel"/> (the same body, skeleton and clips with their own parts and atlas).</summary>
+        public bool IsGrownUp => Model == CrowdKit.AdultModel || Model == CrowdKit.NeighbourModel;
     }
 
     /// <summary>
@@ -55,6 +57,15 @@ namespace SpookyStreet.Core.Crowd
         public const string ChildModel = "CrowdChild";
         public const string AdultModel = "CrowdAdult";
         public const string Lod1Suffix = "_Lo";
+
+        /// <summary>
+        /// The door neighbours of the east lane (docs/living-street-houses-art.md): the grown-up body (the same
+        /// proportions, skeleton, bind pose and clips as <see cref="AdultModel"/>) exported as its own FBX with their
+        /// house clothes, on its own atlas named after it (<c>CrowdNeighbours_BaseColor</c>, which <c>ModelKit</c> finds by
+        /// the model's name), so the shipped walkers' file and atlas stay as they are. A neighbour merges and animates
+        /// exactly like a walker.
+        /// </summary>
+        public const string NeighbourModel = "CrowdNeighbours";
 
         public const string SlotBody = "Body";
         public const string SlotHands = "Hands";
@@ -86,7 +97,7 @@ namespace SpookyStreet.Core.Crowd
         /// <summary>Ground speed (m/s) the Walk clip was animated for at playback speed 1: the child walks 24 frames
         /// per cycle and the grown-up 41, so a parent and a child stroll side by side at the same pace. Move a
         /// walker at this speed (or scale the clip's speed by actual / this) so the feet do not slide.</summary>
-        public static float WalkSpeed(string model) => model == AdultModel ? 1.173f : 1.167f;
+        public static float WalkSpeed(string model) => model == AdultModel || model == NeighbourModel ? 1.173f : 1.167f;
 
         public static readonly CrowdPart[] ChildParts =
         {
@@ -162,7 +173,44 @@ namespace SpookyStreet.Core.Crowd
             "Dragon", "Pirate", "Gingerbread", "Wizard", "Overalls", "Owl", "Fox", "Moth", "Moon", "Bell",
         };
 
-        public static IReadOnlyList<CrowdPart> PartsOf(string model) => model == AdultModel ? AdultParts : ChildParts;
+        /// <summary>The door neighbours' parts (house clothes on the grown-up body, <see cref="NeighbourModel"/>).</summary>
+        public static readonly CrowdPart[] NeighbourParts =
+        {
+            new CrowdPart(SlotBody, "Body_Fogg"), new CrowdPart(SlotBody, "Body_Pearl"),
+            new CrowdPart(SlotBody, "Body_AbbottA"), new CrowdPart(SlotBody, "Body_AbbottB"),
+            new CrowdPart(SlotHands, "Hands_T1"), new CrowdPart(SlotHands, "Hands_T2"),
+            new CrowdPart(SlotHands, "Hands_T4"), new CrowdPart(SlotHands, "Hands_T6"),
+            new CrowdPart(SlotShoes, "Slippers_Plum"), new CrowdPart(SlotShoes, "Slippers_Berry"),
+            new CrowdPart(SlotShoes, "Slippers_Green"),
+            new CrowdPart(SlotHead, "Head_Fogg"), new CrowdPart(SlotHead, "Head_Pearl"),
+            new CrowdPart(SlotHead, "Head_AbbottA"), new CrowdPart(SlotHead, "Head_AbbottB"),
+            new CrowdPart(SlotHair, "Hair_White"), new CrowdPart(SlotHair, "Hair_GreyBun"),
+            new CrowdPart(SlotHair, "Hair_Short"), new CrowdPart(SlotHair, "Hair_Auburn"),
+            new CrowdPart(SlotHeadPiece, "Beanie_Orange"),
+            new CrowdPart(SlotCostume, "Apron_Bone"), new CrowdPart(SlotCostume, "Apron_Candy"),
+            new CrowdPart(SlotProp, "Tin_Treats"), new CrowdPart(SlotProp, "Basket_Treats"),
+        };
+
+        /// <summary>
+        /// The neighbours who answer the lane's doors, by the slice's ids (<c>LivingStreetLayout.NeighboursAt</c>): Mr. Fogg
+        /// (a cream cable jumper, an orange bobble beanie, a white beard, a tin of sweets), Nana Pearl (a rose cardigan, her
+        /// apron, glasses, a grey bun, a basket of sweets) and the two Abbotts in matching striped jumpers and slippers.
+        /// House clothes only: no costume theme, so nothing a crowd rule reserves.
+        /// </summary>
+        public static readonly CrowdWalkerRecipe[] Neighbours =
+        {
+            new CrowdWalkerRecipe("Neighbour_Fogg", NeighbourModel, "Body_Fogg", "Hands_T1", "Slippers_Plum", "Head_Fogg",
+                "Hair_White", "Beanie_Orange", "Tin_Treats"),
+            new CrowdWalkerRecipe("Neighbour_Pearl", NeighbourModel, "Body_Pearl", "Hands_T4", "Slippers_Berry", "Head_Pearl",
+                "Hair_GreyBun", "Apron_Bone", "Basket_Treats"),
+            new CrowdWalkerRecipe("Neighbour_AbbottA", NeighbourModel, "Body_AbbottA", "Hands_T6", "Slippers_Green",
+                "Head_AbbottA", "Hair_Short", "Tin_Treats"),
+            new CrowdWalkerRecipe("Neighbour_AbbottB", NeighbourModel, "Body_AbbottB", "Hands_T2", "Slippers_Green",
+                "Head_AbbottB", "Hair_Auburn", "Apron_Candy"),
+        };
+
+        public static IReadOnlyList<CrowdPart> PartsOf(string model) =>
+            model == AdultModel ? AdultParts : model == NeighbourModel ? NeighbourParts : ChildParts;
 
         /// <summary>The slot of <paramref name="part"/> in <paramref name="model"/>, or null when the model has no
         /// such part.</summary>
@@ -180,7 +228,8 @@ namespace SpookyStreet.Core.Crowd
         }
 
         /// <summary>The recipe with <paramref name="id"/>, or null.</summary>
-        public static CrowdWalkerRecipe Find(string id) => Array.Find(Walkers, w => w.Id == id);
+        /// <summary>The walker or door neighbour with <paramref name="id"/>, or null.</summary>
+        public static CrowdWalkerRecipe Find(string id) => Array.Find(Walkers, w => w.Id == id) ?? Array.Find(Neighbours, w => w.Id == id);
 
         /// <summary>Mesh names to merge for a walker at a level of detail (0 or 1).</summary>
         public static string[] MeshNames(CrowdWalkerRecipe walker, int lod)
