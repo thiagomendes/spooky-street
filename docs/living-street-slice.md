@@ -151,6 +151,23 @@ What the child notices, and how it is proved:
 | A long stay by one door | `Core/LivingStreet/DoorCalls`: a neighbour's door plays its bell and "Trick or treat!" once while Pip stays within 14 m; it may call again only after she has walked 16 m away (no flicker on the edge) and come back. No timer, nothing counted on screen; the doors still open and the walkers still visit. Pip's own porch is exempt: a group there is asking her for a treat, and its call is what tells the child to give one. | Core `DoorCallsTests` (20 simulated minutes at Mr. Fogg's steps: 33 rings, 1 call); PlayMode `ALongStayByOneDoorHearsTheGroupsCallOnce`. |
 | Inspect glyph and the memory card | Two causes, both fixed. The glyph rode the outline's top-left corner, under the memory card's lower edge; it now rides the bottom-left corner, or a top corner the open card leaves clear (never the bottom-right, which is the Submit glyph's), and when the card covers the whole outline (a slot's memory) it waits just under the card (`Core/Nonverbal/GlyphPlacement`). And it had no bone backing, so its face buttons vanished on the dark tray and on the card's paper (the first CI run of this pass showed only its lit West dot even in the clear corner); it now has the same bone disc as the Submit glyph, at 56 units. | Core `GlyphPlacementTests`; PlayMode (tray and slot, gamepad); frames 110 and 110b (4:3). |
 
+Evidence of the polish pass: **CI run 46127845159 (run 216), commit `d818555`: green**, EditMode 968/968, PlayMode
+176/176, Visual 30/30 (new fixtures `DoorCallsTests` 4, `GlyphPlacementTests` 4, `LanternPickerLayoutTests` 5; new
+PlayMode test `ALongStayByOneDoorHearsTheGroupsCallOnce`: Mr. Fogg's door rang 3 times, each of the three doors called
+once). Measured names at 26 units: Bat 45, Cat 45, Little ghost 143, Leaf 54, Morcego 109, Gato 61, Fantasminha 165,
+Folha 70, each in a 192-unit box. Run 214 (`8139897`) was green too, but its frame 110 showed the Inspect glyph's
+missing backing, fixed in run 216. Frames (looked at; copies in `docs/evidence/living-street/`):
+
+| Frame | What it shows |
+|---|---|
+| `ci_108_lantern_picker_names_en.jpg` | the picker by touch: Bat, Cat, Little ghost, Leaf all whole with paper around them; resting cards at full paper and full orange pictures; the bat on its plum mat with an orange stitch |
+| `ci_109_lantern_picker_names_ptbr_4x3.jpg` | Portuguese on a 4:3 screen: Morcego, Gato, Fantasminha, Folha; the cat chosen in yellow; Fantasminha whole on a resting card; the board clear of the close disc |
+| `ci_110_inspect_glyph_clear_pad.jpg` | the streamer's memory on a gamepad: the Inspect glyph (West lit, on bone) at the outline's bottom-left, the Submit glyph at its bottom-right, both clear of the card |
+| `ci_110b_inspect_glyph_clear_pad_4x3.jpg` | the same on a 4:3 screen |
+
+Still weak: the Inspect glyph's disc overlaps the edge of the tray sticker below the outline; the doorbell awaits the
+owner's ear; with a group calling once per stay, a child who stays put hears the lane go quiet (the doors still open).
+
 ## 7. Decisions taken (reversible)
 
 - The slice ends at x = 46 (sky dome), the Green is its first corner only.
@@ -196,4 +213,4 @@ Frames (looked at; copies in `docs/evidence/living-street/`; 95-95d are the lant
 | `ci_r_living_street_heart.jpg`, `ci_r_living_street_page.jpg`, `ci_r_living_street_walker.jpg` | review: walkers south of the plaza, the notebook's street page, a kit walker close |
 
 Weak: the door leaves, the neighbours' house clothes and the string-light posts are still placeholders; "Little ghost"
-fills its card's width; the doorbell sound is the borrowed chime.
+fills its card's width; the doorbell sound is the borrowed chime. (The last two are fixed by the polish pass, §6.1.)
