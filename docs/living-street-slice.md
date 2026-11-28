@@ -143,35 +143,31 @@ vizinhos não têm voz própria.
 
 ## 8. Evidence
 
-**CI run 46079073794 (run 204), commit `d2855bd`: green** (static checks, EditMode, PlayMode, Visual). Before it, run 200
-failed to compile (an ambiguous `BabbleEmotion` and a method group) and run 201 failed two tests: keepsake bat 17 lost
-its hedge perch to the gap (the gap moved, §2) and "every walker moved" compared positions after exactly two laps (now
-the farthest distance from the start).
+**CI run 46094149362 (run 207), commit `6fc58f9`: green** (static checks, EditMode, PlayMode, Visual), with the lantern
+art merged (`feature/living-street-lantern-art`, docs/living-street-lantern-art.md) and in place: the Green's craft
+table is `LanternTable`; Pip's porch has the `LanternHook`, her lantern hangs from its `LanternHang`, and a group's ring
+presses its `BellButton` (never a bell shape); her lantern is the art's figure lantern tinted through
+`PaperLanternArt`; the picker draws `LanternArt.ShapeTile` and `ColourTile`, the bat's tile 1.3x larger, every shape's
+name under its card (in run 204 the label was 36 units tall and Andika needs about 1.6 lines, so it was truncated to
+nothing). The d-pad reaches every shape, colour and the fold button (Core and PlayMode tests). Earlier runs: 200
+(compile), 201 (bat 17's perch, a lap-count check), 204 (green before the lantern art), 206 (a stray brace).
 
-Measured in run 204 (CI runner, editor, tier Low because the CI quality level is 0):
+Measured in run 207 (CI runner, editor, tier Low): crowd frame cost mean 0.013 ms, max 0.035 ms for 8 walkers over
+2,161 frames (most walkers culled by the test's camera; skinning not included; the device readout measures the real
+case). Core clock alone about 1.1 us per frame. Merged walkers 5.1k-6.8k triangles at LOD0, 1.7k-2.2k at LOD1, one
+draw call each. Closest any walker came to a case target in play: 4.81 m; most in the heart at once: 2 in play, 3 in
+Core's 20 simulated minutes.
 
-- Crowd frame cost (`CrowdView`: clock, culling, LOD choice, posing and the kit's manual animation evaluation), over
-  2,160 frames of 3 game minutes at 5× speed: **mean 0.016 ms, max 0.070 ms** for 8 walkers. The camera in that test
-  looks at the plaza, so most walkers were culled (no animation work), which is the point of culling but means this
-  is not the worst case. Skinning runs on the render side and is not in this number. The device readout on the
-  grown-ups' page measures the real thing.
-- Core clock alone (`dotnet test`, this machine): about 1.1 µs per frame for 8 walkers.
-- Merged walkers: GhostKid 5,146 / 1,677 triangles (LOD0 / LOD1), CatKid 5,367 / 1,718, CatGrownUp 5,766 / 1,854,
-  RobotKid 5,361 / 1,705, QueenKid 6,473 / 2,115, SkeletonGrownUp 5,227 / 1,663, KingGrownUp 6,792 / 2,225,
-  CandyCornKid 5,960 / 1,933; one draw call each.
-- Closest any walker came to a case target in play: 4.81 m (the bench); in Core sampling of every loop with every
-  lateral slot: 2.09 m (the candy bowl, from Pip's porch stop). Most walkers in the heart at once: 3 in Core's 20
-  simulated minutes, 2 in play.
+Frames (looked at; copies in `docs/evidence/living-street/`; 95-95d are the lantern art's own frames):
 
-Frames (looked at; copies in `docs/evidence/living-street/`):
+| Frame | What it shows |
+|---|---|
+| `ci_94_living_street_walkers.jpg` | the east lane from the hedge gap: the three porch houses, lamps, pumpkins, string lights, kit walkers |
+| `ci_96_living_street_door.jpg` | Pip at Mr. Fogg's steps, the door flung open, Mr. Fogg in the lit doorway |
+| `ci_97_living_street_porch.jpg` | Pip on her porch, her orange bat lantern hanging lit from the hook's arm, the skeleton dad and the little queen at her steps ringing |
+| `ci_97b_living_street_table.jpg` | Pip at the craft table on the Green, its string of four lit sample lanterns, the string lights above |
+| `ci_97c_living_street_picker.jpg` | the picker: Bat, Cat, Little ghost, Leaf (bat larger, names readable), four colour tiles, "Fold it!" |
+| `ci_r_living_street_heart.jpg`, `ci_r_living_street_page.jpg`, `ci_r_living_street_walker.jpg` | review: walkers south of the plaza, the notebook's street page, a kit walker close |
 
-| Frame | What it shows | Notes |
-|---|---|---|
-| `ci_94_living_street_walkers.jpg` | the east lane from the hedge gap: Mr. Fogg's tower house left, Nana Pearl's gambrel porch beyond, the Abbotts' crooked house right, lamps, pumpkins, the string lights over the Green's corner, kit walkers on the lane | a walker crosses close to the camera at the left edge |
-| `ci_95_living_street_door.jpg` | Pip at Mr. Fogg's steps; the door leaf flung open, the lit doorway, Mr. Fogg (kit grown-up in house clothes) in it; "Trick or treat!" | door leaf and neighbour are placeholders |
-| `ci_96_living_street_porch.jpg` | Pip on her porch under her lit bat lantern; the skeleton dad and the little queen at her steps ringing; "Trick or treat!" | the bat lantern reads; it is large |
-| `ci_r_living_street_heart.jpg` | the heart from the arrival side: walkers on the south leg, Vale's bench and the owl house clear | |
-| `ci_r_living_street_green.jpg` | the lantern table under the string lights | primitive lanterns |
-| `ci_r_living_street_lantern_screen.jpg` | the lantern screen: bat, cat, ghost, leaf cards, four colour swatches, "Fold it!" | **the shape names do not show under the cards** (to fix); the bat glyph is small |
-| `ci_r_living_street_page.jpg` | the notebook's street page: Pip's porch with her lantern, Mr. Fogg's face disc | paper placeholder drawing |
-| `ci_r_living_street_walker.jpg` | a kit walker close up | |
+Weak: the door leaves, the neighbours' house clothes and the string-light posts are still placeholders; "Little ghost"
+fills its card's width; the doorbell sound is the borrowed chime.
